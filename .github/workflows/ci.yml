@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Pytest
+        working-directory: backend
+        run: pytest -q
+
+  frontend-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate script/style paths
+        run: |
+          set -e
+          if grep -R "\.\./components/" -n frontend/pages/recording.html; then
+            echo "recording.html still references ../components/. Use ../scripts/." >&2
+            exit 1
+          fi
+          # Ensure referenced CSS files exist
+          test -f frontend/styles/customColorsStyle.css
+          test -f frontend/styles/recordingStyle.css
