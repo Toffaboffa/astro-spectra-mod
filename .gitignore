@@ -1,0 +1,17 @@
+# Node / frontend
+node_modules/
+dist/
+.DS_Store
+
+# Python / backend
+__pycache__/
+*.pyc
+.venv/
+.python-version
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
