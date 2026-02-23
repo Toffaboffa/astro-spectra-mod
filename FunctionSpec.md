@@ -21,6 +21,13 @@ The project is scaffold-first: many files exist as placeholders so the structure
 - Basic language files
 - Initial README scaffold (now replaced by expanded version)
 
+### Phase 1.5 notes (this patch)
+- Added **v5-inspired CORE controls bridge** in the SPECTRA-PRO panel (display mode, Y-axis mode placeholders, peak lower bound, fill opacity)
+- Added **data quality mini-readout** (dynamic range / saturation risk shell) derived from live frame hook
+- Restored important **recording layout geometry** from original CSS while keeping dark theme colors
+- Fixed overlay/toast containment so info/error UI does not spill into the right side panel area
+- Added extra resize/layout stabilization on boot to reduce graph/stripe visual mismatch after load
+
 ### What is *not* implemented yet
 - Full feature parity with original SPECTRA visual polish (layout is now patched shell + custom theme)
 - Hook patches into `graphScript.js` / `calibrationScript.js`
@@ -165,7 +172,7 @@ This is the order we should follow when working on the codebase in future patch 
 ---
 
 ### Phase 1.5 — v5-style instrument UX upgrades (still CORE-safe)
-**Goal:** add useful graph/instrument controls before LAB/ASTRO analysis.
+**Goal:** add useful graph/instrument controls before LAB/ASTRO analysis, plus layout parity fixes after real SPECTRA import.
 
 **Primary files:**
 - `docs/frontend/scripts/mod/displayModes.js`
@@ -186,7 +193,7 @@ This is the order we should follow when working on the codebase in future patch 
 - camera capability abstraction (unsupported-safe)
 - calibration import/export + multipoint manager shell
 
-**Status:** `TODO`
+**Status:** `PARTIAL` (floating CORE control bridge added in SPECTRA-PRO panel, data-quality mini-panel added, layout/stripe alignment CSS parity fixes applied, right-panel/toast containment cleanup applied)
 
 ---
 
@@ -223,7 +230,7 @@ This is the order we should follow when working on the codebase in future patch 
 - overlays can label lines
 - subtraction modes (dark/ref at minimum) work
 
-**Status:** `TODO`
+**Status:** `PARTIAL` (floating CORE control bridge added in SPECTRA-PRO panel, data-quality mini-panel added, layout/stripe alignment CSS parity fixes applied, right-panel/toast containment cleanup applied)
 
 ---
 
@@ -250,7 +257,7 @@ This is the order we should follow when working on the codebase in future patch 
 - preliminary Doppler display available with warnings
 - molecular band matching supports a basic first pass
 
-**Status:** `TODO`
+**Status:** `PARTIAL` (floating CORE control bridge added in SPECTRA-PRO panel, data-quality mini-panel added, layout/stripe alignment CSS parity fixes applied, right-panel/toast containment cleanup applied)
 
 ---
 
@@ -272,7 +279,7 @@ This is the order we should follow when working on the codebase in future patch 
 - instrument + observation profiles can be captured/exported
 - export includes key PRO metadata and QC flags
 
-**Status:** `TODO`
+**Status:** `PARTIAL` (floating CORE control bridge added in SPECTRA-PRO panel, data-quality mini-panel added, layout/stripe alignment CSS parity fixes applied, right-panel/toast containment cleanup applied)
 
 ---
 
