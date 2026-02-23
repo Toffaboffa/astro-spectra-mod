@@ -1,182 +1,587 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SPECTRA-PRO (Phase 0)</title>
-  <style>
-    :root{
-      --bg:#0b1220; --card:#101a2d; --line:#223250; --txt:#e9f2ff; --muted:#b9c9e6; --accent:#7dd3fc;
-    }
-    *{box-sizing:border-box}
-    body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--txt);margin:0;padding:16px}
-    .shell{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
-    .full{grid-column:1 / -1}
-    .sp-mode-tabs{display:flex;gap:8px;flex-wrap:wrap}
-    .sp-mode-tabs button{background:#1a2844;color:#e9f2ff;border:1px solid #33507c;border-radius:8px;padding:8px 12px;cursor:pointer}
-    .sp-mode-tabs button.active{outline:2px solid var(--accent)}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    button,input{background:#0e1a2f;color:var(--txt);border:1px solid #304969;border-radius:8px;padding:6px 10px}
-    input[type="range"]{padding:0}
-    canvas{width:100%;height:auto;border-radius:10px;background:#08111f;border:1px solid #1b2d47}
-    .muted{color:var(--muted)}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .pill{display:inline-block;border:1px solid #3d587f;border-radius:999px;padding:2px 8px;font-size:12px;color:var(--muted)}
-    .mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
-    @media (max-width: 980px){ .shell{grid-template-columns:1fr} .row{grid-template-columns:1fr} }
-  </style>
-</head>
-<body>
-  <div class="shell">
-    <div class="card full">
-      <h1 style="margin:0 0 6px 0">SPECTRA-PRO <span class="pill">Phase 0</span></h1>
-      <div class="muted">Baseline import harness + CORE-safe hook bridge. Original SPECTRA files are still placeholders in this zip and will be replaced next.</div>
-    </div>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-translate="recording-title">Recording</title>
 
-    <div class="card">
-      <div class="toolbar" style="margin-bottom:10px">
-        <button id="btnStartCore">Start CORE placeholder</button>
-        <button id="btnPing">Ping worker</button>
-        <button id="btnAnalyze">Analyze dummy frame</button>
-        <span class="pill">Source: <span id="sourceLabel" class="mono">placeholder</span></span>
-      </div>
-      <canvas id="graphCanvas" width="960" height="360" aria-label="Spectrum graph"></canvas>
-      <div class="row" style="margin-top:10px">
-        <label>Stripe width
-          <input id="stripeWidth" type="range" min="1" max="40" value="8" />
-        </label>
-        <label>Stripe Y
-          <input id="stripeY" type="range" min="0" max="100" value="50" />
-        </label>
-      </div>
-      <div class="muted" style="margin-top:8px">This graph is a Phase 0 placeholder render loop. It exists to validate hooks and script order before original SPECTRA integration.</div>
-    </div>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <link rel="stylesheet" href="../styles/styles.css">
+  <link rel="stylesheet" href="../styles/mod-panels.css">
+  <link rel="stylesheet" href="../styles/overlays.css">
+  <link rel="stylesheet" href="../styles/mobile-tweaks.css">
 
-    <div class="card">
-      <div id="modeTabsHost"></div>
-      <div id="statusHost" style="margin-top:10px"></div>
-      <hr style="border:none;border-top:1px solid var(--line);margin:12px 0">
-      <div><strong>Phase 0 hook diagnostics</strong></div>
-      <div id="diagHost" class="muted" style="margin-top:8px;line-height:1.45"></div>
-    </div>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script> <!-- xlsx -->
+  <script src="../scripts/mod/coreHooks.js"></script>
 
-    <div class="card full">
-      <strong>Notes</strong>
-      <div class="muted" style="margin-top:6px">
-        Phase 0 in this patch means <em>integration harness + hook wiring + path sanity on GitHub Pages</em>.
-        Real original SPECTRA code has not been copied into <code>docs/frontend/scripts/*.js</code> yet, so baseline behavior is placeholder-only for now.
-      </div>
-    </div>
-  </div>
-
-  <!-- Original SPECTRA placeholders (load order preserved conceptually) -->
   <script src="../scripts/polynomialRegressionScript.js"></script>
   <script src="../scripts/zipScript.js"></script>
   <script src="../scripts/languageScript.js"></script>
   <script src="../scripts/dataSavingScript.js"></script>
   <script src="../scripts/referenceGraphScript.js"></script>
   <script src="../scripts/imageLoadingScript.js"></script>
-  <script src="../scripts/setupScript.js"></script>
-  <script src="../scripts/cameraScript.js"></script>
-  <script src="../scripts/stripeScript.js"></script>
-  <script src="../scripts/cameraSelection.js"></script>
-  <script src="../scripts/calibrationScript.js"></script>
-  <script src="../scripts/graphScript.js"></script>
 
-  <!-- PRO shell / Phase 1-ready foundations -->
-  <script src="../scripts/mod/coreHooks.js"></script>
+</head>
+<body>
+
+<!-- Recording -->
+<div class="container-fluid p-0">
+  <div id="appContainer" class="d-flex flex-row min-vh-100 w-100">
+
+    <div id="sidebar-left" class="sidebar bg-sidebar">
+
+      <div id="cameraMainWindow" class="text-center" >
+
+        <div id="videoMainWindow" class="position-relative w-100">
+          <video id="videoMain" class="w-100 h-auto" autoplay playsinline></video>
+          <img id="cameraImage" class="w-100 h-auto" style="display: none">
+
+          <canvas data-translate="canvas-warning" id="cameraWindowCanvasRecording" class="position-absolute top-0 start-0 w-100 h-auto">Your browser does not support the HTML canvas tag.</canvas>
+        </div>
+
+      </div>
+
+      <div id="cameraSettings"
+           class="flex-column h-100"
+           style="display:flex; flex-grow: 1;">
+
+        <div id="cameraSettingsWindow" class="d-flex flex-column h-100">
+
+          <div id="cameraImageSourceName" class="p-2 w-100">
+            <select id="cameraSelect" class="form-select form-select-sm" data-translate-title="camera-select-tooltip"></select>
+            <div id="loadedImageFilename" data-translate-title="loaded-image-filename-tooltip" style="display: none"></div>
+          </div>
+
+          <div id="cameraImageSourceControlButtons"
+               class="d-flex flex-row flex-wrap justify-content-center gap-1">
+
+            <button class="btn btn-sm btn-secondary p-1" onclick="getCameras()" data-translate="refresh-button" data-translate-title="refresh-button-tooltip">Refresh</button>
+
+            <div style="position: relative; width: 80px; height: 30px;">
+              <button id="pauseVideoButton"
+                      class="btn btn-sm btn-secondary position-absolute top-0 start-0 w-100 h-100 p-1"
+                      onclick="pauseVideo()"
+                      data-translate="pause-button"
+                      data-translate-title="pause-button-tooltip">Pause</button>
+
+              <button id="playVideoButton"
+                      class="btn btn-sm btn-secondary position-absolute top-0 start-0 w-100 h-100 p-1"
+                      style="visibility: hidden;"
+                      onclick="playVideo()"
+                      data-translate="play-button"
+                      data-translate-title="play-button-tooltip">Play</button>
+            </div>
+
+            <button class="btn btn-sm btn-secondary p-1"
+                    onclick="loadImageIntoCamera()"
+                    data-translate="load-image"
+                    data-translate-title="load-image-tooltip">Load Image</button>
+
+            <div style="position: relative; width: 140px; height: 30px;">
+              <button id="loadMultipleImagesButton"
+                      class="btn btn-sm btn-secondary position-absolute top-0 start-0 w-100 h-100 p-1"
+                      onclick="loadMultipleImages()"
+                      data-translate="compare-multiple-images-button"
+                      data-translate-title="compare-multiple-images-button-tooltip">Compare images</button>
+
+              <button id="removeMultipleImagesButton"
+                      class="btn btn-sm btn-secondary position-absolute top-0 start-0 w-100 h-100 p-1"
+                      style="visibility: hidden;"
+                      onclick="removeLoadedImages()"
+                      data-translate="stop-comparison-button"
+                      data-translate-title="stop-comparison-button-tooltip">Stop comparison</button>
+            </div>
+          </div>
+
+          <div id="miscMeasuringSettings" class="flex-grow-1 overflow-auto p-2">
+            <!-- Stripe Width -->
+            <div id="stripeWidth" class="mb-2 mx-2 small">
+              <label for="stripeWidthRange" class="form-label m-0 text-center w-100">
+                <span data-translate="stripe-width">Stripe Width</span>
+              </label>
+              <div class="d-flex align-items-center flex-nowrap gap-1 w-100">
+                <button class="btn btn-sm btn-spectraGreen btn-secondary px-2"
+                        onclick="changeStripeWidth(-1)"
+                        data-translate-title="stripe-width-minus-tooltip">-</button>
+                <input type="range" class="form-range flex-grow-1" id="stripeWidthRange" min="1" value="1"
+                       onchange="changeStripeWidth(0)"
+                       oninput="changeStripeLabels(this.value)"
+                       data-translate-title="stripe-width-range-tooltip">
+                <button class="btn btn-sm btn-spectraGreen btn-secondary px-2"
+                        onclick="changeStripeWidth(1)"
+                        data-translate-title="stripe-width-plus-tooltip">+</button>
+              </div>
+              <div class="text-center">
+                <span id="stripeWidthValue">1</span> px
+              </div>
+            </div>
+
+            <!-- Stripe Placement -->
+            <div id="stripePlacement" class="mb-2 mx-2 small">
+              <label for="stripePlacementRange" class="form-label m-0 text-center w-100">
+                <span data-translate="stripe-place">Stripe Place</span>
+              </label>
+              <div class="d-flex align-items-center flex-nowrap gap-1 w-100">
+                <button class="btn btn-sm btn-spectraGreen btn-secondary px-2"
+                        onclick="changeStripePlacement(-1)"
+                        data-translate-title="stripe-place-minus-tooltip">-</button>
+                <input type="range" class="form-range flex-grow-1" id="stripePlacementRange" min="1"
+                       onchange="changeStripePlacement(0)"
+                       oninput="changeStripePlacementLabel(this.value)"
+                       data-translate-title="stripe-place-range-tooltip">
+                <button class="btn btn-sm btn-spectraGreen btn-secondary px-2"
+                        onclick="changeStripePlacement(1)"
+                        data-translate-title="stripe-place-plus-tooltip">+</button>
+              </div>
+              <div class="text-center">
+                <span id="stripePlacementValue">1</span> px
+              </div>
+            </div>
+
+            <!-- Exposure -->
+            <div id="cameraExposure" class="mb-2 mx-2 small">
+              <label for="exposure" class="form-label m-0 text-center w-100" data-translate="adjust-exposure">Adjust Exposure:</label>
+              <input id="exposure" type="range" class="form-range"
+                     oninput="updateExposureValue(this.value)"
+                     data-translate-title="exposure-range-tooltip">
+              <div class="text-center">
+                <span id="exposureValue">0</span>
+              </div>
+            </div>
+
+            <div id="referenceGraph" class="p-2">
+              <div class="form-check mb-2">
+                <input type="checkbox" data-translate-title="reference-graph-checkbox-tooltip" class="form-check-input" id="referenceGraphCheckbox">
+                <label class="form-check-label" for="referenceGraphCheckbox" data-translate="reference-graph">
+                  Reference Graph
+                </label>
+              </div>
+
+              <div id="referenceGraphControl" style="display: none;">
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                  <button class="btn btn-secondary btn-sm"
+                          data-translate="add-reference"
+                          data-translate-title="reference-graph-add-tooltip"
+                          onclick="addReferenceLine()">
+                    Add Reference
+                  </button>
+                  <button class="btn btn-secondary btn-sm"
+                          data-translate="reference-from-file"
+                          data-translate-title="reference-graph-add-excel-tooltip"
+                          onclick="addReferenceLineFromExcel()">
+                    Add Reference from File
+                  </button>
+                  <button class="btn btn-secondary btn-sm"
+                          data-translate="reset-references"
+                          data-translate-title="reference-graph-reset-tooltip"
+                          onclick="removeReferenceLinesAndAddNewReferenceLine()">
+                    Reset References
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="cameraSettingsNavButtons"
+               class="p-2 d-flex flex-column gap-2 w-100">
+
+            <div class="d-flex flex-row gap-2 w-100">
+              <button class="btn btn-md btn-spectraGreen text-white p-1 flex-fill"
+                      data-translate="save-data"
+                      data-translate-title="save-data-tooltip"
+                      onclick="saveRecordingData()">Save data</button>
+              <button class="btn btn-md btn-spectraGreen text-white p-1 flex-fill"
+                      data-translate="calibrate-button"
+                      data-translate-title="calibrate-button-tooltip"
+                      onclick="changeSettingsScreen('Calibration')">Calibrate</button>
+            </div>
+
+            <button class="btn btn-md btn-spectraGreen text-white p-1 w-100"
+                    data-translate="FLR-button"
+                    data-translate-title="FLR-button-tooltip"
+                    onclick="changeSettingsScreen('LongExpo')">FLR</button>
+
+          </div>
+
+
+        </div>
+      </div>
+
+      <div id="calibrationSettings"
+           class="p-2 flex-column gap-2 h-100"
+           style="display: none; flex-grow: 1;">
+
+        <!-- Export field + Export button -->
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control form-control-sm"
+                 id="exportCalibrationNameInput"
+                 placeholder="Enter filename"
+                 data-translate-placeholder="calibration-export-filename-placeholder"
+                 data-translate-title="calibration-export-filename-tooltip">
+          <button class="btn btn-sm text-light bg-secondary"
+                  id="exportCalibrationSettings"
+                  data-translate="export-button"
+                  data-translate-title="export-button-tooltip"
+                  onclick="exportCalibrationFile()">Export calibration settings</button>
+        </div>
+
+        <!-- Import input -->
+        <input type="file" name="my_file" id="my-file" accept=".txt"
+               class="form-control form-control-sm"
+               data-translate-title="import-calibration-file-tooltip"
+               onclick="this.value=null"
+               onchange="importCalibrationFile()">
+
+        <!-- Input wrapper -->
+        <div id="input-wrapper" class="flex-grow-1 d-flex flex-column">
+          <div id="input-header">
+            <div>px</div>
+            <div>nm</div>
+          </div>
+          <div id="input-container"></div>
+        </div>
+
+        <!-- Add + Reset buttons -->
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-secondary flex-fill p-1"
+                  id="addPoints"
+                  data-translate="addCalPoints-button"
+                  data-translate-title="addCalPoints-button-tooltip"
+                  onclick="addInputPair()">Add</button>
+          <button class="btn btn-sm btn-secondary flex-fill p-1"
+                  id="resetCalibrationPoints"
+                  data-translate="reset-button"
+                  data-translate-title="reset-button-tooltip"
+                  onclick="resetCalibrationPoints()">Reset</button>
+          <button class="btn btn-sm btn-secondary flex-fill p-1"
+                  id="orderCalibrationPoints"
+                  data-translate="sortCalPoints-button"
+                  data-translate-title="sortCalPoints-button-tooltip"
+                  onclick="sortCalibrationInputPairs()">Sort</button>
+        </div>
+
+      <div class="pv-1">
+        <button class="btn btn-md btn-spectraGreen text-white p-1 w-100 mt-auto"
+                data-translate="measuring-button"
+                data-translate-title="camera-button-tooltip"
+                onclick="changeSettingsScreen('Graph')"
+                >Record</button>
+      </div>
+
+      </div>
+
+      <div id="cameraExposureWindow" class="p-2"
+           style="display: none; max-width: 400px; height: 100%;">
+
+        <div class="flex-grow-1 overflow-auto" style="min-height: 0;">
+          <div class="mb-3">
+            <label for="NumOfSamples" class="form-label">
+              <span data-translate="FLR-captures-count">Number of Captures</span>
+            </label>
+            <input type="number" class="form-control form-control-sm"
+                   id="NumOfSamples" name="NumOfSamples" min="1" value="5"
+                   data-translate-title="FLR-captures-count-input-tooltip">
+          </div>
+
+          <div class="mb-3">
+            <label for="timeOfPause" class="form-label">
+              <span data-translate="FLR-captures-pause">Pause in between captures</span>
+            </label>
+            <div class="input-group input-group-sm">
+              <input type="number" class="form-control"
+                     id="timeOfPause" name="timeOfPause" min="200" value="300"
+                     data-translate-title="FLR-captures-pause-input-tooltip">
+              <span class="input-group-text" data-translate="in-ms">(in ms.)</span>
+            </div>
+          </div>
+
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input"
+                   id="screenshotOfGraph" name="screenshotOfGraph"
+                   data-translate-title="FLR-screenshot-graph-tooltip">
+            <label class="form-check-label" for="screenshotOfGraph" data-translate="FLR-screenshot-graph">
+              Screenshot Graph
+            </label>
+          </div>
+
+          <button class="btn btn-secondary btn-sm mb-3"
+                  data-translate="FLR-capture-button"
+                  data-translate-title="FLR-capture-button-tooltip"
+                  onclick="startCameraCapture()">Capture</button>
+        </div>
+
+        <div class="d-flex flex-row gap-2 w-100">
+          <button class="btn btn-md btn-spectraGreen text-white p-1 flex-fill"
+                  data-translate="measuring-button"
+                  data-translate-title="camera-button-tooltip"
+                  onclick="changeSettingsScreen('Graph')">Record</button>
+
+          <button class="btn btn-md btn-spectraGreen text-white p-1 flex-fill"
+                  data-translate="calibrate-button"
+                  data-translate-title="calibrate-button-tooltip"
+                  onclick="changeSettingsScreen('Calibration')">Calibrate</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="sidebarHoverZoneLeft" class="moved"></div>
+    <div id="sidebarToggleHandleLeft" class="sidebar-handle-vertical moved" onclick="changeDisplayScreen('settings')">
+      ◁
+    </div>
+
+    <div id="mainContent" class="main-content flex-grow-1 bg-mainContent">
+
+      <!-- Graph -->
+      <div id="graphWindowContainer">
+        <div id="graphWindow">
+          <div id="graphCanvasWindow">
+            <div class="ParentElement">
+              <div id="blackBox"></div>
+              <canvas id="stripeCanvas"></canvas>
+            </div>
+            <canvas id="graphCanvas" class="withDrawer"></canvas>
+            <script src="../scripts/graphScript.js"></script>
+          </div>
+
+        </div>
+      </div>
+
+      <div id="calibrationWindowContainer" style="display: none">
+        <div id="graphWindowCalibration" class="w-100">
+          <canvas id="graphCalibration"></canvas>
+          <canvas id="graphDivergence"></canvas>
+        </div>
+      </div>
+
+      <div id="graphSettingsDrawer">
+
+        <div id="graphSettingsDrawerLeft">
+          <div class="d-flex flex-wrap gap-2 align-items-center p-2">
+            <button class="btn btn-secondary btn-sm"
+                    data-translate="reset-zoom"
+                    data-translate-title="reset-zoom-tooltip"
+                    id="resetZoomButton">Reset Zoom</button>
+            <button class="btn btn-secondary btn-sm"
+                    id="stepBackButton"
+                    data-translate="zoom-step-back"
+                    data-translate-title="zoom-step-back-tooltip">Step Back</button>
+            <button class="btn btn-secondary btn-sm"
+                    id="stepLeftButton"
+                    disabled
+                    data-translate-title="zoom-step-left-tooltip">←</button>
+            <button class="btn btn-secondary btn-sm"
+                    id="stepRightButton"
+                    disabled
+                    data-translate-title="zoom-step-right-tooltip">→</button>
+            <input class="form-range darker-slider w-auto" type="range" id="zoomScroller" min="0" max="100" value="0" disabled />
+
+            <div class="form-check form-check-inline mb-0">
+              <input class="form-check-input" type="radio"
+                     id="toggleXLabelsPx" name="toggleXLabels"
+                     value="px" checked
+                     data-translate-title="X-px-tooltip">
+              <label class="form-check-label" for="toggleXLabelsPx">
+                <span data-translate="X-px">X-axis Labels (px)</span>
+              </label>
+            </div>
+
+            <div class="form-check form-check-inline mb-0">
+              <input class="form-check-input" type="radio"
+                     id="toggleXLabelsNm" name="toggleXLabels" value="nm"
+                     data-translate-title="X-nm-tooltip">
+              <label class="form-check-label" for="toggleXLabelsNm">
+                <span data-translate="X-nm">X-axis Labels (nm)</span>
+              </label>
+            </div>
+
+            <div id="mouseCoordinates">X: N/A, Y: N/A</div>
+          </div>
+
+          <div class="d-flex flex-row flex-wrap gap-4 px-2">
+
+            <!-- Combined/R/G/B stacked -->
+            <div class="d-flex flex-column gap-1">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox"
+                       id="toggleCombined" checked
+                       data-translate-title="combined-graph-tooltip">
+                <label class="form-check-label" data-translate="combined-graph" for="toggleCombined">Combined</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggleR"
+                       data-translate-title="Red-graph-tooltip">
+                <label class="form-check-label" for="toggleR">R</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggleG"
+                       data-translate-title="Green-graph-tooltip">
+                <label class="form-check-label" for="toggleG">G</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggleB"
+                       data-translate-title="Blue-graph-tooltip">
+                <label class="form-check-label" for="toggleB">B</label>
+              </div>
+            </div>
+
+            <!-- Color Graph + Opacity -->
+            <div class="d-flex flex-column gap-2 align-self-center">
+              <div class="form-check">
+                <input class="form-check-input" data-translate-title="fill-graph-tooltip" type="checkbox" id="colorGraph">
+                <label class="form-check-label" data-translate="fill-graph" for="colorGraph">Color the Graph</label>
+              </div>
+              <div id="gradientOpacitySliderContainer" style="display: none;" class="d-flex align-items-center gap-2">
+                <label for="gradientOpacitySlider" data-translate="fill-opacity" class="form-label mb-0">Color Opacity</label>
+                <input type="range" class="form-range darker-slider w-auto"
+                       style="width: 150px;" id="gradientOpacitySlider"
+                       min="0.1" max="1" step="0.1" value="0.7"
+                       data-translate-title="fill-opacity-tooltip">
+                <span id="gradientOpacityValue">0.7</span>
+              </div>
+            </div>
+
+            <!-- Toggle Peaks + Min Value -->
+            <div class="d-flex flex-column gap-2 align-self-center">
+              <div class="form-check">
+                <input class="form-check-input" data-translate-title="toggle-peaks-tooltip" type="checkbox" id="togglePeaksCheckbox">
+                <label class="form-check-label" data-translate="toggle-peaks" for="togglePeaksCheckbox">Toggle Peaks</label>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <label for="peakSizeLower" class="form-label mb-0" data-translate="lower-bound">Lower bound</label>
+                <input type="number" id="peakSizeLower"
+                       value="1" min="1" max="255" style="width:60px;"
+                       data-translate-title="lower-bound-tooltip">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="graphSettingsDrawerRight">
+
+          <div id="drawerCollapseButton" class="sidebar-handle-horizontal"
+               data-translate-title="collapse-button-tooltip"
+               onclick="changeDisplayScreen('drawer')">▽</div>
+
+          <button class="btn btn-secondary btn-md"
+                  data-translate="home-button"
+                  data-translate-title="home-button-tooltip"
+                  onclick="openRedirectionModal()">Home</button>
+        </div>
+      </div>
+
+      <div id="drawerHoverZone" class="disabled"></div>
+      <div id="drawerExpandButton"
+           class="sidebar-handle-horizontal disabled"
+           onclick="changeDisplayScreen('drawer')">△</div>
+
+    </div>
+
+    <div id="sidebar-right" class="sidebar bg-sidebar hidden">
+      <div class="image-loaded-wrapper small-camera-image-entry">
+        <div class="image-controls">
+          <input type="radio" id="imageRadio0"
+                 data-translate-title="image-from-camera-tooltip"
+                 onclick="checkRadio(0)" checked/>
+        </div>
+        <div class="camera-image-text">
+          <span data-translate="image-from-Camera">Camera image</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="sidebarHoverZoneRight"></div>
+    <div id="sidebarToggleHandleRight" class="sidebar-handle-vertical" onclick="changeDisplayScreen('imgSelect')">
+      ◁
+    </div>
+
+    <div id="infoPopupBlock"></div>
+
+    <div id="cameraRecordingIsOn" class="recording-toast">
+      <div id="cameraRecordingIsOnWindows" class="container-sm bg-dark text-white rounded px-4 py-2 shadow">
+        <span data-translate="recording-screenshots" class="mt-1">Recording screenshots...</span>
+        <button class="btn btn-sm btn-light ms-3"
+                data-translate="FLR-cancel-button"
+                data-translate-title="FLR-cancel-button-tooltip"
+                onclick="stopOngoingRecording()">Cancel</button>
+      </div>
+    </div>
+
+    <div id="infoPopup" class="recording-toast">
+      <div id="infoPopupInside" class="container-sm bg-dark text-white rounded px-4 py-2 shadow">
+        <span id="infoPopupMessage" data-translate="" class="mt-1">Info message</span>
+        <div id="infoPopupButtonContainer">
+          <button id="infoPopupButton" class="btn btn-sm btn-light ms-3" data-translate="" onclick="closeInfoPopup()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="errorBlock"></div>
+
+    <div id="errorBox" class="recording-toast">
+      <div id="errorBoxInside" class="container-sm bg-danger text-white rounded px-4 py-2 shadow">
+        <span id="errorMessage" data-translate="" class="mt-1">Error message</span>
+        <button class="btn btn-sm btn-light m-1" data-translate="acknowledge" onclick="uncallError()">I understand</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="../scripts/setupScript.js"></script>
+<script src="../scripts/cameraScript.js"></script>
+<script src="../scripts/stripeScript.js"></script>
+<script src="../scripts/cameraSelection.js"></script>
+<script src="../scripts/calibrationScript.js"></script>
+<script>resetCamera();</script>
+
+
+  <!-- SPECTRA-PRO Phase 0 bridge (non-invasive) -->
   <script src="../scripts/mod/eventBus.js"></script>
   <script src="../scripts/mod/stateStore.js"></script>
   <script src="../scripts/mod/appMode.js"></script>
-  <script src="../scripts/mod/quickPeaks.js"></script>
-  <script src="../scripts/mod/subtraction.js"></script>
-  <script src="../scripts/mod/processingPipeline.js"></script>
-  <script src="../scripts/mod/spectrumFrameAdapter.js"></script>
   <script src="../scripts/mod/uiPanels.js"></script>
   <script src="../scripts/mod/analysisWorkerClient.js"></script>
-
   <script>
-    (function(){
-      const sp = window.SpectraPro || (window.SpectraPro = {});
-      sp.workerTypes = {
-        MSG: {
-          PING:'PING', PONG:'PONG', ERROR:'ERROR',
-          INIT_LIBRARIES:'INIT_LIBRARIES', INIT_LIBRARIES_RESULT:'INIT_LIBRARIES_RESULT',
-          ANALYZE_FRAME:'ANALYZE_FRAME', ANALYZE_RESULT:'ANALYZE_RESULT'
-        }
-      };
+  (function(){
+    const sp = window.SpectraPro || (window.SpectraPro = {});
+    if (!sp.coreHooks) return;
+    function safeUpdate(path, value, source){
+      if (sp.store && sp.store.update) sp.store.update(path, value, { source: source || 'phase0' });
+    }
+    sp.coreHooks.on('graphFrame', function(frame){
+      safeUpdate('frame.source', frame && frame.source ? frame.source : 'camera');
+      safeUpdate('frame.latest', { timestamp: frame?.timestamp || Date.now(), points: Array.isArray(frame?.I)?frame.I.length:0, source: frame?.source || 'camera' });
+    });
+    sp.coreHooks.on('calibrationChanged', function(cal){ safeUpdate('calibration', Object.assign({}, (sp.store?.getState?.().calibration||{}), cal||{})); });
+    sp.coreHooks.on('referenceChanged', function(ref){ if (sp.coreBridge) sp.coreBridge.reference = Object.assign({}, sp.coreBridge.reference||{}, ref||{}); });
 
-      // Patch bridge listeners (Phase 0 validation)
-      if (sp.coreHooks && sp.eventBus && sp.store) {
-        sp.coreHooks.on('graphFrame', function(frame){
-          sp.store.update('frame.latest', {
-            timestamp: frame.timestamp,
-            points: Array.isArray(frame.I) ? frame.I.length : 0,
-            source: frame.source || 'unknown'
-          }, { source:'coreHook:graphFrame' });
-          if (sp.coreBridge && sp.coreBridge.frame) {
-            sp.store.update('frame.source', sp.coreBridge.frame.source || 'unknown', { source:'coreHook:graphFrame' });
-          }
-        });
-        sp.coreHooks.on('calibrationChanged', function(cal){
-          sp.store.update('calibration', Object.assign({}, sp.store.getState().calibration, cal), { source:'coreHook:calibrationChanged' });
-        });
-      }
+    function bootPanels(){
+      try {
+        const host = document.createElement('div');
+        host.id = 'spectraProPhase0Panel';
+        host.style.cssText = 'position:fixed;right:10px;bottom:10px;z-index:99999;background:#101a2d;color:#e9f2ff;border:1px solid #334b70;border-radius:10px;padding:8px;max-width:320px;font:12px system-ui';
+        host.innerHTML = '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong>SPECTRA-PRO P0</strong><button id="sp0Toggle" style="padding:2px 8px">Hide</button></div><div id="sp0Body" style="margin-top:6px"></div>';
+        document.body.appendChild(host);
+        const tabsHost = document.createElement('div');
+        const statusHost = document.createElement('div');
+        document.getElementById('sp0Body').appendChild(tabsHost);
+        document.getElementById('sp0Body').appendChild(statusHost);
+        if (sp.uiPanels && sp.uiPanels.createModeTabs) sp.uiPanels.createModeTabs(tabsHost);
+        const render = function(){
+          const s = sp.store?.getState?.() || {};
+          statusHost.innerHTML = '<div style="margin-top:6px;line-height:1.35">Mode: <b>'+ (s.appMode||'CORE') +'</b><br>Worker: '+ ((s.worker&&s.worker.status)||'idle') +'<br>Frame pts: '+ (((s.frame||{}).latest||{}).points || 0) +'<br>Cal: '+ (((s.calibration||{}).residualStatus)||'unknown') +'</div>';
+        };
+        if (sp.eventBus && sp.eventBus.on) sp.eventBus.on('state:changed', render);
+        render();
+        document.getElementById('sp0Toggle').onclick=function(){ const b=document.getElementById('sp0Body'); b.style.display=b.style.display==='none'?'block':'none'; this.textContent=b.style.display==='none'?'Show':'Hide'; };
+      } catch(e){ console.warn('SPECTRA-PRO Phase0 panel failed', e); }
+    }
 
-      sp.uiPanels.createModeTabs(document.getElementById('modeTabsHost'));
-      const statusHost = document.getElementById('statusHost');
-      const diagHost = document.getElementById('diagHost');
-      const sourceLabel = document.getElementById('sourceLabel');
-
-      const client = sp.createAnalysisWorkerClient({ workerUrl: '../workers/analysis.worker.js', throttleMs: 250 });
-      sp._debugWorkerClient = client;
-
-      function renderDiag(){
-        const s = sp.store.getState();
-        const frame = (window.SpectraPro.coreBridge && window.SpectraPro.coreBridge.frame) || null;
-        sourceLabel.textContent = (s.frame && s.frame.source) || 'unknown';
-        diagHost.innerHTML = [
-          'Frame hook: ' + (frame ? 'OK' : 'waiting'),
-          'Frame points: ' + (frame && frame.I ? frame.I.length : 0),
-          'Calibration hook: ' + ((s.calibration && s.calibration.residualStatus) || 'unknown'),
-          'Reference hook: ' + ((sp.coreBridge && sp.coreBridge.reference && sp.coreBridge.reference.updatedAt) ? 'updated' : 'idle'),
-          'Worker: ' + (s.worker && s.worker.status),
-          'Mode: ' + s.appMode
-        ].join('<br>');
-        sp.uiPanels.renderStatus(statusHost);
-      }
-
-      if (sp.eventBus) sp.eventBus.on('state:changed', renderDiag);
-
-      document.getElementById('btnStartCore').addEventListener('click', function(){
-        if (window.SpectraCore && window.SpectraCore.camera && window.SpectraCore.camera.startCamera) {
-          window.SpectraCore.camera.startCamera();
-        } else if (window.plotRGBLineFromCamera) {
-          window.plotRGBLineFromCamera();
-        }
-      });
-
-      document.getElementById('stripeWidth').addEventListener('input', function(e){
-        if (window.SpectraCore && window.SpectraCore.stripe) window.SpectraCore.stripe.setStripeWidth(Number(e.target.value));
-      });
-      document.getElementById('stripeY').addEventListener('input', function(e){
-        if (window.SpectraCore && window.SpectraCore.stripe) window.SpectraCore.stripe.setStripeY(Number(e.target.value)/100);
-      });
-
-      document.getElementById('btnPing').addEventListener('click', function(){ client.ping(); });
-      document.getElementById('btnAnalyze').addEventListener('click', function(){
-        sp.appMode.setMode('LAB', {source:'demo'});
-        const I = Array.from({length:256}, (_,i)=> Math.max(0, Math.sin(i/14)*0.4 + (i===80?1.2:0) + (i===160?0.9:0) + 0.2));
-        const frame = { I: I, px: I.map((_,i)=>i), timestamp: Date.now(), source: 'dummy' };
-        client.analyzeFrame(frame);
-      });
-
-      // autostart placeholder graph so hooks light up immediately
-      if (window.plotRGBLineFromCamera) window.plotRGBLineFromCamera();
-      renderDiag();
-      setInterval(renderDiag, 800);
-    })();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootPanels); else bootPanels();
+  })();
   </script>
+
 </body>
 </html>

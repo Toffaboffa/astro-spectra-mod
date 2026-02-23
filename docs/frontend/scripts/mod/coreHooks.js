@@ -1,40 +1,10 @@
-(function (global) {
-  'use strict';
-  const sp = global.SpectraPro = global.SpectraPro || {};
-
-  function createHookRegistry() {
-    const hooks = {
-      graphFrame: [],
-      graphRenderAfter: [],
-      calibrationChanged: [],
-      referenceChanged: []
-    };
-
-    function on(name, fn) {
-      if (!hooks[name]) hooks[name] = [];
-      if (typeof fn !== 'function') return function noop(){};
-      hooks[name].push(fn);
-      return function off() {
-        hooks[name] = (hooks[name] || []).filter(function (x) { return x !== fn; });
-      };
-    }
-
-    function emit(name, payload) {
-      const list = hooks[name] || [];
-      list.forEach(function (fn) {
-        try { fn(payload); } catch (err) { console.error('[SPECTRA-PRO coreHooks]', name, err); }
-      });
-    }
-
-    return { on: on, emit: emit };
-  }
-
-  sp.coreHooks = sp.coreHooks || createHookRegistry();
-
-  // Shared bridge cache (read-only from mod modules)
-  sp.coreBridge = sp.coreBridge || {
-    frame: null,
-    calibration: { isCalibrated: false, coefficients: [], points: [], residualStatus: 'unknown' },
-    reference: { curve: null, label: null, updatedAt: null }
+(function(){
+  const sp = window.SpectraPro || (window.SpectraPro = {});
+  const listeners = {};
+  sp.coreBridge = sp.coreBridge || { frame:null, calibration:null, reference:null };
+  sp.coreHooks = sp.coreHooks || {
+    on: function(evt, cb){ (listeners[evt] = listeners[evt] || []).push(cb); return function(){ this.off(evt, cb); }.bind(this); },
+    off: function(evt, cb){ if(!listeners[evt]) return; listeners[evt] = listeners[evt].filter(fn => fn !== cb); },
+    emit: function(evt, payload){ (listeners[evt] || []).forEach(function(fn){ try { fn(payload); } catch (e) { console.warn('coreHooks listener error', e); } }); }
   };
-})(window);
+})();

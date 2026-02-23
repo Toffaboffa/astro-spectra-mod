@@ -436,3 +436,15 @@ That means this function spec intentionally optimizes for **stable patch order**
   - Original SPECTRA files are still placeholders and must be imported for real Phase 0 baseline parity.
   - No real camera → stripe → pixel extraction yet (placeholder render loop only).
   - Core HTML/CSS is a temporary harness, not the real SPECTRA recording UI.
+
+
+## Session Log Update — Phase 0 real import (SPECTRA-1)
+
+- **Status:** PARTIAL → Phase 0 real import baseline completed.
+- Replaced placeholder core scripts in `docs/frontend/scripts/` with originals from `SPECTRA-1.zip` (recording stack scripts + helpers).
+- Rebased `docs/frontend/pages/recording.html` on original SPECTRA-1 `recording.html` and patched component paths to local `../scripts/*`.
+- Added non-invasive SPECTRA-PRO Phase 0 bridge overlay panel + mode tabs on top of original UI.
+- Added `coreHooks` bridge and hook emit patches in `graphScript.js`, `calibrationScript.js`, and `referenceGraphScript.js`.
+- Exposed minimal `window.SpectraCore` adapters for camera/stripe/calibration/reference/graph access.
+- Known gaps: original SPECTRA style assets (`customColorsStyle.css`, `recordingStyle.css`) and translation dictionaries are not included in source zip, so layout/text polish may be degraded until those assets are copied.
+- Next: Phase 1 patch = verify runtime errors on Pages, then harden hooks against exact SPECTRA globals and add CORE regression checklist results.

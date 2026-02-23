@@ -556,3 +556,6 @@ The philosophy here is simple: **protect the instrument feel first, then add the
 
 - Phase 2 foundation patch #1 added: event bus, state store, mode tabs, worker ping/analyze shell, and LAB pipeline stubs.
 - Original SPECTRA files are still placeholders and must be imported before CORE integration work.
+
+
+> **Current integration note (Phase 0 real import):** `docs/frontend/pages/recording.html` is now based on the original SPECTRA-1 recording page, with local script-path patches and a non-invasive SPECTRA-PRO bridge layer for hooks/state. Some original SPECTRA style/language assets were not present in the imported zip and may need to be added later for full parity.
