@@ -84,10 +84,10 @@ These files should be replaced with the original SPECTRA scripts before feature 
 - `zipScript.js` (if used by original export flow)
 
 ### PRO integration + UI/state modules (`frontend/scripts/mod/`)
-Status: **SCAFFOLD** (all current files)
+Status: **PARTIAL** (phase-2 foundation implemented for selected modules; others remain `SCAFFOLD`)
 
 ### Worker modules (`frontend/workers/`)
-Status: **SCAFFOLD** (all current files)
+Status: **PARTIAL** (worker protocol/router/foundation stubs implemented; analysis logic still mostly `SCAFFOLD`)
 
 ### Docs/tests
 Status: **SCAFFOLD** / `README.md` now **PARTIAL** (architecture/spec-level documentation added)
@@ -335,3 +335,49 @@ Suggested section to append after each patch:
 
 SPECTRA-PRO should feel like a real instrument first and a smart analyzer second.
 That means this function spec intentionally optimizes for **stable patch order**, **clear module boundaries**, and **CORE safety** over feature rush.
+
+
+## Session log 2026-02-23 (Phase 2 foundation patch #1)
+- **Touched files**
+  - `frontend/pages/recording.html`
+  - `frontend/scripts/mod/eventBus.js`
+  - `frontend/scripts/mod/stateStore.js`
+  - `frontend/scripts/mod/appMode.js`
+  - `frontend/scripts/mod/uiPanels.js`
+  - `frontend/scripts/mod/spectrumFrameAdapter.js`
+  - `frontend/scripts/mod/quickPeaks.js`
+  - `frontend/scripts/mod/subtraction.js`
+  - `frontend/scripts/mod/processingPipeline.js`
+  - `frontend/scripts/mod/analysisWorkerClient.js`
+  - `frontend/workers/analysis.worker.js`
+  - `frontend/workers/workerTypes.js`
+  - `frontend/workers/workerState.js`
+  - `frontend/workers/workerRouter.js`
+  - `frontend/workers/libraryLoader.js`
+  - `frontend/workers/libraryIndex.js`
+  - `frontend/workers/libraryQuery.js`
+  - `frontend/workers/peakDetect.js`
+  - `frontend/workers/peakScoring.js`
+  - `frontend/workers/lineMatcher.js`
+  - `frontend/workers/qcRules.js`
+  - `frontend/workers/confidenceModel.js`
+  - `frontend/workers/analysisPipeline.js`
+
+- **What changed**
+  - Added a working event bus + state store + mode switching foundation (`CORE/LAB/ASTRO`).
+  - Added a basic scaffold UI page for GitHub Pages sanity checks (worker ping + dummy analyze button).
+  - Implemented a first worker protocol shell (`PING`, `INIT_LIBRARIES`, `ANALYZE_FRAME`) with router + state.
+  - Added placeholder LAB pipeline primitives (quick peaks, subtraction modes, processing pipeline) to support later integration.
+  - Kept all logic decoupled from original SPECTRA files (no CORE patches yet).
+
+- **What passed (sanity)**
+  - Page-level script load order is valid in scaffold mode.
+  - Worker entrypoint can be started from frontend (subject to static hosting path support).
+  - Dummy frame analysis returns a structured result payload without blocking UI.
+
+- **What remains / known gaps**
+  - Original SPECTRA files are not imported yet (Phase 0 still pending).
+  - No graph hooks, calibration hooks, or reference hooks yet.
+  - Worker library loading/matching is stubbed (no real atomic library parsing yet).
+  - No overlay rendering into the actual SPECTRA graph.
+  - `workerTypes` are duplicated in demo page bootstrap and should later come from a shared bridge/module.

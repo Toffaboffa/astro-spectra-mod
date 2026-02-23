@@ -1,1 +1,66 @@
-<!doctype html><html><head><meta charset='utf-8'><title>Astro Spectra Mod</title></head><body><!-- Replace with SPECTRA recording.html and patch with CORE/LAB/ASTRO UI --></body></html>
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SPECTRA-PRO (Scaffold)</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#0b1220;color:#e9f2ff;margin:0;padding:16px}
+    .shell{max-width:1000px;margin:0 auto;display:grid;gap:12px}
+    .card{background:#101a2d;border:1px solid #223250;border-radius:12px;padding:12px}
+    .sp-mode-tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .sp-mode-tabs button{background:#1a2844;color:#e9f2ff;border:1px solid #33507c;border-radius:8px;padding:8px 12px;cursor:pointer}
+    .sp-mode-tabs button.active{outline:2px solid #7dd3fc}
+    code{background:#09101d;padding:2px 4px;border-radius:4px}
+    .muted{color:#b9c9e6}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="card">
+      <h1 style="margin:0 0 8px 0">SPECTRA-PRO scaffold</h1>
+      <div class="muted">Phase 2 foundation patched. CORE integration with original SPECTRA files comes next.</div>
+    </div>
+
+    <div class="card" id="modeTabsHost"></div>
+    <div class="card" id="statusHost"></div>
+    <div class="card">
+      <button id="btnPing">Ping worker</button>
+      <button id="btnAnalyze">Analyze dummy frame</button>
+      <div class="muted" style="margin-top:8px">This page is only a scaffold sanity check for GitHub Pages. No original SPECTRA code is integrated yet.</div>
+    </div>
+  </div>
+
+  <script src="../scripts/mod/eventBus.js"></script>
+  <script src="../scripts/mod/stateStore.js"></script>
+  <script src="../scripts/mod/appMode.js"></script>
+  <script src="../scripts/mod/quickPeaks.js"></script>
+  <script src="../scripts/mod/subtraction.js"></script>
+  <script src="../scripts/mod/processingPipeline.js"></script>
+  <script src="../scripts/mod/spectrumFrameAdapter.js"></script>
+  <script src="../scripts/mod/uiPanels.js"></script>
+  <script src="../scripts/mod/analysisWorkerClient.js"></script>
+  <script>
+    (function(){
+      const sp = window.SpectraPro;
+      sp.workerTypes = { MSG: { PING:'PING', PONG:'PONG', ERROR:'ERROR', INIT_LIBRARIES:'INIT_LIBRARIES', INIT_LIBRARIES_RESULT:'INIT_LIBRARIES_RESULT', ANALYZE_FRAME:'ANALYZE_FRAME', ANALYZE_RESULT:'ANALYZE_RESULT' } };
+      sp.uiPanels.createModeTabs(document.getElementById('modeTabsHost'));
+      const statusHost = document.getElementById('statusHost');
+      const client = sp.createAnalysisWorkerClient({ workerUrl: '../workers/analysis.worker.js', throttleMs: 250 });
+      sp._debugWorkerClient = client;
+      function refresh(){ sp.uiPanels.renderStatus(statusHost); }
+      refresh();
+      sp.eventBus.on('state:changed', refresh);
+      document.getElementById('btnPing').addEventListener('click', function(){ client.ping(); });
+      document.getElementById('btnAnalyze').addEventListener('click', function(){
+        sp.appMode.setMode('LAB', {source:'demo'});
+        const I = Array.from({length:256}, (_,i)=> Math.max(0, Math.sin(i/14)*0.4 + (i===80?1.2:0) + (i===160?0.9:0) + 0.2));
+        const frame = { I: I, px: I.map((_,i)=>i), timestamp: Date.now(), source: 'dummy' };
+        client.analyzeFrame(frame);
+      });
+      setInterval(refresh, 500);
+    })();
+  </script>
+</body>
+</html>

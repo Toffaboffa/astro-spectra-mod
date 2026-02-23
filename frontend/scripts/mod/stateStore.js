@@ -1,2 +1,85 @@
-// stateStore.js
-// Central shared state (UI, processing, worker status, matches).
+
+(function (global) {
+  'use strict';
+
+  const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
+
+  const defaultState = {
+    appMode: 'CORE',
+    worker: {
+      enabled: false,
+      status: 'idle', // idle|starting|ready|running|error
+      lastPingAt: null,
+      lastResultAt: null,
+      lastError: null,
+      analysisHz: 0,
+      droppedJobs: 0
+    },
+    frame: {
+      latest: null,
+      source: 'none'
+    },
+    calibration: {
+      isCalibrated: false,
+      coefficients: [],
+      points: [],
+      residualStatus: 'unknown'
+    },
+    display: {
+      mode: 'normal',
+      yAxisMode: 'auto',
+      overlaysEnabled: true
+    },
+    analysis: {
+      presetId: null,
+      topHits: [],
+      offsetNm: null,
+      qcFlags: []
+    },
+    subtraction: {
+      mode: 'raw',
+      hasDark: false,
+      hasReference: false,
+      hasFlat: false
+    }
+  };
+
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function createStore(seed) {
+    let state = Object.assign({}, deepClone(defaultState), seed || {});
+
+    function getState() {
+      return state;
+    }
+
+    function setState(patch, meta) {
+      state = Object.assign({}, state, patch || {});
+      if (bus) bus.emit('state:changed', { state: state, patch: patch || {}, meta: meta || null });
+      return state;
+    }
+
+    function update(path, value, meta) {
+      const parts = String(path || '').split('.').filter(Boolean);
+      if (!parts.length) return state;
+      const next = deepClone(state);
+      let target = next;
+      for (let i = 0; i < parts.length - 1; i += 1) {
+        if (typeof target[parts[i]] !== 'object' || target[parts[i]] === null) target[parts[i]] = {};
+        target = target[parts[i]];
+      }
+      target[parts[parts.length - 1]] = value;
+      state = next;
+      if (bus) bus.emit('state:changed', { state: state, patch: { [path]: value }, meta: meta || null });
+      return state;
+    }
+
+    return { getState, setState, update };
+  }
+
+  global.SpectraPro = global.SpectraPro || {};
+  global.SpectraPro.createStateStore = createStore;
+  global.SpectraPro.store = global.SpectraPro.store || createStore();
+})(window);

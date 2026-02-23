@@ -543,3 +543,9 @@ Protocol test cases for UI ↔ Worker messaging and error handling.
 3. Verify CORE behavior before enabling LAB/ASTRO analysis loops.
 
 The philosophy here is simple: **protect the instrument feel first, then add the smart stuff.**
+
+
+## Current scaffold progress
+
+- Phase 2 foundation patch #1 added: event bus, state store, mode tabs, worker ping/analyze shell, and LAB pipeline stubs.
+- Original SPECTRA files are still placeholders and must be imported before CORE integration work.
