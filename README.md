@@ -190,16 +190,16 @@ Tracks v5-inspired feature additions adopted into SPECTRA-PRO.
 
 ---
 
-## `frontend/`
+## `docs/Frontend/`
 
-### `frontend/index.html`
+### `docs/Frontend/index.html`
 Simple redirect/entry page that points to `pages/recording.html`.
 
 ---
 
-## `frontend/pages/`
+## `docs/Frontend/pages/`
 
-### `frontend/pages/recording.html`
+### `docs/Frontend/pages/recording.html`
 Main instrument page (eventually based on original SPECTRA recording page + SPECTRA-PRO panels/hooks).
 
 Responsibilities after patching:
@@ -210,302 +210,302 @@ Responsibilities after patching:
 
 ---
 
-## `frontend/styles/`
+## `docs/Frontend/styles/`
 
-### `frontend/styles/styles.css`
+### `docs/Frontend/styles/styles.css`
 Base SPECTRA styles (placeholder until original styles are copied in).
 
-### `frontend/styles/mod-panels.css`
+### `docs/Frontend/styles/mod-panels.css`
 Styles for PRO panels (mode tabs, top hits, presets, subtraction, quality panel, status widgets).
 
-### `frontend/styles/overlays.css`
+### `docs/Frontend/styles/overlays.css`
 Graph overlay styling (labels, confidence badges, band spans, legends).
 
-### `frontend/styles/mobile-tweaks.css`
+### `docs/Frontend/styles/mobile-tweaks.css`
 Mobile/layout adjustments for new PRO UI while minimizing changes to CORE layout.
 
 ---
 
-## `frontend/languages/`
+## `docs/Frontend/languages/`
 
-### `frontend/languages/en.json`
+### `docs/Frontend/languages/en.json`
 English UI strings for PRO controls and status text.
 
-### `frontend/languages/sv.json`
+### `docs/Frontend/languages/sv.json`
 Swedish UI strings for PRO controls and status text.
 
 ---
 
-## `frontend/assets/`
+## `docs/Frontend/assets/`
 
-### `frontend/assets/icons/`
+### `docs/Frontend/assets/icons/`
 Icons for mode buttons, status indicators, graph display modes, quality badges.
 
-### `frontend/assets/presets/`
+### `docs/Frontend/assets/presets/`
 Optional preset icons/illustrations.
 
-### `frontend/assets/examples/`
+### `docs/Frontend/assets/examples/`
 Example spectra/images for demos and manual testing.
 
 ---
 
-## `frontend/data/` (libraries, presets, manifests, profiles)
+## `docs/Frontend/data/` (libraries, presets, manifests, profiles)
 
-### `frontend/data/line_library_general_atomic.json`
+### `docs/Frontend/data/line_library_general_atomic.json`
 General atomic line library (LAB + ASTRO line matching foundation).
 
-### `frontend/data/molecular_bands_general_v2.json`
+### `docs/Frontend/data/molecular_bands_general_v2.json`
 Primary molecular band library (v2 schema).
 
-### `frontend/data/molecular_bands_v2_merged_from_legacy.json`
+### `docs/Frontend/data/molecular_bands_v2_merged_from_legacy.json`
 Merged molecular band data from legacy sources.
 
-### `frontend/data/molecular_species_catalog_v2.json`
+### `docs/Frontend/data/molecular_species_catalog_v2.json`
 Species metadata catalog (aliases, categories, tags, display names).
 
-### `frontend/data/molecular_detection_presets_v1.json`
+### `docs/Frontend/data/molecular_detection_presets_v1.json`
 Preset rules for molecular detection workflows.
 
-### `frontend/data/molecular_sources_v1.json`
+### `docs/Frontend/data/molecular_sources_v1.json`
 Metadata and provenance for molecular libraries.
 
-### `frontend/data/astro_presets.json`
+### `docs/Frontend/data/astro_presets.json`
 Frontend ASTRO presets (Sun/Star/Planet/DeepSky analysis defaults).
 
-### `frontend/data/lab_presets.json`
+### `docs/Frontend/data/lab_presets.json`
 Frontend LAB presets (Hg/Ne/Ar/H/Na etc.).
 
-### `frontend/data/library_manifest.json`
+### `docs/Frontend/data/library_manifest.json`
 Manifest of libraries to load, versions, checksums, and feature flags.
 
-### `frontend/data/instrument_response_profiles.json`
+### `docs/Frontend/data/instrument_response_profiles.json`
 Placeholder/local data slot for instrument response profile exports/imports.
 
 ---
 
-## `frontend/scripts/` (original SPECTRA placeholders)
+## `docs/Frontend/scripts/` (original SPECTRA placeholders)
 These will later be replaced by original SPECTRA files. PRO hooks are designed to sit on top of them.
 
-### `frontend/scripts/polynomialRegressionScript.js`
+### `docs/Frontend/scripts/polynomialRegressionScript.js`
 Polynomial fit helper for calibration.
 
-### `frontend/scripts/zipScript.js`
+### `docs/Frontend/scripts/zipScript.js`
 Zip/export support used by original export workflows (if needed by imported SPECTRA files).
 
-### `frontend/scripts/languageScript.js`
+### `docs/Frontend/scripts/languageScript.js`
 Language handling (`?lang=` + translation bindings).
 
-### `frontend/scripts/dataSavingScript.js`
+### `docs/Frontend/scripts/dataSavingScript.js`
 Export graph/image/data (later augmented with PRO metadata export).
 
-### `frontend/scripts/referenceGraphScript.js`
+### `docs/Frontend/scripts/referenceGraphScript.js`
 Reference curve handling and imports.
 
-### `frontend/scripts/imageLoadingScript.js`
+### `docs/Frontend/scripts/imageLoadingScript.js`
 Loading still images and comparison sources.
 
-### `frontend/scripts/setupScript.js`
+### `docs/Frontend/scripts/setupScript.js`
 General setup/init for original UI state.
 
-### `frontend/scripts/cameraScript.js`
+### `docs/Frontend/scripts/cameraScript.js`
 Camera access, stream start/stop, exposure hooks, recording capture.
 
-### `frontend/scripts/stripeScript.js`
+### `docs/Frontend/scripts/stripeScript.js`
 Stripe width/position controls and overlay synchronization.
 
-### `frontend/scripts/cameraSelection.js`
+### `docs/Frontend/scripts/cameraSelection.js`
 Camera selection and stripe preview logic.
 
-### `frontend/scripts/calibrationScript.js`
+### `docs/Frontend/scripts/calibrationScript.js`
 Calibration points, px↔nm conversion, polynomial fitting, divergence/residual visualization.
 
-### `frontend/scripts/graphScript.js`
+### `docs/Frontend/scripts/graphScript.js`
 Realtime graph renderer from stripe pixel data (core instrument heart).
 Patched later with frame export + overlay hooks.
 
 ---
 
-## `frontend/scripts/mod/` (SPECTRA-PRO modules on top of SPECTRA)
+## `docs/Frontend/scripts/mod/` (SPECTRA-PRO modules on top of SPECTRA)
 
 ### App shell / state / integration
 
-#### `frontend/scripts/mod/appMode.js`
+#### `docs/Frontend/scripts/mod/appMode.js`
 Global mode state (`CORE`, `LAB`, `ASTRO`) and mode-change events.
 
-#### `frontend/scripts/mod/stateStore.js`
+#### `docs/Frontend/scripts/mod/stateStore.js`
 Central PRO state store (worker status, settings, references, presets, results).
 
-#### `frontend/scripts/mod/uiPanels.js`
+#### `docs/Frontend/scripts/mod/uiPanels.js`
 Builds and wires PRO-side UI panels and widgets.
 
-#### `frontend/scripts/mod/eventBus.js`
+#### `docs/Frontend/scripts/mod/eventBus.js`
 Light pub/sub to reduce tight coupling between legacy scripts and PRO modules.
 
-#### `frontend/scripts/mod/spectrumFrameAdapter.js`
+#### `docs/Frontend/scripts/mod/spectrumFrameAdapter.js`
 Transforms hooked graph/camera data into a standard frame shape for processing/worker.
 
-#### `frontend/scripts/mod/analysisWorkerClient.js`
+#### `docs/Frontend/scripts/mod/analysisWorkerClient.js`
 Web Worker client, throttling, request IDs, stale result handling, timeouts.
 
-#### `frontend/scripts/mod/overlays.js`
+#### `docs/Frontend/scripts/mod/overlays.js`
 Draws overlay markers/labels/bands on top of the graph canvas.
 
-#### `frontend/scripts/mod/utils.js`
+#### `docs/Frontend/scripts/mod/utils.js`
 Shared helper functions (debounce, clamp, formatting, stats helpers).
 
 ### v5-inspired UI/behavior modules (new)
 
-#### `frontend/scripts/mod/displayModes.js`
+#### `docs/Frontend/scripts/mod/displayModes.js`
 Separates **display mode** (normal/difference/ratio/transmittance/absorbance) from processing mode.
 
-#### `frontend/scripts/mod/dataQualityPanel.js`
+#### `docs/Frontend/scripts/mod/dataQualityPanel.js`
 Data quality/status panel (saturation, SNR estimate, calibration health, refs present/missing, worker latency).
 
-#### `frontend/scripts/mod/yAxisController.js`
+#### `docs/Frontend/scripts/mod/yAxisController.js`
 Graph y-axis scaling state and integration hooks (Auto / Fixed 0–255 / Manual later).
 
-#### `frontend/scripts/mod/peakControls.js`
+#### `docs/Frontend/scripts/mod/peakControls.js`
 Separate controls for visual peaks vs worker analysis peaks (distance/threshold/smoothing).
 
-#### `frontend/scripts/mod/graphAppearance.js`
+#### `docs/Frontend/scripts/mod/graphAppearance.js`
 Graph fill/appearance controls (off/synthetic/real-sampled colors, opacity).
 
-#### `frontend/scripts/mod/cameraCapabilities.js`
+#### `docs/Frontend/scripts/mod/cameraCapabilities.js`
 Capability abstraction layer for exposure/gain/high-sensitivity-equivalent controls.
 
-#### `frontend/scripts/mod/calibrationIO.js`
+#### `docs/Frontend/scripts/mod/calibrationIO.js`
 Calibration point file parsing/serialization (txt/csv import/export).
 
-#### `frontend/scripts/mod/calibrationPointManager.js`
+#### `docs/Frontend/scripts/mod/calibrationPointManager.js`
 Multipoint calibration point list manager (sort, enable/disable, outlier flags, residual annotations).
 
-#### `frontend/scripts/mod/instrumentResponse.js`
+#### `docs/Frontend/scripts/mod/instrumentResponse.js`
 Instrument response correction pipeline hooks (white-light response profile creation/application).
 
-#### `frontend/scripts/mod/responseProfileStore.js`
+#### `docs/Frontend/scripts/mod/responseProfileStore.js`
 Stores response profiles (initially localStorage; can evolve to IndexedDB).
 
-#### `frontend/scripts/mod/instrumentProfile.js`
+#### `docs/Frontend/scripts/mod/instrumentProfile.js`
 Builds reproducible instrument profiles (camera + stripe + calibration + response settings).
 
-#### `frontend/scripts/mod/observationProfile.js`
+#### `docs/Frontend/scripts/mod/observationProfile.js`
 Builds reproducible observation profiles (mode, preset, subtraction state, notes, timestamps).
 
 ### Processing (LAB + ASTRO)
 
-#### `frontend/scripts/mod/processingPipeline.js`
+#### `docs/Frontend/scripts/mod/processingPipeline.js`
 Frontend preprocessing orchestration (normalize → dark/ref/flat → absorbance/transmittance → continuum → smoothing).
 
-#### `frontend/scripts/mod/subtraction.js`
+#### `docs/Frontend/scripts/mod/subtraction.js`
 Reference capture and subtraction math (dark/reference/flat, ratio, absorbance workflows).
 
-#### `frontend/scripts/mod/continuum.js`
+#### `docs/Frontend/scripts/mod/continuum.js`
 Continuum estimation and normalization for ASTRO absorption workflows.
 
-#### `frontend/scripts/mod/smoothing.js`
+#### `docs/Frontend/scripts/mod/smoothing.js`
 Smoothing filters (median, SG-lite style).
 
-#### `frontend/scripts/mod/normalization.js`
+#### `docs/Frontend/scripts/mod/normalization.js`
 Intensity normalization strategies (combined intensity, luminance, channel-specific, robust percentile).
 
-#### `frontend/scripts/mod/quickPeaks.js`
+#### `docs/Frontend/scripts/mod/quickPeaks.js`
 Fast local peak detection for UI responsiveness (not heavy matching).
 
-#### `frontend/scripts/mod/flatField.js`
+#### `docs/Frontend/scripts/mod/flatField.js`
 Flat-field/instrument correction helper stage (used with instrument response workflows).
 
 ### Calibration & presets
 
-#### `frontend/scripts/mod/calibrationBridge.js`
+#### `docs/Frontend/scripts/mod/calibrationBridge.js`
 Bridge to original `calibrationScript.js` state and methods.
 
-#### `frontend/scripts/mod/calibrationPresets.js`
+#### `docs/Frontend/scripts/mod/calibrationPresets.js`
 Calibration presets and anchor suggestions (Hg/Ne/Ar/Fraunhofer etc.).
 
-#### `frontend/scripts/mod/presets.js`
+#### `docs/Frontend/scripts/mod/presets.js`
 High-level LAB/ASTRO preset manager (UI + processing + worker settings).
 
 ### Library/filter/search
 
-#### `frontend/scripts/mod/libraryClient.js`
+#### `docs/Frontend/scripts/mod/libraryClient.js`
 Loads JSON libraries and builds client-side cache subsets.
 
-#### `frontend/scripts/mod/libraryFilters.js`
+#### `docs/Frontend/scripts/mod/libraryFilters.js`
 Transforms UI filters into worker-friendly filter objects.
 
-#### `frontend/scripts/mod/speciesSearch.js`
+#### `docs/Frontend/scripts/mod/speciesSearch.js`
 Species/molecule search/autocomplete + overlay linking.
 
 ### Session/export
 
-#### `frontend/scripts/mod/sessionCapture.js`
+#### `docs/Frontend/scripts/mod/sessionCapture.js`
 Captures session metadata snapshots (settings, calibration, hits, timestamps).
 
-#### `frontend/scripts/mod/exportAugment.js`
+#### `docs/Frontend/scripts/mod/exportAugment.js`
 Augments original export flow with PRO metadata (mode, presets, QC, matches, offset/RV, profiles).
 
 ---
 
-## `frontend/workers/` (local analysis engine)
+## `docs/Frontend/workers/` (local analysis engine)
 
-### `frontend/workers/analysis.worker.js`
+### `docs/Frontend/workers/analysis.worker.js`
 Worker entry point and message loop bootstrap.
 
-### `frontend/workers/workerRouter.js`
+### `docs/Frontend/workers/workerRouter.js`
 Routes worker messages (`INIT_LIBRARIES`, `ANALYZE_FRAME`, `SET_PRESET`, `QUERY_LIBRARY`, `PING`).
 
-### `frontend/workers/workerTypes.js`
+### `docs/Frontend/workers/workerTypes.js`
 Message type constants and payload/response shape definitions.
 
-### `frontend/workers/workerState.js`
+### `docs/Frontend/workers/workerState.js`
 Worker-internal state (loaded libs, indices, presets, caches, last analysis stats).
 
-### `frontend/workers/spectrumMath.js`
+### `docs/Frontend/workers/spectrumMath.js`
 Shared spectral math utilities (normalization, inversion, derivatives, safe log/ratio ops).
 
-### `frontend/workers/peakDetect.js`
+### `docs/Frontend/workers/peakDetect.js`
 Peak/valley detection (including plateau handling for saturation cases).
 
-### `frontend/workers/peakScoring.js`
+### `docs/Frontend/workers/peakScoring.js`
 Scores candidate peaks (prominence, width, context).
 
-### `frontend/workers/autoMode.js`
+### `docs/Frontend/workers/autoMode.js`
 Auto emission/absorption mode selection logic.
 
-### `frontend/workers/offsetEstimate.js`
+### `docs/Frontend/workers/offsetEstimate.js`
 Wavelength offset estimation from multiple matched lines.
 
-### `frontend/workers/dopplerEstimate.js`
+### `docs/Frontend/workers/dopplerEstimate.js`
 Preliminary radial velocity estimation with quality flags.
 
-### `frontend/workers/lineMatcher.js`
+### `docs/Frontend/workers/lineMatcher.js`
 Atomic line matching against wavelength libraries.
 
-### `frontend/workers/bandMatcher.js`
+### `docs/Frontend/workers/bandMatcher.js`
 Molecular band/bandhead matching (broader features than narrow lines).
 
-### `frontend/workers/qcRules.js`
+### `docs/Frontend/workers/qcRules.js`
 Domain-specific QC/gating rules to reduce false positives and over-labeling.
 
-### `frontend/workers/confidenceModel.js`
+### `docs/Frontend/workers/confidenceModel.js`
 Combines peak score + match score + QC + preset fit into final confidence metrics.
 
-### `frontend/workers/libraryLoader.js`
+### `docs/Frontend/workers/libraryLoader.js`
 Schema-aware loader for multiple library formats.
 
-### `frontend/workers/libraryIndex.js`
+### `docs/Frontend/workers/libraryIndex.js`
 Indexing layer (wavelength buckets, species lookup, tags/categories).
 
-### `frontend/workers/libraryQuery.js`
+### `docs/Frontend/workers/libraryQuery.js`
 Filter/query API over indexed libraries.
 
-### `frontend/workers/presetResolver.js`
+### `docs/Frontend/workers/presetResolver.js`
 Resolves presets into worker pipeline parameters and library filters.
 
-### `frontend/workers/downsample.js`
+### `docs/Frontend/workers/downsample.js`
 Downsampling helpers for faster analysis on large frames.
 
-### `frontend/workers/analysisPipeline.js`
+### `docs/Frontend/workers/analysisPipeline.js`
 Worker pipeline orchestration (preprocess → detect → match → offset → QC → response payload).
 
 ---
@@ -538,7 +538,7 @@ Protocol test cases for UI ↔ Worker messaging and error handling.
 ---
 
 ## Immediate next practical step
-1. Replace placeholder SPECTRA files in `frontend/scripts/`, `frontend/pages/recording.html`, and `frontend/styles/styles.css` with original SPECTRA sources.
+1. Replace placeholder SPECTRA files in `docs/Frontend/scripts/`, `docs/Frontend/pages/recording.html`, and `docs/Frontend/styles/styles.css` with original SPECTRA sources.
 2. Patch safe hooks (graph frame export, calibration bridge, overlay hook).
 3. Verify CORE behavior before enabling LAB/ASTRO analysis loops.
 

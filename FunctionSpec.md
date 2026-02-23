@@ -66,7 +66,7 @@ We build in layers:
 
 ## File status snapshot (initial)
 
-### Original SPECTRA placeholders (`frontend/scripts/*.js`)
+### Original SPECTRA placeholders (`docs/Frontend/scripts/*.js`)
 Status: **SCAFFOLD** (all)
 
 These files should be replaced with the original SPECTRA scripts before feature patching begins:
@@ -83,10 +83,10 @@ These files should be replaced with the original SPECTRA scripts before feature 
 - `polynomialRegressionScript.js`
 - `zipScript.js` (if used by original export flow)
 
-### PRO integration + UI/state modules (`frontend/scripts/mod/`)
+### PRO integration + UI/state modules (`docs/Frontend/scripts/mod/`)
 Status: **PARTIAL** (phase-2 foundation implemented for selected modules; others remain `SCAFFOLD`)
 
-### Worker modules (`frontend/workers/`)
+### Worker modules (`docs/Frontend/workers/`)
 Status: **PARTIAL** (worker protocol/router/foundation stubs implemented; analysis logic still mostly `SCAFFOLD`)
 
 ### Docs/tests
@@ -99,23 +99,23 @@ Status: **SCAFFOLD** / `README.md` now **PARTIAL** (architecture/spec-level docu
 The following modules/files were added to support capabilities missing in the original web app and inspired by v5 desktop behavior:
 
 ### Added files (all currently `SCAFFOLD`)
-- `frontend/scripts/mod/displayModes.js`
-- `frontend/scripts/mod/dataQualityPanel.js`
-- `frontend/scripts/mod/yAxisController.js`
-- `frontend/scripts/mod/peakControls.js`
-- `frontend/scripts/mod/graphAppearance.js`
-- `frontend/scripts/mod/cameraCapabilities.js`
-- `frontend/scripts/mod/calibrationIO.js`
-- `frontend/scripts/mod/calibrationPointManager.js`
-- `frontend/scripts/mod/instrumentResponse.js`
-- `frontend/scripts/mod/responseProfileStore.js`
-- `frontend/scripts/mod/instrumentProfile.js`
-- `frontend/scripts/mod/observationProfile.js`
-- `frontend/data/instrument_response_profiles.json`
+- `docs/Frontend/scripts/mod/displayModes.js`
+- `docs/Frontend/scripts/mod/dataQualityPanel.js`
+- `docs/Frontend/scripts/mod/yAxisController.js`
+- `docs/Frontend/scripts/mod/peakControls.js`
+- `docs/Frontend/scripts/mod/graphAppearance.js`
+- `docs/Frontend/scripts/mod/cameraCapabilities.js`
+- `docs/Frontend/scripts/mod/calibrationIO.js`
+- `docs/Frontend/scripts/mod/calibrationPointManager.js`
+- `docs/Frontend/scripts/mod/instrumentResponse.js`
+- `docs/Frontend/scripts/mod/responseProfileStore.js`
+- `docs/Frontend/scripts/mod/instrumentProfile.js`
+- `docs/Frontend/scripts/mod/observationProfile.js`
+- `docs/Frontend/data/instrument_response_profiles.json`
 - `docs/v5_gap_additions.md`
 
 ### Removed files (simplification / phase control)
-- `frontend/workers/templateMatcher.js` → **DEFERRED** (too advanced for current scaffold stage; can be reintroduced later)
+- `docs/Frontend/workers/templateMatcher.js` → **DEFERRED** (too advanced for current scaffold stage; can be reintroduced later)
 - `tests/test-preset-mapping.md` → removed for now (premature before presets are implemented)
 
 ---
@@ -128,9 +128,9 @@ This is the order we should follow when working on the codebase in future patch 
 **Goal:** get original SPECTRA UI running inside this repo.
 
 **Files (priority):**
-1. `frontend/pages/recording.html`
-2. `frontend/styles/styles.css`
-3. all `frontend/scripts/*.js` original scripts
+1. `docs/Frontend/pages/recording.html`
+2. `docs/Frontend/styles/styles.css`
+3. all `docs/Frontend/scripts/*.js` original scripts
 
 **Output:** CORE baseline works (camera → stripe → graph) with no PRO behavior required.
 
@@ -142,15 +142,15 @@ This is the order we should follow when working on the codebase in future patch 
 **Goal:** create integration points without changing instrument behavior.
 
 **Primary files:**
-- `frontend/scripts/mod/appMode.js`
-- `frontend/scripts/mod/stateStore.js`
-- `frontend/scripts/mod/eventBus.js`
-- `frontend/scripts/mod/spectrumFrameAdapter.js`
-- `frontend/scripts/mod/uiPanels.js`
-- `frontend/scripts/mod/overlays.js`
-- patches in `frontend/scripts/graphScript.js`
-- patches in `frontend/scripts/calibrationScript.js`
-- patches in `frontend/scripts/referenceGraphScript.js`
+- `docs/Frontend/scripts/mod/appMode.js`
+- `docs/Frontend/scripts/mod/stateStore.js`
+- `docs/Frontend/scripts/mod/eventBus.js`
+- `docs/Frontend/scripts/mod/spectrumFrameAdapter.js`
+- `docs/Frontend/scripts/mod/uiPanels.js`
+- `docs/Frontend/scripts/mod/overlays.js`
+- patches in `docs/Frontend/scripts/graphScript.js`
+- patches in `docs/Frontend/scripts/calibrationScript.js`
+- patches in `docs/Frontend/scripts/referenceGraphScript.js`
 
 **Must be true before phase ends:**
 - CORE still behaves correctly
@@ -167,14 +167,14 @@ This is the order we should follow when working on the codebase in future patch 
 **Goal:** add useful graph/instrument controls before LAB/ASTRO analysis.
 
 **Primary files:**
-- `frontend/scripts/mod/displayModes.js`
-- `frontend/scripts/mod/dataQualityPanel.js`
-- `frontend/scripts/mod/yAxisController.js`
-- `frontend/scripts/mod/peakControls.js`
-- `frontend/scripts/mod/graphAppearance.js`
-- `frontend/scripts/mod/cameraCapabilities.js`
-- `frontend/scripts/mod/calibrationIO.js`
-- `frontend/scripts/mod/calibrationPointManager.js`
+- `docs/Frontend/scripts/mod/displayModes.js`
+- `docs/Frontend/scripts/mod/dataQualityPanel.js`
+- `docs/Frontend/scripts/mod/yAxisController.js`
+- `docs/Frontend/scripts/mod/peakControls.js`
+- `docs/Frontend/scripts/mod/graphAppearance.js`
+- `docs/Frontend/scripts/mod/cameraCapabilities.js`
+- `docs/Frontend/scripts/mod/calibrationIO.js`
+- `docs/Frontend/scripts/mod/calibrationPointManager.js`
 
 **Features targeted:**
 - display mode separation (Normal / Difference / Ratio / etc.)
@@ -193,26 +193,26 @@ This is the order we should follow when working on the codebase in future patch 
 **Goal:** live identification in LAB mode without freezing UI.
 
 **Primary files:**
-- `frontend/scripts/mod/analysisWorkerClient.js`
-- `frontend/workers/analysis.worker.js`
-- `frontend/workers/workerRouter.js`
-- `frontend/workers/workerTypes.js`
-- `frontend/workers/workerState.js`
-- `frontend/workers/libraryLoader.js`
-- `frontend/workers/libraryIndex.js`
-- `frontend/workers/libraryQuery.js`
-- `frontend/workers/peakDetect.js`
-- `frontend/workers/peakScoring.js`
-- `frontend/workers/lineMatcher.js`
-- `frontend/workers/qcRules.js`
-- `frontend/workers/confidenceModel.js`
-- `frontend/workers/analysisPipeline.js`
-- `frontend/scripts/mod/libraryClient.js`
-- `frontend/scripts/mod/libraryFilters.js`
-- `frontend/scripts/mod/processingPipeline.js`
-- `frontend/scripts/mod/subtraction.js`
-- `frontend/scripts/mod/quickPeaks.js`
-- `frontend/scripts/mod/presets.js`
+- `docs/Frontend/scripts/mod/analysisWorkerClient.js`
+- `docs/Frontend/workers/analysis.worker.js`
+- `docs/Frontend/workers/workerRouter.js`
+- `docs/Frontend/workers/workerTypes.js`
+- `docs/Frontend/workers/workerState.js`
+- `docs/Frontend/workers/libraryLoader.js`
+- `docs/Frontend/workers/libraryIndex.js`
+- `docs/Frontend/workers/libraryQuery.js`
+- `docs/Frontend/workers/peakDetect.js`
+- `docs/Frontend/workers/peakScoring.js`
+- `docs/Frontend/workers/lineMatcher.js`
+- `docs/Frontend/workers/qcRules.js`
+- `docs/Frontend/workers/confidenceModel.js`
+- `docs/Frontend/workers/analysisPipeline.js`
+- `docs/Frontend/scripts/mod/libraryClient.js`
+- `docs/Frontend/scripts/mod/libraryFilters.js`
+- `docs/Frontend/scripts/mod/processingPipeline.js`
+- `docs/Frontend/scripts/mod/subtraction.js`
+- `docs/Frontend/scripts/mod/quickPeaks.js`
+- `docs/Frontend/scripts/mod/presets.js`
 
 **Must be true before phase ends:**
 - worker responds to `PING`
@@ -230,16 +230,16 @@ This is the order we should follow when working on the codebase in future patch 
 **Goal:** make ASTRO mode meaningfully different from LAB and useful for solar/stellar data.
 
 **Primary files:**
-- `frontend/scripts/mod/continuum.js`
-- `frontend/scripts/mod/normalization.js`
-- `frontend/scripts/mod/smoothing.js`
-- `frontend/workers/autoMode.js`
-- `frontend/workers/offsetEstimate.js`
-- `frontend/workers/dopplerEstimate.js`
-- `frontend/workers/bandMatcher.js`
-- `frontend/workers/presetResolver.js`
-- `frontend/scripts/mod/calibrationPresets.js`
-- `frontend/scripts/mod/speciesSearch.js`
+- `docs/Frontend/scripts/mod/continuum.js`
+- `docs/Frontend/scripts/mod/normalization.js`
+- `docs/Frontend/scripts/mod/smoothing.js`
+- `docs/Frontend/workers/autoMode.js`
+- `docs/Frontend/workers/offsetEstimate.js`
+- `docs/Frontend/workers/dopplerEstimate.js`
+- `docs/Frontend/workers/bandMatcher.js`
+- `docs/Frontend/workers/presetResolver.js`
+- `docs/Frontend/scripts/mod/calibrationPresets.js`
+- `docs/Frontend/scripts/mod/speciesSearch.js`
 
 **Must be true before phase ends:**
 - continuum normalization available in ASTRO
@@ -257,14 +257,14 @@ This is the order we should follow when working on the codebase in future patch 
 **Goal:** improve measurement quality and repeatability.
 
 **Primary files:**
-- `frontend/scripts/mod/instrumentResponse.js`
-- `frontend/scripts/mod/responseProfileStore.js`
-- `frontend/data/instrument_response_profiles.json`
-- `frontend/scripts/mod/instrumentProfile.js`
-- `frontend/scripts/mod/observationProfile.js`
-- `frontend/scripts/mod/sessionCapture.js`
-- `frontend/scripts/mod/exportAugment.js`
-- `frontend/scripts/mod/flatField.js`
+- `docs/Frontend/scripts/mod/instrumentResponse.js`
+- `docs/Frontend/scripts/mod/responseProfileStore.js`
+- `docs/Frontend/data/instrument_response_profiles.json`
+- `docs/Frontend/scripts/mod/instrumentProfile.js`
+- `docs/Frontend/scripts/mod/observationProfile.js`
+- `docs/Frontend/scripts/mod/sessionCapture.js`
+- `docs/Frontend/scripts/mod/exportAugment.js`
+- `docs/Frontend/scripts/mod/flatField.js`
 
 **Must be true before phase ends:**
 - user can create/apply response correction profile (basic workflow)
@@ -339,29 +339,29 @@ That means this function spec intentionally optimizes for **stable patch order**
 
 ## Session log 2026-02-23 (Phase 2 foundation patch #1)
 - **Touched files**
-  - `frontend/pages/recording.html`
-  - `frontend/scripts/mod/eventBus.js`
-  - `frontend/scripts/mod/stateStore.js`
-  - `frontend/scripts/mod/appMode.js`
-  - `frontend/scripts/mod/uiPanels.js`
-  - `frontend/scripts/mod/spectrumFrameAdapter.js`
-  - `frontend/scripts/mod/quickPeaks.js`
-  - `frontend/scripts/mod/subtraction.js`
-  - `frontend/scripts/mod/processingPipeline.js`
-  - `frontend/scripts/mod/analysisWorkerClient.js`
-  - `frontend/workers/analysis.worker.js`
-  - `frontend/workers/workerTypes.js`
-  - `frontend/workers/workerState.js`
-  - `frontend/workers/workerRouter.js`
-  - `frontend/workers/libraryLoader.js`
-  - `frontend/workers/libraryIndex.js`
-  - `frontend/workers/libraryQuery.js`
-  - `frontend/workers/peakDetect.js`
-  - `frontend/workers/peakScoring.js`
-  - `frontend/workers/lineMatcher.js`
-  - `frontend/workers/qcRules.js`
-  - `frontend/workers/confidenceModel.js`
-  - `frontend/workers/analysisPipeline.js`
+  - `docs/Frontend/pages/recording.html`
+  - `docs/Frontend/scripts/mod/eventBus.js`
+  - `docs/Frontend/scripts/mod/stateStore.js`
+  - `docs/Frontend/scripts/mod/appMode.js`
+  - `docs/Frontend/scripts/mod/uiPanels.js`
+  - `docs/Frontend/scripts/mod/spectrumFrameAdapter.js`
+  - `docs/Frontend/scripts/mod/quickPeaks.js`
+  - `docs/Frontend/scripts/mod/subtraction.js`
+  - `docs/Frontend/scripts/mod/processingPipeline.js`
+  - `docs/Frontend/scripts/mod/analysisWorkerClient.js`
+  - `docs/Frontend/workers/analysis.worker.js`
+  - `docs/Frontend/workers/workerTypes.js`
+  - `docs/Frontend/workers/workerState.js`
+  - `docs/Frontend/workers/workerRouter.js`
+  - `docs/Frontend/workers/libraryLoader.js`
+  - `docs/Frontend/workers/libraryIndex.js`
+  - `docs/Frontend/workers/libraryQuery.js`
+  - `docs/Frontend/workers/peakDetect.js`
+  - `docs/Frontend/workers/peakScoring.js`
+  - `docs/Frontend/workers/lineMatcher.js`
+  - `docs/Frontend/workers/qcRules.js`
+  - `docs/Frontend/workers/confidenceModel.js`
+  - `docs/Frontend/workers/analysisPipeline.js`
 
 - **What changed**
   - Added a working event bus + state store + mode switching foundation (`CORE/LAB/ASTRO`).
@@ -381,3 +381,17 @@ That means this function spec intentionally optimizes for **stable patch order**
   - Worker library loading/matching is stubbed (no real atomic library parsing yet).
   - No overlay rendering into the actual SPECTRA graph.
   - `workerTypes` are duplicated in demo page bootstrap and should later come from a shared bridge/module.
+
+
+## Session log
+
+### Session update — GitHub Pages path migration (`/docs/Frontend/`)
+
+- Deploy target normalized to **GitHub Pages `/docs`**.
+- Web app tree moved to **`docs/Frontend/`** (capital F) to match current repo layout.
+- Added **`docs/index.html`** redirect to `Frontend/index.html` so Pages root resolves correctly.
+- Updated documentation paths in `README.md` and `FunctionSpec.md` from `frontend/...` to `docs/Frontend/...`.
+- Sanity check: relative paths inside `docs/Frontend/pages/recording.html` remain valid (`../scripts`, `../workers`).
+
+**Phase 0 readiness:** ✅ Ready to upload and proceed (original SPECTRA file integration can start next).
+
