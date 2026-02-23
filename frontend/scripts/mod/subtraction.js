@@ -1,1 +1,2 @@
-// Placeholder: subtraction.js
+// subtraction.js
+// Dark/reference capture and subtraction/ratio/absorbance modes.

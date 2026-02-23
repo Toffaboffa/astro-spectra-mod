@@ -1,1 +1,2 @@
-// Placeholder: autoMode.js
+// autoMode.js
+// Emission/absorption auto-choice heuristics.

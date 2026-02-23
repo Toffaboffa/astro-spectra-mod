@@ -1,1 +1,1 @@
-// Placeholder: polynomialRegressionScript.js (replace with SPECTRA original)
+// Placeholder: replace with original SPECTRA polynomialRegressionScript.js

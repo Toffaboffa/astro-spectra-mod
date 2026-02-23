@@ -1,1 +1,1 @@
-// Placeholder: stripeScript.js (replace with SPECTRA original)
+// Placeholder: replace with original SPECTRA stripeScript.js

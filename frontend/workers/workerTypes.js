@@ -1,1 +1,2 @@
-// Placeholder: workerTypes.js
+// workerTypes.js
+// Message schemas/constants shared with UI.

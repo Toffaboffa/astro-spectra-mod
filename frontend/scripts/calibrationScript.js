@@ -1,1 +1,1 @@
-// Placeholder: calibrationScript.js (replace with SPECTRA original)
+// Placeholder: replace with original SPECTRA calibrationScript.js

@@ -1,1 +1,2 @@
-// Placeholder: continuum.js
+// continuum.js
+// Continuum estimation + normalization for solar/stellar spectra.

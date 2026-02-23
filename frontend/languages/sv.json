@@ -1,5 +1,8 @@
 {
   "mode_core": "KÄRNA",
   "mode_lab": "LABB",
-  "mode_astro": "ASTRO"
+  "mode_astro": "ASTRO",
+  "panel_top_hits": "Toppträffar",
+  "panel_subtraction": "Subtraktion",
+  "panel_presets": "Förinställningar"
 }

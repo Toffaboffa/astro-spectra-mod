@@ -1,1 +1,2 @@
-// Placeholder: analysis.worker.js
+// analysis.worker.js
+// Main worker entrypoint.

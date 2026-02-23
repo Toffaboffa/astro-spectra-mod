@@ -1,1 +1,2 @@
-// Placeholder: libraryClient.js
+// libraryClient.js
+// Load local JSON libraries + expose filtered subsets to UI/worker.

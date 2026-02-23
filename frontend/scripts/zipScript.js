@@ -1,1 +1,1 @@
-// Placeholder: zipScript.js (replace with SPECTRA original)
+// Placeholder: replace with original SPECTRA zipScript.js

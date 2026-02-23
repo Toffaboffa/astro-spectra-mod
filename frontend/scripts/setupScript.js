@@ -1,1 +1,1 @@
-// Placeholder: setupScript.js (replace with SPECTRA original)
+// Placeholder: replace with original SPECTRA setupScript.js

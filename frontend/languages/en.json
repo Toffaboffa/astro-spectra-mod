@@ -1,5 +1,8 @@
 {
   "mode_core": "CORE",
   "mode_lab": "LAB",
-  "mode_astro": "ASTRO"
+  "mode_astro": "ASTRO",
+  "panel_top_hits": "Top hits",
+  "panel_subtraction": "Subtraction",
+  "panel_presets": "Presets"
 }

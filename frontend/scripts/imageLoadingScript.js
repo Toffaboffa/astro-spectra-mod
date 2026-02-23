@@ -1,1 +1,1 @@
-// Placeholder: imageLoadingScript.js (replace with SPECTRA original)
+// Placeholder: replace with original SPECTRA imageLoadingScript.js

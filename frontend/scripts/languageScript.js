@@ -1,1 +1,1 @@
-// Placeholder: languageScript.js (replace with SPECTRA original)
+// Placeholder: replace with original SPECTRA languageScript.js
