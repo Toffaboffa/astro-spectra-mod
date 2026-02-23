@@ -1,590 +1,545 @@
-# Astro Spectra Mod (Frontend + Web Worker, Engine7-ready)
+# SPECTRA-PRO (working repo name: `astro-spectra-mod`)
 
-Detta repo är en **frontend-only scaffold** för en moddad version av SPECTRA (vanilla JS + canvas), med:
-- **CORE** = original-SPECTRA-beteende (kamera → stripe → realtidsgraf)
-- **LAB** = live elementidentifiering + subtraction/absorbans
-- **ASTRO** = sol/stjärna/planet-lägen + continuum-normalisering + Doppler (prelim) + molekylband
+SPECTRA-PRO is a **frontend-first spectrum analysis workstation** built on top of the SPECTRA recording workflow (camera → stripe → live spectrum graph), but expanded into a more capable tool for **teaching labs** and **astronomy**.
 
-Ingen Python/backend i denna struktur. “Tung analys” körs i en **Web Worker** så UI-loopen förblir snabb.
+It keeps the thing that makes SPECTRA great — the direct *instrument feel* in the browser — while adding a layered analysis system that runs in a **Web Worker** so the UI stays responsive.
 
----
+## What SPECTRA-PRO is supposed to do
 
-## Vad jag utgår från i denna struktur
+At its core, SPECTRA-PRO is still a real-time spectrometer interface:
+- start a camera (or load an image)
+- choose a horizontal stripe in the image
+- read pixel data from that stripe
+- render a live spectrum graph in canvas
 
-### 1) SPECTRA (originalets arkitektur)
-Originalet är en klassisk instrumentpanel i vanilla JS:
-- `cameraScript.js` startar kamera och triggar `plotRGBLineFromCamera()`
-- `graphScript.js` klipper horisontell stripe från video/bild, läser `getImageData`, ritar realtidsgraf i canvas
-- `stripeScript.js` styr stripe-bredd/y-position
-- `calibrationScript.js` gör px→nm via polynomfit
-- `referenceGraphScript.js` hanterar referenskurvor
-- `dataSavingScript.js` exporterar PNG/XLSX
+On top of that, SPECTRA-PRO adds three working modes:
+- **CORE** — original SPECTRA-like behavior and controls
+- **LAB** — line identification, subtraction, absorbance/transmittance workflows for classroom/lab use
+- **ASTRO** — solar/stellar/planetary workflows with continuum normalization, absorption handling, molecular bands, and preliminary Doppler/offset tools
 
-Det viktiga: **grafen genereras direkt från pixelrad** (client-side), vilket är perfekt att bevara.
-
-### 2) Uppdaterad engine + bibliotek (engine7 + multi-library)
-Du har nu uppgraderade bibliotek (atom + molekyl + presets + metadata/manifest).  
-Det påverkar strukturen här genom att vi separerar:
-- biblioteksladdning
-- schema-normalisering
-- indexering/filter
-- atommatchning vs bandmatchning
-- preset-resolving (lab/astro)
+This repository is currently a **scaffold** (many files are placeholders) designed so we can patch in original SPECTRA files first, then add mod features step-by-step without breaking CORE.
 
 ---
 
-## Designprinciper
+## Design goals
 
-1. **CORE ska kunna hållas identisk med SPECTRA**
-   - modulen ska lägga till hooks, inte “äga om” originalet direkt.
+### 1) Preserve CORE behavior
+The original SPECTRA interaction model should remain usable even if all PRO features are disabled.
 
-2. **Två hastigheter**
-   - UI-loop: 30–60 fps (ritning i `graphScript.js`)
-   - Analys-tick i worker: 2–5 Hz (peak detect + match + QC)
+### 2) Two-speed architecture
+- **UI render loop**: fast (30–60 fps target)
+- **Worker analysis loop**: slower (2–5 Hz target)
 
-3. **Web Worker som lokal analysmotor**
-   - Ingen backend
-   - Ingen Pyodide/Python i browsern
-   - Lättare deployment (GitHub Pages etc.)
+This avoids lag while still enabling heavy matching and quality checks.
 
-4. **Schema-aware bibliotek**
-   - engine7-biblioteken har olika format (dict/list/schema-v2)
-   - worker loader normaliserar till intern standardmodell
+### 3) Frontend-only deployment
+No backend is required. Heavy analysis is moved into a Web Worker, which keeps deployment simple (GitHub Pages / static hosting).
 
----
-
-## Rekommenderad utvecklingsordning (kort)
-
-### Steg A — Integrera original-SPECTRA i scaffold
-Byt ut placeholders i `frontend/scripts/*.js`, `frontend/pages/recording.html`, `frontend/styles/styles.css` med originalfilerna.
-
-### Steg B — Lägg in säkra hooks (utan att sabba CORE)
-Patcha:
-- `graphScript.js` → exportera senaste frame + overlay-hook
-- `calibrationScript.js` → exportera kalibreringsstate
-- `referenceGraphScript.js` → stöd för “subtraction reference”
-- `recording.html` → CORE/LAB/ASTRO-knappar + panelcontainers
-
-### Steg C — Worker-analys för LAB (real-time line ID)
-- peaks + lineMatcher + qcRules + overlays
-- atom-bibliotek först
-
-### Steg D — Subtraction / absorbans / continuum
-- dark/ref/flat
-- continuum-normalisering
-- bättre peak-robusthet
-
-### Steg E — ASTRO
-- presets (Sun/Star/Planet/DeepSky)
-- Doppler/RV prelim
-- molekylband och bandheads
+### 4) Schema-aware libraries
+The app is built to ingest multiple line/band library formats (engine7-style atom/molecular/preset data), normalize them, and index them for fast querying.
 
 ---
 
-# Filstruktur (med ansvar per fil)
+## Core feature model (what the app will support)
 
-## Rotnivå
+## A. CORE instrument workflow (SPECTRA-compatible foundation)
+- Live camera or loaded image source
+- Stripe width and stripe position controls
+- Stripe preview overlay in camera view
+- Real-time graph rendering from stripe pixel data (RGB + combined intensity)
+- Zoom / pan / reset / back / forward in the graph
+- Peak visualization (basic)
+- Reference curves / comparison curves
+- Calibration px ↔ nm (polynomial fit)
+- Residual / divergence view for calibration quality
+- Export graph image, source image, and numeric data
+
+## B. PRO modes
+### CORE mode
+Safe baseline mode. Behaves like original SPECTRA as much as possible.
+
+### LAB mode
+Adds live analysis for teaching/lab experiments:
+- dark/reference/flat capture
+- difference/ratio/transmittance/absorbance workflows
+- atomic line matching
+- top hits panel + overlays + confidence/QC
+- lab presets (Hg/Ne/Ar/H/Na etc.)
+
+### ASTRO mode
+Adds astronomy-oriented workflows:
+- continuum normalization
+- absorption/emission/auto handling
+- solar/Fraunhofer presets
+- molecular band matching (staged rollout)
+- preliminary wavelength offset / Doppler estimate with quality flags
+
+---
+
+## v5-inspired additions explicitly included in SPECTRA-PRO
+
+These items were identified as valuable capabilities in the desktop v5 software and are now part of this mod specification.
+
+1. **Explicit display modes** (separate from processing):
+   - Normal
+   - Difference
+   - Ratio
+   - (plus PRO modes like Transmittance / Absorbance)
+
+2. **Saturation indicator**
+   - Detect channel clipping (R/G/B)
+   - Warn when results are unreliable due to saturation
+
+3. **Y-axis scaling modes**
+   - Auto
+   - Fixed 0–255
+   - Manual (planned)
+
+4. **Peak controls (visual vs analysis)**
+   - Separate settings for UI peaks and worker analysis peaks
+   - Distance / threshold / smoothing parameters
+
+5. **Graph fill modes**
+   - Off / synthetic spectral colors / real sampled colors
+   - Opacity control
+
+6. **Camera capability abstraction**
+   - Exposure / gain / low-light boost equivalent (where browser API allows)
+   - Graceful unsupported-state handling across devices
+
+7. **Calibration import/export + multipoint management**
+   - txt/csv calibration point import/export
+   - support for many points
+   - outlier/disable-point workflow and better residual visibility
+
+8. **Instrument response correction (camera/spectrometer response)**
+   - create/apply response profile
+   - white-light/flat-like correction workflow
+   - profile storage and toggle
+
+9. **Data Quality panel**
+   - saturation, rough SNR, calibration health, reference presence, worker latency/status
+
+10. **Reproducibility profiles**
+   - separate **Instrument Profile** and **Observation Profile** for repeatable measurements/export
+
+---
+
+## Runtime architecture (how it works in practice)
+
+### Fast path (UI loop)
+The graph is rendered directly from pixel data extracted from a selected stripe in the camera/image source.
+This is the “instrument feel” and must stay fast.
+
+### Slow path (Worker analysis)
+A throttled worker loop receives the latest spectrum frame and performs:
+- preprocessing
+- peak/valley detection
+- line/band matching
+- offset estimation
+- QC/confidence scoring
+- result packaging for overlays and top-hits UI
+
+The worker must never block the render loop.
+
+---
+
+## Repository structure (mapped file-by-file)
+
+Below is the current scaffold structure and the intended responsibility of each file.
+Some files are placeholders and will be implemented incrementally.
+
+## Root
 
 ### `.gitignore`
-Ignorerar editorfiler, build-artifacts m.m.
+Ignore editor/temp/build files.
 
 ### `LICENSE`
-Projektlicens (läggs till senare).
+Project license placeholder.
 
 ### `README.md`
-Detta dokument: arkitektur, roadmap och ansvar för varje fil.
+This document (project overview + architecture + file map).
+
+### `FunctionSpec.md`
+Build plan and implementation order for all modules (MVP phases, status tracking, patch strategy).
 
 ---
 
 ## `docs/`
 
 ### `docs/roadmap.md`
-Detaljerad genomförandeplan (milstolpar, testmål, risker).
+High-level roadmap notes (milestones and longer-term goals).
 
 ### `docs/worker_protocol.md`
-Kontrakt mellan UI och Worker:
-- request/response-message-typer
-- payloadfält (nm, I, mode, settings, filters)
-- felkoder/status
+UI ↔ Worker message contract (types, payloads, errors, versioning).
 
 ### `docs/library_format.md`
-Dokumenterar intern normaliserad biblioteksmodell (atomlinjer, band, species metadata).
+Internal normalized schema for atomic lines, molecular bands, metadata, tags.
 
 ### `docs/calibration_presets.md`
-Preset-idéer och referenslinjer för:
-- Hg/Ne/Ar
-- Solar/Fraunhofer
-- H-alpha rig
-- labb-kalibrering
+Calibration presets and anchor ideas (Hg/Ne/Ar/Fraunhofer/H-alpha rigs).
 
 ### `docs/migration_from_spectra.md`
-Checklist för att kopiera originalfiler från SPECTRA och patcha dem i rätt ordning.
+Checklist for replacing placeholders with original SPECTRA files and patching safely.
 
 ### `docs/engine7_mapping_notes.md`
-Mappning från engine7-koncept → worker-moduler:
-- auto-mode
-- offset
-- QC/gating
-- plateau handling
-- multi-library loader
+Notes mapping engine7 concepts to worker modules and UI behavior.
+
+### `docs/v5_gap_additions.md`
+Tracks v5-inspired feature additions adopted into SPECTRA-PRO.
 
 ---
 
 ## `frontend/`
 
 ### `frontend/index.html`
-Enkel redirect till `pages/recording.html`.
+Simple redirect/entry page that points to `pages/recording.html`.
 
 ---
 
 ## `frontend/pages/`
 
 ### `frontend/pages/recording.html`
-**Navet** (ersätts senare med original-SPECTRA `recording.html`, sedan patchas).
-Ansvar efter patch:
-- original UI (video/canvas/sliders/buttons)
-- nya mode-knappar: CORE / LAB / ASTRO
-- panelcontainers för mod-funktioner
-- script-ordning (viktig för gamla globala scripts)
+Main instrument page (eventually based on original SPECTRA recording page + SPECTRA-PRO panels/hooks).
+
+Responsibilities after patching:
+- original camera + graph UI
+- CORE / LAB / ASTRO mode controls
+- mod panel containers
+- script loading order for legacy global scripts and mod scripts
 
 ---
 
 ## `frontend/styles/`
 
 ### `frontend/styles/styles.css`
-Original SPECTRA-styles (placeholder nu).
+Base SPECTRA styles (placeholder until original styles are copied in).
 
 ### `frontend/styles/mod-panels.css`
-Stilar för nya sidopaneler:
-- mode-tabs
-- subtraction-panel
-- top-hits-panel
-- preset-panel
-- worker-status-indikator
+Styles for PRO panels (mode tabs, top hits, presets, subtraction, quality panel, status widgets).
 
 ### `frontend/styles/overlays.css`
-Stilar/klassnamn för overlay-relaterad UI (legend, tag-badges, confidence färger).
+Graph overlay styling (labels, confidence badges, band spans, legends).
 
 ### `frontend/styles/mobile-tweaks.css`
-Mobilanpassningar för de nya panelerna utan att röra originalets layout för hårt.
+Mobile/layout adjustments for new PRO UI while minimizing changes to CORE layout.
 
 ---
 
 ## `frontend/languages/`
 
 ### `frontend/languages/en.json`
-Engelska UI-strängar för mod-paneler och statusmeddelanden.
+English UI strings for PRO controls and status text.
 
 ### `frontend/languages/sv.json`
-Svenska UI-strängar för mod-paneler och statusmeddelanden.
+Swedish UI strings for PRO controls and status text.
 
 ---
 
 ## `frontend/assets/`
 
 ### `frontend/assets/icons/`
-Ikoner för mode-knappar, status, overlays (placeholder via `.gitkeep`).
+Icons for mode buttons, status indicators, graph display modes, quality badges.
 
 ### `frontend/assets/presets/`
-Valfria preset-ikoner/bilder (placeholder).
+Optional preset icons/illustrations.
 
 ### `frontend/assets/examples/`
-Exempelbilder/spektrum för demo/manualtest (placeholder).
+Example spectra/images for demos and manual testing.
 
 ---
 
-## `frontend/data/` (engine7-aware bibliotek)
+## `frontend/data/` (libraries, presets, manifests, profiles)
 
 ### `frontend/data/line_library_general_atomic.json`
-Atomärt linjebibliotek (stort allmänt bibliotek).  
-Används primärt i LAB och ASTRO line matching.
+General atomic line library (LAB + ASTRO line matching foundation).
 
 ### `frontend/data/molecular_bands_general_v2.json`
-Generellt molekylbandsbibliotek (v2 schema).
+Primary molecular band library (v2 schema).
 
 ### `frontend/data/molecular_bands_v2_merged_from_legacy.json`
-Sammanfogat molekylbandsbibliotek från äldre källor (v2-liknande schema).
+Merged molecular band data from legacy sources.
 
 ### `frontend/data/molecular_species_catalog_v2.json`
-Art-/molekylkatalog (metadata, alias, kategorier, taggar).
+Species metadata catalog (aliases, categories, tags, display names).
 
 ### `frontend/data/molecular_detection_presets_v1.json`
-Presetregler för molekyldetektion (krav på flera band etc.).
+Preset rules for molecular detection workflows.
 
 ### `frontend/data/molecular_sources_v1.json`
-Källmetadata/proveniens/caveats för molekylbiblioteken.
+Metadata and provenance for molecular libraries.
 
 ### `frontend/data/astro_presets.json`
-Frontend-presets för ASTRO-lägen (Sun/Star/Planet/DeepSky):
-- filter
-- smoothing
-- continuum-inställningar
-- analysintervall
+Frontend ASTRO presets (Sun/Star/Planet/DeepSky analysis defaults).
 
 ### `frontend/data/lab_presets.json`
-Frontend-presets för LAB-lägen (Hg/Ne/Ar/H/Na etc.).
+Frontend LAB presets (Hg/Ne/Ar/H/Na etc.).
 
 ### `frontend/data/library_manifest.json`
-Samlad manifestfil för vilka bibliotek som ska laddas, versioner och checksummor (frontend-lokalt).
+Manifest of libraries to load, versions, checksums, and feature flags.
+
+### `frontend/data/instrument_response_profiles.json`
+Placeholder/local data slot for instrument response profile exports/imports.
 
 ---
 
-## `frontend/scripts/` (SPECTRA original — placeholders)
-
-> Dessa ska ersättas med originalfiler från SPECTRA. Modden bygger ovanpå dem.
+## `frontend/scripts/` (original SPECTRA placeholders)
+These will later be replaced by original SPECTRA files. PRO hooks are designed to sit on top of them.
 
 ### `frontend/scripts/polynomialRegressionScript.js`
-Polyfit-matte för px→nm-kalibrering.
+Polynomial fit helper for calibration.
 
 ### `frontend/scripts/zipScript.js`
-Tredjeparts zip-lib (om originalet använder zip-export).
+Zip/export support used by original export workflows (if needed by imported SPECTRA files).
 
 ### `frontend/scripts/languageScript.js`
-i18n-laddning via `?lang=` och `data-translate` attribut.
+Language handling (`?lang=` + translation bindings).
 
 ### `frontend/scripts/dataSavingScript.js`
-Export av graf/kamerabild/XLSX.  
-Senare kan modden hooka in metadata-export.
+Export graph/image/data (later augmented with PRO metadata export).
 
 ### `frontend/scripts/referenceGraphScript.js`
-Referenskurvor och import från Excel.  
-Patchas för att även kunna märka referens som subtraction/flat/reference.
+Reference curve handling and imports.
 
 ### `frontend/scripts/imageLoadingScript.js`
-Ladda bild(er), jämförelsekurvor, stripe-data från stillbilder.
+Loading still images and comparison sources.
 
 ### `frontend/scripts/setupScript.js`
-Diverse init/UI-state för originalet.
+General setup/init for original UI state.
 
 ### `frontend/scripts/cameraScript.js`
-Kameraåtkomst, stream-start, exponering, stillbildssekvens (“recording”).
+Camera access, stream start/stop, exposure hooks, recording capture.
 
 ### `frontend/scripts/stripeScript.js`
-Stripe-bredd / stripe-position / overlaylinje i kamerafönster.
+Stripe width/position controls and overlay synchronization.
 
 ### `frontend/scripts/cameraSelection.js`
-Stripe-preview-canvas och kontinuerlig preview.
+Camera selection and stripe preview logic.
 
 ### `frontend/scripts/calibrationScript.js`
-Kalibrering, polynomfit, px↔nm, residual/divergence-plot.  
-Patchas för att exponera kalibreringsstate till modden.
+Calibration points, px↔nm conversion, polynomial fitting, divergence/residual visualization.
 
 ### `frontend/scripts/graphScript.js`
-**Hjärtat**: realtime spectrum från stripe-pixeldata + ritning i `graphCanvas`.  
-Patchas för:
-- export av senaste frame
-- overlay-hook
-- ev. pipeline-hook (LAB/ASTRO)
+Realtime graph renderer from stripe pixel data (core instrument heart).
+Patched later with frame export + overlay hooks.
 
 ---
 
-## `frontend/scripts/mod/` (nya moduler ovanpå SPECTRA)
+## `frontend/scripts/mod/` (SPECTRA-PRO modules on top of SPECTRA)
 
-### App-shell / state / integration
+### App shell / state / integration
 
 #### `frontend/scripts/mod/appMode.js`
-Styr globalt mode:
-- `CORE`, `LAB`, `ASTRO`
-- emits mode change events
-- default = CORE
+Global mode state (`CORE`, `LAB`, `ASTRO`) and mode-change events.
 
 #### `frontend/scripts/mod/stateStore.js`
-Central state för moddelen:
-- worker-status
-- matches/top-hits
-- processing settings
-- dark/ref/flat buffers
-- active presets
-- analysis tick timing
+Central PRO state store (worker status, settings, references, presets, results).
 
 #### `frontend/scripts/mod/uiPanels.js`
-Bygger och kopplar UI för mod-paneler:
-- mode-tabbar
-- subtraction-kontroller
-- presets
-- top hits
-- confidence/rv/status
+Builds and wires PRO-side UI panels and widgets.
 
 #### `frontend/scripts/mod/eventBus.js`
-Lätt pub/sub för att undvika att allt binds direkt mot globala variabler.
+Light pub/sub to reduce tight coupling between legacy scripts and PRO modules.
 
 #### `frontend/scripts/mod/spectrumFrameAdapter.js`
-Läser data från hookad `graphScript.js` och formar standardframe:
-- `px[]`
-- `nm[]` (om kalibrerad)
-- `R[]`, `G[]`, `B[]`
-- `I[]`
-- metadata (zoom, source type, timestamp)
+Transforms hooked graph/camera data into a standard frame shape for processing/worker.
 
 #### `frontend/scripts/mod/analysisWorkerClient.js`
-Kommunikation med Web Worker:
-- init worker
-- skicka analysjobb med throttle (2–5 Hz)
-- request-id / stale-result-hantering
-- timeout/felstatus
+Web Worker client, throttling, request IDs, stale result handling, timeouts.
 
 #### `frontend/scripts/mod/overlays.js`
-Ritar i grafen ovanpå originalkurvor:
-- peak markers
-- etiketter (species)
-- band-spans
-- offset/Doppler info
-- confidence färgkodning
+Draws overlay markers/labels/bands on top of the graph canvas.
 
 #### `frontend/scripts/mod/utils.js`
-Generella hjälpfunktioner (formattering, clamp, debounce, rolling stats).
+Shared helper functions (debounce, clamp, formatting, stats helpers).
 
----
+### v5-inspired UI/behavior modules (new)
+
+#### `frontend/scripts/mod/displayModes.js`
+Separates **display mode** (normal/difference/ratio/transmittance/absorbance) from processing mode.
+
+#### `frontend/scripts/mod/dataQualityPanel.js`
+Data quality/status panel (saturation, SNR estimate, calibration health, refs present/missing, worker latency).
+
+#### `frontend/scripts/mod/yAxisController.js`
+Graph y-axis scaling state and integration hooks (Auto / Fixed 0–255 / Manual later).
+
+#### `frontend/scripts/mod/peakControls.js`
+Separate controls for visual peaks vs worker analysis peaks (distance/threshold/smoothing).
+
+#### `frontend/scripts/mod/graphAppearance.js`
+Graph fill/appearance controls (off/synthetic/real-sampled colors, opacity).
+
+#### `frontend/scripts/mod/cameraCapabilities.js`
+Capability abstraction layer for exposure/gain/high-sensitivity-equivalent controls.
+
+#### `frontend/scripts/mod/calibrationIO.js`
+Calibration point file parsing/serialization (txt/csv import/export).
+
+#### `frontend/scripts/mod/calibrationPointManager.js`
+Multipoint calibration point list manager (sort, enable/disable, outlier flags, residual annotations).
+
+#### `frontend/scripts/mod/instrumentResponse.js`
+Instrument response correction pipeline hooks (white-light response profile creation/application).
+
+#### `frontend/scripts/mod/responseProfileStore.js`
+Stores response profiles (initially localStorage; can evolve to IndexedDB).
+
+#### `frontend/scripts/mod/instrumentProfile.js`
+Builds reproducible instrument profiles (camera + stripe + calibration + response settings).
+
+#### `frontend/scripts/mod/observationProfile.js`
+Builds reproducible observation profiles (mode, preset, subtraction state, notes, timestamps).
 
 ### Processing (LAB + ASTRO)
 
 #### `frontend/scripts/mod/processingPipeline.js`
-Orkestrerar analysförberedelse i rätt ordning:
-1. normalize raw intensity
-2. dark/ref/flat correction
-3. absorbance/transmittance (vid behov)
-4. continuum normalization (ASTRO)
-5. smoothing
-6. quick peaks (för UI)
+Frontend preprocessing orchestration (normalize → dark/ref/flat → absorbance/transmittance → continuum → smoothing).
 
 #### `frontend/scripts/mod/subtraction.js`
-Hanterar:
-- capture dark
-- capture reference
-- capture flat
-- matematik:
-  - `raw-dark`
-  - `raw/ref`
-  - `(raw-dark)/(ref-dark)`
-  - absorbans `-log10(I/I0)`
+Reference capture and subtraction math (dark/reference/flat, ratio, absorbance workflows).
 
 #### `frontend/scripts/mod/continuum.js`
-Continuum-estimat för sol/stjärna:
-- rolling median / low-order fit
-- normalisering
-- inversion för absorptionstoppar (så peaks blir “positiva” till worker)
+Continuum estimation and normalization for ASTRO absorption workflows.
 
 #### `frontend/scripts/mod/smoothing.js`
-Signalutjämning:
-- median filter
-- SG-lite (enkel Savitzky–Golay-liknande)
-- användarstyrka/presetstyrka
+Smoothing filters (median, SG-lite style).
 
 #### `frontend/scripts/mod/normalization.js`
-Olika normaliseringsstrategier:
-- `I=max(R,G,B)`
-- luminance
-- channel-specific
-- robust percentile normalization
+Intensity normalization strategies (combined intensity, luminance, channel-specific, robust percentile).
 
 #### `frontend/scripts/mod/quickPeaks.js`
-Snabb och lätt peakdetect för UI-markering direkt i renderloopen (ej tung matchning).
+Fast local peak detection for UI responsiveness (not heavy matching).
 
 #### `frontend/scripts/mod/flatField.js`
-Instrumentrespons/flat correction (extra steg utöver vanlig referenssubtraktion).
+Flat-field/instrument correction helper stage (used with instrument response workflows).
 
----
-
-### Kalibrering & presets
+### Calibration & presets
 
 #### `frontend/scripts/mod/calibrationBridge.js`
-Brygga mot originalets `calibrationScript.js`:
-- läsa polykoefficienter
-- läsa/skriva kalibreringspunkter
-- residual-status till UI
+Bridge to original `calibrationScript.js` state and methods.
 
 #### `frontend/scripts/mod/calibrationPresets.js`
-Kalibreringspresets:
-- Hg/Ne/Ar
-- Solar/Fraunhofer anchors
-- H-alpha rig
-- (ev) användarpresets lokalt sparade
+Calibration presets and anchor suggestions (Hg/Ne/Ar/Fraunhofer etc.).
 
 #### `frontend/scripts/mod/presets.js`
-Högre nivå-presets per arbetsflöde:
-- LAB: emission-lampor, absorptionslabb
-- ASTRO: Sun, Star, Planet, DeepSky
-Översätter preset → UI + worker settings.
+High-level LAB/ASTRO preset manager (UI + processing + worker settings).
 
----
-
-### Bibliotek & sök/filter
+### Library/filter/search
 
 #### `frontend/scripts/mod/libraryClient.js`
-Laddar JSON-filer från `frontend/data/`, bygger klientcache och exponerar filterbara subsets.
+Loads JSON libraries and builds client-side cache subsets.
 
 #### `frontend/scripts/mod/libraryFilters.js`
-Tar UI-filter (checkboxar, context tags, species types) och bygger worker-vänligt filterobjekt.
+Transforms UI filters into worker-friendly filter objects.
 
 #### `frontend/scripts/mod/speciesSearch.js`
-Autocomplete/sökbox för species/molekyler/band:
-- alias
-- snabb filtrering
-- highlight i overlay
-
----
+Species/molecule search/autocomplete + overlay linking.
 
 ### Session/export
 
 #### `frontend/scripts/mod/sessionCapture.js`
-Samlar sessionmetadata:
-- inställningar
-- kalibrering
-- timestamps
-- snapshots av top hits/QC
-Bra för “instrumentlogg”-känsla.
+Captures session metadata snapshots (settings, calibration, hits, timestamps).
 
 #### `frontend/scripts/mod/exportAugment.js`
-Hookar in i originalets exportflöde och lägger till:
-- matches
-- mode
-- presets
-- QC-noteringar
-- offset/Doppler prelim
+Augments original export flow with PRO metadata (mode, presets, QC, matches, offset/RV, profiles).
 
 ---
 
-## `frontend/workers/` (lokal analysmotor)
+## `frontend/workers/` (local analysis engine)
 
 ### `frontend/workers/analysis.worker.js`
-Worker entrypoint. Importerar router och startar message loop.
+Worker entry point and message loop bootstrap.
 
 ### `frontend/workers/workerRouter.js`
-Routar meddelanden:
-- `INIT_LIBRARIES`
-- `ANALYZE_FRAME`
-- `SET_PRESET`
-- `QUERY_LIBRARY`
-- `PING`
+Routes worker messages (`INIT_LIBRARIES`, `ANALYZE_FRAME`, `SET_PRESET`, `QUERY_LIBRARY`, `PING`).
 
 ### `frontend/workers/workerTypes.js`
-Konstanter/schema för message types och response shapes.
+Message type constants and payload/response shape definitions.
 
 ### `frontend/workers/workerState.js`
-Worker-intern state:
-- loaded libraries
-- indices
-- active preset
-- caches
-- last analysis info
+Worker-internal state (loaded libs, indices, presets, caches, last analysis stats).
 
 ### `frontend/workers/spectrumMath.js`
-Låg-nivå matematik:
-- normalization
-- inversion
-- derivatives
-- window statistics
-- safe log/ratio ops
+Shared spectral math utilities (normalization, inversion, derivatives, safe log/ratio ops).
 
 ### `frontend/workers/peakDetect.js`
-Peak/valley detektion för emission/absorption inkl. platåhantering (viktig för mättnad).
+Peak/valley detection (including plateau handling for saturation cases).
 
 ### `frontend/workers/peakScoring.js`
-Scorar peaks på prominens, kontrast, bredd, lokal kontext.
+Scores candidate peaks (prominence, width, context).
 
 ### `frontend/workers/autoMode.js`
-Auto-detektion av emission/absorption (engine7-idé portad till workerlogik).
+Auto emission/absorption mode selection logic.
 
 ### `frontend/workers/offsetEstimate.js`
-Robust global våglängds-offset från flera linjeträffar.
+Wavelength offset estimation from multiple matched lines.
 
 ### `frontend/workers/dopplerEstimate.js`
-Tolkar offset/linjeskift till preliminär radialhastighet och kvalitet.
+Preliminary radial velocity estimation with quality flags.
 
 ### `frontend/workers/lineMatcher.js`
-Matchar toppar mot atomlinjebibliotek med tolerans, filter och viktning.
+Atomic line matching against wavelength libraries.
 
 ### `frontend/workers/bandMatcher.js`
-Matchar breda molekylband/bandheads (annan logik än smala linjer).
-
-### `frontend/workers/templateMatcher.js`
-Plats för framtida template/cross-correlation (Tyngre ASTRO-funktion).
+Molecular band/bandhead matching (broader features than narrow lines).
 
 ### `frontend/workers/qcRules.js`
-Domain rules/gating för att minska falska positiva, övermärkning och orimliga kombinationer.
+Domain-specific QC/gating rules to reduce false positives and over-labeling.
 
 ### `frontend/workers/confidenceModel.js`
-Bygger sammanlagd confidence från peak score + match score + QC + preset-fit.
+Combines peak score + match score + QC + preset fit into final confidence metrics.
 
 ### `frontend/workers/libraryLoader.js`
-Schema-aware loader:
-- atom-dict-schema
-- flat-list schema
-- molecular v2 schemas
-- normaliserar allt till intern modell
+Schema-aware loader for multiple library formats.
 
 ### `frontend/workers/libraryIndex.js`
-Indexerar bibliotek:
-- våglängds-buckets
-- species lookup
-- context tags
-- category/kind
+Indexing layer (wavelength buckets, species lookup, tags/categories).
 
 ### `frontend/workers/libraryQuery.js`
-Query/filter mot index:
-- by mode/preset
-- by wavelength range
-- by species/category/context
+Filter/query API over indexed libraries.
 
 ### `frontend/workers/presetResolver.js`
-Översätter preset till konkret analyskonfiguration för worker pipeline.
+Resolves presets into worker pipeline parameters and library filters.
 
 ### `frontend/workers/downsample.js`
-Nedsampling för snabbare analys-tick på stora frames.
+Downsampling helpers for faster analysis on large frames.
 
 ### `frontend/workers/analysisPipeline.js`
-Hela workerkedjan:
-1. preprocess
-2. auto-mode / explicit mode
-3. peaks
-4. matching (line/band)
-5. offset
-6. qc/confidence
-7. response payload
+Worker pipeline orchestration (preprocess → detect → match → offset → QC → response payload).
 
 ---
 
 ## `tests/`
 
 ### `tests/fixtures/sample_lab_spectrum.json`
-Exempelframe för LAB-emissionstest.
+Sample frame fixture for lab emission tests.
 
 ### `tests/fixtures/sample_solar_spectrum.json`
-Exempelframe för sol/absorption/continuumtest.
+Sample frame fixture for solar absorption/continuum tests.
 
 ### `tests/fixtures/sample_molecular_band_spectrum.json`
-Exempelframe för molekylband-test (ASTRO eller förbränningsspektrum).
+Sample frame fixture for molecular band tests.
 
 ### `tests/manual-test-checklist.md`
-Manuell QA-checklista:
-- CORE regression
-- LAB subtract
-- ASTRO presets
-- overlay correctness
-- export metadata
+Manual QA checklist (CORE regression + LAB/ASTRO sanity checks).
 
 ### `tests/test-worker-protocol.md`
-Testfall för request/response mellan UI och worker.
-
-### `tests/test-preset-mapping.md`
-Testfall som verifierar att presets ger rätt filter och analysinställningar.
+Protocol test cases for UI ↔ Worker messaging and error handling.
 
 ---
 
-## Nästa steg (praktiskt)
-
-1. **Kopiera in original-SPECTRA-filerna** över placeholders i `frontend/scripts/`, `frontend/pages/recording.html`, `frontend/styles/styles.css`.
-2. Kopiera in dina riktiga engine7-bibliotek i `frontend/data/` (ersätt placeholder-filerna).
-3. Zip:a repo och ladda upp här.
-4. Jag patchar nästa steg i säker ordning (CORE först, sedan LAB/ASTRO hooks).
+## What is intentionally **not** in this scaffold yet
+- No backend/Python service
+- No production build tooling requirement (can be served statically)
+- No full implementation in placeholders (many files are interface-level shells)
+- No template cross-correlation module yet (deferred until later phase to avoid premature complexity)
 
 ---
 
-## Kort teknisk kommentar om “utan backend”
+## Immediate next practical step
+1. Replace placeholder SPECTRA files in `frontend/scripts/`, `frontend/pages/recording.html`, and `frontend/styles/styles.css` with original SPECTRA sources.
+2. Patch safe hooks (graph frame export, calibration bridge, overlay hook).
+3. Verify CORE behavior before enabling LAB/ASTRO analysis loops.
 
-Det här upplägget gör att du slipper Python/backendberoenden men behåller instrumentkänslan:
-- SPECTRA gör realtidsrenderingen (som den redan är bra på)
-- Worker gör analyslogik i lugnare takt
-- UI visar overlays/top hits/status
-
-Det är samma orkester, bara med fler instrument och mindre serverdrama.
+The philosophy here is simple: **protect the instrument feel first, then add the smart stuff.**
