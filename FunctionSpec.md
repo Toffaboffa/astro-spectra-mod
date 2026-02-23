@@ -486,3 +486,27 @@ That means this function spec intentionally optimizes for **stable patch order**
 ### Notes
 - P1.5 layout fix no longer mutates stripe canvas geometry (this could desync stripe preview vs graph in original SPECTRA layout).
 - CORE safety remains priority: hooks/panel must never break original draw loop.
+
+
+## Patch Update – Phase 2 (LAB-MVP kickoff)
+
+### Done in this patch
+- Fixed adapter to derive `nm[]` from calibration polynomial when CORE frame only has px/intensity.
+- Added built-in lite atomic library in worker (H, Na, Hg, Ne, Ca) so LAB-MVP can produce real top hits without engine7 files yet.
+- Implemented basic worker line matching + median offset estimate (calibrated data only).
+- Upgraded SPECTRA-PRO panel from passive shell to LAB-MVP control surface:
+  - Init libraries / Ping worker
+  - LAB preset selector (state only for now)
+  - Worker on/off toggle (state flag)
+  - Capture Dark / Capture Ref / Clear (buffer-state stubs)
+  - Top Hits list rendering + confidence + observed nm
+  - Worker libs-ready status in panel
+- Removed recursive store-write from panel render loop (the old `qualityRender` update) to avoid lag/stack overflows.
+- Blue/dark button color cleanup in PRO panel (removes green feel).
+
+### Still missing for full LAB-MVP
+- True subtraction math (currently capture buttons store state only)
+- Overlay markers in graph for matches
+- Preset-aware filtering in worker
+- Export of LAB hits/QC metadata
+- Engine7 library loading from JSON files (currently built-in lite fallback)

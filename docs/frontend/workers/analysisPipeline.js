@@ -1,22 +1,54 @@
-
 (function (root) {
   'use strict';
+  function inferPeaks(frame, peaks){
+    const nm = frame && Array.isArray(frame.nm) ? frame.nm : null;
+    return (Array.isArray(peaks)?peaks:[]).map(function(p){
+      const idx = Number(p.index);
+      const out = Object.assign({}, p);
+      if (nm && Number.isInteger(idx) && idx >= 0 && idx < nm.length && Number.isFinite(nm[idx])) out.nm = nm[idx];
+      return out;
+    });
+  }
+  function estimateOffset(matches){
+    if (!Array.isArray(matches) || !matches.length) return null;
+    const vals = matches.map(m => Number(m.deltaNm)).filter(Number.isFinite);
+    if (!vals.length) return null;
+    vals.sort((a,b)=>a-b);
+    return vals[Math.floor(vals.length/2)];
+  }
   function analyzeFrame(frame, state) {
     const peakDetect = root.SPECTRA_PRO_peakDetect;
     const peakScoring = root.SPECTRA_PRO_peakScoring;
     const qcRules = root.SPECTRA_PRO_qcRules;
     const confidenceModel = root.SPECTRA_PRO_confidenceModel;
-    const peaks = peakDetect.detectPeaks(frame && frame.I || []);
-    const scoredPeaks = peakScoring.scorePeaks(peaks);
+    const lineMatcher = root.SPECTRA_PRO_lineMatcher;
+    const I = frame && Array.isArray(frame.I) ? frame.I : [];
+    const peaks = inferPeaks(frame, peakScoring.scorePeaks(peakDetect.detectPeaks(I)));
+    const nmAvailable = !!(frame && frame.calibrated && Array.isArray(frame.nm));
+    const matches = nmAvailable ? lineMatcher.matchLines(peaks, state && state.atomLines || [], { toleranceNm: 3.0, maxMatches: 8 }) : [];
     const qc = qcRules.evaluateQC({ frame: frame, state: state });
-    const confidence = confidenceModel.buildConfidence([], qc);
+    if (!nmAvailable) qc.flags = (qc.flags || []).concat(['uncalibrated']);
+    const confidence = confidenceModel.buildConfidence(matches, qc);
+    const topHits = matches.map(function(m){
+      const conf = Math.max(0, Math.min(1, (m.rawScore || 0) * (confidence.overall || 0)));
+      return {
+        species: m.species,
+        referenceNm: m.refNm,
+        observedNm: m.obsNm,
+        deltaNm: m.deltaNm,
+        confidence: +conf.toFixed(3),
+        score: +((m.rawScore || 0) * 100).toFixed(1)
+      };
+    });
     return {
       ok: true,
-      topHits: [],
-      peaks: scoredPeaks.slice(0, 20),
-      offsetNm: 0,
-      qcFlags: qc.flags,
-      confidence: confidence.overall
+      topHits: topHits,
+      peaks: peaks.slice(0, 24),
+      offsetNm: estimateOffset(matches),
+      qcFlags: qc.flags || [],
+      confidence: confidence.overall || 0,
+      librariesLoaded: !!(state && state.librariesLoaded),
+      calibrated: !!nmAvailable
     };
   }
   root.SPECTRA_PRO_analysisPipeline = { analyzeFrame };

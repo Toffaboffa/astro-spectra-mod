@@ -1,8 +1,8 @@
 /* SPECTRA-PRO base theme + layout (Phase 1) */
 :root {
-  --spectra-mint-green: #69bf97;
-  --spectra-mint-darkgreen: #579f7d;
-  --spectra-mint-lightgreen: #b1ecd3;
+  --spectra-mint-green: #2d5f9c;
+  --spectra-mint-darkgreen: #1f4f8a;
+  --spectra-mint-lightgreen: #b9d5ff;
   --sidebar-grey: #1a2636;
   --graph-grey: #0f1724;
   --panel-2: #142034;
@@ -273,3 +273,8 @@ button.btn, .form-select, .form-control { border-radius:8px; }
   color: #ffe28a;
   border-color: rgba(255,193,7,.45);
 }
+
+
+/* SPECTRA-PRO dark/blue button theme override */
+button, .btn { border-radius: 8px; }
+.btn-success, .btn-green, .greenButton { background:#1f4f8a !important; border-color:#3c79c0 !important; color:#eef6ff !important; }

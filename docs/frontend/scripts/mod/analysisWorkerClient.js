@@ -117,6 +117,12 @@
         if (bus) bus.emit('worker:ready', msg);
         return;
       }
+      if (type === (types.MSG && types.MSG.INIT_LIBRARIES_RESULT || 'INIT_LIBRARIES_RESULT')) {
+        const ws = store.getState().worker;
+        store.update('worker', Object.assign({}, ws, { status: 'ready', lastError: null, librariesLoaded: !!(msg.payload && msg.payload.ok) }));
+        if (bus) bus.emit('worker:libraries', msg);
+        return;
+      }
       if (type === (types.MSG && types.MSG.ANALYZE_RESULT || 'ANALYZE_RESULT')) {
         if (inFlight && msg.requestId === inFlight.requestId) inFlight = null;
         const ws = store.getState().worker;

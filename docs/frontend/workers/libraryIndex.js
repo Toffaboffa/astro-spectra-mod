@@ -1,8 +1,8 @@
-
 (function (root) {
   'use strict';
   function buildIndex(atomLines) {
-    return { buckets: {}, count: Array.isArray(atomLines) ? atomLines.length : 0 };
+    const lines = Array.isArray(atomLines) ? atomLines.slice().sort((a,b)=>(a.nm||0)-(b.nm||0)) : [];
+    return { lines: lines, count: lines.length };
   }
   root.SPECTRA_PRO_libraryIndex = { buildIndex };
 })(typeof self !== 'undefined' ? self : this);
