@@ -1,37 +1,91 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SPECTRA-PRO (Scaffold)</title>
+  <title>SPECTRA-PRO (Phase 0)</title>
   <style>
-    body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#0b1220;color:#e9f2ff;margin:0;padding:16px}
-    .shell{max-width:1000px;margin:0 auto;display:grid;gap:12px}
-    .card{background:#101a2d;border:1px solid #223250;border-radius:12px;padding:12px}
+    :root{
+      --bg:#0b1220; --card:#101a2d; --line:#223250; --txt:#e9f2ff; --muted:#b9c9e6; --accent:#7dd3fc;
+    }
+    *{box-sizing:border-box}
+    body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--txt);margin:0;padding:16px}
+    .shell{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+    .full{grid-column:1 / -1}
     .sp-mode-tabs{display:flex;gap:8px;flex-wrap:wrap}
     .sp-mode-tabs button{background:#1a2844;color:#e9f2ff;border:1px solid #33507c;border-radius:8px;padding:8px 12px;cursor:pointer}
-    .sp-mode-tabs button.active{outline:2px solid #7dd3fc}
-    code{background:#09101d;padding:2px 4px;border-radius:4px}
-    .muted{color:#b9c9e6}
+    .sp-mode-tabs button.active{outline:2px solid var(--accent)}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    button,input{background:#0e1a2f;color:var(--txt);border:1px solid #304969;border-radius:8px;padding:6px 10px}
+    input[type="range"]{padding:0}
+    canvas{width:100%;height:auto;border-radius:10px;background:#08111f;border:1px solid #1b2d47}
+    .muted{color:var(--muted)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .pill{display:inline-block;border:1px solid #3d587f;border-radius:999px;padding:2px 8px;font-size:12px;color:var(--muted)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+    @media (max-width: 980px){ .shell{grid-template-columns:1fr} .row{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
   <div class="shell">
-    <div class="card">
-      <h1 style="margin:0 0 8px 0">SPECTRA-PRO scaffold</h1>
-      <div class="muted">Phase 2 foundation patched. CORE integration with original SPECTRA files comes next.</div>
+    <div class="card full">
+      <h1 style="margin:0 0 6px 0">SPECTRA-PRO <span class="pill">Phase 0</span></h1>
+      <div class="muted">Baseline import harness + CORE-safe hook bridge. Original SPECTRA files are still placeholders in this zip and will be replaced next.</div>
     </div>
 
-    <div class="card" id="modeTabsHost"></div>
-    <div class="card" id="statusHost"></div>
     <div class="card">
-      <button id="btnPing">Ping worker</button>
-      <button id="btnAnalyze">Analyze dummy frame</button>
-      <div class="muted" style="margin-top:8px">This page is only a scaffold sanity check for GitHub Pages. No original SPECTRA code is integrated yet.</div>
+      <div class="toolbar" style="margin-bottom:10px">
+        <button id="btnStartCore">Start CORE placeholder</button>
+        <button id="btnPing">Ping worker</button>
+        <button id="btnAnalyze">Analyze dummy frame</button>
+        <span class="pill">Source: <span id="sourceLabel" class="mono">placeholder</span></span>
+      </div>
+      <canvas id="graphCanvas" width="960" height="360" aria-label="Spectrum graph"></canvas>
+      <div class="row" style="margin-top:10px">
+        <label>Stripe width
+          <input id="stripeWidth" type="range" min="1" max="40" value="8" />
+        </label>
+        <label>Stripe Y
+          <input id="stripeY" type="range" min="0" max="100" value="50" />
+        </label>
+      </div>
+      <div class="muted" style="margin-top:8px">This graph is a Phase 0 placeholder render loop. It exists to validate hooks and script order before original SPECTRA integration.</div>
+    </div>
+
+    <div class="card">
+      <div id="modeTabsHost"></div>
+      <div id="statusHost" style="margin-top:10px"></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:12px 0">
+      <div><strong>Phase 0 hook diagnostics</strong></div>
+      <div id="diagHost" class="muted" style="margin-top:8px;line-height:1.45"></div>
+    </div>
+
+    <div class="card full">
+      <strong>Notes</strong>
+      <div class="muted" style="margin-top:6px">
+        Phase 0 in this patch means <em>integration harness + hook wiring + path sanity on GitHub Pages</em>.
+        Real original SPECTRA code has not been copied into <code>docs/frontend/scripts/*.js</code> yet, so baseline behavior is placeholder-only for now.
+      </div>
     </div>
   </div>
 
+  <!-- Original SPECTRA placeholders (load order preserved conceptually) -->
+  <script src="../scripts/polynomialRegressionScript.js"></script>
+  <script src="../scripts/zipScript.js"></script>
+  <script src="../scripts/languageScript.js"></script>
+  <script src="../scripts/dataSavingScript.js"></script>
+  <script src="../scripts/referenceGraphScript.js"></script>
+  <script src="../scripts/imageLoadingScript.js"></script>
+  <script src="../scripts/setupScript.js"></script>
+  <script src="../scripts/cameraScript.js"></script>
+  <script src="../scripts/stripeScript.js"></script>
+  <script src="../scripts/cameraSelection.js"></script>
+  <script src="../scripts/calibrationScript.js"></script>
+  <script src="../scripts/graphScript.js"></script>
+
+  <!-- PRO shell / Phase 1-ready foundations -->
+  <script src="../scripts/mod/coreHooks.js"></script>
   <script src="../scripts/mod/eventBus.js"></script>
   <script src="../scripts/mod/stateStore.js"></script>
   <script src="../scripts/mod/appMode.js"></script>
@@ -41,17 +95,75 @@
   <script src="../scripts/mod/spectrumFrameAdapter.js"></script>
   <script src="../scripts/mod/uiPanels.js"></script>
   <script src="../scripts/mod/analysisWorkerClient.js"></script>
+
   <script>
     (function(){
-      const sp = window.SpectraPro;
-      sp.workerTypes = { MSG: { PING:'PING', PONG:'PONG', ERROR:'ERROR', INIT_LIBRARIES:'INIT_LIBRARIES', INIT_LIBRARIES_RESULT:'INIT_LIBRARIES_RESULT', ANALYZE_FRAME:'ANALYZE_FRAME', ANALYZE_RESULT:'ANALYZE_RESULT' } };
+      const sp = window.SpectraPro || (window.SpectraPro = {});
+      sp.workerTypes = {
+        MSG: {
+          PING:'PING', PONG:'PONG', ERROR:'ERROR',
+          INIT_LIBRARIES:'INIT_LIBRARIES', INIT_LIBRARIES_RESULT:'INIT_LIBRARIES_RESULT',
+          ANALYZE_FRAME:'ANALYZE_FRAME', ANALYZE_RESULT:'ANALYZE_RESULT'
+        }
+      };
+
+      // Patch bridge listeners (Phase 0 validation)
+      if (sp.coreHooks && sp.eventBus && sp.store) {
+        sp.coreHooks.on('graphFrame', function(frame){
+          sp.store.update('frame.latest', {
+            timestamp: frame.timestamp,
+            points: Array.isArray(frame.I) ? frame.I.length : 0,
+            source: frame.source || 'unknown'
+          }, { source:'coreHook:graphFrame' });
+          if (sp.coreBridge && sp.coreBridge.frame) {
+            sp.store.update('frame.source', sp.coreBridge.frame.source || 'unknown', { source:'coreHook:graphFrame' });
+          }
+        });
+        sp.coreHooks.on('calibrationChanged', function(cal){
+          sp.store.update('calibration', Object.assign({}, sp.store.getState().calibration, cal), { source:'coreHook:calibrationChanged' });
+        });
+      }
+
       sp.uiPanels.createModeTabs(document.getElementById('modeTabsHost'));
       const statusHost = document.getElementById('statusHost');
+      const diagHost = document.getElementById('diagHost');
+      const sourceLabel = document.getElementById('sourceLabel');
+
       const client = sp.createAnalysisWorkerClient({ workerUrl: '../workers/analysis.worker.js', throttleMs: 250 });
       sp._debugWorkerClient = client;
-      function refresh(){ sp.uiPanels.renderStatus(statusHost); }
-      refresh();
-      sp.eventBus.on('state:changed', refresh);
+
+      function renderDiag(){
+        const s = sp.store.getState();
+        const frame = (window.SpectraPro.coreBridge && window.SpectraPro.coreBridge.frame) || null;
+        sourceLabel.textContent = (s.frame && s.frame.source) || 'unknown';
+        diagHost.innerHTML = [
+          'Frame hook: ' + (frame ? 'OK' : 'waiting'),
+          'Frame points: ' + (frame && frame.I ? frame.I.length : 0),
+          'Calibration hook: ' + ((s.calibration && s.calibration.residualStatus) || 'unknown'),
+          'Reference hook: ' + ((sp.coreBridge && sp.coreBridge.reference && sp.coreBridge.reference.updatedAt) ? 'updated' : 'idle'),
+          'Worker: ' + (s.worker && s.worker.status),
+          'Mode: ' + s.appMode
+        ].join('<br>');
+        sp.uiPanels.renderStatus(statusHost);
+      }
+
+      if (sp.eventBus) sp.eventBus.on('state:changed', renderDiag);
+
+      document.getElementById('btnStartCore').addEventListener('click', function(){
+        if (window.SpectraCore && window.SpectraCore.camera && window.SpectraCore.camera.startCamera) {
+          window.SpectraCore.camera.startCamera();
+        } else if (window.plotRGBLineFromCamera) {
+          window.plotRGBLineFromCamera();
+        }
+      });
+
+      document.getElementById('stripeWidth').addEventListener('input', function(e){
+        if (window.SpectraCore && window.SpectraCore.stripe) window.SpectraCore.stripe.setStripeWidth(Number(e.target.value));
+      });
+      document.getElementById('stripeY').addEventListener('input', function(e){
+        if (window.SpectraCore && window.SpectraCore.stripe) window.SpectraCore.stripe.setStripeY(Number(e.target.value)/100);
+      });
+
       document.getElementById('btnPing').addEventListener('click', function(){ client.ping(); });
       document.getElementById('btnAnalyze').addEventListener('click', function(){
         sp.appMode.setMode('LAB', {source:'demo'});
@@ -59,7 +171,11 @@
         const frame = { I: I, px: I.map((_,i)=>i), timestamp: Date.now(), source: 'dummy' };
         client.analyzeFrame(frame);
       });
-      setInterval(refresh, 500);
+
+      // autostart placeholder graph so hooks light up immediately
+      if (window.plotRGBLineFromCamera) window.plotRGBLineFromCamera();
+      renderDiag();
+      setInterval(renderDiag, 800);
     })();
   </script>
 </body>

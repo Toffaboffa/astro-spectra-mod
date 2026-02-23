@@ -1,1 +1,1 @@
-// Placeholder: replace with original SPECTRA polynomialRegressionScript.js
+(function(global){ 'use strict'; global.SpectraPolyfit = global.SpectraPolyfit || { polyfit:function(){ return []; } }; })(window);

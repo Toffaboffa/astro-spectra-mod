@@ -1,1 +1,1 @@
-// Placeholder: replace with original SPECTRA cameraSelection.js
+(function(global){ 'use strict'; (global.SpectraCore=global.SpectraCore||{}).cameraSelection={ init:function(){} }; })(window);

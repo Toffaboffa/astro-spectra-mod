@@ -1,1 +1,1 @@
-// Placeholder: replace with original SPECTRA zipScript.js
+(function(global){ 'use strict'; global.SpectraZip = global.SpectraZip || {}; })(window);
