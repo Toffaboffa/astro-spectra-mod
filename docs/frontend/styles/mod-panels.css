@@ -1,0 +1,27 @@
+/* SPECTRA-PRO mod UI (Phase 1) */
+#spectraProPanel {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 99999;
+  width: min(360px, calc(100vw - 24px));
+  background: rgba(13, 20, 33, 0.96);
+  color: #e9f2ff;
+  border: 1px solid #334b70;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  backdrop-filter: blur(6px);
+}
+#spectraProPanel .sp-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-bottom:1px solid #243750; }
+#spectraProPanel .sp-body { padding:8px 10px; }
+#spectraProPanel .sp-status { margin-top:8px; font-size:12px; line-height:1.35; color:#d9e6ff; }
+#spectraProPanel .sp-status .muted { color:#9fb2cf; }
+.sp-mode-tabs { display:flex; gap:6px; margin-top:2px; }
+.sp-mode-tabs button {
+  border:1px solid #3b5175; background:#162238; color:#dce9ff; border-radius:8px; padding:5px 9px; font-size:12px;
+}
+.sp-mode-tabs button.active { background:#223b5b; border-color:#79a7dd; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+.sp-pill { display:inline-block; border:1px solid #375173; border-radius:999px; padding:1px 7px; font-size:11px; }
+.sp-pill.ok { border-color:#4f8c68; color:#bde9ca; }
+.sp-pill.warn { border-color:#9d8c43; color:#f5e7a9; }
+.sp-pill.bad { border-color:#9a4f4f; color:#ffc6c6; }

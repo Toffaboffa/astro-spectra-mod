@@ -12,7 +12,7 @@ The project is scaffold-first: many files exist as placeholders so the structure
 
 ---
 
-## Current state (updated after Phase 0 harness patch)
+## Current state (updated after Phase 1 hook shell patch)
 
 ### What is already present
 - Full folder structure for frontend, worker, docs, tests
@@ -22,7 +22,7 @@ The project is scaffold-first: many files exist as placeholders so the structure
 - Initial README scaffold (now replaced by expanded version)
 
 ### What is *not* implemented yet
-- Original SPECTRA code integration
+- Full feature parity with original SPECTRA visual polish (layout is now patched shell + custom theme)
 - Hook patches into `graphScript.js` / `calibrationScript.js`
 - Worker message protocol implementation
 - Any real analysis logic
@@ -134,11 +134,12 @@ This is the order we should follow when working on the codebase in future patch 
 
 **Output:** CORE baseline works (camera → stripe → graph) with no PRO behavior required.
 
-**Status:** `PARTIAL` (harness + path migration + placeholder CORE hook bridge implemented; original SPECTRA files still not imported)
+**Status:** `READY` (original SPECTRA-1 files imported into docs/frontend, path migration completed, Pages-safe harness active)
 
 ---
 
 ### Phase 1 — Safe hooks + PRO shell (no heavy logic)
+
 **Goal:** create integration points without changing instrument behavior.
 
 **Primary files:**
@@ -159,7 +160,7 @@ This is the order we should follow when working on the codebase in future patch 
 - overlay hook exists (can be no-op)
 - mode tabs visible (CORE/LAB/ASTRO)
 
-**Status:** `TODO`
+**Status:** `PARTIAL` (hooks derived from real SPECTRA draw/cal/reference flow, mode tabs + P1 panel wired, overlay hook no-op installed)
 
 ---
 
@@ -448,3 +449,20 @@ That means this function spec intentionally optimizes for **stable patch order**
 - Exposed minimal `window.SpectraCore` adapters for camera/stripe/calibration/reference/graph access.
 - Known gaps: original SPECTRA style assets (`customColorsStyle.css`, `recordingStyle.css`) and translation dictionaries are not included in source zip, so layout/text polish may be degraded until those assets are copied.
 - Next: Phase 1 patch = verify runtime errors on Pages, then harden hooks against exact SPECTRA globals and add CORE regression checklist results.
+
+
+## Latest patch notes (Phase 1 hook shell)
+
+### Done in this patch
+- Patched `graphScript.js` with a **read-only frame hook** on `drawGraph()` (emits frame every render tick; includes RGB + combined intensity and nm-axis when calibrated).
+- Patched `calibrationScript.js` / `referenceGraphScript.js` bridge helpers with richer state accessors.
+- Added `mod/proBootstrap.js` to wire core hook events → store, create the **SPECTRA-PRO P1 panel**, and start worker foundation safely.
+- Implemented minimal `overlays.js` no-op overlay hook (reserved integration point, no CORE rendering changes).
+- Added dark-theme `styles.css` that preserves the **original SPECTRA layout structure** (large graph, sidebars, calibration list behavior) while using custom colors.
+- Added `mod-panels.css`, `overlays.css`, `mobile-tweaks.css` shells for PRO UI styling.
+
+### Sanity expectations after patch
+- CORE view should still load and render graph/camera flow.
+- A small **SPECTRA-PRO** panel should appear bottom-right with CORE/LAB/ASTRO tabs and live status.
+- Switching modes updates panel state only (no heavy analysis claims yet).
+- If the worker file is still scaffolded, worker status may show `error` or stay `idle` without breaking CORE.

@@ -1172,3 +1172,22 @@ graphCanvasDivergence.addEventListener("mousemove", (e) => {
   });
   setTimeout(emit, 0);
 })();
+
+
+/* SPECTRA-PRO Phase 1 calibration bridge enrich patch */
+(function(){
+  const sp = window.SpectraPro || (window.SpectraPro = {});
+  if (window.SpectraCore && window.SpectraCore.calibration && !window.SpectraCore.calibration.getDetailedState) {
+    window.SpectraCore.calibration.getDetailedState = function(){
+      const base = (window.SpectraCore.calibration.getState && window.SpectraCore.calibration.getState()) || {};
+      let range = null;
+      try {
+        if (Array.isArray(base.points) && base.points.length) {
+          const xs = base.points.map(p=>p.px).filter(Number.isFinite);
+          if (xs.length) range = { minPx: Math.min.apply(null, xs), maxPx: Math.max.apply(null, xs) };
+        }
+      } catch(e){}
+      return Object.assign({}, base, { range });
+    };
+  }
+})();

@@ -81,3 +81,14 @@ function addReferenceLineFromExcel() {
   window.SpectraCore.reference = Object.assign(window.SpectraCore.reference || {}, { getState: getRefState, emitReferenceState: emit });
   setTimeout(emit, 0);
 })();
+
+
+/* SPECTRA-PRO Phase 1 reference bridge enrich patch */
+(function(){
+  if (!window.SpectraCore) window.SpectraCore = {};
+  window.SpectraCore.reference = Object.assign(window.SpectraCore.reference || {}, {
+    hasReference: function(){
+      try { return Array.isArray(referenceGraph) && referenceGraph.length > 0; } catch(e) { return false; }
+    }
+  });
+})();

@@ -1088,3 +1088,48 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
     emitGraphFrame: emitGraphFrame
   });
 })();
+
+
+/* SPECTRA-PRO Phase 1 hook patch (robust frame hook on drawGraph) */
+(function(){
+  const sp = window.SpectraPro || (window.SpectraPro = {});
+  function emitGraphFrame(payload){
+    try {
+      if (sp.coreHooks && sp.coreHooks.emit) sp.coreHooks.emit('graphFrame', payload);
+      sp.coreBridge = sp.coreBridge || {};
+      sp.coreBridge.frame = payload;
+    } catch(e){}
+  }
+  function buildFrame(){
+    try {
+      if (typeof pixels === 'undefined' || !pixels || !pixels.length) return null;
+      const pixelWidth = Math.floor(pixels.length / 4);
+      if (!pixelWidth) return null;
+      const R = new Array(pixelWidth), G = new Array(pixelWidth), B = new Array(pixelWidth), I = new Array(pixelWidth), px = new Array(pixelWidth);
+      let nm = null;
+      const canNm = (typeof isCalibrated === 'function' && isCalibrated()) && (typeof getWaveLengthByPx === 'function');
+      if (canNm) nm = new Array(pixelWidth);
+      for (let i = 0; i < pixelWidth; i++) {
+        const base = i * 4;
+        const r = Number(pixels[base] || 0), g = Number(pixels[base + 1] || 0), b = Number(pixels[base + 2] || 0);
+        R[i] = r; G[i] = g; B[i] = b; I[i] = Math.max(r, g, b); px[i] = i;
+        if (nm) nm[i] = Number(getWaveLengthByPx(i + 1));
+      }
+      return { px, nm, R, G, B, I, pixelWidth, timestamp: Date.now(), source: (window.videoPaused ? 'image' : 'camera') };
+    } catch (e) { return null; }
+  }
+  const origDrawGraph = window.drawGraph;
+  if (typeof origDrawGraph === 'function' && !origDrawGraph.__spectraProPhase1Wrapped) {
+    const wrapped = function(){
+      const result = origDrawGraph.apply(this, arguments);
+      const frame = buildFrame();
+      if (frame) emitGraphFrame(frame);
+      if (sp.overlays && sp.overlays.drawOnGraph && typeof graphCtx !== 'undefined') {
+        try { sp.overlays.drawOnGraph(graphCtx, { graphCanvas: (typeof graphCanvas !== 'undefined' ? graphCanvas : null) }); } catch(e){}
+      }
+      return result;
+    };
+    wrapped.__spectraProPhase1Wrapped = true;
+    window.drawGraph = wrapped;
+  }
+})();

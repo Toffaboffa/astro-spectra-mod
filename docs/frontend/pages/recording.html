@@ -542,46 +542,20 @@
   <script src="../scripts/mod/stateStore.js"></script>
   <script src="../scripts/mod/appMode.js"></script>
   <script src="../scripts/mod/uiPanels.js"></script>
+  <script src="../scripts/mod/spectrumFrameAdapter.js"></script>
+  <script src="../scripts/mod/overlays.js"></script>
   <script src="../scripts/mod/analysisWorkerClient.js"></script>
   <script>
   (function(){
     const sp = window.SpectraPro || (window.SpectraPro = {});
     if (!sp.coreHooks) return;
-    function safeUpdate(path, value, source){
-      if (sp.store && sp.store.update) sp.store.update(path, value, { source: source || 'phase0' });
-    }
-    sp.coreHooks.on('graphFrame', function(frame){
-      safeUpdate('frame.source', frame && frame.source ? frame.source : 'camera');
-      safeUpdate('frame.latest', { timestamp: frame?.timestamp || Date.now(), points: Array.isArray(frame?.I)?frame.I.length:0, source: frame?.source || 'camera' });
-    });
+    // Phase 1 keeps this bridge tiny; UI + worker wiring lives in mod/proBootstrap.js
+    function safeUpdate(path, value, source){ if (sp.store && sp.store.update) sp.store.update(path, value, { source: source || 'phase1-bridge' }); }
     sp.coreHooks.on('calibrationChanged', function(cal){ safeUpdate('calibration', Object.assign({}, (sp.store?.getState?.().calibration||{}), cal||{})); });
     sp.coreHooks.on('referenceChanged', function(ref){ if (sp.coreBridge) sp.coreBridge.reference = Object.assign({}, sp.coreBridge.reference||{}, ref||{}); });
-
-    function bootPanels(){
-      try {
-        const host = document.createElement('div');
-        host.id = 'spectraProPhase0Panel';
-        host.style.cssText = 'position:fixed;right:10px;bottom:10px;z-index:99999;background:#101a2d;color:#e9f2ff;border:1px solid #334b70;border-radius:10px;padding:8px;max-width:320px;font:12px system-ui';
-        host.innerHTML = '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong>SPECTRA-PRO P0</strong><button id="sp0Toggle" style="padding:2px 8px">Hide</button></div><div id="sp0Body" style="margin-top:6px"></div>';
-        document.body.appendChild(host);
-        const tabsHost = document.createElement('div');
-        const statusHost = document.createElement('div');
-        document.getElementById('sp0Body').appendChild(tabsHost);
-        document.getElementById('sp0Body').appendChild(statusHost);
-        if (sp.uiPanels && sp.uiPanels.createModeTabs) sp.uiPanels.createModeTabs(tabsHost);
-        const render = function(){
-          const s = sp.store?.getState?.() || {};
-          statusHost.innerHTML = '<div style="margin-top:6px;line-height:1.35">Mode: <b>'+ (s.appMode||'CORE') +'</b><br>Worker: '+ ((s.worker&&s.worker.status)||'idle') +'<br>Frame pts: '+ (((s.frame||{}).latest||{}).points || 0) +'<br>Cal: '+ (((s.calibration||{}).residualStatus)||'unknown') +'</div>';
-        };
-        if (sp.eventBus && sp.eventBus.on) sp.eventBus.on('state:changed', render);
-        render();
-        document.getElementById('sp0Toggle').onclick=function(){ const b=document.getElementById('sp0Body'); b.style.display=b.style.display==='none'?'block':'none'; this.textContent=b.style.display==='none'?'Show':'Hide'; };
-      } catch(e){ console.warn('SPECTRA-PRO Phase0 panel failed', e); }
-    }
-
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootPanels); else bootPanels();
   })();
   </script>
+  <script src="../scripts/mod/proBootstrap.js"></script>
 
 </body>
 </html>
