@@ -1121,6 +1121,11 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
   const origDrawGraph = window.drawGraph;
   if (typeof origDrawGraph === 'function' && !origDrawGraph.__spectraProPhase1Wrapped) {
     const wrapped = function(){
+      try {
+        if (typeof lineCanvas === 'undefined' || !lineCanvas || typeof lineCtx === 'undefined' || !lineCtx || typeof graphCanvas === 'undefined' || !graphCanvas) {
+          return;
+        }
+      } catch (e) { return; }
       const result = origDrawGraph.apply(this, arguments);
       const frame = buildFrame();
       if (frame) emitGraphFrame(frame);

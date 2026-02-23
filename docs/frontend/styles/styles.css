@@ -212,8 +212,14 @@ button.btn, .form-select, .form-control { border-radius:8px; }
 #errorBlock { background-color: rgba(215,67,67,0.35); }
 #infoPopupBlock { background-color: rgba(87,85,85,0.35); }
 #errorBlock.show, #infoPopupBlock.show { display:block; }
-#cameraRecordingIsOnWindows, #infoPopupInside, #errorBoxInside {
+#cameraRecordingIsOnWindows {
   padding: 20%; width:100%; text-align:center;
+}
+#infoPopupInside, #errorBoxInside {
+  padding: 1rem 1.25rem;
+  width: auto;
+  max-width: min(90vw, 560px);
+  text-align: center;
 }
 
 /* Mobile: preserve graph visibility */

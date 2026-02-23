@@ -473,3 +473,16 @@ That means this function spec intentionally optimizes for **stable patch order**
 - A small **SPECTRA-PRO** panel should appear bottom-right with CORE/LAB/ASTRO tabs and live status.
 - Switching modes updates panel state only (no heavy analysis claims yet).
 - If the worker file is still scaffolded, worker status may show `error` or stay `idle` without breaking CORE.
+
+
+## Hotfix after Phase 1.5 (2026-02-23)
+
+### Fixed
+- **Lag / stack overflow loop** in `proBootstrap.js` + `stateStore.js` (state render -> state update recursion on `state:changed`).
+- **`drawGraph` wrapper crash** (`Cannot set properties of undefined (setting 'width')`) by guarding Phase 1 wrapper until original graph canvases are initialized.
+- **Info popup close UX** improved by restoring sane popup box sizing (`#infoPopupInside`, `#errorBoxInside`) instead of the oversized 20% padding rule.
+- **GitHub Actions CI** made scaffold-safe when no `backend/` exists yet, and frontend smoke paths updated to `docs/frontend/...`.
+
+### Notes
+- P1.5 layout fix no longer mutates stripe canvas geometry (this could desync stripe preview vs graph in original SPECTRA layout).
+- CORE safety remains priority: hooks/panel must never break original draw loop.

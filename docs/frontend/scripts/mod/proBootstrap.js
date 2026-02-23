@@ -136,7 +136,13 @@
       el.addEventListener('change', function(){ safeUpdate('ui.lastControlChange', Date.now(), 'panel-change'); });
     });
 
+    let _rendering = false;
+    let _lastQualityKey = '';
+
     function render(){
+      if (_rendering) return;
+      _rendering = true;
+      try {
       const s = (sp.store && sp.store.getState && sp.store.getState()) || {};
       const f = (s.frame && s.frame.latest) || {};
       const c = s.calibration || {};
@@ -171,7 +177,15 @@
         `<div><span class="muted">Quality</span>: <span class="sp-pill ${qClass}">${qFlag}</span></div>`
       ].join('');
 
-      safeUpdate('quality', { n, min, max, avg, dynamic, sat, satPct, qFlag }, 'qualityRender');
+      const qualityObj = { n, min, max, avg, dynamic, sat, satPct, qFlag };
+      const qualityKey = [n, min, max, avg, dynamic, sat, satPct, qFlag].join('|');
+      if (qualityKey !== _lastQualityKey) {
+        _lastQualityKey = qualityKey;
+        safeUpdate('quality', qualityObj, 'qualityRender');
+      }
+      } finally {
+        _rendering = false;
+      }
     }
     if (sp.eventBus && sp.eventBus.on) sp.eventBus.on('state:changed', render);
     render();
@@ -197,17 +211,9 @@
 
   function applyLayoutFixes(){
     try {
-      const stripe = document.getElementById('stripeCanvas');
-      const parent = stripe && stripe.parentElement;
-      if (parent && stripe) {
-        parent.style.width = '100%';
-        parent.style.overflow = 'hidden';
-        stripe.style.left = '30px';
-        stripe.style.right = '30px';
-        stripe.style.width = 'calc(100% - 60px)';
-      }
+      // Avoid mutating stripe geometry in P1.5 (can desync preview vs graph in original SPECTRA layout).
       const right = document.getElementById('sidebar-right');
-      if (right && !right.children.length) right.classList.add('hidden');
+      if (right && !right.querySelector('*')) right.classList.add('hidden');
       const graphWin = document.getElementById('graphWindowContainer');
       if (graphWin) {
         // let canvas resize settle after drawer/layout changes

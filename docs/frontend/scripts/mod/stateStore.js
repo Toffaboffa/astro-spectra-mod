@@ -48,6 +48,14 @@
     return JSON.parse(JSON.stringify(obj));
   }
 
+  function isSameValue(a, b) {
+    if (a === b) return true;
+    if ((a == null) || (b == null)) return false;
+    const ta = typeof a, tb = typeof b;
+    if (ta !== 'object' || tb !== 'object') return false;
+    try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return false; }
+  }
+
   function createStore(seed) {
     let state = Object.assign({}, deepClone(defaultState), seed || {});
 
@@ -70,7 +78,10 @@
         if (typeof target[parts[i]] !== 'object' || target[parts[i]] === null) target[parts[i]] = {};
         target = target[parts[i]];
       }
-      target[parts[parts.length - 1]] = value;
+      const leaf = parts[parts.length - 1];
+      const prevValue = target[leaf];
+      if (isSameValue(prevValue, value)) return state;
+      target[leaf] = value;
       state = next;
       if (bus) bus.emit('state:changed', { state: state, patch: { [path]: value }, meta: meta || null });
       return state;
