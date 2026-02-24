@@ -12,7 +12,7 @@ The project is scaffold-first: many files exist as placeholders so the structure
 
 ---
 
-## Current state (updated after Phase 1 hook shell patch)
+## Current state (updated after Phase 2 LAB-MVP + Phase 2.1 UI docking patch)
 
 ### What is already present
 - Full folder structure for frontend, worker, docs, tests
@@ -21,12 +21,21 @@ The project is scaffold-first: many files exist as placeholders so the structure
 - Basic language files
 - Initial README scaffold (now replaced by expanded version)
 
-### Phase 1.5 notes (this patch)
+### Phase 1.5 notes (previous patch)
 - Added **v5-inspired CORE controls bridge** in the SPECTRA-PRO panel (display mode, Y-axis mode placeholders, peak lower bound, fill opacity)
 - Added **data quality mini-readout** (dynamic range / saturation risk shell) derived from live frame hook
 - Restored important **recording layout geometry** from original CSS while keeping dark theme colors
 - Fixed overlay/toast containment so info/error UI does not spill into the right side panel area
 - Added extra resize/layout stabilization on boot to reduce graph/stripe visual mismatch after load
+
+
+### Phase 2.1 notes (this patch)
+- Moved SPECTRA-PRO controls from floating bottom-right modal into the **bottom drawer** (integrated with graph controls area)
+- Added **tabbed PRO sections**: General / CORE controls / LAB / ASTRO / Other
+- Added always-visible **Status + Data Quality dock** on the right side of the PRO row (responsive fallback stacks on smaller widths)
+- Removed redundant **Home** button from bottom-right drawer area (reduced clutter)
+- Relabeled original **FLR** button to **Long Exposure** for clarity (kept original functionality)
+- Updated button color styling to fit the blue/dark theme (replacing bright green visual mismatch)
 
 ### What is *not* implemented yet
 - Full feature parity with original SPECTRA visual polish (layout is now patched shell + custom theme)
@@ -193,7 +202,7 @@ This is the order we should follow when working on the codebase in future patch 
 - camera capability abstraction (unsupported-safe)
 - calibration import/export + multipoint manager shell
 
-**Status:** `PARTIAL` (floating CORE control bridge added in SPECTRA-PRO panel, data-quality mini-panel added, layout/stripe alignment CSS parity fixes applied, right-panel/toast containment cleanup applied)
+**Status:** `PARTIAL` (LAB MVP shell + worker hooks present; PRO controls now docked in bottom drawer with tabbed sections and always-visible status/data-quality area)
 
 ---
 
@@ -230,7 +239,7 @@ This is the order we should follow when working on the codebase in future patch 
 - overlays can label lines
 - subtraction modes (dark/ref at minimum) work
 
-**Status:** `PARTIAL` (floating CORE control bridge added in SPECTRA-PRO panel, data-quality mini-panel added, layout/stripe alignment CSS parity fixes applied, right-panel/toast containment cleanup applied)
+**Status:** `PARTIAL` (LAB MVP shell + worker hooks present; PRO controls now docked in bottom drawer with tabbed sections and always-visible status/data-quality area)
 
 ---
 
@@ -257,7 +266,7 @@ This is the order we should follow when working on the codebase in future patch 
 - preliminary Doppler display available with warnings
 - molecular band matching supports a basic first pass
 
-**Status:** `PARTIAL` (floating CORE control bridge added in SPECTRA-PRO panel, data-quality mini-panel added, layout/stripe alignment CSS parity fixes applied, right-panel/toast containment cleanup applied)
+**Status:** `PARTIAL` (LAB MVP shell + worker hooks present; PRO controls now docked in bottom drawer with tabbed sections and always-visible status/data-quality area)
 
 ---
 
@@ -279,7 +288,7 @@ This is the order we should follow when working on the codebase in future patch 
 - instrument + observation profiles can be captured/exported
 - export includes key PRO metadata and QC flags
 
-**Status:** `PARTIAL` (floating CORE control bridge added in SPECTRA-PRO panel, data-quality mini-panel added, layout/stripe alignment CSS parity fixes applied, right-panel/toast containment cleanup applied)
+**Status:** `PARTIAL` (LAB MVP shell + worker hooks present; PRO controls now docked in bottom drawer with tabbed sections and always-visible status/data-quality area)
 
 ---
 
