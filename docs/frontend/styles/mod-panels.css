@@ -159,3 +159,62 @@ body{overflow:hidden;}
     width: 100%;
   }
 }
+
+/* --- SPECTRA-PRO dock (current proBootstrap DOM) --- */
+#spectraProPanel{
+  position:relative;
+  margin-top:8px;
+  border:1px solid rgba(125,211,252,.18);
+  border-radius:10px;
+  background:linear-gradient(180deg, rgba(7,17,38,.95), rgba(4,14,34,.97));
+  overflow:visible;
+}
+#spectraProPanel .sp-shell{ position:relative; }
+#spectraProPanel .sp-dock-toggle{
+  position:absolute; right:8px; top:8px; z-index:3;
+  width:18px; height:18px; padding:0; border-radius:4px;
+  border:1px solid rgba(125,211,252,.25); background:#10284d; color:#dbeafe; cursor:pointer;
+}
+#spectraProPanel .sp-root{
+  display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:12px;
+  padding:10px 12px 12px; align-items:start;
+}
+#spectraProPanel .sp-root.hidden{ display:none; }
+#spectraProPanel .sp-main{ min-width:0; }
+#spectraProPanel .sp-tabbar{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+#spectraProPanel .sp-tab{
+  border:1px solid rgba(16,185,129,.75);
+  background:#071b36; color:#8fffe0; border-radius:8px; padding:6px 12px; font-weight:700; cursor:pointer;
+}
+#spectraProPanel .sp-tab.is-active{ background:#0b2d4f; box-shadow:0 0 0 1px rgba(16,185,129,.25) inset; }
+#spectraProPanel .sp-tabpanels{ min-height:140px; }
+#spectraProPanel .sp-tabpanel{ display:none; border:1px solid rgba(125,211,252,.12); border-radius:10px; padding:10px; background:rgba(4,14,34,.45); }
+#spectraProPanel .sp-tabpanel.is-active{ display:block; }
+#spectraProPanel .sp-note{ color:#bcd0ea; font-size:12px; }
+#spectraProPanel .sp-form-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+#spectraProPanel .sp-field{ display:flex; flex-direction:column; gap:4px; color:#dbeafe; font-size:12px; }
+#spectraProPanel .sp-field select{ width:100%; }
+#spectraProPanel .sp-form-grid button,
+#spectraProPanel .sp-field select{
+  min-height:32px; border-radius:8px; border:1px solid rgba(125,211,252,.22);
+  background:#10284d; color:#e6f0ff; padding:6px 10px;
+}
+#spectraProPanel .sp-status-rail{ min-width:0; display:grid; gap:10px; }
+#spectraProPanel .sp-brand-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; color:#eef6ff; font-weight:800; }
+#spectraProPanel .sp-brand{ letter-spacing:.03em; }
+#spectraProPanel .sp-mode-badge{ border:1px solid rgba(125,211,252,.3); border-radius:999px; padding:2px 8px; font-size:11px; color:#bcd0ea; }
+#spectraProPanel .sp-card{ border:1px solid rgba(125,211,252,.16); border-radius:10px; padding:10px; background:rgba(4,14,34,.55); }
+#spectraProPanel .sp-card h4{ margin:0 0 6px; font-size:12px; color:#bcd0ea; }
+#spectraProPanel .sp-list{ color:#e6f0ff; font-size:12px; line-height:1.4; }
+#spectraProPanel .sp-list .muted{ color:#91a7c5; }
+#spectraProPanel .sp-list ul{ margin:0; padding-left:16px; }
+#spectraProPanel .sp-list li{ margin:2px 0; }
+
+@media (max-width: 1200px){
+  #spectraProPanel .sp-root{ grid-template-columns:1fr; }
+  #spectraProPanel .sp-status-rail{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media (max-width: 820px){
+  #spectraProPanel .sp-form-grid{ grid-template-columns:1fr; }
+  #spectraProPanel .sp-status-rail{ grid-template-columns:1fr; }
+}

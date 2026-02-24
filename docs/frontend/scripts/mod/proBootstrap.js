@@ -88,110 +88,68 @@
       alignSelf: 'stretch'
     });
     host.innerHTML = `
-      <div class="sp-tabs-row">
-        <div class="sp-tabs" role="tablist" aria-label="SPECTRA-PRO sections">
-          <button type="button" class="sp-tab is-active" data-tab="general">General</button>
-          <button type="button" class="sp-tab" data-tab="core">CORE controls</button>
-          <button type="button" class="sp-tab" data-tab="lab">LAB</button>
-          <button type="button" class="sp-tab" data-tab="astro">ASTRO</button>
-          <button type="button" class="sp-tab" data-tab="other">Other</button>
+    <div class="sp-shell">
+      <button id="spDockToggle" class="sp-dock-toggle" type="button" aria-label="Hide/Show panel" title="Hide/Show panel">▾</button>
+      <div id="spRoot" class="sp-root">
+        <div class="sp-main">
+          <div class="sp-tabbar" role="tablist" aria-label="SPECTRA-PRO panels">
+            <button class="sp-tab is-active" type="button" data-tab="general">General</button>
+            <button class="sp-tab" type="button" data-tab="core">CORE controls</button>
+            <button class="sp-tab" type="button" data-tab="lab">LAB</button>
+            <button class="sp-tab" type="button" data-tab="astro">ASTRO</button>
+            <button class="sp-tab" type="button" data-tab="other">Other</button>
+          </div>
+          <div class="sp-tabpanels">
+            <section class="sp-tabpanel is-active" data-panel="general">
+              <div class="sp-note">General panel scaffold (PRO dock controls live below as phases unlock).</div>
+            </section>
+            <section class="sp-tabpanel" data-panel="core">
+              <div class="sp-form-grid">
+                <label class="sp-field"><span>Subtraction mode</span>
+                  <select id="spSubMode"><option value="none">None</option><option value="dark">Dark</option><option value="reference">Reference</option><option value="both">Dark + Reference</option></select>
+                </label>
+                <label class="sp-field"><span>Lab preset</span>
+                  <select id="spLabPreset"><option value="none">None</option><option value="emission">Emission lamp</option><option value="absorption">Absorption</option><option value="continuum">Continuum</option></select>
+                </label>
+                <button id="spSyncCoreTweaks" type="button">Sync CORE → PRO</button>
+                <button id="spApplyCoreTweaks" type="button">Apply PRO → CORE</button>
+                <button id="spRefreshUi" type="button">Refresh UI</button>
+              </div>
+            </section>
+            <section class="sp-tabpanel" data-panel="lab">
+              <div class="sp-form-grid">
+                <button id="spCapDark" type="button">Capture dark</button>
+                <button id="spCapRef" type="button">Capture reference</button>
+                <button id="spClearRef" type="button">Clear ref/dark</button>
+                <label class="sp-field"><span>LAB subtraction</span><select id="spLabSubState"><option value="off">Off</option><option value="on">On</option></select></label>
+                <div class="sp-note">LAB-MVP scaffold connected to state store.</div>
+              </div>
+            </section>
+            <section class="sp-tabpanel" data-panel="astro">
+              <div class="sp-note">ASTRO panel scaffold (coming in later phase).</div>
+            </section>
+            <section class="sp-tabpanel" data-panel="other">
+              <div class="sp-form-grid">
+                <label class="sp-field"><span>App mode</span>
+                  <select id="spAppModeSelect"><option value="core">CORE</option><option value="lab">LAB</option><option value="astro">ASTRO</option></select>
+                </label>
+                <label class="sp-field"><span>Worker</span>
+                  <select id="spWorkerToggle"><option value="on">On</option><option value="off">Off</option></select>
+                </label>
+                <button id="spInitWorker" type="button">Init libraries</button>
+                <button id="spPingWorker" type="button">Ping worker</button>
+              </div>
+            </section>
+          </div>
         </div>
-        <div class="sp-statusdock">
-          <div class="sp-brandrow"><span class="sp-brand">SPECTRA-PRO</span><span class="sp-badge" id="spModeBadge">P2-LAB</span></div>
-          <div class="sp-card"><div class="sp-card-title">Status</div><div id="spStatusHost" class="sp-status"></div></div>
-          <div class="sp-card"><div class="sp-card-title">Data Quality</div><div id="spQualityHost" class="sp-status"></div></div>
-        </div>
+        <aside class="sp-status-rail">
+          <div class="sp-brand-row"><div class="sp-brand">SPECTRA-PRO</div><span id="spModeBadge" class="sp-mode-badge">P1</span></div>
+          <section class="sp-card"><h4>STATUS</h4><div id="spStatusHost" class="sp-list"></div></section>
+          <section class="sp-card"><h4>DATA QUALITY</h4><div id="spQualityHost" class="sp-list"></div></section>
+          <section class="sp-card"><h4>TOP HITS</h4><div id="spTopHitsHost" class="sp-list">No peaks yet.</div></section>
+        </aside>
       </div>
-
-      <div class="sp-main">
-        <div class="sp-panels">
-        <section class="sp-tabpanel is-active" data-panel="general">
-          <div class="sp-grid2">
-            <label>App mode
-              <select id="spAppModeSelect">
-                <option value="CORE">CORE</option>
-                <option value="LAB">LAB</option>
-                <option value="ASTRO">ASTRO</option>
-              </select>
-            </label>
-            <label>Worker
-              <select id="spWorkerToggle">
-                <option value="on">On</option>
-                <option value="off">Off</option>
-              </select>
-            </label>
-          </div>
-          <div class="sp-row">
-            <button id="spInitWorker" class="btn btn-sm btn-secondary">Init libraries</button>
-            <button id="spPingWorker" class="btn btn-sm btn-secondary">Ping worker</button>
-            <button id="spRefreshUi" class="btn btn-sm btn-secondary">Refresh UI</button>
-          </div>
-          <div class="sp-note">CORE remains primary. LAB/ASTRO add overlays + analysis on top.</div>
-        </section>
-
-        <section class="sp-tabpanel" data-panel="core">
-          <div class="sp-grid2">
-            <label>Display Mode
-              <select id="spDisplayMode">
-                <option value="NORMAL">Normal</option>
-                <option value="DIFF" disabled>Difference (later)</option>
-                <option value="RATIO" disabled>Ratio (later)</option>
-              </select>
-            </label>
-            <label>Y-axis Mode
-              <select id="spYAxisMode">
-                <option value="AUTO">Auto</option>
-                <option value="FIXED" disabled>Fixed (later)</option>
-              </select>
-            </label>
-            <label>Peak lower bound
-              <input id="spPeakLower" type="number" min="1" max="255" step="1" value="1">
-            </label>
-            <label>Fill opacity
-              <input id="spFillOpacity" type="range" min="0.1" max="1" step="0.1" value="0.7">
-            </label>
-          </div>
-          <div class="sp-row">
-            <button id="spApplyCoreTweaks" class="btn btn-sm btn-secondary">Apply to CORE</button>
-            <button id="spSyncCoreTweaks" class="btn btn-sm btn-secondary">Sync from CORE</button>
-          </div>
-        </section>
-
-        <section class="sp-tabpanel" data-panel="lab">
-          <div class="sp-grid2">
-            <label>LAB preset
-              <select id="spLabPreset">
-                <option value="lab-default">LAB Default</option>
-                <option value="hg-ne">Hg/Ne demo</option>
-                <option value="sodium">Sodium (demo)</option>
-              </select>
-            </label>
-            <label>Subtraction mode
-              <select id="spSubMode">
-                <option value="raw">Raw</option>
-                <option value="raw-dark">Raw - Dark</option>
-                <option value="ratio">Raw / Ref</option>
-                <option value="absorbance">Absorbance</option>
-              </select>
-            </label>
-          </div>
-          <div class="sp-row">
-            <button id="spCapDark" class="btn btn-sm btn-secondary">Capture Dark</button>
-            <button id="spCapRef" class="btn btn-sm btn-secondary">Capture Ref</button>
-            <button id="spClearRef" class="btn btn-sm btn-secondary">Clear</button>
-          </div>
-          <div id="spLabSubState" class="sp-note">No dark/reference captured yet.</div>
-          <div class="sp-card"><div class="sp-card-title">Top hits</div><div id="spTopHitsHost" class="sp-tophits"></div></div>
-        </section>
-
-        <section class="sp-tabpanel" data-panel="astro">
-          <div class="sp-note">ASTRO panel shell (next phase): continuum, absorption mode, Fraunhofer presets, offset/Doppler.</div>
-        </section>
-
-        <section class="sp-tabpanel" data-panel="other">
-          <div class="sp-note">Reserved for export/session/instrument profiles. The weird universe box goes here later.</div>
-        </section>
-      </div>`;
+    </div>`;
 
     // Append inside the drawer (docked under CORE controls), never floating.
     dock.replaceChildren(host);
