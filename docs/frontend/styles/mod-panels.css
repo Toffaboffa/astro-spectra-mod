@@ -601,3 +601,79 @@ body{overflow:hidden;}
 #graphSettingsDrawerLeft #SpectraProDockHost .sp-body{
   min-height:0 !important;
 }
+
+
+/* === SPECTRA-PRO GUI tune patch (2026-02-24 v3) === */
+
+/* 1) Status + Data Quality readability and equal-height cards */
+#SpectraProDockHost .sp-status-grid{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  align-items:stretch !important;
+  gap:12px !important;
+}
+#SpectraProDockHost .sp-status-card{
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:flex-start !important;
+  min-height:96px !important;
+  height:100% !important;
+  padding:10px 12px !important;
+}
+#SpectraProDockHost .sp-status-card h4{
+  font-size:13px !important;
+  margin:0 0 8px !important;
+  letter-spacing:.02em !important;
+}
+#SpectraProDockHost .sp-status-lines{
+  font-size:12px !important;
+  line-height:1.45 !important;
+}
+
+/* 2) No scrollbar inside tab panel area */
+#SpectraProDockHost .sp-tabpanels,
+#SpectraProDockHost .sp-tabpanel{
+  overflow:hidden !important;
+  scrollbar-width:none !important;
+}
+#SpectraProDockHost .sp-tabpanel::-webkit-scrollbar{
+  display:none !important;
+}
+
+/* 3) Keep graph settings drawer height stable (desktop) */
+#graphSettingsDrawer{
+  height:30vh !important;
+  min-height:30vh !important;
+  max-height:30vh !important;
+  overflow:hidden !important;
+  align-items:stretch !important;
+}
+#graphSettingsDrawerLeft{
+  overflow:hidden !important;
+}
+#graphSettingsDrawerLeft > #spMain{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  max-height:100% !important;
+  overflow:hidden !important;
+}
+#graphSettingsDrawerLeft > #spMain > #SpectraProDockHost,
+#graphSettingsDrawerLeft > #spMain > #SpectraProDockHost .sp-shell{
+  height:100% !important;
+  max-height:100% !important;
+  overflow:hidden !important;
+}
+#graphSettingsDrawerLeft > #spMain > #SpectraProDockHost .sp-body{
+  min-height:0 !important;
+  height:auto !important;
+  overflow:hidden !important;
+  align-items:stretch !important;
+}
+
+@media (max-width: 900px){
+  #graphSettingsDrawer{
+    height:36vh !important;
+    min-height:36vh !important;
+    max-height:36vh !important;
+  }
+}

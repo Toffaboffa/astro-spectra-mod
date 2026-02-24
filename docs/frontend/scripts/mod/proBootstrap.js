@@ -97,6 +97,23 @@
     catch (_) { return {}; }
   }
 
+
+  function getLiveFrame(state) {
+    const st = state || getStoreState();
+    const byState = st && st.frame && st.frame.latest ? st.frame.latest : null;
+    if (byState) return byState;
+    try {
+      const sp = window.SpectraPro || {};
+      if (sp.coreBridge && sp.coreBridge.frame) return sp.coreBridge.frame;
+    } catch (_) {}
+    try {
+      if (window.SpectraCore && window.SpectraCore.graph && typeof window.SpectraCore.graph.getLatestFrame === 'function') {
+        return window.SpectraCore.graph.getLatestFrame() || null;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   function syncActiveTabToStore(tab) {
     if (!store || !store.setState) return;
     const state = getStoreState();
@@ -217,13 +234,15 @@
 
   function computeDataQualityLines(state) {
     const f = state && state.frame ? state.frame : {};
-    const latest = f.latest || null;
+    const latest = getLiveFrame(state) || f.latest || null;
     let min = '—', max = '—', avg = '—', dyn = '—', satText = '0/0 (0%)';
 
     const arr = Array.isArray(latest?.combined)
       ? latest.combined
       : Array.isArray(latest?.intensity)
       ? latest.intensity
+      : Array.isArray(latest?.I)
+      ? latest.I
       : Array.isArray(latest?.values)
       ? latest.values
       : null;
@@ -250,14 +269,15 @@
     return {
       status: [
         `Mode: ${state.appMode || 'CORE'}`,
-        `Worker: ${state.worker?.status || 'idle'}`,
-        `Frame source: ${state.frame?.source || 'none'}`,
-        `Calibration: ${(state.calibration?.isCalibrated ? 'calibrated' : 'uncalibrated')} · pts ${state.calibration?.points?.length || 0}`
+        `Worker: ${state.worker?.status || 'idle'}${state.worker?.analysisHz ? ` · ${state.worker.analysisHz} Hz` : ''}`,
+        `Frame source: ${latest?.source || state.frame?.source || 'none'}${latest?.pixelWidth ? ` · ${latest.pixelWidth} px` : ''}`,
+        `Calibration: ${((state.calibration?.isCalibrated || (typeof window.isCalibrated === 'function' && window.isCalibrated())) ? 'calibrated' : 'uncalibrated')} · pts ${state.calibration?.points?.length || 0}`
       ],
       dq: [
         `Signal: ${min} - ${max}`,
         `Avg: ${avg} · Dyn: ${dyn}`,
-        `Saturation: ${satText}`
+        `Saturation: ${satText}`,
+        `Hits/QC: ${(state.analysis?.topHits || []).length}/${(state.analysis?.qcFlags || []).length}`
       ]
     };
   }
@@ -314,6 +334,16 @@
       bus.on('ui:refresh', render);
       bus.on('mode:changed', render);
       bus.on('frame:updated', render);
+    }
+    if (window.SpectraPro && window.SpectraPro.coreHooks && window.SpectraPro.coreHooks.on) {
+      let rafId = 0;
+      window.SpectraPro.coreHooks.on('graphFrame', function () {
+        if (rafId) return;
+        rafId = requestAnimationFrame(function () {
+          rafId = 0;
+          renderStatus();
+        });
+      });
     }
     window.addEventListener('resize', render, { passive: true });
   }
