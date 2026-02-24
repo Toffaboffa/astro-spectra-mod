@@ -1,176 +1,135 @@
 (function(){
-  const NS = window.SpectraPro = window.SpectraPro || {};
-  const stateStore = NS.stateStore;
-  const eventBus = NS.eventBus;
-  const ensure = NS.ensureModeFeatures || function(){};
-
-  const TABS = [
-    { key:'general', label:'General' },
-    { key:'core', label:'CORE controls' },
-    { key:'lab', label:'LAB' },
-    { key:'astro', label:'ASTRO' },
-    { key:'other', label:'Other' }
-  ];
-
-  function safeUpdate(patch){
-    if (stateStore && typeof stateStore.update === 'function') stateStore.update(patch);
-  }
-
-  function getState(){
-    return (stateStore && typeof stateStore.getState === 'function') ? stateStore.getState() : {};
-  }
-
-  function q(id){ return document.getElementById(id); }
+  function qs(id){ return document.getElementById(id); }
 
   function createDockHost(){
-    let host = q('SpectraProDockHost');
-    if (host) return host;
-    const drawer = q('graphSettingsDrawerLeft');
-    if (!drawer) return null;
-
-    host = document.createElement('div');
+    const host = document.createElement('div');
     host.id = 'SpectraProDockHost';
-    host.className = 'sp-dock-host';
-    // Preserve existing CORE graph controls (#graphSettingsWindow) already rendered in drawer.
-    // Clearing innerHTML here deletes that subtree and breaks graphScript listeners/queries.
-    drawer.appendChild(host);
+    host.innerHTML = `
+      <div class="sp-main" id="spMain">
+        <div class="sp-tabs" role="tablist" aria-label="Spectra Pro tabs">
+          <button class="sp-tab is-active" data-sp-tab="general">General</button>
+          <button class="sp-tab" data-sp-tab="core">CORE controls</button>
+          <button class="sp-tab" data-sp-tab="lab">LAB</button>
+          <button class="sp-tab" data-sp-tab="astro">ASTRO</button>
+          <button class="sp-tab" data-sp-tab="other">Other</button>
+        </div>
+
+        <div class="sp-content">
+          <div class="sp-tabpanel" id="spTabPanel"></div>
+          <aside class="sp-statusrail" id="spStatusRail">
+            <div class="sp-status-grid">
+              <section class="sp-card sp-card--flat">
+                <div class="sp-card-title">STATUS</div>
+                <div id="spStatusContent"></div>
+              </section>
+              <section class="sp-card sp-card--flat">
+                <div class="sp-card-title">DATA QUALITY</div>
+                <div id="spQualityContent"></div>
+              </section>
+            </div>
+          </aside>
+        </div>
+      </div>`;
     return host;
   }
 
-  function escapeHtml(v){
-    return String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  function mk(el){ const d=document.createElement('div'); d.className='sp-card sp-card--flat'; if(el) d.appendChild(el); return d; }
+
+  function buildCorePanel(){
+    const wrap=document.createElement('div'); wrap.className='sp-core-wrap';
+    wrap.innerHTML = `
+      <div class="sp-core-grid">
+        <label class="sp-field"><span>App mode</span><select id="spAppMode"><option>CORE</option><option>LAB</option><option>ASTRO</option></select></label>
+        <label class="sp-field"><span>Worker</span><select id="spWorkerMode"><option>On</option><option>Off</option></select></label>
+      </div>
+      <div class="sp-row">
+        <button class="sp-btn" type="button" id="spInitLibrariesBtn">Init libraries</button>
+        <button class="sp-btn" type="button" id="spPingWorkerBtn">Ping worker</button>
+        <button class="sp-btn" type="button" id="spRefreshUiBtn">Refresh UI</button>
+      </div>
+      <div class="sp-note">CORE placeholder controls (LAB/ASTRO wire-up continues in next phase).</div>`;
+    return mk(wrap);
   }
 
-  function buildShell(host){
-    if (!host || host.dataset.spBuilt === '1') return;
-    host.dataset.spBuilt = '1';
-    host.innerHTML = `
-      <div class="sp-shell">
-        <div class="sp-main" id="sp-main">
-          <div class="sp-tabbar" role="tablist" aria-label="SPECTRA-PRO tabs">
-            ${TABS.map((t,i)=>`<button class="sp-tab-btn ${i===0?'is-active':''}" data-sp-tab="${t.key}" role="tab" aria-selected="${i===0?'true':'false'}">${t.label}</button>`).join('')}
-          </div>
-          <div class="sp-body-row">
-            <div class="sp-tabpanels" id="sp-tabpanels">
-              ${TABS.map((t,i)=>`<section class="sp-tabpanel ${i===0?'is-active':''}" data-sp-panel="${t.key}" role="tabpanel"></section>`).join('')}
-            </div>
-            <aside class="sp-status-rail" id="SPStatusRail" aria-label="status rail"></aside>
-          </div>
-        </div>
-      </div>`;
-
-    host.querySelectorAll('.sp-tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tab = btn.dataset.spTab;
-        activateTab(host, tab);
-      });
-    });
+  function buildPlaceholder(kind){
+    const d=document.createElement('div'); d.className='sp-card sp-card--flat';
+    d.innerHTML=`<div class="sp-placeholder"><div class="sp-card-title">${kind}</div><div class="sp-note">${kind} controls coming next.</div></div>`;
+    return d;
   }
 
-  function activateTab(host, tab){
-    host.querySelectorAll('.sp-tab-btn').forEach(b => {
-      const on = b.dataset.spTab === tab;
-      b.classList.toggle('is-active', on);
-      b.setAttribute('aria-selected', on ? 'true':'false');
-    });
-    host.querySelectorAll('.sp-tabpanel').forEach(p => p.classList.toggle('is-active', p.dataset.spPanel === tab));
-    safeUpdate({ ui: { activeTab: tab }});
-  }
-
-  function moveNodeIntoPanel(node, panel){
-    if (!node || !panel) return;
-    if (panel.contains(node)) return;
-    panel.innerHTML = '';
-    panel.appendChild(node);
-  }
-
-  function fillPlaceholder(panel, title, text){
-    if (!panel) return;
-    if (panel.children.length > 0) return;
-    panel.innerHTML = `<div class="sp-card"><div class="sp-card-title">${escapeHtml(title)}</div><div class="sp-card-body"><p>${escapeHtml(text)}</p></div></div>`;
-  }
-
-  function renderStatusRail(rail, st){
-    if (!rail) return;
-    const ui = st.ui || {};
-    const dq = st.dataQuality || {};
-    rail.innerHTML = `
-      <div class="sp-card compact"><div class="sp-card-title">STATUS</div><div class="sp-card-body">
-        <div>Mode: <b>${escapeHtml(ui.mode || 'CORE')}</b></div>
-        <div>Worker: ${escapeHtml(ui.workerStatus || 'ready')}</div>
-        <div>Frame: ${escapeHtml(ui.frameWidth ?? 0)} px</div>
-        <div>Calibration: ${escapeHtml(ui.calibrationLabel || 'uncalibrated')} · pts ${escapeHtml(ui.calibrationPoints ?? 0)}</div>
-      </div></div>
-      <div class="sp-card compact"><div class="sp-card-title">DATA QUALITY</div><div class="sp-card-body">
-        <div>Signal: ${escapeHtml(dq.min ?? '—')} .. ${escapeHtml(dq.max ?? '—')}</div>
-        <div>Avg: ${escapeHtml(dq.avg ?? 0)} · Dyn: ${escapeHtml(dq.dynamicRange ?? 0)}</div>
-        <div>Saturation: ${escapeHtml(dq.saturated ?? 0)}/${escapeHtml(dq.total ?? 0)} (${escapeHtml(dq.saturationPct ?? 0)}%)</div>
-        <div>Quality: <span class="sp-badge">${escapeHtml(dq.label || 'no frame')}</span></div>
-      </div></div>`;
-  }
-
-  function render(){
-    const host = createDockHost();
-    if (!host) return;
-    buildShell(host);
-
-    // Hide legacy floating panel if present
-    const legacyFloat = q('spectraProPanel') || q('SpectraProPanel');
-    if (legacyFloat) legacyFloat.style.display = 'none';
-
-    const st = getState();
-    const ui = st.ui || {};
-    ensure(ui.mode || 'CORE');
-
-    const panels = {
-      general: host.querySelector('.sp-tabpanel[data-sp-panel="general"]'),
-      core: host.querySelector('.sp-tabpanel[data-sp-panel="core"]'),
-      lab: host.querySelector('.sp-tabpanel[data-sp-panel="lab"]'),
-      astro: host.querySelector('.sp-tabpanel[data-sp-panel="astro"]'),
-      other: host.querySelector('.sp-tabpanel[data-sp-panel="other"]')
-    };
-
-    // Move ORIGINAL graph settings window (the real SPECTRA controls) into General tab.
-    // graphScript binds directly to controls by id, so we move the whole window intact.
-    const graphControlsWindow = q('graphSettingsWindow');
-    if (graphControlsWindow) moveNodeIntoPanel(graphControlsWindow, panels.general);
-
-    // Keep placeholders for remaining tabs until implemented.
-    if (panels.core && panels.core.children.length === 0) {
-      panels.core.innerHTML = `
-        <div class="sp-card sp-core-panel">
-          <div class="sp-core-grid">
-            <label>App mode<select><option>CORE</option><option>LAB</option><option>ASTRO</option></select></label>
-            <label>Worker<select><option>On</option><option>Off</option></select></label>
-          </div>
-          <div class="sp-core-actions">
-            <button type="button">Init libraries</button>
-            <button type="button">Ping worker</button>
-            <button type="button">Refresh UI</button>
-          </div>
-          <div class="sp-help">CORE remains primary. LAB/ASTRO add overlays + analysis on top.</div>
-        </div>`;
+  function mountOriginalControlsIntoGeneral(panel, cache){
+    panel.innerHTML='';
+    if (!cache || !cache.length) {
+      panel.appendChild(buildPlaceholder('General'));
+      return;
     }
-    fillPlaceholder(panels.lab, 'LAB', 'LAB-MVP panel (placeholder) – analyspresets och labbverktyg kopplas här.');
-    fillPlaceholder(panels.astro, 'ASTRO', 'ASTRO panel (placeholder) – kalibrering mot linjebibliotek och astro-overlay kommer här.');
-    fillPlaceholder(panels.other, 'Other', 'Övriga verktyg, export och debug.');
+    const wrap = document.createElement('div');
+    wrap.className = 'sp-general-wrap';
+    cache.forEach(node => wrap.appendChild(node));
+    panel.appendChild(wrap);
+  }
 
-    renderStatusRail(q('SPStatusRail'), st);
-
-    const active = ui.activeTab || 'general';
-    activateTab(host, active);
+  function renderStatus(store){
+    const s = (window.SpectraProState && window.SpectraProState.getState && window.SpectraProState.getState()) || {};
+    const st = qs('spStatusContent');
+    const dq = qs('spQualityContent');
+    if (st) st.innerHTML = `
+      <div>Mode: <b>${String(s.mode||'CORE')}</b></div>
+      <div>Worker: ${s.workerReady ? 'ready' : 'idle'}</div>
+      <div>Frame: ${Number.isFinite(s.frameWidth)?s.frameWidth:0} px</div>
+      <div>Calibration: ${(s.calibration && s.calibration.state) || 'uncalibrated'} · pts ${(s.calibration && s.calibration.points)||0}</div>`;
+    if (dq) dq.innerHTML = `
+      <div>Signal: ${Number.isFinite(s.signalMin)?s.signalMin:'—'}–${Number.isFinite(s.signalMax)?s.signalMax:'—'}</div>
+      <div>Avg: ${Number.isFinite(s.signalAvg)?s.signalAvg.toFixed(1):'0.0'} · Dyn: ${Number.isFinite(s.dynamicRange)?s.dynamicRange.toFixed(1):'0.0'}</div>
+      <div>Saturation: ${(s.saturatedPixels||0)}/${(s.totalPixels||0)} (${s.totalPixels?(((s.saturatedPixels||0)/s.totalPixels)*100).toFixed(1):'0.0'}%)</div>`;
   }
 
   function init(){
-    render();
-    if (eventBus && typeof eventBus.on === 'function') {
-      eventBus.on('state:changed', render);
+    const drawer = qs('graphSettingsDrawer');
+    const left = qs('graphSettingsDrawerLeft');
+    if (!drawer || !left) return;
+
+    // Capture original graph controls once (the real controls live directly in graphSettingsDrawerLeft in SPECTRA-1)
+    let originalControls = window.__spOriginalGeneralControls;
+    if (!originalControls) {
+      originalControls = Array.from(left.children).filter(n => !(n.id === 'SpectraProDockHost'));
+      window.__spOriginalGeneralControls = originalControls;
+    }
+
+    let host = qs('SpectraProDockHost');
+    if (!host) {
+      host = createDockHost();
+      left.appendChild(host);
+    }
+
+    let active = 'general';
+    const panel = qs('spTabPanel');
+
+    function renderTab(){
+      if (!panel) return;
+      if (active === 'general') mountOriginalControlsIntoGeneral(panel, window.__spOriginalGeneralControls);
+      else if (active === 'core') { panel.innerHTML=''; panel.appendChild(buildCorePanel()); }
+      else if (active === 'lab') { panel.innerHTML=''; panel.appendChild(buildPlaceholder('LAB')); }
+      else if (active === 'astro') { panel.innerHTML=''; panel.appendChild(buildPlaceholder('ASTRO')); }
+      else { panel.innerHTML=''; panel.appendChild(buildPlaceholder('Other')); }
+    }
+
+    host.querySelectorAll('.sp-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        active = btn.dataset.spTab || 'general';
+        host.querySelectorAll('.sp-tab').forEach(b => b.classList.toggle('is-active', b===btn));
+        renderTab();
+      });
+    });
+
+    renderTab();
+    renderStatus();
+
+    if (!window.__spStatusListener && window.SpectraProEvents && window.SpectraProEvents.on) {
+      window.__spStatusListener = window.SpectraProEvents.on('state:changed', () => { renderStatus(); });
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, { once:true });
-  } else {
-    init();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once:true });
+  else init();
 })();
