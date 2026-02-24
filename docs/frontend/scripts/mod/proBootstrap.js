@@ -94,7 +94,6 @@
     const ui = st.ui || {};
     const dq = st.dataQuality || {};
     rail.innerHTML = `
-      <div class="sp-brandline"><span class="sp-brand">SPECTRA-PRO</span><span class="sp-pill">P1</span></div>
       <div class="sp-card compact"><div class="sp-card-title">STATUS</div><div class="sp-card-body">
         <div>Mode: <b>${escapeHtml(ui.mode || 'CORE')}</b></div>
         <div>Worker: ${escapeHtml(ui.workerStatus || 'ready')}</div>
@@ -130,12 +129,27 @@
       other: host.querySelector('.sp-tabpanel[data-sp-panel="other"]')
     };
 
-    // Move original graph controls into General tab. This is the crucial part.
-    const graphControls = q('graphSettingsContent');
-    if (graphControls) moveNodeIntoPanel(graphControls, panels.general);
+    // Move ORIGINAL graph settings window (the real SPECTRA controls) into General tab.
+    // graphScript binds directly to controls by id, so we move the whole window intact.
+    const graphControlsWindow = q('graphSettingsWindow');
+    if (graphControlsWindow) moveNodeIntoPanel(graphControlsWindow, panels.general);
 
     // Keep placeholders for remaining tabs until implemented.
-    fillPlaceholder(panels.core, 'CORE controls', 'CORE använder i nuläget huvudkontrollerna i General. Här kan vi senare lägga PRO-specifika CORE-funktioner.');
+    if (panels.core && panels.core.children.length === 0) {
+      panels.core.innerHTML = `
+        <div class="sp-card sp-core-panel">
+          <div class="sp-core-grid">
+            <label>App mode<select><option>CORE</option><option>LAB</option><option>ASTRO</option></select></label>
+            <label>Worker<select><option>On</option><option>Off</option></select></label>
+          </div>
+          <div class="sp-core-actions">
+            <button type="button">Init libraries</button>
+            <button type="button">Ping worker</button>
+            <button type="button">Refresh UI</button>
+          </div>
+          <div class="sp-help">CORE remains primary. LAB/ASTRO add overlays + analysis on top.</div>
+        </div>`;
+    }
     fillPlaceholder(panels.lab, 'LAB', 'LAB-MVP panel (placeholder) – analyspresets och labbverktyg kopplas här.');
     fillPlaceholder(panels.astro, 'ASTRO', 'ASTRO panel (placeholder) – kalibrering mot linjebibliotek och astro-overlay kommer här.');
     fillPlaceholder(panels.other, 'Other', 'Övriga verktyg, export och debug.');
