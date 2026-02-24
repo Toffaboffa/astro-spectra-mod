@@ -31,7 +31,8 @@
     host = document.createElement('div');
     host.id = 'SpectraProDockHost';
     host.className = 'sp-dock-host';
-    drawer.innerHTML = '';
+    // Preserve existing CORE graph controls (#graphSettingsWindow) already rendered in drawer.
+    // Clearing innerHTML here deletes that subtree and breaks graphScript listeners/queries.
     drawer.appendChild(host);
     return host;
   }
