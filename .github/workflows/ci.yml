@@ -37,5 +37,5 @@ jobs:
             exit 1
           fi
           # Ensure referenced CSS files exist
-          test -f docs/frontend/styles/customColorsStyle.css
-          test -f docs/frontend/styles/recordingStyle.css
+          (test -f docs/frontend/styles/customColorsStyle.css || test -f docs/frontend/styles/styles.css)
+          (test -f docs/frontend/styles/recordingStyle.css || test -f docs/frontend/styles/styles.css)

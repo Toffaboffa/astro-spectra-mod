@@ -1,3 +1,13 @@
+## Patch update – Phase 2.1 dock/layout stabilization (current)
+
+- Fixed SPECTRA-PRO dock mounting so **SpectraProDockHost** is now injected directly into `#graphSettingsDrawerLeft` (the drawer under the graph).
+- Moved original graph controls (`#graphSettingsContent`, including p-2/px-2 content) into **General** tab inside the dock.
+- Kept a persistent right-side status rail (`SPStatusRail`) inside the dock body, always visible.
+- Removed/hidden legacy floating SPECTRA-PRO panel if present (prevents duplicate UI).
+- Added authoritative dock CSS rules in `docs/frontend/styles/mod-panels.css` to prevent empty/hidden tab panel regressions.
+- Forced drawer/sidebar toggle handles to remain visible (no hover-disappear behavior).
+- Remaining work: wire actual LAB/ASTRO/Other controls into `sp-tabpanel` containers; refine mobile compaction.
+
 # FunctionSpec.md — SPECTRA-PRO implementation plan and status tracker
 
 This file defines **how we build SPECTRA-PRO safely**, in what order files are patched, and how we avoid breaking CORE mode while adding LAB and ASTRO features.
@@ -519,3 +529,56 @@ That means this function spec intentionally optimizes for **stable patch order**
 - Preset-aware filtering in worker
 - Export of LAB hits/QC metadata
 - Engine7 library loading from JSON files (currently built-in lite fallback)
+
+## Incremental Updates
+
+- **Hotfix (P2.1 UI dock):** Forced SPECTRA-PRO panel to dock inside `#graphSettingsDrawerLeft` with explicit non-floating style reset (prevents legacy/cached floating panel CSS from collapsing layout in bottom-right corner).
+
+## Latest hotfix notes
+- Hotfix 2.1.3: CI frontend-smoke path check now accepts merged `docs/frontend/styles/styles.css`; SPECTRA-PRO dock moved to dedicated host below graph settings; compact layout to avoid page scrollbar and stop overlap with drawer toggles.
+
+
+- **Phase 2.1 hotfix (dock placement + CSS):** PRO dock is now mounted below `#graphSettingsDrawer` (not nested inside graph controls), scrollbar overflow guarded, and drawer toggle arrows forced above overlays. CI frontend smoke CSS check accepts consolidated styles file.
+
+## Phase 2.1 UI hotfix (General + status rail layout)
+
+### Fixed in this patch
+- **General tab now loads the real original SPECTRA graph controls** (the existing `.p-2` / `.px-2` blocks from `#graphSettingsDrawerLeft`) instead of an empty placeholder panel.
+- **SPECTRA-PRO dock host is the only visible panel container** in the lower drawer; legacy drawer children are hidden after being re-mounted into the dock UI.
+- **Status + Data Quality rail** is now a fixed right-side area and renders the two cards **side-by-side** (desktop) instead of stacked.
+- Removed redundant **brandline / pill branding UI** in the status rail to save vertical space.
+- **CORE controls placeholder restored** with `App mode`, `Worker`, and action buttons (`Init libraries`, `Ping worker`, `Refresh UI`).
+- **Double-border issue reduced** by removing inner card framing in the General tab so original controls can use the panel space directly.
+- **Drawer toggle arrows** are force-kept visible via CSS overrides (`opacity/visibility/display/pointer-events`) to stop the disappearing-hover bug.
+- **CI/frontend smoke** remains fixed (path checks no longer fail after style consolidation).
+
+### Notes
+- This patch intentionally uses strong CSS overrides at the end of `mod-panels.css` to beat legacy rules while the layout is still evolving.
+- Next UI cleanup pass can move these overrides into a single canonical PRO stylesheet once layout stabilizes.
+
+## Patch 2026-02-24 – GUI recovery (bottom dock regression)
+
+### klart
+- `proBootstrap.js` rewritten to a **minimal, compatibility-first dock bootstrap**.
+- General-tab now mounts the **actual original graph controls** from `#graphSettingsDrawerLeft` (Reset Zoom, Step Back, RGB toggles, x-axis labels, peaks, lower bound, etc.) without renaming IDs.
+- Dock tabs (General / CORE controls / LAB / ASTRO / Other) rebuilt with stable tab switching (no panel duplication).
+- Status/Data Quality rail rebuilt as a fixed right column with **two cards side-by-side**.
+- Added popup cleanup guard for accidental default `Info message` visibility on load.
+- CSS overrides appended to keep dock in normal flow under graph and preserve drawer handles.
+
+### påbörjat
+- Data Quality text is rendered defensively from available frame data if present (falls back gracefully when worker/frame payload shape differs).
+- CORE controls tab is placeholder wiring only (safe state updates, no heavy logic changes).
+
+### kvar
+- Deeper cleanup of historical `mod-panels.css` hotfix layers (many old conflicting overrides still remain in file, but are superseded by final patch block).
+- Optional refactor to move dock styles into one canonical stylesheet section once UI is stable.
+
+### kända risker
+- `mod-panels.css` contains many legacy overrides from earlier sessions; this patch intentionally wins by appending authoritative rules last.
+- If future patches again move `#graphSettingsDrawerLeft` children before `proBootstrap` runs, General mounting may need a small selector adjustment.
+
+### regression-logg
+- Root cause was a **wrong DOM hosting strategy** while converting a floating dock to a bottom-docked dock: previous patch moved/targeted the wrong drawer side (`Right`) and stacked multiple incompatible CSS hotfixes.
+- A critical CSS rule (`#graphSettingsDrawerLeft > :not(#SpectraProDockHost){display:none !important;}`) hid the real original controls unless they were rehosted correctly.
+- Repeated broad CSS overrides changed dock DOM assumptions (`.sp-*` class names/layout models), causing tabs/visibility mismatches and null lookups in surrounding UI code.

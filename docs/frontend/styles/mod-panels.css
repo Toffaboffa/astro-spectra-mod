@@ -37,3 +37,539 @@
 #spectraProPanel .sp-rank{ opacity:.8; }
 #spectraProPanel .sp-name{ font-weight:600; }
 #spectraProPanel .sp-nm, #spectraProPanel .sp-conf{ color:#bcd2ff; }
+
+
+/* Docked layout (Phase 2.1 hotfix3) */
+#spectraProDockHost{display:block; width:100%; margin:8px 0 0 0;}
+#spectraProPanel.sp-inline-panel{
+  position: static !important;
+  right:auto !important; left:auto !important; top:auto !important; bottom:auto !important;
+  width:100% !important; max-width:none !important; min-width:0 !important;
+  margin:0 !important; z-index: 20 !important;
+  border-radius:10px;
+  overflow:hidden;
+}
+#spectraProPanel .sp-main{display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:12px; align-items:start;}
+#spectraProPanel .sp-tabs-row{display:contents;}
+#spectraProPanel .sp-tabs{display:flex; gap:8px; flex-wrap:wrap; padding:10px 12px; border-bottom:1px solid #243750;}
+#spectraProPanel .sp-tab{border:1px solid #1fcf88; color:#68f0bf; background:#071733; border-radius:7px; padding:6px 12px; font-weight:600;}
+#spectraProPanel .sp-tab.is-active{background:#0d2648; box-shadow: inset 0 0 0 1px rgba(104,240,191,.15);}
+#spectraProPanel .sp-statusdock{grid-column:2; grid-row:1 / span 2; padding:10px 12px 12px; border-left:1px solid #243750;}
+#spectraProPanel .sp-brandrow{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+#spectraProPanel .sp-brand{font-weight:800; letter-spacing:.03em;}
+#spectraProPanel .sp-badge{font-size:11px; border:1px solid #47638c; border-radius:999px; padding:1px 7px;}
+#spectraProPanel .sp-card{border:1px solid #223754; background:rgba(9,18,34,.35); border-radius:10px; padding:8px 10px; margin-bottom:10px;}
+#spectraProPanel .sp-card-title{text-transform:uppercase; font-size:11px; letter-spacing:.05em; color:#bcd2ff; margin-bottom:6px; font-weight:700;}
+#spectraProPanel .sp-panels{grid-column:1; grid-row:2; min-width:0; padding:0 12px 12px;}
+#spectraProPanel .sp-tabpanel{display:none; min-height:140px; border:1px solid #1c3050; border-radius:10px; padding:10px; background:rgba(5,14,28,.25);}
+#spectraProPanel .sp-tabpanel.is-active{display:block;}
+#spectraProPanel .sp-grid2{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+#spectraProPanel .sp-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+#spectraProPanel label{display:flex; flex-direction:column; gap:4px; font-size:12px; color:#cfe0ff;}
+#spectraProPanel select,#spectraProPanel input{max-width:100%; background:#0c1a30; color:#e9f2ff; border:1px solid #294568; border-radius:6px; padding:5px 6px;}
+#spectraProPanel .sp-note{margin-top:10px; font-size:12px; color:#9fb2cf;}
+#spectraProPanel .sp-status{font-size:12px; line-height:1.35;}
+#spectraProPanel .sp-status .muted{color:#9fb2cf;}
+
+/* Prevent extra page scrollbar from dock content */
+#graphSettingsDrawer{overflow:visible;}
+#graphSettingsDrawerLeft,#graphSettingsDrawerRight{overflow:visible;}
+body{overflow:hidden;}
+
+@media (max-width: 1400px){
+  #spectraProPanel .sp-main{grid-template-columns:1fr 320px;}
+}
+@media (max-width: 1100px){
+  #spectraProPanel .sp-main{grid-template-columns:1fr;}
+  #spectraProPanel .sp-statusdock{grid-column:1; grid-row:auto; border-left:none; border-top:1px solid #243750;}
+  #spectraProPanel .sp-panels{grid-row:auto;}
+}
+
+
+/* Hotfix 2.1.4: match actual DOM structure (tabs/status are siblings) */
+#spectraProPanel.sp-inline-panel{display:grid; grid-template-columns:minmax(0,1fr) 360px; grid-template-rows:auto auto; gap:0 12px; align-items:start;}
+#spectraProPanel .sp-tabs-row{grid-column:1 / 2; grid-row:1; display:block;}
+#spectraProPanel .sp-tabs{border-bottom:none;}
+#spectraProPanel .sp-main{grid-column:1 / 2; grid-row:2; display:block; min-width:0;}
+#spectraProPanel .sp-panels{padding:0 12px 12px;}
+#spectraProPanel .sp-statusdock{grid-column:2; grid-row:1 / span 2; width:auto; border-left:1px solid #243750; padding:10px 12px 12px;}
+#spectraProPanel .sp-tabpanel{min-height:110px;}
+@media (max-width: 1100px){
+  #spectraProPanel.sp-inline-panel{grid-template-columns:1fr; grid-template-rows:auto auto auto;}
+  #spectraProPanel .sp-tabs-row{grid-column:1; grid-row:1;}
+  #spectraProPanel .sp-main{grid-column:1; grid-row:2;}
+  #spectraProPanel .sp-statusdock{grid-column:1; grid-row:3; border-left:none; border-top:1px solid #243750;}
+}
+
+
+/* ==== Phase 2.1 dock/layout hotfix ==== */
+#graphCanvasContainer { overflow: hidden; }
+#spectraProDockHost.sp-dock-host {
+  width: calc(100% - 16px);
+  max-width: calc(100% - 16px);
+  margin: 8px 8px 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Keep the PRO panel in normal flow, not floating */
+.sp-inline-panel.sp-docked {
+  position: relative !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  z-index: 3;
+}
+
+/* Make sure drawer arrows/toggles stay clickable/visible */
+#graphSettingsDrawerLeft, #graphSettingsDrawerRight,
+#hideGraphSettingsDrawerLeftButton, #hideGraphSettingsDrawerRightButton {
+  position: relative;
+  z-index: 20;
+}
+
+/* Prevent inner content from creating a vertical scrollbar */
+.sp-inline-main {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 360px;
+  gap: 12px;
+  align-items: start;
+}
+.sp-inline-body { min-width: 0; }
+.sp-inline-right {
+  width: 360px;
+  min-width: 0;
+}
+.sp-inline-content {
+  min-height: 150px;
+  max-height: none;
+  overflow: hidden;
+}
+.sp-inline-section.active {
+  display: block;
+}
+
+@media (max-width: 1200px) {
+  .sp-inline-main {
+    grid-template-columns: 1fr;
+  }
+  .sp-inline-right {
+    width: 100%;
+  }
+}
+
+/* --- SPECTRA-PRO dock (current proBootstrap DOM) --- */
+#spectraProPanel{
+  position:relative;
+  margin-top:8px;
+  border:1px solid rgba(125,211,252,.18);
+  border-radius:10px;
+  background:linear-gradient(180deg, rgba(7,17,38,.95), rgba(4,14,34,.97));
+  overflow:visible;
+}
+#spectraProPanel .sp-shell{ position:relative; }
+#spectraProPanel .sp-dock-toggle{
+  position:absolute; right:8px; top:8px; z-index:3;
+  width:18px; height:18px; padding:0; border-radius:4px;
+  border:1px solid rgba(125,211,252,.25); background:#10284d; color:#dbeafe; cursor:pointer;
+}
+#spectraProPanel .sp-root{
+  display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:12px;
+  padding:10px 12px 12px; align-items:start;
+}
+#spectraProPanel .sp-root.hidden{ display:none; }
+#spectraProPanel .sp-main{ min-width:0; }
+#spectraProPanel .sp-tabbar{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+#spectraProPanel .sp-tab{
+  border:1px solid rgba(16,185,129,.75);
+  background:#071b36; color:#8fffe0; border-radius:8px; padding:6px 12px; font-weight:700; cursor:pointer;
+}
+#spectraProPanel .sp-tab.is-active{ background:#0b2d4f; box-shadow:0 0 0 1px rgba(16,185,129,.25) inset; }
+#spectraProPanel .sp-tabpanels{ min-height:140px; }
+#spectraProPanel .sp-tabpanel{ display:none; border:1px solid rgba(125,211,252,.12); border-radius:10px; padding:10px; background:rgba(4,14,34,.45); }
+#spectraProPanel .sp-tabpanel.is-active{ display:block; }
+#spectraProPanel .sp-note{ color:#bcd0ea; font-size:12px; }
+#spectraProPanel .sp-form-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+#spectraProPanel .sp-field{ display:flex; flex-direction:column; gap:4px; color:#dbeafe; font-size:12px; }
+#spectraProPanel .sp-field select{ width:100%; }
+#spectraProPanel .sp-form-grid button,
+#spectraProPanel .sp-field select{
+  min-height:32px; border-radius:8px; border:1px solid rgba(125,211,252,.22);
+  background:#10284d; color:#e6f0ff; padding:6px 10px;
+}
+#spectraProPanel .sp-status-rail{ min-width:0; display:grid; gap:10px; }
+#spectraProPanel .sp-brand-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; color:#eef6ff; font-weight:800; }
+#spectraProPanel .sp-brand{ letter-spacing:.03em; }
+#spectraProPanel .sp-mode-badge{ border:1px solid rgba(125,211,252,.3); border-radius:999px; padding:2px 8px; font-size:11px; color:#bcd0ea; }
+#spectraProPanel .sp-card{ border:1px solid rgba(125,211,252,.16); border-radius:10px; padding:10px; background:rgba(4,14,34,.55); }
+#spectraProPanel .sp-card h4{ margin:0 0 6px; font-size:12px; color:#bcd0ea; }
+#spectraProPanel .sp-list{ color:#e6f0ff; font-size:12px; line-height:1.4; }
+#spectraProPanel .sp-list .muted{ color:#91a7c5; }
+#spectraProPanel .sp-list ul{ margin:0; padding-left:16px; }
+#spectraProPanel .sp-list li{ margin:2px 0; }
+
+@media (max-width: 1200px){
+  #spectraProPanel .sp-root{ grid-template-columns:1fr; }
+  #spectraProPanel .sp-status-rail{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media (max-width: 820px){
+  #spectraProPanel .sp-form-grid{ grid-template-columns:1fr; }
+  #spectraProPanel .sp-status-rail{ grid-template-columns:1fr; }
+}
+
+
+/* Hotfix: embed PRO dock inside graph settings drawer (prevents hidden/empty strip) */
+#graphWindowContainer{
+  padding-bottom: 0 !important;
+}
+#spectraProDockHost{
+  width: 100%;
+  margin: 0 0 10px 0;
+}
+#graphSettingsDrawerLeft > #spectraProDockHost{
+  display: block;
+}
+#graphSettingsDrawerLeft #spectraProPanel{
+  position: static !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+}
+#graphSettingsDrawerLeft #spectraProPanel .sp-dock-shell{
+  padding: 0;
+}
+#graphSettingsDrawerLeft #spectraProPanel .sp-dock-layout{
+  min-height: 0;
+  grid-template-columns: minmax(0,1fr) 340px;
+}
+#graphSettingsDrawerLeft #spectraProPanel .sp-tab-content{
+  min-height: 100px;
+  max-height: 170px;
+}
+#graphSettingsDrawerLeft #spectraProPanel .sp-status-column{
+  max-height: 170px;
+}
+@media (max-width: 1200px){
+  #graphSettingsDrawerLeft #spectraProPanel .sp-dock-layout{
+    grid-template-columns: 1fr;
+  }
+  #graphSettingsDrawerLeft #spectraProPanel .sp-tab-content,
+  #graphSettingsDrawerLeft #spectraProPanel .sp-status-column{
+    max-height: none;
+  }
+}
+
+
+/* === SPECTRA-PRO authoritative dock layout (hotfix) === */
+#SpectraProDockHost.sp-dock-host{display:block;width:100%;height:100%;min-height:0;}
+#graphSettingsDrawerLeft{display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+#graphSettingsDrawerLeft > #SpectraProDockHost{flex:1 1 auto;min-height:0;}
+#graphSettingsContent{margin:0 !important;padding:0 !important;background:transparent !important;border:none !important;box-shadow:none !important;width:100%;}
+#graphSettingsContent > .graph-settings-grid{display:block !important;}
+
+.sp-shell{height:100%;min-height:0;display:flex;flex-direction:column;}
+.sp-main{height:100%;min-height:0;display:flex;flex-direction:column;gap:8px;padding:8px 10px;}
+.sp-tabbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.sp-tab-btn{border:1px solid #1ee08a;background:#061a33;color:#6fffbf;padding:6px 12px;border-radius:8px;font-weight:700;cursor:pointer;}
+.sp-tab-btn.is-active{background:#0a2546;color:#d9fff0;box-shadow:0 0 0 1px rgba(30,224,138,.3) inset;}
+.sp-body-row{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;min-height:0;flex:1 1 auto;}
+.sp-tabpanels{min-height:0;overflow:hidden;}
+.sp-tabpanel{display:none;height:100%;min-height:0;overflow:auto;border:1px solid rgba(120,180,255,.18);background:rgba(4,19,43,.45);border-radius:10px;padding:10px;}
+.sp-tabpanel.is-active{display:block;}
+.sp-tabpanel[data-sp-panel="general"]{padding:0;overflow:auto;background:transparent;border:none;}
+.sp-status-rail{display:flex;flex-direction:column;gap:10px;min-width:0;border-left:1px solid rgba(120,180,255,.14);padding-left:12px;overflow:auto;}
+.sp-brandline{display:flex;justify-content:space-between;align-items:center;padding:2px 0 4px;}
+.sp-brand{font-weight:900;letter-spacing:.04em;color:#e7f2ff;}
+.sp-pill{font-size:12px;border:1px solid #3e74bf;color:#cfe4ff;border-radius:999px;padding:1px 7px;}
+.sp-card{border:1px solid rgba(120,180,255,.18);background:#071a38;border-radius:10px;padding:10px;}
+.sp-card.compact{padding:8px 10px;}
+.sp-card-title{color:#b7d6ff;font-weight:800;font-size:12px;letter-spacing:.05em;margin-bottom:6px;}
+.sp-card-body{color:#dfeeff;font-size:13px;line-height:1.35;}
+.sp-badge{display:inline-block;padding:1px 7px;border-radius:999px;background:#0f2748;border:1px solid rgba(120,180,255,.22);}
+
+/* prevent nested old headers/legacy wrappers from creating extra empty bars */
+#SpectraProDockHost .sp-shell > .sp-brandline,
+#SpectraProDockHost .sp-root,
+#SpectraProDockHost .sp-header,
+#SpectraProDockHost .sp-titlebar{display:none !important;}
+
+/* Dock toggle handles: always visible, exactly two built-in handles from existing HTML */
+#sidebarToggleHandleLeft,
+#drawerToggleHandle{opacity:1 !important;visibility:visible !important;display:flex !important;z-index:10000 !important;pointer-events:auto !important;}
+#sidebarHoverZoneLeft,
+#drawerHoverZone{pointer-events:none;}
+#sidebarToggleHandleLeft:hover,
+#drawerToggleHandle:hover{filter:brightness(1.12);}
+
+/* Avoid scrollbar in normal desktop dock area */
+@media (min-width: 1100px){
+  .sp-tabpanel.is-active{overflow:auto;}
+}
+@media (max-width: 1099px){
+  .sp-body-row{grid-template-columns:minmax(0,1fr);}
+  .sp-status-rail{border-left:none;padding-left:0;border-top:1px solid rgba(120,180,255,.14);padding-top:10px;}
+}
+
+
+/* === Phase 2.1 layout cleanup authoritative overrides === */
+#SpectraProDockHost{width:100%;height:100%;display:block;}
+#SpectraProDockHost .sp-shell,#SpectraProDockHost .sp-main{height:100%;min-height:0;}
+#SpectraProDockHost .sp-main{display:flex;flex-direction:column;gap:8px;padding:8px 10px;}
+#SpectraProDockHost .sp-tabbar{display:flex;flex-wrap:wrap;gap:8px;}
+#SpectraProDockHost .sp-body-row{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;min-height:0;flex:1 1 auto;}
+#SpectraProDockHost .sp-tabpanels{min-width:0;min-height:0;overflow:hidden;}
+#SpectraProDockHost .sp-tabpanel{height:100%;min-height:0;overflow:auto;border:1px solid rgba(120,180,255,.18);border-radius:10px;background:rgba(4,19,43,.45);padding:10px;}
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"]{padding:0;border:none;background:transparent;}
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"] .sp-card{border:none !important;background:transparent !important;padding:0 !important;box-shadow:none !important;}
+#SpectraProDockHost .sp-status-rail{min-width:0;border-left:1px solid rgba(120,180,255,.14);padding-left:12px;overflow:hidden;}
+#SpectraProDockHost .sp-status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;}
+#SpectraProDockHost .sp-status-rail .sp-card{margin:0;border:1px solid rgba(120,180,255,.18);background:#071a38;}
+#SpectraProDockHost .sp-status-rail .sp-brandline,#SpectraProDockHost .sp-status-rail .sp-pill,#SpectraProDockHost .sp-status-rail .sp-brand{display:none !important;}
+#SpectraProDockHost .sp-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#SpectraProDockHost .sp-field{display:grid;gap:4px;color:#dfeeff;font-size:12px;}
+#SpectraProDockHost .sp-field select{min-height:32px;border-radius:8px;border:1px solid rgba(125,211,252,.22);background:#10284d;color:#e6f0ff;padding:6px 10px;}
+#SpectraProDockHost .sp-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+#SpectraProDockHost .sp-btn{border:1px solid rgba(120,180,255,.28);background:#11335d;color:#e8f2ff;padding:7px 10px;border-radius:8px;cursor:pointer;}
+#SpectraProDockHost .sp-help{margin-top:10px;color:#a9c3e8;font-size:12px;}
+#SpectraProDockHost .sp-ghost{color:#dfeeff;opacity:.9;padding:8px;}
+#graphSettingsDrawerLeft{overflow:hidden !important;}
+#graphSettingsDrawerLeft > :not(#SpectraProDockHost){display:none !important;}
+#sidebarToggleHandleLeft,#drawerToggleHandle{opacity:1 !important;visibility:visible !important;display:flex !important;pointer-events:auto !important;}
+#sidebarToggleHandleLeft:hover,#drawerToggleHandle:hover{opacity:1 !important;}
+@media (max-width:1200px){#SpectraProDockHost .sp-body-row{grid-template-columns:1fr;}#SpectraProDockHost .sp-status-rail{border-left:none;padding-left:0;border-top:1px solid rgba(120,180,255,.14);padding-top:10px;}#SpectraProDockHost .sp-status-grid{grid-template-columns:1fr;}}
+
+/* === SPECTRA-PRO dock layout hotfix (authoritative overrides) === */
+#SpectraProDockHost{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(320px, 28%);
+  grid-template-rows:auto minmax(120px, auto);
+  grid-template-areas:
+    "tabs tabs"
+    "panel rail" !important;
+  gap:10px !important;
+  align-items:stretch !important;
+  min-height:160px;
+  overflow:hidden !important;
+}
+#SpectraProDockHost .sp-mainbar{ grid-area:tabs !important; min-height:0; }
+#SpectraProDockHost .sp-tabpanel-wrap{
+  grid-area:panel !important;
+  min-height:0 !important;
+  overflow:hidden !important;
+  display:block !important;
+}
+#SpectraProDockHost .sp-status-rail{
+  grid-area:rail !important;
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:8px !important;
+  align-content:start;
+  overflow:hidden !important;
+  max-height:none !important;
+}
+#SpectraProDockHost .sp-brandline, #SpectraProDockHost .sp-pill{ display:none !important; }
+#SpectraProDockHost .sp-tabpanel{
+  border:1px solid rgba(90,140,255,.18) !important;
+  border-radius:10px !important;
+  padding:8px !important;
+  height:100% !important;
+  overflow:auto !important;
+  min-height:0 !important;
+}
+#SpectraProDockHost .sp-tabpanel > .sp-card{
+  border:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  margin:0 !important;
+}
+/* General tab contains the real graph controls window */
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"] #graphSettingsWindow{
+  margin:0 !important;
+  border:none !important;
+  background:transparent !important;
+  width:100% !important;
+  max-width:none !important;
+  padding:0 !important;
+}
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"] #graphSettingsWindow .p-2,
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"] #graphSettingsWindow .px-2{
+  border:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  padding:0 !important;
+}
+#SpectraProDockHost .sp-status-rail .sp-card.compact{ min-height:0 !important; }
+#SpectraProDockHost .sp-status-rail .sp-card-body{ font-size:12px; line-height:1.35; }
+#SpectraProDockHost .sp-core-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+#SpectraProDockHost .sp-core-grid label{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:#c7dbff; }
+#SpectraProDockHost .sp-core-grid select{ width:100%; min-height:32px; border-radius:6px; }
+#SpectraProDockHost .sp-core-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+#SpectraProDockHost .sp-core-actions button{ min-height:32px; }
+#SpectraProDockHost .sp-help{ margin-top:8px; font-size:12px; opacity:.8; }
+@media (max-width: 1200px){
+  #SpectraProDockHost{ grid-template-columns:1fr !important; grid-template-areas:"tabs" "rail" "panel" !important; }
+  #SpectraProDockHost .sp-status-rail{ grid-template-columns:1fr 1fr !important; }
+}
+
+
+/* === FINAL DOCK LAYOUT OVERRIDES (phase2.1 hotfix) === */
+#SpectraProDockHost{display:flex!important;flex-direction:column!important;height:100%!important;min-height:0!important;overflow:hidden!important;}
+#SpectraProDockHost .sp-shell{display:flex!important;flex-direction:column!important;height:100%!important;min-height:0!important;overflow:hidden!important;background:transparent!important;border:none!important;}
+#SpectraProDockHost .sp-head{display:none!important;}
+#SpectraProDockHost .sp-main-tabs{display:flex!important;gap:8px!important;align-items:center!important;padding:8px 10px!important;border-bottom:1px solid rgba(120,170,255,.16)!important;flex:0 0 auto!important;}
+#SpectraProDockHost .sp-body-row{display:grid!important;grid-template-columns:minmax(0,1fr) 320px!important;gap:10px!important;align-items:stretch!important;min-height:0!important;flex:1 1 auto!important;overflow:hidden!important;padding:8px 10px 10px!important;}
+#SpectraProDockHost .sp-tabpanels{min-width:0!important;min-height:0!important;height:100%!important;overflow:hidden!important;border:1px solid rgba(120,170,255,.12)!important;border-radius:10px!important;background:rgba(4,14,38,.35)!important;}
+#SpectraProDockHost .sp-tabpanel{display:none!important;height:100%!important;min-height:0!important;padding:0!important;overflow:auto!important;}
+#SpectraProDockHost .sp-tabpanel.is-active{display:block!important;}
+#SpectraProDockHost .sp-tabpanel .sp-card{border:none!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;padding:10px!important;height:100%!important;min-height:0!important;}
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"]{overflow:hidden!important;}
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"] #graphSettingsWindow{display:block!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;padding:10px!important;border:none!important;background:transparent!important;overflow:auto!important;}
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"] #graphSettingsWindow > .p-2,
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"] #graphSettingsWindow > .px-2{width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:transparent!important;border:none!important;display:flex!important;flex-direction:column!important;gap:10px!important;}
+#SpectraProDockHost .sp-status-rail{width:320px!important;min-width:320px!important;max-width:320px!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;align-content:start!important;align-self:stretch!important;padding:0!important;background:transparent!important;border:none!important;overflow:hidden!important;}
+#SpectraProDockHost .sp-status-rail .sp-brandline,#SpectraProDockHost .sp-status-rail .sp-pill{display:none!important;}
+#SpectraProDockHost .sp-status-rail .sp-card{min-width:0!important;margin:0!important;padding:10px!important;border:1px solid rgba(120,170,255,.2)!important;background:rgba(7,18,46,.5)!important;}
+#SpectraProDockHost .sp-status-rail .sp-card h4{margin:0 0 6px!important;}
+#graphSettingsDrawerBottom{display:flex!important;flex-direction:column!important;overflow:hidden!important;}
+#graphSettingsDrawerBottom > #SpectraProDockHost{flex:1 1 auto!important;min-height:180px!important;}
+#leftSideToggle,#graphSettingsToggle{opacity:1!important;visibility:visible!important;pointer-events:auto!important;z-index:30!important;}
+#leftSideToggle:hover,#graphSettingsToggle:hover{opacity:1!important;visibility:visible!important;}
+
+
+/* === SPECTRA-PRO dock final overrides (hotfix) === */
+#graphSettingsDrawer{display:flex;align-items:stretch;gap:8px;min-height:174px;overflow:hidden;}
+#graphSettingsDrawerLeft{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;overflow:hidden;}
+#graphSettingsDrawerRight{flex:0 0 auto;display:flex;align-items:flex-start;justify-content:center;width:22px;}
+#SpectraProDockHost{display:flex;flex:1 1 auto;min-width:0;min-height:0;}
+#SpectraProDockHost .sp-main{display:flex;flex-direction:column;width:100%;min-width:0;min-height:0;background:transparent;border:none;}
+#SpectraProDockHost .sp-tabs{display:flex;flex-wrap:wrap;gap:10px;padding:8px 12px 6px;}
+#SpectraProDockHost .sp-tab{background:#071a39;color:#d9f6ff;border:1px solid #08e0c7;border-radius:8px;padding:6px 10px;font-weight:700;line-height:1.1;cursor:pointer;}
+#SpectraProDockHost .sp-tab.is-active{box-shadow:0 0 0 1px rgba(8,224,199,.25) inset;background:#07264f;}
+#SpectraProDockHost .sp-content{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;flex:1 1 auto;min-height:0;padding:6px 12px 10px;}
+#SpectraProDockHost .sp-tabpanel{min-width:0;min-height:0;height:100%;overflow:hidden;border:1px solid rgba(88,130,188,.25);border-radius:10px;background:rgba(3,14,34,.25);padding:0;}
+#SpectraProDockHost .sp-statusrail{min-width:0;display:flex;align-items:stretch;}
+#SpectraProDockHost .sp-status-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;align-content:end;}
+#SpectraProDockHost .sp-card{background:rgba(5,20,52,.8);border:1px solid rgba(61,116,185,.35);border-radius:10px;padding:10px 12px;min-width:0;box-shadow:none;}
+#SpectraProDockHost .sp-card--flat{height:100%;}
+#SpectraProDockHost .sp-card-title{font-size:12px;font-weight:800;color:#dbefff;letter-spacing:.03em;margin-bottom:6px;}
+#SpectraProDockHost .sp-note{font-size:12px;color:#b8cce8;margin-top:8px;}
+#SpectraProDockHost .sp-general-wrap{padding:0;border:none;height:100%;overflow:auto;}
+#SpectraProDockHost .sp-general-wrap > .d-flex{background:transparent;border:none;}
+#SpectraProDockHost .sp-general-wrap .p-2,#SpectraProDockHost .sp-general-wrap .px-2{padding:12px !important;}
+#SpectraProDockHost .sp-general-wrap .px-2{padding-top:6px !important;}
+#SpectraProDockHost .sp-general-wrap #mouseCoordinates{white-space:nowrap;}
+#SpectraProDockHost .sp-core-wrap{padding:10px;height:100%;display:flex;flex-direction:column;gap:10px;}
+#SpectraProDockHost .sp-core-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#SpectraProDockHost .sp-field{display:flex;flex-direction:column;gap:4px;color:#dbefff;font-size:12px;}
+#SpectraProDockHost .sp-field select{width:100%;min-width:0;background:#0a1836;color:#fff;border:1px solid #3a5f98;border-radius:6px;padding:4px 8px;}
+#SpectraProDockHost .sp-row{display:flex;flex-wrap:wrap;gap:8px;}
+#SpectraProDockHost .sp-btn{background:#284e87;color:#fff;border:1px solid #4f7fc7;border-radius:6px;padding:6px 10px;font-size:12px;}
+#SpectraProDockHost .sp-placeholder{padding:12px;}
+/* Remove double inner borders when original controls are embedded */
+#SpectraProDockHost .sp-tabpanel > .sp-card{border:none;background:transparent;padding:0;border-radius:0;}
+/* Keep only the two real collapse handles visible and stable */
+#sidebarToggleHandleLeft,#drawerCollapseButton,#drawerExpandButton{opacity:1 !important;visibility:visible !important;z-index:9999 !important;}
+#drawerCollapseButton,#drawerExpandButton{position:relative;color:#d8eeff;background:#10294f;border:1px solid #3a5f98;}
+@media (max-width: 1200px){#SpectraProDockHost .sp-content{grid-template-columns:minmax(0,1fr) 260px;}}
+@media (max-width: 980px){#SpectraProDockHost .sp-content{grid-template-columns:1fr;}#SpectraProDockHost .sp-status-grid{grid-template-columns:1fr 1fr;}#graphSettingsDrawer{min-height:220px;}}
+
+
+/* === HOTFIX authoritative dock layout === */
+#spMain{display:block !important; position:relative !important; margin:0 !important; padding:0 !important; min-height:168px !important;}
+#SpectraProDockHost.sp-dock-host{display:block !important; width:100% !important; height:100% !important;}
+#SpectraProDockHost .sp-shell{display:flex !important; flex-direction:column !important; gap:10px !important; width:100% !important; min-height:160px !important; padding:10px 12px !important; background:transparent !important;}
+#SpectraProDockHost .sp-tabs{display:flex !important; flex-wrap:wrap !important; gap:8px !important; align-items:center !important;}
+#SpectraProDockHost .sp-tab{background:#071b39 !important; border:2px solid #00f0c8 !important; color:#b6fff3 !important; border-radius:8px !important; padding:6px 12px !important; font-weight:700 !important; cursor:pointer !important;}
+#SpectraProDockHost .sp-tab.is-active{background:#0d2e5f !important; color:#fff !important; box-shadow:inset 0 0 0 1px rgba(255,255,255,.15) !important;}
+#SpectraProDockHost .sp-body{display:grid !important; grid-template-columns:minmax(0,1fr) 340px !important; gap:12px !important; align-items:stretch !important; min-height:112px !important;}
+#SpectraProDockHost .sp-tabpanels{min-width:0 !important; min-height:112px !important;}
+#SpectraProDockHost .sp-tabpanel{display:block !important; width:100% !important; min-height:112px !important; padding:0 !important; margin:0 !important; background:transparent !important; border:0 !important;}
+#SpectraProDockHost .sp-tabpanel[hidden]{display:none !important;}
+#SpectraProDockHost .sp-card--flat{background:transparent !important; border:0 !important; padding:0 !important; margin:0 !important; box-shadow:none !important;}
+#SpectraProDockHost .sp-form-grid{display:grid !important; grid-template-columns:repeat(2,minmax(160px,1fr)) !important; gap:10px !important; max-width:520px !important;}
+#SpectraProDockHost .sp-form-grid label{display:flex !important; flex-direction:column !important; gap:4px !important; color:#d2e8ff !important; font-size:12px !important;}
+#SpectraProDockHost .sp-actions{display:flex !important; flex-wrap:wrap !important; gap:8px !important; margin-top:8px !important;}
+#SpectraProDockHost .sp-actions button{background:#2f5f9f !important; color:#fff !important; border:1px solid #4e7fbf !important; border-radius:8px !important; padding:6px 10px !important;}
+#SpectraProDockHost .sp-note{margin:8px 0 0 !important; color:#9cb7d5 !important; font-size:12px !important;}
+#SpectraProDockHost .sp-statusrail{display:grid !important; grid-template-columns:1fr 1fr !important; gap:10px !important; align-self:end !important; min-width:320px !important; max-width:340px !important;}
+#SpectraProDockHost .sp-status-card{border:1px solid rgba(70,130,220,.55) !important; border-radius:8px !important; padding:8px 10px !important; background:rgba(6,23,56,.55) !important; min-height:72px !important;}
+#SpectraProDockHost .sp-status-card h4{margin:0 0 6px !important; font-size:12px !important; color:#dfefff !important;}
+#SpectraProDockHost .sp-status-lines{font-size:11px !important; line-height:1.35 !important; color:#e8f3ff !important;}
+#SpectraProDockHost .sp-empty{color:#9cb7d5 !important; padding:8px 2px !important;}
+
+/* General tab hosts original graph drawer controls */
+#spPanel-general #graphSettingsDrawerRight{display:block !important; position:static !important; width:100% !important; height:auto !important; max-height:none !important; overflow:visible !important; margin:0 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important;}
+#spPanel-general #graphSettingsDrawerRight > .p-2{padding:0 !important; margin:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important;}
+#spPanel-general #graphSettingsDrawerRight .px-2{padding-left:0 !important; padding-right:0 !important;}
+#spPanel-general #graphSettingsDrawerRight .grid{display:grid !important;}
+#spPanel-general #graphSettingsDrawerRight .grid.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+#spPanel-general #graphSettingsDrawerRight .md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+#spPanel-general #graphSettingsDrawerRight .md\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}
+#spPanel-general #graphSettingsDrawerRight #mouseCoordinates{display:inline-block !important;}
+
+/* Make graph area fill remaining viewport; avoid nested drawer scrollbars */
+#graphSettingsDrawerContainer{overflow:visible !important;}
+#graphSettingsDrawerLeft,#graphSettingsDrawerRight{overflow:visible !important;}
+
+@media (max-width: 1200px){
+  #SpectraProDockHost .sp-body{grid-template-columns:1fr !important;}
+  #SpectraProDockHost .sp-statusrail{max-width:none !important; min-width:0 !important;}
+}
+
+/* === PATCH 2026-02-24: stabilize SPECTRA-PRO dock in bottom drawer (authoritative minimal overrides) === */
+#spMain{display:block !important; width:100% !important; margin:0 !important; padding:0 !important;}
+#SpectraProDockHost.sp-dock-host{display:block !important; width:100% !important; margin:0 !important;}
+#graphSettingsDrawerLeft{display:flex !important; flex-direction:column !important; overflow:auto !important;}
+#graphSettingsDrawerLeft > #spMain{order:99; width:100%;}
+#graphSettingsDrawerLeft #spGeneralHost{display:block; width:100%;}
+#graphSettingsDrawerLeft #spGeneralHost > .d-flex{width:100%;}
+
+#SpectraProDockHost .sp-shell{display:flex !important; flex-direction:column !important; gap:8px !important; padding:8px 10px 10px !important; border-top:1px solid rgba(120,180,255,.14) !important; background:transparent !important;}
+#SpectraProDockHost .sp-tabs{display:flex !important; flex-wrap:wrap !important; gap:8px !important; align-items:center !important;}
+#SpectraProDockHost .sp-tab{
+  border:1px solid rgba(16,185,129,.85) !important;
+  background:#071b36 !important;
+  color:#9fffe5 !important;
+  border-radius:8px !important;
+  padding:6px 10px !important;
+  font-weight:700 !important;
+  line-height:1.1 !important;
+  cursor:pointer !important;
+}
+#SpectraProDockHost .sp-tab.is-active{background:#0b2d4f !important; box-shadow:0 0 0 1px rgba(16,185,129,.25) inset !important;}
+#SpectraProDockHost .sp-body{display:grid !important; grid-template-columns:minmax(0,1fr) 360px !important; gap:12px !important; align-items:start !important; min-height:120px !important;}
+#SpectraProDockHost .sp-tabpanels{min-width:0 !important;}
+#SpectraProDockHost .sp-tabpanel{display:block !important; min-width:0 !important; min-height:100px !important; border:1px solid rgba(120,180,255,.18) !important; border-radius:10px !important; background:rgba(4,19,43,.45) !important; padding:10px !important;}
+#SpectraProDockHost .sp-tabpanel[hidden]{display:none !important;}
+#SpectraProDockHost #spPanel-general{padding:0 !important; background:transparent !important; border:none !important;}
+#SpectraProDockHost .sp-general-host{display:block; width:100%;}
+#SpectraProDockHost .sp-statusrail{display:block !important; min-width:0 !important;}
+#SpectraProDockHost .sp-status-grid{display:grid !important; grid-template-columns:1fr 1fr !important; gap:10px !important;}
+#SpectraProDockHost .sp-status-card{border:1px solid rgba(70,130,220,.55) !important; border-radius:8px !important; padding:8px 10px !important; background:rgba(6,23,56,.55) !important; min-height:72px !important;}
+#SpectraProDockHost .sp-status-card h4{margin:0 0 6px !important; font-size:12px !important; color:#dfefff !important;}
+#SpectraProDockHost .sp-status-lines{font-size:11px !important; line-height:1.35 !important; color:#e8f3ff !important;}
+#SpectraProDockHost .sp-card--flat{background:transparent !important; border:0 !important; padding:0 !important; margin:0 !important; box-shadow:none !important;}
+#SpectraProDockHost .sp-form-grid{display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; max-width:560px !important;}
+#SpectraProDockHost .sp-actions{display:flex !important; flex-wrap:wrap !important; gap:8px !important; margin-top:8px !important;}
+#SpectraProDockHost .sp-actions button{background:#2f5f9f !important; color:#fff !important; border:1px solid #4e7fbf !important; border-radius:8px !important; padding:6px 10px !important;}
+#SpectraProDockHost .sp-empty{color:#9cb7d5 !important; padding:8px 2px !important;}
+#SpectraProDockHost .sp-note{margin:8px 0 0 !important; color:#9cb7d5 !important; font-size:12px !important;}
+
+/* Preserve original graph controls layout after moving into General panel */
+#spGeneralHost #mouseCoordinates{white-space:nowrap;}
+#spGeneralHost .d-flex.flex-wrap.gap-2.align-items-center.p-2{padding:8px 10px !important;}
+#spGeneralHost .d-flex.flex-row.flex-wrap.gap-4.px-2{padding:0 10px 10px !important;}
+
+/* Keep original drawer collapse/expand handles visible and clickable */
+#drawerCollapseButton,#drawerExpandButton,#sidebarToggleHandleLeft{opacity:1 !important; visibility:visible !important; pointer-events:auto !important; z-index:1000 !important;}
+
+@media (max-width: 1200px){
+  #SpectraProDockHost .sp-body{grid-template-columns:1fr !important;}
+}

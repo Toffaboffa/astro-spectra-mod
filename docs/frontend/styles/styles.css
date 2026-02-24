@@ -174,18 +174,18 @@ button.btn, .form-select, .form-control { border-radius:8px; }
 }
 #graphSettingsDrawer.hidden { transform: translateY(100%); }
 #graphSettingsDrawerLeft {
-  display:flex; flex-direction:column; flex-grow:1; padding:1rem 0 1rem 1rem; overflow:auto;
+  display:flex; flex-direction:column; flex-grow:1; padding:1rem 0 1rem 1rem; overflow:hidden;
 }
 #graphSettingsDrawerRight {
   display:flex; flex-direction:column; align-items:center; justify-content:space-between;
   padding:0 .5rem .5rem .5rem; width: calc(70px + 1rem);
 }
 #drawerExpandButton {
-  position:absolute; bottom:0; right:.5rem; z-index:105; opacity:0;
+  position:absolute; bottom:0; right:.5rem; z-index:1000; opacity:.95;
 }
 #drawerExpandButton.disabled, #drawerHoverZone.disabled { display:none; }
 #drawerHoverZone {
-  display:flex; position:absolute; bottom:0; left:0; height:30px; width:100%; z-index:104;
+  display:flex; position:absolute; bottom:0; left:0; height:30px; width:100%; z-index:999;
 }
 
 /* Right panel / overlays cleanup */
@@ -351,3 +351,19 @@ button.btn-success:hover, .btn.btn-success:hover {
 @media (max-width: 1200px) {
   #spectraProPanel .sp-tabs-row { grid-template-columns: 1fr; }
 }
+
+
+/* Phase 2.1 hotfix (updated): dock host is separate below graph settings */
+#spectraProDockHost { width: 100%; }
+#spectraProPanel.sp-inline-panel, #spectraProPanel.sp-docked {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+#spectraProPanel .sp-tabs-row { width: 100%; }
+#spectraProPanel .sp-statusdock { width: 100%; }
+
+

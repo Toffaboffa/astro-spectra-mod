@@ -1,347 +1,323 @@
-(function(window){
+(function () {
   'use strict';
-  const sp = window.SpectraPro = window.SpectraPro || {};
 
-  function safeUpdate(path, value, source){
-    if (sp.store && sp.store.update) sp.store.update(path, value, source || 'proBootstrap');
-  }
-  function getState(){ return (sp.store && sp.store.getState && sp.store.getState()) || {}; }
+  const sp = window.SpectraPro || (window.SpectraPro = {});
+  const store = sp.store;
+  const bus = sp.eventBus;
+  const TABS = ['general', 'core', 'lab', 'astro', 'other'];
 
-  function wireCoreEvents(){
-    if (!sp.eventBus || !sp.eventBus.emit) return;
+  let ui = null;
+  let booted = false;
 
-    const emitFrame = () => {
-      try {
-        if (sp.spectrumFrameAdapter && sp.spectrumFrameAdapter.captureFromGlobals) {
-          const frame = sp.spectrumFrameAdapter.captureFromGlobals();
-          if (frame && frame.I && frame.I.length) sp.eventBus.emit('frame:updated', frame);
-        }
-      } catch (e) { console.warn('[SPECTRA-PRO] frame hook failed', e); }
-    };
-
-    let lastTick = 0;
-    setInterval(function(){
-      emitFrame();
-      const now = Date.now();
-      if (now - lastTick > 450 && sp._workerClient) {
-        lastTick = now;
-        const s = getState();
-        if (s.worker && s.worker.enabled && s.frame && s.frame.latest && s.frame.latest.I) {
-          try {
-            sp._workerClient.analyzeFrame({
-              frame: s.frame.latest,
-              mode: s.appMode || 'CORE',
-              presetId: s.analysis && s.analysis.presetId,
-              subtraction: s.subtraction || {}
-            });
-          } catch (e) { console.warn('[SPECTRA-PRO] analyze tick failed', e); }
-        }
-      }
-    }, 250);
+  const $ = (id) => document.getElementById(id);
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
   }
 
-  function removeHomeButton(){
-    const btn = document.querySelector('#graphSettingsDrawerRight button[onclick*="openRedirectionModal"]');
-    if (btn) btn.remove();
+  function ensureHost() {
+    const left = $('graphSettingsDrawerLeft');
+    if (!left) return null;
+
+    let spMain = $('spMain');
+    if (!spMain) {
+      spMain = document.createElement('div');
+      spMain.id = 'spMain';
+      left.appendChild(spMain);
+    }
+
+    let host = $('SpectraProDockHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'SpectraProDockHost';
+      spMain.appendChild(host);
+    } else if (host.parentElement !== spMain) {
+      spMain.appendChild(host);
+    }
+
+    host.classList.add('sp-dock-host');
+    return { left, spMain, host };
   }
 
-  function relabelFlrButton(){
-    const flrBtn = document.querySelector('button[onclick*="LongExpo"]');
-    if (flrBtn) {
-      flrBtn.textContent = 'Long Exposure';
-      flrBtn.title = 'Long exposure / frame recording settings (original SPECTRA FLR)';
-    }
+  function buildShell(host) {
+    if (ui && ui.host === host) return ui;
+    host.innerHTML = '';
+
+    const shell = el('div', 'sp-shell');
+    const tabs = el('div', 'sp-tabs');
+    tabs.id = 'spTabs';
+
+    const body = el('div', 'sp-body');
+    body.id = 'spBody';
+
+    const tabPanels = el('div', 'sp-tabpanels');
+    tabPanels.id = 'spTabPanels';
+
+    const statusRail = el('aside', 'sp-statusrail');
+    statusRail.id = 'spStatusRail';
+
+    const panels = {};
+    TABS.forEach((tab, idx) => {
+      const btn = el('button', 'sp-tab', tab === 'core' ? 'CORE controls' : (tab === 'general' ? 'General' : tab.toUpperCase()));
+      btn.type = 'button';
+      btn.dataset.tab = tab;
+      if (idx === 0) btn.classList.add('is-active');
+      tabs.appendChild(btn);
+
+      const panel = el('section', 'sp-tabpanel');
+      panel.id = `spPanel-${tab}`;
+      panel.dataset.tab = tab;
+      if (idx !== 0) panel.hidden = true;
+      tabPanels.appendChild(panel);
+      panels[tab] = panel;
+    });
+
+    body.appendChild(tabPanels);
+    body.appendChild(statusRail);
+    shell.appendChild(tabs);
+    shell.appendChild(body);
+    host.appendChild(shell);
+
+    tabs.addEventListener('click', (e) => {
+      const btn = e.target.closest('.sp-tab');
+      if (!btn) return;
+      setActiveTab(btn.dataset.tab);
+      syncActiveTabToStore(btn.dataset.tab);
+    });
+
+    ui = { host, shell, tabs, body, tabPanels, statusRail, panels };
+    ensurePanelContent();
+    return ui;
   }
 
-  function makePanel(){
-    if (document.getElementById('spectraProPanel')) return;
-    const drawerLeft = document.getElementById('graphSettingsDrawerLeft');
-    if (!drawerLeft) return;
+  function getStoreState() {
+    try { return (store && store.getState) ? (store.getState() || {}) : {}; }
+    catch (_) { return {}; }
+  }
 
-    const host = document.createElement('div');
-    host.id = 'spectraProPanel';
-    host.className = 'sp-inline-panel';
-    host.innerHTML = `
-      <div class="sp-tabs-row">
-        <div class="sp-tabs" role="tablist" aria-label="SPECTRA-PRO sections">
-          <button type="button" class="sp-tab is-active" data-tab="general">General</button>
-          <button type="button" class="sp-tab" data-tab="core">CORE controls</button>
-          <button type="button" class="sp-tab" data-tab="lab">LAB</button>
-          <button type="button" class="sp-tab" data-tab="astro">ASTRO</button>
-          <button type="button" class="sp-tab" data-tab="other">Other</button>
-        </div>
-        <div class="sp-statusdock">
-          <div class="sp-brandrow"><span class="sp-brand">SPECTRA-PRO</span><span class="sp-badge" id="spModeBadge">P2-LAB</span></div>
-          <div class="sp-card"><div class="sp-card-title">Status</div><div id="spStatusHost" class="sp-status"></div></div>
-          <div class="sp-card"><div class="sp-card-title">Data Quality</div><div id="spQualityHost" class="sp-status"></div></div>
-        </div>
-      </div>
+  function syncActiveTabToStore(tab) {
+    if (!store || !store.setState) return;
+    const state = getStoreState();
+    const nextUi = Object.assign({}, state.ui || {}, { activeTab: tab });
+    store.setState({ ui: nextUi }, { source: 'proBootstrap.tab' });
+  }
 
-      <div class="sp-panels">
-        <section class="sp-tabpanel is-active" data-panel="general">
-          <div class="sp-grid2">
-            <label>App mode
-              <select id="spAppModeSelect">
-                <option value="CORE">CORE</option>
-                <option value="LAB">LAB</option>
-                <option value="ASTRO">ASTRO</option>
-              </select>
-            </label>
-            <label>Worker
-              <select id="spWorkerToggle">
-                <option value="on">On</option>
-                <option value="off">Off</option>
-              </select>
-            </label>
-          </div>
-          <div class="sp-row">
-            <button id="spInitWorker" class="btn btn-sm btn-secondary">Init libraries</button>
-            <button id="spPingWorker" class="btn btn-sm btn-secondary">Ping worker</button>
-            <button id="spRefreshUi" class="btn btn-sm btn-secondary">Refresh UI</button>
-          </div>
-          <div class="sp-note">CORE remains primary. LAB/ASTRO add overlays + analysis on top.</div>
-        </section>
+  function setActiveTab(tab) {
+    if (!ui) return;
+    const active = TABS.includes(tab) ? tab : 'general';
+    ui.tabs.querySelectorAll('.sp-tab').forEach((b) => b.classList.toggle('is-active', b.dataset.tab === active));
+    TABS.forEach((t) => {
+      const panel = ui.panels[t];
+      if (panel) panel.hidden = (t !== active);
+    });
+  }
 
-        <section class="sp-tabpanel" data-panel="core">
-          <div class="sp-grid2">
-            <label>Display Mode
-              <select id="spDisplayMode">
-                <option value="NORMAL">Normal</option>
-                <option value="DIFF" disabled>Difference (later)</option>
-                <option value="RATIO" disabled>Ratio (later)</option>
-              </select>
-            </label>
-            <label>Y-axis Mode
-              <select id="spYAxisMode">
-                <option value="AUTO">Auto</option>
-                <option value="FIXED" disabled>Fixed (later)</option>
-              </select>
-            </label>
-            <label>Peak lower bound
-              <input id="spPeakLower" type="number" min="1" max="255" step="1" value="1">
-            </label>
-            <label>Fill opacity
-              <input id="spFillOpacity" type="range" min="0.1" max="1" step="0.1" value="0.7">
-            </label>
-          </div>
-          <div class="sp-row">
-            <button id="spApplyCoreTweaks" class="btn btn-sm btn-secondary">Apply to CORE</button>
-            <button id="spSyncCoreTweaks" class="btn btn-sm btn-secondary">Sync from CORE</button>
-          </div>
-        </section>
+  function mountGeneralOriginalControls() {
+    if (!ui || !ui.panels.general) return;
+    const left = $('graphSettingsDrawerLeft');
+    if (!left) return;
 
-        <section class="sp-tabpanel" data-panel="lab">
-          <div class="sp-grid2">
-            <label>LAB preset
-              <select id="spLabPreset">
-                <option value="lab-default">LAB Default</option>
-                <option value="hg-ne">Hg/Ne demo</option>
-                <option value="sodium">Sodium (demo)</option>
-              </select>
-            </label>
-            <label>Subtraction mode
-              <select id="spSubMode">
-                <option value="raw">Raw</option>
-                <option value="raw-dark">Raw - Dark</option>
-                <option value="ratio">Raw / Ref</option>
-                <option value="absorbance">Absorbance</option>
-              </select>
-            </label>
-          </div>
-          <div class="sp-row">
-            <button id="spCapDark" class="btn btn-sm btn-secondary">Capture Dark</button>
-            <button id="spCapRef" class="btn btn-sm btn-secondary">Capture Ref</button>
-            <button id="spClearRef" class="btn btn-sm btn-secondary">Clear</button>
-          </div>
-          <div id="spLabSubState" class="sp-note">No dark/reference captured yet.</div>
-          <div class="sp-card"><div class="sp-card-title">Top hits</div><div id="spTopHitsHost" class="sp-tophits"></div></div>
-        </section>
-
-        <section class="sp-tabpanel" data-panel="astro">
-          <div class="sp-note">ASTRO panel shell (next phase): continuum, absorption mode, Fraunhofer presets, offset/Doppler.</div>
-        </section>
-
-        <section class="sp-tabpanel" data-panel="other">
-          <div class="sp-note">Reserved for export/session/instrument profiles. The weird universe box goes here later.</div>
-        </section>
-      </div>`;
-
-    drawerLeft.appendChild(host);
-
-    function getDom(id){ return document.getElementById(id); }
-
-    function syncFromCoreDom(){
-      const peak = getDom('peakSizeLower');
-      const opacity = getDom('gradientOpacitySlider');
-      const panelPeak = getDom('spPeakLower');
-      const panelOpacity = getDom('spFillOpacity');
-      if (peak && panelPeak) panelPeak.value = peak.value || '1';
-      if (opacity && panelOpacity) panelOpacity.value = opacity.value || '0.7';
+    const panel = ui.panels.general;
+    let hostWrap = $('spGeneralHost');
+    if (!hostWrap) {
+      hostWrap = el('div', 'sp-general-host');
+      hostWrap.id = 'spGeneralHost';
+      panel.appendChild(hostWrap);
     }
 
-    function applyCoreTweaks(){
-      const peak = getDom('peakSizeLower');
-      const opacity = getDom('gradientOpacitySlider');
-      const opacityVal = getDom('gradientOpacityValue');
-      const panelPeak = getDom('spPeakLower');
-      const panelOpacity = getDom('spFillOpacity');
-      if (peak && panelPeak) {
-        peak.value = String(panelPeak.value || 1);
-        peak.dispatchEvent(new Event('input', { bubbles:true }));
-        peak.dispatchEvent(new Event('change', { bubbles:true }));
-      }
-      if (opacity && panelOpacity) {
-        opacity.value = String(panelOpacity.value || 0.7);
-        opacity.dispatchEvent(new Event('input', { bubbles:true }));
-        opacity.dispatchEvent(new Event('change', { bubbles:true }));
-        if (opacityVal) opacityVal.textContent = opacity.value;
-      }
-      safeUpdate('analysis.peakLowerBound', Number(panelPeak?.value || 1), 'panel');
-      safeUpdate('graph.fillOpacity', Number(panelOpacity?.value || 0.7), 'panel');
-    }
+    // Move original graph controls (left drawer children) into General panel, but keep IDs/listeners intact.
+    const children = Array.from(left.children);
+    children.forEach((node) => {
+      if (node.id === 'spMain') return; // keep dock host in drawer
+      hostWrap.appendChild(node);
+    });
+  }
 
-    function captureBuffer(kind){
-      const s = getState();
-      const f = s.frame && s.frame.latest;
-      if (!f || !Array.isArray(f.I) || !f.I.length) return;
-      safeUpdate('buffers.' + kind, { timestamp: Date.now(), n: f.I.length }, 'lab-capture');
-      if (kind === 'dark') safeUpdate('subtraction.hasDark', true, 'lab-capture');
-      if (kind === 'reference') safeUpdate('subtraction.hasReference', true, 'lab-capture');
-    }
-    function clearBuffers(){
-      safeUpdate('buffers', {}, 'lab-clear');
-      safeUpdate('subtraction.hasDark', false, 'lab-clear');
-      safeUpdate('subtraction.hasReference', false, 'lab-clear');
-    }
-    function ensureWorkerLibraries(){
-      if (!sp._workerClient) return;
-      try { sp._workerClient.initLibraries({ profile:'builtin-lite' }); } catch(e){ console.warn('[SPECTRA-PRO] initLibraries failed', e); }
-    }
+  function ensureStatusRail() {
+    if (!ui || !ui.statusRail) return;
+    if ($('spStatusText') && $('spDataQualityText')) return;
 
-    host.querySelectorAll('.sp-tab').forEach(btn => {
-      btn.addEventListener('click', function(){
-        const tab = this.dataset.tab;
-        host.querySelectorAll('.sp-tab').forEach(b => b.classList.toggle('is-active', b === this));
-        host.querySelectorAll('.sp-tabpanel').forEach(p => p.classList.toggle('is-active', p.dataset.panel === tab));
+    ui.statusRail.innerHTML = '';
+    const grid = el('div', 'sp-status-grid');
+
+    const status = el('div', 'sp-status-card');
+    status.innerHTML = '<h4>STATUS</h4><div id="spStatusText" class="sp-status-lines"></div>';
+
+    const dq = el('div', 'sp-status-card');
+    dq.innerHTML = '<h4>DATA QUALITY</h4><div id="spDataQualityText" class="sp-status-lines"></div>';
+
+    grid.appendChild(status);
+    grid.appendChild(dq);
+    ui.statusRail.appendChild(grid);
+  }
+
+  function ensurePanelContent() {
+    if (!ui) return;
+
+    const core = ui.panels.core;
+    if (core && !core.dataset.built) {
+      const card = el('div', 'sp-card sp-card--flat');
+      card.innerHTML = [
+        '<div class="sp-form-grid">',
+        '  <label>App mode<select id="spAppMode"><option value="CORE">CORE</option><option value="LAB">LAB</option><option value="ASTRO">ASTRO</option></select></label>',
+        '  <label>Worker<select id="spWorkerMode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>',
+        '</div>',
+        '<div class="sp-actions">',
+        '  <button type="button" id="spInitLibBtn">Init libraries</button>',
+        '  <button type="button" id="spPingWorkerBtn">Ping worker</button>',
+        '  <button type="button" id="spRefreshUiBtn">Refresh UI</button>',
+        '</div>',
+        '<p class="sp-note">Placeholder controls for SPECTRA-PRO. Original graph controls live in General.</p>'
+      ].join('');
+      core.appendChild(card);
+      core.dataset.built = '1';
+
+      const modeSel = card.querySelector('#spAppMode');
+      const workerSel = card.querySelector('#spWorkerMode');
+      const setVal = (path, value) => { if (store && store.update) store.update(path, value, { source: 'proBootstrap.core' }); };
+
+      modeSel && modeSel.addEventListener('change', (e) => {
+        const mode = String(e.target.value || 'CORE').toUpperCase();
+        setVal('appMode', mode);
       });
-    });
-
-    host.querySelector('#spRefreshUi').addEventListener('click', function(){
-      syncFromCoreDom(); render();
-      window.dispatchEvent(new Event('resize'));
-    });
-    host.querySelector('#spApplyCoreTweaks').addEventListener('click', applyCoreTweaks);
-    host.querySelector('#spSyncCoreTweaks').addEventListener('click', syncFromCoreDom);
-
-    host.querySelector('#spAppModeSelect').addEventListener('change', function(){
-      if (sp.appMode && sp.appMode.setMode) sp.appMode.setMode(this.value);
-      safeUpdate('appMode', this.value, 'ui');
-      render();
-    });
-    host.querySelector('#spWorkerToggle').addEventListener('change', function(){ safeUpdate('worker.enabled', this.value !== 'off', 'ui'); render(); });
-    host.querySelector('#spInitWorker').addEventListener('click', ensureWorkerLibraries);
-    host.querySelector('#spPingWorker').addEventListener('click', function(){ if (sp._workerClient) sp._workerClient.ping(); });
-    host.querySelector('#spCapDark').addEventListener('click', function(){ captureBuffer('dark'); render(); });
-    host.querySelector('#spCapRef').addEventListener('click', function(){ captureBuffer('reference'); render(); });
-    host.querySelector('#spClearRef').addEventListener('click', function(){ clearBuffers(); render(); });
-    host.querySelector('#spLabPreset').addEventListener('change', function(){ safeUpdate('analysis.presetId', this.value, 'lab-preset'); render(); });
-    host.querySelector('#spSubMode').addEventListener('change', function(){ safeUpdate('subtraction.mode', this.value, 'lab-submode'); render(); });
-
-    let rendering = false;
-    function render(){
-      if (rendering) return;
-      rendering = true;
-      try {
-        const s = getState();
-        const f = (s.frame && s.frame.latest) || {};
-        const c = s.calibration || {};
-        const w = s.worker || {};
-        const topHits = (s.analysis && s.analysis.topHits) || [];
-        const intensity = Array.isArray(f.I) ? f.I : [];
-        let min=Infinity, max=-Infinity, sum=0, sat=0;
-        for (let i=0;i<intensity.length;i++) {
-          const v = Number(intensity[i]) || 0;
-          if (v < min) min = v;
-          if (v > max) max = v;
-          sum += v;
-          if (v >= 250) sat++;
+      workerSel && workerSel.addEventListener('change', (e) => {
+        const val = String(e.target.value || 'auto');
+        if (val === 'on') { setVal('worker.enabled', true); setVal('worker.status', 'ready'); }
+        else if (val === 'off') { setVal('worker.enabled', false); setVal('worker.status', 'idle'); }
+      });
+      card.addEventListener('click', (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLElement)) return;
+        if (t.id === 'spPingWorkerBtn') {
+          setVal('worker.lastPingAt', Date.now());
+          if (store && store.getState && store.getState().worker && store.getState().worker.enabled) setVal('worker.status', 'ready');
         }
-        const n = intensity.length || 0;
-        const avg = n ? sum / n : 0;
-        const satPct = n ? (100 * sat / n) : 0;
-        const dynamic = (isFinite(max) && isFinite(min)) ? (max - min) : 0;
-        const qFlag = !n ? 'no frame' : satPct > 5 ? 'saturated risk' : dynamic < 20 ? 'low contrast' : 'ok';
-        const qClass = qFlag === 'ok' ? 'ok' : (qFlag === 'no frame' ? '' : 'warn');
-
-        const mode = (s.appMode || (sp.appMode && sp.appMode.getMode && sp.appMode.getMode()) || 'CORE');
-        const modeSelect = host.querySelector('#spAppModeSelect');
-        if (modeSelect && modeSelect.value !== mode) modeSelect.value = mode;
-        const badge = host.querySelector('#spModeBadge');
-        if (badge) badge.textContent = mode === 'CORE' ? 'P1' : (mode === 'LAB' ? 'P2-LAB' : 'ASTRO');
-
-        const statusHost = host.querySelector('#spStatusHost');
-        if (statusHost) statusHost.innerHTML = [
-          `<div><span class="muted">Mode</span>: <b>${mode}</b></div>`,
-          `<div><span class="muted">Worker</span>: ${w.status || 'idle'}${w.librariesLoaded ? ' · libs ✓' : ''}</div>`,
-          `<div><span class="muted">Frame</span>: ${n} px ${f.source ? '('+f.source+')' : ''}</div>`,
-          `<div><span class="muted">Calibration</span>: ${c.isCalibrated ? 'calibrated' : 'uncalibrated'} · pts ${(Array.isArray(c.points) ? c.points.length : 0)}</div>`
-        ].join('');
-
-        const qualityHost = host.querySelector('#spQualityHost');
-        if (qualityHost) qualityHost.innerHTML = [
-          `<div><span class="muted">Signal</span>: min ${isFinite(min)?min.toFixed(1):'—'} · max ${isFinite(max)?max.toFixed(1):'—'}</div>`,
-          `<div><span class="muted">Avg</span>: ${avg.toFixed(1)} · <span class="muted">Dyn</span>: ${dynamic.toFixed(1)}</div>`,
-          `<div><span class="muted">Saturation</span>: ${sat}/${n} (${satPct.toFixed(1)}%)</div>`,
-          `<div><span class="muted">Quality</span>: <span class="sp-pill ${qClass}">${qFlag}</span></div>`
-        ].join('');
-
-        const sub = s.subtraction || {};
-        const subEl = host.querySelector('#spLabSubState');
-        if (subEl) subEl.textContent = `Dark: ${sub.hasDark ? 'yes' : 'no'} · Ref: ${sub.hasReference ? 'yes' : 'no'} · Mode: ${sub.mode || 'raw'}`;
-
-        const hitsEl = host.querySelector('#spTopHitsHost');
-        if (hitsEl) {
-          if (!topHits.length) {
-            hitsEl.innerHTML = `<div class="sp-note">No hits yet. This is normal if calibration/worker is not configured yet.</div>`;
-          } else {
-            hitsEl.innerHTML = topHits.slice(0,6).map((h,i)=>`<div class="sp-hit"><span class="sp-rank">${i+1}</span><span class="sp-name">${h.species || '—'}</span><span class="sp-nm">${Number.isFinite(h.observedNm)?h.observedNm.toFixed(2):'—'} nm</span><span class="sp-conf">${h.confidence!=null?Math.round(h.confidence*100):0}%</span></div>`).join('');
-          }
+        if (t.id === 'spInitLibBtn') {
+          setVal('analysis.presetId', 'libraries-init-requested');
         }
-      } finally { rendering = false; }
+        if (t.id === 'spRefreshUiBtn') {
+          render();
+        }
+      });
     }
 
-    if (sp.eventBus && sp.eventBus.on) {
-      sp.eventBus.on('state:changed', render);
-      sp.eventBus.on('mode:changed', function(){ render(); });
+    ['lab', 'astro', 'other'].forEach((tab) => {
+      const panel = ui.panels[tab];
+      if (!panel || panel.dataset.built) return;
+      const card = el('div', 'sp-card sp-card--flat');
+      card.innerHTML = `<div class="sp-empty">${tab.toUpperCase()} panel placeholder (tab wiring OK).</div>`;
+      panel.appendChild(card);
+      panel.dataset.built = '1';
+    });
+
+    ensureStatusRail();
+  }
+
+  function computeDataQualityLines(state) {
+    const f = state && state.frame ? state.frame : {};
+    const latest = f.latest || null;
+    let min = '—', max = '—', avg = '—', dyn = '—', satText = '0/0 (0%)';
+
+    const arr = Array.isArray(latest?.combined)
+      ? latest.combined
+      : Array.isArray(latest?.intensity)
+      ? latest.intensity
+      : Array.isArray(latest?.values)
+      ? latest.values
+      : null;
+
+    if (arr && arr.length) {
+      let mn = Infinity, mx = -Infinity, sum = 0, sat = 0;
+      for (let i = 0; i < arr.length; i += 1) {
+        const v = Number(arr[i]);
+        if (!Number.isFinite(v)) continue;
+        if (v < mn) mn = v;
+        if (v > mx) mx = v;
+        sum += v;
+        if (v >= 254) sat += 1;
+      }
+      if (mn !== Infinity && mx !== -Infinity) {
+        min = mn.toFixed(1); max = mx.toFixed(1);
+        avg = (sum / arr.length).toFixed(1);
+        dyn = (mx - mn).toFixed(1);
+        const pct = arr.length ? ((sat / arr.length) * 100).toFixed(1) : '0.0';
+        satText = `${sat}/${arr.length} (${pct}%)`;
+      }
     }
-    syncFromCoreDom();
+
+    return {
+      status: [
+        `Mode: ${state.appMode || 'CORE'}`,
+        `Worker: ${state.worker?.status || 'idle'}`,
+        `Frame source: ${state.frame?.source || 'none'}`,
+        `Calibration: ${(state.calibration?.isCalibrated ? 'calibrated' : 'uncalibrated')} · pts ${state.calibration?.points?.length || 0}`
+      ],
+      dq: [
+        `Signal: ${min} - ${max}`,
+        `Avg: ${avg} · Dyn: ${dyn}`,
+        `Saturation: ${satText}`
+      ]
+    };
+  }
+
+  function renderStatus() {
+    const sEl = $('spStatusText');
+    const qEl = $('spDataQualityText');
+    if (!sEl || !qEl) return;
+    const state = getStoreState();
+    const lines = computeDataQualityLines(state);
+    sEl.innerHTML = lines.status.join('<br>');
+    qEl.innerHTML = lines.dq.join('<br>');
+
+    const appModeSel = $('spAppMode');
+    if (appModeSel && state.appMode && appModeSel.value !== state.appMode) appModeSel.value = state.appMode;
+  }
+
+  function cleanupSpuriousPopup() {
+    const popup = $('infoPopup');
+    const blocker = $('infoPopupBlock');
+    const msg = $('infoPopupMessage');
+    if (!popup) return;
+    const defaultMsg = (msg && (msg.textContent || '').trim()) === 'Info message';
+    if (popup.classList.contains('show') && defaultMsg && typeof window.closeInfoPopup === 'function') {
+      try { window.closeInfoPopup(); } catch (_) {}
+      return;
+    }
+    if (blocker && blocker.classList.contains('show') && !popup.classList.contains('show')) {
+      blocker.classList.remove('show');
+    }
+  }
+
+  function render() {
+    const hostBits = ensureHost();
+    if (!hostBits) return;
+    buildShell(hostBits.host);
+    mountGeneralOriginalControls();
+    ensurePanelContent();
+    ensureStatusRail();
+
+    const state = getStoreState();
+    const active = String(state.ui?.activeTab || 'general').toLowerCase();
+    setActiveTab(active);
+    renderStatus();
+    cleanupSpuriousPopup();
+  }
+
+  function init() {
+    if (booted) return;
+    booted = true;
     render();
+    if (bus && bus.on) {
+      bus.on('state:changed', render);
+      bus.on('ui:refresh', render);
+      bus.on('mode:changed', render);
+      bus.on('frame:updated', render);
+    }
+    window.addEventListener('resize', render, { passive: true });
   }
 
-  function initWorkerClient(){
-    if (!sp.createAnalysisWorkerClient || sp._workerClient) return;
-    sp._workerClient = sp.createAnalysisWorkerClient({ workerUrl:'../workers/analysis.worker.js', throttleMs:350, timeoutMs:2500 });
-    try { sp._workerClient.start(); } catch (e) { console.warn('[SPECTRA-PRO] worker start skipped', e); }
-  }
-
-  function applyLayoutFixes(){
-    try {
-      const right = document.getElementById('sidebar-right');
-      if (right && !right.querySelector('*')) right.classList.add('hidden');
-      setTimeout(()=>window.dispatchEvent(new Event('resize')), 80);
-      setTimeout(()=>window.dispatchEvent(new Event('resize')), 260);
-    } catch(e){ console.warn('[SPECTRA-PRO] layout fix skipped', e); }
-  }
-
-  function boot(){
-    removeHomeButton();
-    relabelFlrButton();
-    wireCoreEvents();
-    makePanel();
-    initWorkerClient();
-    applyLayoutFixes();
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  sp.proBootstrap = { boot, wireCoreEvents };
-})(window);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+  else init();
+})();
