@@ -70,6 +70,7 @@
     const host = document.createElement('div');
     host.id = 'spectraProPanel';
     host.className = 'sp-inline-panel sp-docked';
+    dock.classList.add('sp-dock-host');
     // Hard reset inline/floating leftovers (old cached CSS/previous patches)
     Object.assign(host.style, {
       position: 'static',

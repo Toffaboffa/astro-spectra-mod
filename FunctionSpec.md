@@ -526,3 +526,6 @@ That means this function spec intentionally optimizes for **stable patch order**
 
 ## Latest hotfix notes
 - Hotfix 2.1.3: CI frontend-smoke path check now accepts merged `docs/frontend/styles/styles.css`; SPECTRA-PRO dock moved to dedicated host below graph settings; compact layout to avoid page scrollbar and stop overlap with drawer toggles.
+
+
+- **Phase 2.1 hotfix (dock placement + CSS):** PRO dock is now mounted below `#graphSettingsDrawer` (not nested inside graph controls), scrollbar overflow guarded, and drawer toggle arrows forced above overlays. CI frontend smoke CSS check accepts consolidated styles file.

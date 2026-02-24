@@ -100,3 +100,62 @@ body{overflow:hidden;}
   #spectraProPanel .sp-main{grid-column:1; grid-row:2;}
   #spectraProPanel .sp-statusdock{grid-column:1; grid-row:3; border-left:none; border-top:1px solid #243750;}
 }
+
+
+/* ==== Phase 2.1 dock/layout hotfix ==== */
+#graphCanvasContainer { overflow: hidden; }
+#spectraProDockHost.sp-dock-host {
+  width: calc(100% - 16px);
+  max-width: calc(100% - 16px);
+  margin: 8px 8px 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Keep the PRO panel in normal flow, not floating */
+.sp-inline-panel.sp-docked {
+  position: relative !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  z-index: 3;
+}
+
+/* Make sure drawer arrows/toggles stay clickable/visible */
+#graphSettingsDrawerLeft, #graphSettingsDrawerRight,
+#hideGraphSettingsDrawerLeftButton, #hideGraphSettingsDrawerRightButton {
+  position: relative;
+  z-index: 20;
+}
+
+/* Prevent inner content from creating a vertical scrollbar */
+.sp-inline-main {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 360px;
+  gap: 12px;
+  align-items: start;
+}
+.sp-inline-body { min-width: 0; }
+.sp-inline-right {
+  width: 360px;
+  min-width: 0;
+}
+.sp-inline-content {
+  min-height: 150px;
+  max-height: none;
+  overflow: hidden;
+}
+.sp-inline-section.active {
+  display: block;
+}
+
+@media (max-width: 1200px) {
+  .sp-inline-main {
+    grid-template-columns: 1fr;
+  }
+  .sp-inline-right {
+    width: 100%;
+  }
+}
