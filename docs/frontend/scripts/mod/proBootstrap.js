@@ -1,135 +1,205 @@
 (function(){
-  function qs(id){ return document.getElementById(id); }
+  const bus = window.SpectraProEventBus;
+  const store = window.SpectraProStateStore;
+  const $ = (id)=>document.getElementById(id);
 
-  function createDockHost(){
-    const host = document.createElement('div');
-    host.id = 'SpectraProDockHost';
-    host.innerHTML = `
-      <div class="sp-main" id="spMain">
-        <div class="sp-tabs" role="tablist" aria-label="Spectra Pro tabs">
-          <button class="sp-tab is-active" data-sp-tab="general">General</button>
-          <button class="sp-tab" data-sp-tab="core">CORE controls</button>
-          <button class="sp-tab" data-sp-tab="lab">LAB</button>
-          <button class="sp-tab" data-sp-tab="astro">ASTRO</button>
-          <button class="sp-tab" data-sp-tab="other">Other</button>
-        </div>
+  const TABS = ["general","core","lab","astro","other"];
+  let initialized = false;
+  let panels = {};
+  let mountedGeneral = false;
+  let mountedStatus = false;
 
-        <div class="sp-content">
-          <div class="sp-tabpanel" id="spTabPanel"></div>
-          <aside class="sp-statusrail" id="spStatusRail">
-            <div class="sp-status-grid">
-              <section class="sp-card sp-card--flat">
-                <div class="sp-card-title">STATUS</div>
-                <div id="spStatusContent"></div>
-              </section>
-              <section class="sp-card sp-card--flat">
-                <div class="sp-card-title">DATA QUALITY</div>
-                <div id="spQualityContent"></div>
-              </section>
-            </div>
-          </aside>
-        </div>
-      </div>`;
-    return host;
+  function el(tag, cls, text){ const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n; }
+  function safeUpdate(patch){ try{ store && store.update && store.update(patch); }catch(e){ console.warn('[SPECTRA-PRO] state update failed', e); } }
+
+  function ensureShell(){
+    const host = $('SpectraProDockHost');
+    const main = $('spMain');
+    if(!host || !main) return null;
+    if(initialized) return {host,main};
+
+    host.innerHTML = '';
+    host.classList.add('sp-dock-host');
+
+    const shell = el('div','sp-shell');
+    const tabs = el('div','sp-tabs'); tabs.id='spTabs';
+    TABS.forEach(t=>{
+      const b=el('button','sp-tab', t==='core' ? 'CORE controls' : t.toUpperCase());
+      if(t==='general') b.textContent='General';
+      b.dataset.tab=t;
+      b.type='button';
+      tabs.appendChild(b);
+    });
+
+    const body = el('div','sp-body'); body.id='spBody';
+    const tabWrap = el('div','sp-tabpanels');
+    TABS.forEach(t=>{
+      const panel=el('section','sp-tabpanel');
+      panel.id='spPanel-'+t;
+      panel.dataset.tab=t;
+      if(t!=='general') panel.hidden=true;
+      tabWrap.appendChild(panel);
+      panels[t]=panel;
+    });
+
+    const statusRail = el('aside','sp-statusrail');
+    statusRail.id='spStatusRail';
+    body.appendChild(tabWrap);
+    body.appendChild(statusRail);
+
+    shell.appendChild(tabs);
+    shell.appendChild(body);
+    host.appendChild(shell);
+    main.appendChild(host);
+
+    tabs.addEventListener('click',(e)=>{
+      const btn=e.target.closest('.sp-tab'); if(!btn) return;
+      setActiveTab(btn.dataset.tab);
+      safeUpdate({ ui: { ...(store.getState?.().ui||{}), activeTab: btn.dataset.tab } });
+    });
+
+    ensureCorePanelContent();
+    ensurePlaceholderPanels();
+    mountStatusRail();
+    mountGeneralOriginalControls();
+
+    initialized=true;
+    return {host,main};
   }
 
-  function mk(el){ const d=document.createElement('div'); d.className='sp-card sp-card--flat'; if(el) d.appendChild(el); return d; }
+  function setActiveTab(tab){
+    TABS.forEach(t=>{
+      const btn = document.querySelector(`.sp-tab[data-tab="${t}"]`);
+      if(btn) btn.classList.toggle('is-active', t===tab);
+      if(panels[t]) panels[t].hidden = t!==tab;
+    });
+  }
 
-  function buildCorePanel(){
-    const wrap=document.createElement('div'); wrap.className='sp-core-wrap';
-    wrap.innerHTML = `
-      <div class="sp-core-grid">
-        <label class="sp-field"><span>App mode</span><select id="spAppMode"><option>CORE</option><option>LAB</option><option>ASTRO</option></select></label>
-        <label class="sp-field"><span>Worker</span><select id="spWorkerMode"><option>On</option><option>Off</option></select></label>
+  function mountGeneralOriginalControls(){
+    if(mountedGeneral) return;
+    const panel = panels.general || $('spPanel-general');
+    const rightDrawer = $('graphSettingsDrawerRight');
+    if(!panel || !rightDrawer) return;
+
+    // Keep original IDs and listeners intact; move the whole drawer into General panel.
+    panel.innerHTML = '';
+    rightDrawer.classList.add('sp-general-mounted');
+    rightDrawer.style.display = 'block';
+    rightDrawer.style.position = 'static';
+    rightDrawer.style.width = '100%';
+    rightDrawer.style.maxWidth = 'none';
+    rightDrawer.style.height = '100%';
+    rightDrawer.style.maxHeight = 'none';
+    rightDrawer.style.overflow = 'visible';
+    panel.appendChild(rightDrawer);
+    mountedGeneral = true;
+  }
+
+  function mountStatusRail(){
+    if(mountedStatus) return;
+    const rail = $('spStatusRail');
+    if(!rail) return;
+    rail.innerHTML = '';
+
+    const statusCard = el('div','sp-status-card');
+    statusCard.innerHTML = `<h4>STATUS</h4>
+      <div id="spStatusText" class="sp-status-lines">Mode: CORE<br>Worker: ready<br>Frame: 0 px<br>Calibration: uncalibrated · pts 0</div>`;
+
+    const dqCard = el('div','sp-status-card');
+    dqCard.innerHTML = `<h4>DATA QUALITY</h4>
+      <div id="spDataQualityText" class="sp-status-lines">Signal: —, —<br>Avg: 0 · Dyn: 0<br>Saturation: 0/0 (0%)</div>`;
+
+    rail.appendChild(statusCard);
+    rail.appendChild(dqCard);
+    mountedStatus = true;
+  }
+
+  function ensureCorePanelContent(){
+    const panel = panels.core || $('spPanel-core');
+    if(!panel || panel.dataset.built==='1') return;
+    const card = el('div','sp-card sp-card--flat');
+    card.innerHTML = `
+      <div class="sp-form-grid">
+        <label>App mode<select id="spAppMode"><option value="core">CORE</option><option value="lab">LAB</option><option value="astro">ASTRO</option></select></label>
+        <label>Worker<select id="spWorkerMode"><option value="on">On</option><option value="off">Off</option></select></label>
       </div>
-      <div class="sp-row">
-        <button class="sp-btn" type="button" id="spInitLibrariesBtn">Init libraries</button>
-        <button class="sp-btn" type="button" id="spPingWorkerBtn">Ping worker</button>
-        <button class="sp-btn" type="button" id="spRefreshUiBtn">Refresh UI</button>
+      <div class="sp-actions">
+        <button type="button" id="spInitLibBtn">Init libraries</button>
+        <button type="button" id="spPingWorkerBtn">Ping worker</button>
+        <button type="button" id="spRefreshUiBtn">Refresh UI</button>
       </div>
-      <div class="sp-note">CORE placeholder controls (LAB/ASTRO wire-up continues in next phase).</div>`;
-    return mk(wrap);
+      <p class="sp-note">CORE remains primary. LAB/ASTRO add overlays + analysis on top.</p>`;
+    panel.appendChild(card);
+    panel.dataset.built='1';
+
+    card.addEventListener('click', (e)=>{
+      const t=e.target;
+      if(!(t instanceof HTMLElement)) return;
+      if(t.id==='spInitLibBtn'){ safeUpdate({ worker:{ ...(store.getState?.().worker||{}), librariesInitialized:true } }); }
+      if(t.id==='spPingWorkerBtn'){ safeUpdate({ worker:{ ...(store.getState?.().worker||{}), ready:true, lastPingAt: Date.now() } }); }
+      if(t.id==='spRefreshUiBtn'){ render(); }
+    });
+    card.querySelector('#spAppMode')?.addEventListener('change',(e)=>{
+      const v=e.target.value; safeUpdate({ mode:v.toUpperCase(), ui:{ ...(store.getState?.().ui||{}), activeTab:v } }); setActiveTab(v);
+    });
+    card.querySelector('#spWorkerMode')?.addEventListener('change',(e)=>{
+      const on=e.target.value==='on'; safeUpdate({ worker:{ ...(store.getState?.().worker||{}), ready:on } });
+    });
   }
 
-  function buildPlaceholder(kind){
-    const d=document.createElement('div'); d.className='sp-card sp-card--flat';
-    d.innerHTML=`<div class="sp-placeholder"><div class="sp-card-title">${kind}</div><div class="sp-note">${kind} controls coming next.</div></div>`;
-    return d;
+  function ensurePlaceholderPanels(){
+    ['lab','astro','other'].forEach(t=>{
+      const panel = panels[t] || $('spPanel-'+t); if(!panel || panel.dataset.built==='1') return;
+      const c=el('div','sp-card sp-card--flat');
+      c.innerHTML = `<div class="sp-empty">${t.toUpperCase()} panel coming next.</div>`;
+      panel.appendChild(c); panel.dataset.built='1';
+    });
   }
 
-  function mountOriginalControlsIntoGeneral(panel, cache){
-    panel.innerHTML='';
-    if (!cache || !cache.length) {
-      panel.appendChild(buildPlaceholder('General'));
-      return;
-    }
-    const wrap = document.createElement('div');
-    wrap.className = 'sp-general-wrap';
-    cache.forEach(node => wrap.appendChild(node));
-    panel.appendChild(wrap);
+  function updateStatusFromState(state){
+    const sEl = $('spStatusText');
+    const qEl = $('spDataQualityText');
+    if(!sEl || !qEl) return;
+    const mode = state?.mode || 'CORE';
+    const ready = state?.worker?.ready ? 'ready' : 'off';
+    const frame = Number(state?.frame?.widthPx || 0);
+    const pts = Number(state?.calibration?.points?.length || 0);
+    const cal = state?.calibration?.isCalibrated ? 'calibrated' : 'uncalibrated';
+    sEl.innerHTML = `Mode: ${mode}<br>Worker: ${ready}<br>Frame: ${frame} px<br>Calibration: ${cal} · pts ${pts}`;
+
+    const dq = state?.dataQuality || {};
+    const min = Number.isFinite(dq.min) ? dq.min.toFixed(1) : '—';
+    const max = Number.isFinite(dq.max) ? dq.max.toFixed(1) : '—';
+    const avg = Number.isFinite(dq.avg) ? dq.avg.toFixed(1) : '0';
+    const dyn = Number.isFinite(dq.dynamicRange) ? dq.dynamicRange.toFixed(1) : '0';
+    const sat = Number.isFinite(dq.saturatedPixels) ? dq.saturatedPixels : 0;
+    const tot = Number.isFinite(dq.totalPixels) ? dq.totalPixels : 0;
+    const pct = tot>0 ? ((sat/tot)*100).toFixed(1) : '0.0';
+    qEl.innerHTML = `Signal: ${min} - ${max}<br>Avg: ${avg} · Dyn: ${dyn}<br>Saturation: ${sat}/${tot} (${pct}%)`;
   }
 
-  function renderStatus(store){
-    const s = (window.SpectraProState && window.SpectraProState.getState && window.SpectraProState.getState()) || {};
-    const st = qs('spStatusContent');
-    const dq = qs('spQualityContent');
-    if (st) st.innerHTML = `
-      <div>Mode: <b>${String(s.mode||'CORE')}</b></div>
-      <div>Worker: ${s.workerReady ? 'ready' : 'idle'}</div>
-      <div>Frame: ${Number.isFinite(s.frameWidth)?s.frameWidth:0} px</div>
-      <div>Calibration: ${(s.calibration && s.calibration.state) || 'uncalibrated'} · pts ${(s.calibration && s.calibration.points)||0}</div>`;
-    if (dq) dq.innerHTML = `
-      <div>Signal: ${Number.isFinite(s.signalMin)?s.signalMin:'—'}–${Number.isFinite(s.signalMax)?s.signalMax:'—'}</div>
-      <div>Avg: ${Number.isFinite(s.signalAvg)?s.signalAvg.toFixed(1):'0.0'} · Dyn: ${Number.isFinite(s.dynamicRange)?s.dynamicRange.toFixed(1):'0.0'}</div>
-      <div>Saturation: ${(s.saturatedPixels||0)}/${(s.totalPixels||0)} (${s.totalPixels?(((s.saturatedPixels||0)/s.totalPixels)*100).toFixed(1):'0.0'}%)</div>`;
+  function render(){
+    ensureShell();
+    mountGeneralOriginalControls();
+    mountStatusRail();
+    const state = store?.getState ? store.getState() : {};
+    const active = (state?.ui?.activeTab || 'general').toLowerCase();
+    setActiveTab(TABS.includes(active)?active:'general');
+    updateStatusFromState(state||{});
   }
 
   function init(){
-    const drawer = qs('graphSettingsDrawer');
-    const left = qs('graphSettingsDrawerLeft');
-    if (!drawer || !left) return;
-
-    // Capture original graph controls once (the real controls live directly in graphSettingsDrawerLeft in SPECTRA-1)
-    let originalControls = window.__spOriginalGeneralControls;
-    if (!originalControls) {
-      originalControls = Array.from(left.children).filter(n => !(n.id === 'SpectraProDockHost'));
-      window.__spOriginalGeneralControls = originalControls;
-    }
-
-    let host = qs('SpectraProDockHost');
-    if (!host) {
-      host = createDockHost();
-      left.appendChild(host);
-    }
-
-    let active = 'general';
-    const panel = qs('spTabPanel');
-
-    function renderTab(){
-      if (!panel) return;
-      if (active === 'general') mountOriginalControlsIntoGeneral(panel, window.__spOriginalGeneralControls);
-      else if (active === 'core') { panel.innerHTML=''; panel.appendChild(buildCorePanel()); }
-      else if (active === 'lab') { panel.innerHTML=''; panel.appendChild(buildPlaceholder('LAB')); }
-      else if (active === 'astro') { panel.innerHTML=''; panel.appendChild(buildPlaceholder('ASTRO')); }
-      else { panel.innerHTML=''; panel.appendChild(buildPlaceholder('Other')); }
-    }
-
-    host.querySelectorAll('.sp-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        active = btn.dataset.spTab || 'general';
-        host.querySelectorAll('.sp-tab').forEach(b => b.classList.toggle('is-active', b===btn));
-        renderTab();
-      });
+    ensureShell();
+    render();
+    bus?.on?.('state:changed', render);
+    bus?.on?.('ui:refresh', render);
+    bus?.on?.('frame:updated', ()=>{
+      const st = store?.getState ? store.getState() : {};
+      const q = window.SpectraProDataQuality?.fromFrame?.(st.frame || {}) || {};
+      safeUpdate({ dataQuality: q });
     });
-
-    renderTab();
-    renderStatus();
-
-    if (!window.__spStatusListener && window.SpectraProEvents && window.SpectraProEvents.on) {
-      window.__spStatusListener = window.SpectraProEvents.on('state:changed', () => { renderStatus(); });
-    }
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once:true });
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once:true });
   else init();
 })();
