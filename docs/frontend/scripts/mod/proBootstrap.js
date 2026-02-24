@@ -1,337 +1,161 @@
-(function(window){
-  'use strict';
-  const sp = window.SpectraPro = window.SpectraPro || {};
+(function(){
+  const NS = window.SpectraPro = window.SpectraPro || {};
+  const stateStore = NS.stateStore;
+  const eventBus = NS.eventBus;
+  const ensure = NS.ensureModeFeatures || function(){};
 
-  function safeUpdate(path, value, source){
-    if (sp.store && sp.store.update) sp.store.update(path, value, source || 'proBootstrap');
-  }
-  function getState(){ return (sp.store && sp.store.getState && sp.store.getState()) || {}; }
+  const TABS = [
+    { key:'general', label:'General' },
+    { key:'core', label:'CORE controls' },
+    { key:'lab', label:'LAB' },
+    { key:'astro', label:'ASTRO' },
+    { key:'other', label:'Other' }
+  ];
 
-  function wireCoreEvents(){
-    if (!sp.eventBus || !sp.eventBus.emit) return;
-
-    const emitFrame = () => {
-      try {
-        if (sp.spectrumFrameAdapter && sp.spectrumFrameAdapter.captureFromGlobals) {
-          const frame = sp.spectrumFrameAdapter.captureFromGlobals();
-          if (frame && frame.I && frame.I.length) sp.eventBus.emit('frame:updated', frame);
-        }
-      } catch (e) { console.warn('[SPECTRA-PRO] frame hook failed', e); }
-    };
-
-    let lastTick = 0;
-    setInterval(function(){
-      emitFrame();
-      const now = Date.now();
-      if (now - lastTick > 450 && sp._workerClient) {
-        lastTick = now;
-        const s = getState();
-        if (s.worker && s.worker.enabled && s.frame && s.frame.latest && s.frame.latest.I) {
-          try {
-            sp._workerClient.analyzeFrame({
-              frame: s.frame.latest,
-              mode: s.appMode || 'CORE',
-              presetId: s.analysis && s.analysis.presetId,
-              subtraction: s.subtraction || {}
-            });
-          } catch (e) { console.warn('[SPECTRA-PRO] analyze tick failed', e); }
-        }
-      }
-    }, 250);
+  function safeUpdate(patch){
+    if (stateStore && typeof stateStore.update === 'function') stateStore.update(patch);
   }
 
-  function removeHomeButton(){
-    const btn = document.querySelector('#graphSettingsDrawerRight button[onclick*="openRedirectionModal"]');
-    if (btn) btn.remove();
+  function getState(){
+    return (stateStore && typeof stateStore.getState === 'function') ? stateStore.getState() : {};
   }
 
-  function relabelFlrButton(){
-    const flrBtn = document.querySelector('button[onclick*="LongExpo"]');
-    if (flrBtn) {
-      flrBtn.textContent = 'Long Exposure';
-      flrBtn.title = 'Long exposure / frame recording settings (original SPECTRA FLR)';
-    }
+  function q(id){ return document.getElementById(id); }
+
+  function createDockHost(){
+    let host = q('SpectraProDockHost');
+    if (host) return host;
+    const drawer = q('graphSettingsDrawerLeft');
+    if (!drawer) return null;
+
+    host = document.createElement('div');
+    host.id = 'SpectraProDockHost';
+    host.className = 'sp-dock-host';
+    drawer.innerHTML = '';
+    drawer.appendChild(host);
+    return host;
   }
 
-  function makePanel(){
-    if (document.getElementById('spectraProPanel')) return;
-    const drawer = document.getElementById('graphSettingsDrawer');
-    const drawerLeft = document.getElementById('graphSettingsDrawerLeft');
-    if (!drawer || !drawerLeft) return;
+  function escapeHtml(v){
+    return String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
 
-    let dock = document.getElementById('spectraProDockHost');
-    if (!dock) {
-      dock = document.createElement('div');
-      dock.id = 'spectraProDockHost';
-      dock.className = 'sp-dock-host';
-    }
-    // IMPORTANT: dock must live inside the original left drawer column,
-    // otherwise it gets clipped by #graphWindowContainer overflow and appears as an empty gap.
-    if (dock.parentElement !== drawerLeft) {
-      drawerLeft.insertBefore(dock, drawerLeft.firstChild);
-    }
-
-    const host = document.createElement('div');
-    host.id = 'spectraProPanel';
-    host.className = 'sp-inline-panel sp-docked';
-    dock.classList.add('sp-dock-host');
-    // Hard reset inline/floating leftovers (old cached CSS/previous patches)
-    Object.assign(host.style, {
-      position: 'static',
-      inset: 'auto',
-      right: 'auto',
-      bottom: 'auto',
-      left: 'auto',
-      top: 'auto',
-      width: '100%',
-      maxWidth: 'none',
-      minWidth: '0',
-      transform: 'none',
-      zIndex: 'auto',
-      margin: '12px 0 0 0',
-      alignSelf: 'stretch'
-    });
+  function buildShell(host){
+    if (!host || host.dataset.spBuilt === '1') return;
+    host.dataset.spBuilt = '1';
     host.innerHTML = `
-    <div class="sp-shell">
-      <button id="spDockToggle" class="sp-dock-toggle" type="button" aria-label="Hide/Show panel" title="Hide/Show panel">▾</button>
-      <div id="spRoot" class="sp-root">
-        <div class="sp-main">
-          <div class="sp-tabbar" role="tablist" aria-label="SPECTRA-PRO panels">
-            <button class="sp-tab is-active" type="button" data-tab="general">General</button>
-            <button class="sp-tab" type="button" data-tab="core">CORE controls</button>
-            <button class="sp-tab" type="button" data-tab="lab">LAB</button>
-            <button class="sp-tab" type="button" data-tab="astro">ASTRO</button>
-            <button class="sp-tab" type="button" data-tab="other">Other</button>
+      <div class="sp-shell">
+        <div class="sp-main" id="sp-main">
+          <div class="sp-tabbar" role="tablist" aria-label="SPECTRA-PRO tabs">
+            ${TABS.map((t,i)=>`<button class="sp-tab-btn ${i===0?'is-active':''}" data-sp-tab="${t.key}" role="tab" aria-selected="${i===0?'true':'false'}">${t.label}</button>`).join('')}
           </div>
-          <div class="sp-tabpanels">
-            <section class="sp-tabpanel is-active" data-panel="general">
-              <div class="sp-note">General panel scaffold (PRO dock controls live below as phases unlock).</div>
-            </section>
-            <section class="sp-tabpanel" data-panel="core">
-              <div class="sp-form-grid">
-                <label class="sp-field"><span>Subtraction mode</span>
-                  <select id="spSubMode"><option value="none">None</option><option value="dark">Dark</option><option value="reference">Reference</option><option value="both">Dark + Reference</option></select>
-                </label>
-                <label class="sp-field"><span>Lab preset</span>
-                  <select id="spLabPreset"><option value="none">None</option><option value="emission">Emission lamp</option><option value="absorption">Absorption</option><option value="continuum">Continuum</option></select>
-                </label>
-                <button id="spSyncCoreTweaks" type="button">Sync CORE → PRO</button>
-                <button id="spApplyCoreTweaks" type="button">Apply PRO → CORE</button>
-                <button id="spRefreshUi" type="button">Refresh UI</button>
-              </div>
-            </section>
-            <section class="sp-tabpanel" data-panel="lab">
-              <div class="sp-form-grid">
-                <button id="spCapDark" type="button">Capture dark</button>
-                <button id="spCapRef" type="button">Capture reference</button>
-                <button id="spClearRef" type="button">Clear ref/dark</button>
-                <label class="sp-field"><span>LAB subtraction</span><select id="spLabSubState"><option value="off">Off</option><option value="on">On</option></select></label>
-                <div class="sp-note">LAB-MVP scaffold connected to state store.</div>
-              </div>
-            </section>
-            <section class="sp-tabpanel" data-panel="astro">
-              <div class="sp-note">ASTRO panel scaffold (coming in later phase).</div>
-            </section>
-            <section class="sp-tabpanel" data-panel="other">
-              <div class="sp-form-grid">
-                <label class="sp-field"><span>App mode</span>
-                  <select id="spAppModeSelect"><option value="core">CORE</option><option value="lab">LAB</option><option value="astro">ASTRO</option></select>
-                </label>
-                <label class="sp-field"><span>Worker</span>
-                  <select id="spWorkerToggle"><option value="on">On</option><option value="off">Off</option></select>
-                </label>
-                <button id="spInitWorker" type="button">Init libraries</button>
-                <button id="spPingWorker" type="button">Ping worker</button>
-              </div>
-            </section>
+          <div class="sp-body-row">
+            <div class="sp-tabpanels" id="sp-tabpanels">
+              ${TABS.map((t,i)=>`<section class="sp-tabpanel ${i===0?'is-active':''}" data-sp-panel="${t.key}" role="tabpanel"></section>`).join('')}
+            </div>
+            <aside class="sp-status-rail" id="SPStatusRail" aria-label="status rail"></aside>
           </div>
         </div>
-        <aside class="sp-status-rail">
-          <div class="sp-brand-row"><div class="sp-brand">SPECTRA-PRO</div><span id="spModeBadge" class="sp-mode-badge">P1</span></div>
-          <section class="sp-card"><h4>STATUS</h4><div id="spStatusHost" class="sp-list"></div></section>
-          <section class="sp-card"><h4>DATA QUALITY</h4><div id="spQualityHost" class="sp-list"></div></section>
-          <section class="sp-card"><h4>TOP HITS</h4><div id="spTopHitsHost" class="sp-list">No peaks yet.</div></section>
-        </aside>
-      </div>
-    </div>`;
+      </div>`;
 
-    // Append inside the drawer (docked under CORE controls), never floating.
-    dock.replaceChildren(host);
-
-    function getDom(id){ return document.getElementById(id); }
-
-    function syncFromCoreDom(){
-      const peak = getDom('peakSizeLower');
-      const opacity = getDom('gradientOpacitySlider');
-      const panelPeak = getDom('spPeakLower');
-      const panelOpacity = getDom('spFillOpacity');
-      if (peak && panelPeak) panelPeak.value = peak.value || '1';
-      if (opacity && panelOpacity) panelOpacity.value = opacity.value || '0.7';
-    }
-
-    function applyCoreTweaks(){
-      const peak = getDom('peakSizeLower');
-      const opacity = getDom('gradientOpacitySlider');
-      const opacityVal = getDom('gradientOpacityValue');
-      const panelPeak = getDom('spPeakLower');
-      const panelOpacity = getDom('spFillOpacity');
-      if (peak && panelPeak) {
-        peak.value = String(panelPeak.value || 1);
-        peak.dispatchEvent(new Event('input', { bubbles:true }));
-        peak.dispatchEvent(new Event('change', { bubbles:true }));
-      }
-      if (opacity && panelOpacity) {
-        opacity.value = String(panelOpacity.value || 0.7);
-        opacity.dispatchEvent(new Event('input', { bubbles:true }));
-        opacity.dispatchEvent(new Event('change', { bubbles:true }));
-        if (opacityVal) opacityVal.textContent = opacity.value;
-      }
-      safeUpdate('analysis.peakLowerBound', Number(panelPeak?.value || 1), 'panel');
-      safeUpdate('graph.fillOpacity', Number(panelOpacity?.value || 0.7), 'panel');
-    }
-
-    function captureBuffer(kind){
-      const s = getState();
-      const f = s.frame && s.frame.latest;
-      if (!f || !Array.isArray(f.I) || !f.I.length) return;
-      safeUpdate('buffers.' + kind, { timestamp: Date.now(), n: f.I.length }, 'lab-capture');
-      if (kind === 'dark') safeUpdate('subtraction.hasDark', true, 'lab-capture');
-      if (kind === 'reference') safeUpdate('subtraction.hasReference', true, 'lab-capture');
-    }
-    function clearBuffers(){
-      safeUpdate('buffers', {}, 'lab-clear');
-      safeUpdate('subtraction.hasDark', false, 'lab-clear');
-      safeUpdate('subtraction.hasReference', false, 'lab-clear');
-    }
-    function ensureWorkerLibraries(){
-      if (!sp._workerClient) return;
-      try { sp._workerClient.initLibraries({ profile:'builtin-lite' }); } catch(e){ console.warn('[SPECTRA-PRO] initLibraries failed', e); }
-    }
-
-    host.querySelectorAll('.sp-tab').forEach(btn => {
-      btn.addEventListener('click', function(){
-        const tab = this.dataset.tab;
-        host.querySelectorAll('.sp-tab').forEach(b => b.classList.toggle('is-active', b === this));
-        host.querySelectorAll('.sp-tabpanel').forEach(p => p.classList.toggle('is-active', p.dataset.panel === tab));
+    host.querySelectorAll('.sp-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.spTab;
+        activateTab(host, tab);
       });
     });
+  }
 
-    host.querySelector('#spRefreshUi').addEventListener('click', function(){
-      syncFromCoreDom(); render();
-      window.dispatchEvent(new Event('resize'));
+  function activateTab(host, tab){
+    host.querySelectorAll('.sp-tab-btn').forEach(b => {
+      const on = b.dataset.spTab === tab;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-selected', on ? 'true':'false');
     });
-    host.querySelector('#spApplyCoreTweaks').addEventListener('click', applyCoreTweaks);
-    host.querySelector('#spSyncCoreTweaks').addEventListener('click', syncFromCoreDom);
+    host.querySelectorAll('.sp-tabpanel').forEach(p => p.classList.toggle('is-active', p.dataset.spPanel === tab));
+    safeUpdate({ ui: { activeTab: tab }});
+  }
 
-    host.querySelector('#spAppModeSelect').addEventListener('change', function(){
-      if (sp.appMode && sp.appMode.setMode) sp.appMode.setMode(this.value);
-      safeUpdate('appMode', this.value, 'ui');
-      render();
-    });
-    host.querySelector('#spWorkerToggle').addEventListener('change', function(){ safeUpdate('worker.enabled', this.value !== 'off', 'ui'); render(); });
-    host.querySelector('#spInitWorker').addEventListener('click', ensureWorkerLibraries);
-    host.querySelector('#spPingWorker').addEventListener('click', function(){ if (sp._workerClient) sp._workerClient.ping(); });
-    host.querySelector('#spCapDark').addEventListener('click', function(){ captureBuffer('dark'); render(); });
-    host.querySelector('#spCapRef').addEventListener('click', function(){ captureBuffer('reference'); render(); });
-    host.querySelector('#spClearRef').addEventListener('click', function(){ clearBuffers(); render(); });
-    host.querySelector('#spLabPreset').addEventListener('change', function(){ safeUpdate('analysis.presetId', this.value, 'lab-preset'); render(); });
-    host.querySelector('#spSubMode').addEventListener('change', function(){ safeUpdate('subtraction.mode', this.value, 'lab-submode'); render(); });
+  function moveNodeIntoPanel(node, panel){
+    if (!node || !panel) return;
+    if (panel.contains(node)) return;
+    panel.innerHTML = '';
+    panel.appendChild(node);
+  }
 
-    let rendering = false;
-    function render(){
-      if (rendering) return;
-      rendering = true;
-      try {
-        const s = getState();
-        const f = (s.frame && s.frame.latest) || {};
-        const c = s.calibration || {};
-        const w = s.worker || {};
-        const topHits = (s.analysis && s.analysis.topHits) || [];
-        const intensity = Array.isArray(f.I) ? f.I : [];
-        let min=Infinity, max=-Infinity, sum=0, sat=0;
-        for (let i=0;i<intensity.length;i++) {
-          const v = Number(intensity[i]) || 0;
-          if (v < min) min = v;
-          if (v > max) max = v;
-          sum += v;
-          if (v >= 250) sat++;
-        }
-        const n = intensity.length || 0;
-        const avg = n ? sum / n : 0;
-        const satPct = n ? (100 * sat / n) : 0;
-        const dynamic = (isFinite(max) && isFinite(min)) ? (max - min) : 0;
-        const qFlag = !n ? 'no frame' : satPct > 5 ? 'saturated risk' : dynamic < 20 ? 'low contrast' : 'ok';
-        const qClass = qFlag === 'ok' ? 'ok' : (qFlag === 'no frame' ? '' : 'warn');
+  function fillPlaceholder(panel, title, text){
+    if (!panel) return;
+    if (panel.children.length > 0) return;
+    panel.innerHTML = `<div class="sp-card"><div class="sp-card-title">${escapeHtml(title)}</div><div class="sp-card-body"><p>${escapeHtml(text)}</p></div></div>`;
+  }
 
-        const mode = (s.appMode || (sp.appMode && sp.appMode.getMode && sp.appMode.getMode()) || 'CORE');
-        const modeSelect = host.querySelector('#spAppModeSelect');
-        if (modeSelect && modeSelect.value !== mode) modeSelect.value = mode;
-        const badge = host.querySelector('#spModeBadge');
-        if (badge) badge.textContent = mode === 'CORE' ? 'P1' : (mode === 'LAB' ? 'P2-LAB' : 'ASTRO');
+  function renderStatusRail(rail, st){
+    if (!rail) return;
+    const ui = st.ui || {};
+    const dq = st.dataQuality || {};
+    rail.innerHTML = `
+      <div class="sp-brandline"><span class="sp-brand">SPECTRA-PRO</span><span class="sp-pill">P1</span></div>
+      <div class="sp-card compact"><div class="sp-card-title">STATUS</div><div class="sp-card-body">
+        <div>Mode: <b>${escapeHtml(ui.mode || 'CORE')}</b></div>
+        <div>Worker: ${escapeHtml(ui.workerStatus || 'ready')}</div>
+        <div>Frame: ${escapeHtml(ui.frameWidth ?? 0)} px</div>
+        <div>Calibration: ${escapeHtml(ui.calibrationLabel || 'uncalibrated')} · pts ${escapeHtml(ui.calibrationPoints ?? 0)}</div>
+      </div></div>
+      <div class="sp-card compact"><div class="sp-card-title">DATA QUALITY</div><div class="sp-card-body">
+        <div>Signal: ${escapeHtml(dq.min ?? '—')} .. ${escapeHtml(dq.max ?? '—')}</div>
+        <div>Avg: ${escapeHtml(dq.avg ?? 0)} · Dyn: ${escapeHtml(dq.dynamicRange ?? 0)}</div>
+        <div>Saturation: ${escapeHtml(dq.saturated ?? 0)}/${escapeHtml(dq.total ?? 0)} (${escapeHtml(dq.saturationPct ?? 0)}%)</div>
+        <div>Quality: <span class="sp-badge">${escapeHtml(dq.label || 'no frame')}</span></div>
+      </div></div>`;
+  }
 
-        const statusHost = host.querySelector('#spStatusHost');
-        if (statusHost) statusHost.innerHTML = [
-          `<div><span class="muted">Mode</span>: <b>${mode}</b></div>`,
-          `<div><span class="muted">Worker</span>: ${w.status || 'idle'}${w.librariesLoaded ? ' · libs ✓' : ''}</div>`,
-          `<div><span class="muted">Frame</span>: ${n} px ${f.source ? '('+f.source+')' : ''}</div>`,
-          `<div><span class="muted">Calibration</span>: ${c.isCalibrated ? 'calibrated' : 'uncalibrated'} · pts ${(Array.isArray(c.points) ? c.points.length : 0)}</div>`
-        ].join('');
+  function render(){
+    const host = createDockHost();
+    if (!host) return;
+    buildShell(host);
 
-        const qualityHost = host.querySelector('#spQualityHost');
-        if (qualityHost) qualityHost.innerHTML = [
-          `<div><span class="muted">Signal</span>: min ${isFinite(min)?min.toFixed(1):'—'} · max ${isFinite(max)?max.toFixed(1):'—'}</div>`,
-          `<div><span class="muted">Avg</span>: ${avg.toFixed(1)} · <span class="muted">Dyn</span>: ${dynamic.toFixed(1)}</div>`,
-          `<div><span class="muted">Saturation</span>: ${sat}/${n} (${satPct.toFixed(1)}%)</div>`,
-          `<div><span class="muted">Quality</span>: <span class="sp-pill ${qClass}">${qFlag}</span></div>`
-        ].join('');
+    // Hide legacy floating panel if present
+    const legacyFloat = q('spectraProPanel') || q('SpectraProPanel');
+    if (legacyFloat) legacyFloat.style.display = 'none';
 
-        const sub = s.subtraction || {};
-        const subEl = host.querySelector('#spLabSubState');
-        if (subEl) subEl.textContent = `Dark: ${sub.hasDark ? 'yes' : 'no'} · Ref: ${sub.hasReference ? 'yes' : 'no'} · Mode: ${sub.mode || 'raw'}`;
+    const st = getState();
+    const ui = st.ui || {};
+    ensure(ui.mode || 'CORE');
 
-        const hitsEl = host.querySelector('#spTopHitsHost');
-        if (hitsEl) {
-          if (!topHits.length) {
-            hitsEl.innerHTML = `<div class="sp-note">No hits yet. This is normal if calibration/worker is not configured yet.</div>`;
-          } else {
-            hitsEl.innerHTML = topHits.slice(0,6).map((h,i)=>`<div class="sp-hit"><span class="sp-rank">${i+1}</span><span class="sp-name">${h.species || '—'}</span><span class="sp-nm">${Number.isFinite(h.observedNm)?h.observedNm.toFixed(2):'—'} nm</span><span class="sp-conf">${h.confidence!=null?Math.round(h.confidence*100):0}%</span></div>`).join('');
-          }
-        }
-      } finally { rendering = false; }
-    }
+    const panels = {
+      general: host.querySelector('.sp-tabpanel[data-sp-panel="general"]'),
+      core: host.querySelector('.sp-tabpanel[data-sp-panel="core"]'),
+      lab: host.querySelector('.sp-tabpanel[data-sp-panel="lab"]'),
+      astro: host.querySelector('.sp-tabpanel[data-sp-panel="astro"]'),
+      other: host.querySelector('.sp-tabpanel[data-sp-panel="other"]')
+    };
 
-    if (sp.eventBus && sp.eventBus.on) {
-      sp.eventBus.on('state:changed', render);
-      sp.eventBus.on('mode:changed', function(){ render(); });
-    }
-    syncFromCoreDom();
+    // Move original graph controls into General tab. This is the crucial part.
+    const graphControls = q('graphSettingsContent');
+    if (graphControls) moveNodeIntoPanel(graphControls, panels.general);
+
+    // Keep placeholders for remaining tabs until implemented.
+    fillPlaceholder(panels.core, 'CORE controls', 'CORE använder i nuläget huvudkontrollerna i General. Här kan vi senare lägga PRO-specifika CORE-funktioner.');
+    fillPlaceholder(panels.lab, 'LAB', 'LAB-MVP panel (placeholder) – analyspresets och labbverktyg kopplas här.');
+    fillPlaceholder(panels.astro, 'ASTRO', 'ASTRO panel (placeholder) – kalibrering mot linjebibliotek och astro-overlay kommer här.');
+    fillPlaceholder(panels.other, 'Other', 'Övriga verktyg, export och debug.');
+
+    renderStatusRail(q('SPStatusRail'), st);
+
+    const active = ui.activeTab || 'general';
+    activateTab(host, active);
+  }
+
+  function init(){
     render();
+    if (eventBus && typeof eventBus.on === 'function') {
+      eventBus.on('state:changed', render);
+    }
   }
 
-  function initWorkerClient(){
-    if (!sp.createAnalysisWorkerClient || sp._workerClient) return;
-    sp._workerClient = sp.createAnalysisWorkerClient({ workerUrl:'../workers/analysis.worker.js', throttleMs:350, timeoutMs:2500 });
-    try { sp._workerClient.start(); } catch (e) { console.warn('[SPECTRA-PRO] worker start skipped', e); }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once:true });
+  } else {
+    init();
   }
-
-  function applyLayoutFixes(){
-    try {
-      const right = document.getElementById('sidebar-right');
-      if (right && !right.querySelector('*')) right.classList.add('hidden');
-      setTimeout(()=>window.dispatchEvent(new Event('resize')), 80);
-      setTimeout(()=>window.dispatchEvent(new Event('resize')), 260);
-    } catch(e){ console.warn('[SPECTRA-PRO] layout fix skipped', e); }
-  }
-
-  function boot(){
-    removeHomeButton();
-    relabelFlrButton();
-    wireCoreEvents();
-    makePanel();
-    initWorkerClient();
-    applyLayoutFixes();
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  sp.proBootstrap = { boot, wireCoreEvents };
-})(window);
+})();

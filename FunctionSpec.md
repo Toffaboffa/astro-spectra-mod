@@ -1,3 +1,13 @@
+## Patch update – Phase 2.1 dock/layout stabilization (current)
+
+- Fixed SPECTRA-PRO dock mounting so **SpectraProDockHost** is now injected directly into `#graphSettingsDrawerLeft` (the drawer under the graph).
+- Moved original graph controls (`#graphSettingsContent`, including p-2/px-2 content) into **General** tab inside the dock.
+- Kept a persistent right-side status rail (`SPStatusRail`) inside the dock body, always visible.
+- Removed/hidden legacy floating SPECTRA-PRO panel if present (prevents duplicate UI).
+- Added authoritative dock CSS rules in `docs/frontend/styles/mod-panels.css` to prevent empty/hidden tab panel regressions.
+- Forced drawer/sidebar toggle handles to remain visible (no hover-disappear behavior).
+- Remaining work: wire actual LAB/ASTRO/Other controls into `sp-tabpanel` containers; refine mobile compaction.
+
 # FunctionSpec.md — SPECTRA-PRO implementation plan and status tracker
 
 This file defines **how we build SPECTRA-PRO safely**, in what order files are patched, and how we avoid breaking CORE mode while adding LAB and ASTRO features.
