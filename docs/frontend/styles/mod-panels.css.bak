@@ -573,31 +573,3 @@ body{overflow:hidden;}
 @media (max-width: 1200px){
   #SpectraProDockHost .sp-body{grid-template-columns:1fr !important;}
 }
-
-/* === SPECTRA-PRO GUI recovery hotfix (2026-02-24 v2) ===
-   Root cause: legacy hide rule targeted direct children of #graphSettingsDrawerLeft
-   and hid #spMain wrapper (dock host is nested inside #spMain). This made the dock invisible.
-*/
-#graphSettingsDrawerLeft > #spMain{
-  display:block !important;
-  flex:1 1 auto !important;
-  min-height:0 !important;
-  width:100% !important;
-}
-#graphSettingsDrawerLeft > #spMain > #SpectraProDockHost{
-  display:block !important;
-  width:100% !important;
-  height:100% !important;
-  min-height:0 !important;
-}
-/* Hide legacy direct children after they are rehosted into General tab, but keep wrapper visible */
-#graphSettingsDrawerLeft > :not(#spMain){
-  display:none !important;
-}
-/* Ensure the dock content itself gets visible height inside the bottom drawer */
-#graphSettingsDrawerLeft #spMain,
-#graphSettingsDrawerLeft #SpectraProDockHost,
-#graphSettingsDrawerLeft #SpectraProDockHost .sp-shell,
-#graphSettingsDrawerLeft #SpectraProDockHost .sp-body{
-  min-height:0 !important;
-}
