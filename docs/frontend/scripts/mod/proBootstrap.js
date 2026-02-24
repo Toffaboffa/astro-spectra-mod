@@ -64,7 +64,11 @@
       dock = document.createElement('div');
       dock.id = 'spectraProDockHost';
       dock.className = 'sp-dock-host';
-      drawer.insertAdjacentElement('afterend', dock);
+    }
+    // IMPORTANT: dock must live inside the original left drawer column,
+    // otherwise it gets clipped by #graphWindowContainer overflow and appears as an empty gap.
+    if (dock.parentElement !== drawerLeft) {
+      drawerLeft.insertBefore(dock, drawerLeft.firstChild);
     }
 
     const host = document.createElement('div');

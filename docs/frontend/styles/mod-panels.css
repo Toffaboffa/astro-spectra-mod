@@ -218,3 +218,49 @@ body{overflow:hidden;}
   #spectraProPanel .sp-form-grid{ grid-template-columns:1fr; }
   #spectraProPanel .sp-status-rail{ grid-template-columns:1fr; }
 }
+
+
+/* Hotfix: embed PRO dock inside graph settings drawer (prevents hidden/empty strip) */
+#graphWindowContainer{
+  padding-bottom: 0 !important;
+}
+#spectraProDockHost{
+  width: 100%;
+  margin: 0 0 10px 0;
+}
+#graphSettingsDrawerLeft > #spectraProDockHost{
+  display: block;
+}
+#graphSettingsDrawerLeft #spectraProPanel{
+  position: static !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+}
+#graphSettingsDrawerLeft #spectraProPanel .sp-dock-shell{
+  padding: 0;
+}
+#graphSettingsDrawerLeft #spectraProPanel .sp-dock-layout{
+  min-height: 0;
+  grid-template-columns: minmax(0,1fr) 340px;
+}
+#graphSettingsDrawerLeft #spectraProPanel .sp-tab-content{
+  min-height: 100px;
+  max-height: 170px;
+}
+#graphSettingsDrawerLeft #spectraProPanel .sp-status-column{
+  max-height: 170px;
+}
+@media (max-width: 1200px){
+  #graphSettingsDrawerLeft #spectraProPanel .sp-dock-layout{
+    grid-template-columns: 1fr;
+  }
+  #graphSettingsDrawerLeft #spectraProPanel .sp-tab-content,
+  #graphSettingsDrawerLeft #spectraProPanel .sp-status-column{
+    max-height: none;
+  }
+}
