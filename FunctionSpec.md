@@ -539,3 +539,19 @@ That means this function spec intentionally optimizes for **stable patch order**
 
 
 - **Phase 2.1 hotfix (dock placement + CSS):** PRO dock is now mounted below `#graphSettingsDrawer` (not nested inside graph controls), scrollbar overflow guarded, and drawer toggle arrows forced above overlays. CI frontend smoke CSS check accepts consolidated styles file.
+
+## Phase 2.1 UI hotfix (General + status rail layout)
+
+### Fixed in this patch
+- **General tab now loads the real original SPECTRA graph controls** (the existing `.p-2` / `.px-2` blocks from `#graphSettingsDrawerLeft`) instead of an empty placeholder panel.
+- **SPECTRA-PRO dock host is the only visible panel container** in the lower drawer; legacy drawer children are hidden after being re-mounted into the dock UI.
+- **Status + Data Quality rail** is now a fixed right-side area and renders the two cards **side-by-side** (desktop) instead of stacked.
+- Removed redundant **brandline / pill branding UI** in the status rail to save vertical space.
+- **CORE controls placeholder restored** with `App mode`, `Worker`, and action buttons (`Init libraries`, `Ping worker`, `Refresh UI`).
+- **Double-border issue reduced** by removing inner card framing in the General tab so original controls can use the panel space directly.
+- **Drawer toggle arrows** are force-kept visible via CSS overrides (`opacity/visibility/display/pointer-events`) to stop the disappearing-hover bug.
+- **CI/frontend smoke** remains fixed (path checks no longer fail after style consolidation).
+
+### Notes
+- This patch intentionally uses strong CSS overrides at the end of `mod-panels.css` to beat legacy rules while the layout is still evolving.
+- Next UI cleanup pass can move these overrides into a single canonical PRO stylesheet once layout stabilizes.

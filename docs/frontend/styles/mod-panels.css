@@ -315,3 +315,31 @@ body{overflow:hidden;}
   .sp-body-row{grid-template-columns:minmax(0,1fr);}
   .sp-status-rail{border-left:none;padding-left:0;border-top:1px solid rgba(120,180,255,.14);padding-top:10px;}
 }
+
+
+/* === Phase 2.1 layout cleanup authoritative overrides === */
+#SpectraProDockHost{width:100%;height:100%;display:block;}
+#SpectraProDockHost .sp-shell,#SpectraProDockHost .sp-main{height:100%;min-height:0;}
+#SpectraProDockHost .sp-main{display:flex;flex-direction:column;gap:8px;padding:8px 10px;}
+#SpectraProDockHost .sp-tabbar{display:flex;flex-wrap:wrap;gap:8px;}
+#SpectraProDockHost .sp-body-row{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;min-height:0;flex:1 1 auto;}
+#SpectraProDockHost .sp-tabpanels{min-width:0;min-height:0;overflow:hidden;}
+#SpectraProDockHost .sp-tabpanel{height:100%;min-height:0;overflow:auto;border:1px solid rgba(120,180,255,.18);border-radius:10px;background:rgba(4,19,43,.45);padding:10px;}
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"]{padding:0;border:none;background:transparent;}
+#SpectraProDockHost .sp-tabpanel[data-sp-panel="general"] .sp-card{border:none !important;background:transparent !important;padding:0 !important;box-shadow:none !important;}
+#SpectraProDockHost .sp-status-rail{min-width:0;border-left:1px solid rgba(120,180,255,.14);padding-left:12px;overflow:hidden;}
+#SpectraProDockHost .sp-status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;}
+#SpectraProDockHost .sp-status-rail .sp-card{margin:0;border:1px solid rgba(120,180,255,.18);background:#071a38;}
+#SpectraProDockHost .sp-status-rail .sp-brandline,#SpectraProDockHost .sp-status-rail .sp-pill,#SpectraProDockHost .sp-status-rail .sp-brand{display:none !important;}
+#SpectraProDockHost .sp-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#SpectraProDockHost .sp-field{display:grid;gap:4px;color:#dfeeff;font-size:12px;}
+#SpectraProDockHost .sp-field select{min-height:32px;border-radius:8px;border:1px solid rgba(125,211,252,.22);background:#10284d;color:#e6f0ff;padding:6px 10px;}
+#SpectraProDockHost .sp-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+#SpectraProDockHost .sp-btn{border:1px solid rgba(120,180,255,.28);background:#11335d;color:#e8f2ff;padding:7px 10px;border-radius:8px;cursor:pointer;}
+#SpectraProDockHost .sp-help{margin-top:10px;color:#a9c3e8;font-size:12px;}
+#SpectraProDockHost .sp-ghost{color:#dfeeff;opacity:.9;padding:8px;}
+#graphSettingsDrawerLeft{overflow:hidden !important;}
+#graphSettingsDrawerLeft > :not(#SpectraProDockHost){display:none !important;}
+#sidebarToggleHandleLeft,#drawerToggleHandle{opacity:1 !important;visibility:visible !important;display:flex !important;pointer-events:auto !important;}
+#sidebarToggleHandleLeft:hover,#drawerToggleHandle:hover{opacity:1 !important;}
+@media (max-width:1200px){#SpectraProDockHost .sp-body-row{grid-template-columns:1fr;}#SpectraProDockHost .sp-status-rail{border-left:none;padding-left:0;border-top:1px solid rgba(120,180,255,.14);padding-top:10px;}#SpectraProDockHost .sp-status-grid{grid-template-columns:1fr;}}
