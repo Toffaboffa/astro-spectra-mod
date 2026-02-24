@@ -523,3 +523,6 @@ That means this function spec intentionally optimizes for **stable patch order**
 ## Incremental Updates
 
 - **Hotfix (P2.1 UI dock):** Forced SPECTRA-PRO panel to dock inside `#graphSettingsDrawerLeft` with explicit non-floating style reset (prevents legacy/cached floating panel CSS from collapsing layout in bottom-right corner).
+
+## Latest hotfix notes
+- Hotfix 2.1.3: CI frontend-smoke path check now accepts merged `docs/frontend/styles/styles.css`; SPECTRA-PRO dock moved to dedicated host below graph settings; compact layout to avoid page scrollbar and stop overlap with drawer toggles.

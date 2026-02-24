@@ -55,8 +55,17 @@
 
   function makePanel(){
     if (document.getElementById('spectraProPanel')) return;
+    const drawer = document.getElementById('graphSettingsDrawer');
     const drawerLeft = document.getElementById('graphSettingsDrawerLeft');
-    if (!drawerLeft) return;
+    if (!drawer || !drawerLeft) return;
+
+    let dock = document.getElementById('spectraProDockHost');
+    if (!dock) {
+      dock = document.createElement('div');
+      dock.id = 'spectraProDockHost';
+      dock.className = 'sp-dock-host';
+      drawer.insertAdjacentElement('afterend', dock);
+    }
 
     const host = document.createElement('div');
     host.id = 'spectraProPanel';
@@ -93,7 +102,8 @@
         </div>
       </div>
 
-      <div class="sp-panels">
+      <div class="sp-main">
+        <div class="sp-panels">
         <section class="sp-tabpanel is-active" data-panel="general">
           <div class="sp-grid2">
             <label>App mode
@@ -183,7 +193,7 @@
       </div>`;
 
     // Append inside the drawer (docked under CORE controls), never floating.
-    drawerLeft.appendChild(host);
+    dock.replaceChildren(host);
 
     function getDom(id){ return document.getElementById(id); }
 

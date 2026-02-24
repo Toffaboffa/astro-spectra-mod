@@ -174,18 +174,18 @@ button.btn, .form-select, .form-control { border-radius:8px; }
 }
 #graphSettingsDrawer.hidden { transform: translateY(100%); }
 #graphSettingsDrawerLeft {
-  display:flex; flex-direction:column; flex-grow:1; padding:1rem 0 1rem 1rem; overflow:auto;
+  display:flex; flex-direction:column; flex-grow:1; padding:1rem 0 1rem 1rem; overflow:hidden;
 }
 #graphSettingsDrawerRight {
   display:flex; flex-direction:column; align-items:center; justify-content:space-between;
   padding:0 .5rem .5rem .5rem; width: calc(70px + 1rem);
 }
 #drawerExpandButton {
-  position:absolute; bottom:0; right:.5rem; z-index:105; opacity:0;
+  position:absolute; bottom:0; right:.5rem; z-index:1000; opacity:.95;
 }
 #drawerExpandButton.disabled, #drawerHoverZone.disabled { display:none; }
 #drawerHoverZone {
-  display:flex; position:absolute; bottom:0; left:0; height:30px; width:100%; z-index:104;
+  display:flex; position:absolute; bottom:0; left:0; height:30px; width:100%; z-index:999;
 }
 
 /* Right panel / overlays cleanup */
@@ -353,26 +353,17 @@ button.btn-success:hover, .btn.btn-success:hover {
 }
 
 
-/* Phase 2.1 hotfix: force docked SPECTRA-PRO panel (prevent old floating/cached styles) */
-#graphSettingsDrawerLeft > #spectraProPanel.sp-inline-panel,
-#spectraProPanel.sp-docked {
+/* Phase 2.1 hotfix (updated): dock host is separate below graph settings */
+#spectraProDockHost { width: 100%; }
+#spectraProPanel.sp-inline-panel, #spectraProPanel.sp-docked {
   position: static !important;
   inset: auto !important;
-  left: auto !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: auto !important;
   transform: none !important;
   width: 100% !important;
   max-width: none !important;
-  min-width: 0 !important;
-  margin: 12px 0 0 0 !important;
-  z-index: auto !important;
-  float: none !important;
+  margin: 0 !important;
 }
-#graphSettingsDrawerLeft { align-items: stretch; }
 #spectraProPanel .sp-tabs-row { width: 100%; }
 #spectraProPanel .sp-statusdock { width: 100%; }
-@media (min-width: 1201px) {
-  #spectraProPanel .sp-statusdock { max-width: 420px; justify-self: end; }
-}
+
+

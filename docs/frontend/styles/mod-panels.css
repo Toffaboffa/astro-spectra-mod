@@ -37,3 +37,66 @@
 #spectraProPanel .sp-rank{ opacity:.8; }
 #spectraProPanel .sp-name{ font-weight:600; }
 #spectraProPanel .sp-nm, #spectraProPanel .sp-conf{ color:#bcd2ff; }
+
+
+/* Docked layout (Phase 2.1 hotfix3) */
+#spectraProDockHost{display:block; width:100%; margin:8px 0 0 0;}
+#spectraProPanel.sp-inline-panel{
+  position: static !important;
+  right:auto !important; left:auto !important; top:auto !important; bottom:auto !important;
+  width:100% !important; max-width:none !important; min-width:0 !important;
+  margin:0 !important; z-index: 20 !important;
+  border-radius:10px;
+  overflow:hidden;
+}
+#spectraProPanel .sp-main{display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:12px; align-items:start;}
+#spectraProPanel .sp-tabs-row{display:contents;}
+#spectraProPanel .sp-tabs{display:flex; gap:8px; flex-wrap:wrap; padding:10px 12px; border-bottom:1px solid #243750;}
+#spectraProPanel .sp-tab{border:1px solid #1fcf88; color:#68f0bf; background:#071733; border-radius:7px; padding:6px 12px; font-weight:600;}
+#spectraProPanel .sp-tab.is-active{background:#0d2648; box-shadow: inset 0 0 0 1px rgba(104,240,191,.15);}
+#spectraProPanel .sp-statusdock{grid-column:2; grid-row:1 / span 2; padding:10px 12px 12px; border-left:1px solid #243750;}
+#spectraProPanel .sp-brandrow{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+#spectraProPanel .sp-brand{font-weight:800; letter-spacing:.03em;}
+#spectraProPanel .sp-badge{font-size:11px; border:1px solid #47638c; border-radius:999px; padding:1px 7px;}
+#spectraProPanel .sp-card{border:1px solid #223754; background:rgba(9,18,34,.35); border-radius:10px; padding:8px 10px; margin-bottom:10px;}
+#spectraProPanel .sp-card-title{text-transform:uppercase; font-size:11px; letter-spacing:.05em; color:#bcd2ff; margin-bottom:6px; font-weight:700;}
+#spectraProPanel .sp-panels{grid-column:1; grid-row:2; min-width:0; padding:0 12px 12px;}
+#spectraProPanel .sp-tabpanel{display:none; min-height:140px; border:1px solid #1c3050; border-radius:10px; padding:10px; background:rgba(5,14,28,.25);}
+#spectraProPanel .sp-tabpanel.is-active{display:block;}
+#spectraProPanel .sp-grid2{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+#spectraProPanel .sp-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+#spectraProPanel label{display:flex; flex-direction:column; gap:4px; font-size:12px; color:#cfe0ff;}
+#spectraProPanel select,#spectraProPanel input{max-width:100%; background:#0c1a30; color:#e9f2ff; border:1px solid #294568; border-radius:6px; padding:5px 6px;}
+#spectraProPanel .sp-note{margin-top:10px; font-size:12px; color:#9fb2cf;}
+#spectraProPanel .sp-status{font-size:12px; line-height:1.35;}
+#spectraProPanel .sp-status .muted{color:#9fb2cf;}
+
+/* Prevent extra page scrollbar from dock content */
+#graphSettingsDrawer{overflow:visible;}
+#graphSettingsDrawerLeft,#graphSettingsDrawerRight{overflow:visible;}
+body{overflow:hidden;}
+
+@media (max-width: 1400px){
+  #spectraProPanel .sp-main{grid-template-columns:1fr 320px;}
+}
+@media (max-width: 1100px){
+  #spectraProPanel .sp-main{grid-template-columns:1fr;}
+  #spectraProPanel .sp-statusdock{grid-column:1; grid-row:auto; border-left:none; border-top:1px solid #243750;}
+  #spectraProPanel .sp-panels{grid-row:auto;}
+}
+
+
+/* Hotfix 2.1.4: match actual DOM structure (tabs/status are siblings) */
+#spectraProPanel.sp-inline-panel{display:grid; grid-template-columns:minmax(0,1fr) 360px; grid-template-rows:auto auto; gap:0 12px; align-items:start;}
+#spectraProPanel .sp-tabs-row{grid-column:1 / 2; grid-row:1; display:block;}
+#spectraProPanel .sp-tabs{border-bottom:none;}
+#spectraProPanel .sp-main{grid-column:1 / 2; grid-row:2; display:block; min-width:0;}
+#spectraProPanel .sp-panels{padding:0 12px 12px;}
+#spectraProPanel .sp-statusdock{grid-column:2; grid-row:1 / span 2; width:auto; border-left:1px solid #243750; padding:10px 12px 12px;}
+#spectraProPanel .sp-tabpanel{min-height:110px;}
+@media (max-width: 1100px){
+  #spectraProPanel.sp-inline-panel{grid-template-columns:1fr; grid-template-rows:auto auto auto;}
+  #spectraProPanel .sp-tabs-row{grid-column:1; grid-row:1;}
+  #spectraProPanel .sp-main{grid-column:1; grid-row:2;}
+  #spectraProPanel .sp-statusdock{grid-column:1; grid-row:3; border-left:none; border-top:1px solid #243750;}
+}
