@@ -60,7 +60,23 @@
 
     const host = document.createElement('div');
     host.id = 'spectraProPanel';
-    host.className = 'sp-inline-panel';
+    host.className = 'sp-inline-panel sp-docked';
+    // Hard reset inline/floating leftovers (old cached CSS/previous patches)
+    Object.assign(host.style, {
+      position: 'static',
+      inset: 'auto',
+      right: 'auto',
+      bottom: 'auto',
+      left: 'auto',
+      top: 'auto',
+      width: '100%',
+      maxWidth: 'none',
+      minWidth: '0',
+      transform: 'none',
+      zIndex: 'auto',
+      margin: '12px 0 0 0',
+      alignSelf: 'stretch'
+    });
     host.innerHTML = `
       <div class="sp-tabs-row">
         <div class="sp-tabs" role="tablist" aria-label="SPECTRA-PRO sections">
@@ -166,6 +182,7 @@
         </section>
       </div>`;
 
+    // Append inside the drawer (docked under CORE controls), never floating.
     drawerLeft.appendChild(host);
 
     function getDom(id){ return document.getElementById(id); }

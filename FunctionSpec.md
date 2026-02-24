@@ -519,3 +519,7 @@ That means this function spec intentionally optimizes for **stable patch order**
 - Preset-aware filtering in worker
 - Export of LAB hits/QC metadata
 - Engine7 library loading from JSON files (currently built-in lite fallback)
+
+## Incremental Updates
+
+- **Hotfix (P2.1 UI dock):** Forced SPECTRA-PRO panel to dock inside `#graphSettingsDrawerLeft` with explicit non-floating style reset (prevents legacy/cached floating panel CSS from collapsing layout in bottom-right corner).

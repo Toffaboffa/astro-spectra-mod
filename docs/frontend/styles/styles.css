@@ -351,3 +351,28 @@ button.btn-success:hover, .btn.btn-success:hover {
 @media (max-width: 1200px) {
   #spectraProPanel .sp-tabs-row { grid-template-columns: 1fr; }
 }
+
+
+/* Phase 2.1 hotfix: force docked SPECTRA-PRO panel (prevent old floating/cached styles) */
+#graphSettingsDrawerLeft > #spectraProPanel.sp-inline-panel,
+#spectraProPanel.sp-docked {
+  position: static !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 12px 0 0 0 !important;
+  z-index: auto !important;
+  float: none !important;
+}
+#graphSettingsDrawerLeft { align-items: stretch; }
+#spectraProPanel .sp-tabs-row { width: 100%; }
+#spectraProPanel .sp-statusdock { width: 100%; }
+@media (min-width: 1201px) {
+  #spectraProPanel .sp-statusdock { max-width: 420px; justify-self: end; }
+}
