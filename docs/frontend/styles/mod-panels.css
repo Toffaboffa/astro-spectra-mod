@@ -498,7 +498,7 @@ body{overflow:hidden;}
 #SpectraProDockHost .sp-actions{display:flex !important; flex-wrap:wrap !important; gap:8px !important; margin-top:8px !important;}
 #SpectraProDockHost .sp-actions button{background:#2f5f9f !important; color:#fff !important; border:1px solid #4e7fbf !important; border-radius:8px !important; padding:6px 10px !important;}
 #SpectraProDockHost .sp-note{margin:8px 0 0 !important; color:#9cb7d5 !important; font-size:12px !important;}
-#SpectraProDockHost .sp-statusrail{display:grid !important; grid-template-columns:1fr 1fr !important; gap:10px !important; align-self:end !important; min-width:320px !important; max-width:340px !important;}
+#SpectraProDockHost .sp-statusrail{display:grid !important; grid-template-columns:1fr 1fr !important; gap:10px !important; align-self:end !important; min-width:320px !important; max-width:340px !important; height: 100%;}
 #SpectraProDockHost .sp-status-card{border:1px solid rgba(70,130,220,.55) !important; border-radius:8px !important; padding:8px 10px !important; background:rgba(6,23,56,.55) !important; min-height:72px !important;}
 #SpectraProDockHost .sp-status-card h4{margin:0 0 6px !important; font-size:12px !important; color:#dfefff !important;}
 #SpectraProDockHost .sp-status-lines{font-size:11px !important; line-height:1.35 !important; color:#e8f3ff !important;}
