@@ -494,7 +494,7 @@ body{overflow:hidden;}
 #SpectraProDockHost .sp-tabpanel[hidden]{display:none !important;}
 #SpectraProDockHost .sp-card--flat{background:transparent !important; border:0 !important; padding:0 !important; margin:0 !important; box-shadow:none !important;}
 #SpectraProDockHost .sp-form-grid{display:grid !important; grid-template-columns:repeat(2,minmax(160px,1fr)) !important; gap:10px !important; max-width:520px !important;}
-#SpectraProDockHost .sp-form-grid label{display:flex !important; flex-direction:column !important; gap:4px !important; color:#d2e8ff !important; font-size:12px !important;}
+#SpectraProDockHost .sp-form-grid label{display:flex !important; flex-direction:column !important; gap:4px !important; color:#d2e8ff !important; font-size:13px !important;}
 #SpectraProDockHost .sp-actions{display:flex !important; flex-wrap:wrap !important; gap:8px !important; margin-top:8px !important;}
 #SpectraProDockHost .sp-actions button{background:#2f5f9f !important; color:#fff !important; border:1px solid #4e7fbf !important; border-radius:8px !important; padding:6px 10px !important;}
 #SpectraProDockHost .sp-note{margin:8px 0 0 !important; color:#9cb7d5 !important; font-size:12px !important;}
