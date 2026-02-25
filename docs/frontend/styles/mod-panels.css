@@ -893,6 +893,7 @@ body{overflow:hidden;}
   font-size:10pt;
   line-height:1.2;
   color:#d1fae5;
+  margin-bottom: -10px;
 }
 
 .sp-side-console-cursor{
