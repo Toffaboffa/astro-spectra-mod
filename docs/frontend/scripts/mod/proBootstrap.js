@@ -426,9 +426,11 @@ function maybeRunLabAnalyze(frameNormalized) {
     });
   }
 
-  function ensureStatusRail() {
+  
+function ensureStatusRail() {
     if (!ui || !ui.statusRail) return;
-    if ($('spStatusText') && $('spDataQualityText')) return;
+    // only rebuild if any of the three panes are missing
+    if ($('spStatusText') && $('spDataQualityText') && $('spConsolePre')) return;
 
     ui.statusRail.innerHTML = '';
     const grid = el('div', 'sp-status-grid');
@@ -439,8 +441,12 @@ function maybeRunLabAnalyze(frameNormalized) {
     const dq = el('div', 'sp-status-card');
     dq.innerHTML = '<h4>DATA QUALITY</h4><div id="spDataQualityText" class="sp-status-lines"></div>';
 
+    const consoleCard = el('div', 'sp-status-card sp-console-card');
+    consoleCard.innerHTML = '<h4>CONSOLE</h4><div id="spConsoleBody" class="sp-console-body"><pre id="spConsolePre" class="sp-console-pre"></pre><span class="sp-console-cursor">█</span></div>';
+
     grid.appendChild(status);
     grid.appendChild(dq);
+    grid.appendChild(consoleCard);
     ui.statusRail.appendChild(grid);
   }
 

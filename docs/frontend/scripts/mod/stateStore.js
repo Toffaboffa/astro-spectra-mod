@@ -70,7 +70,8 @@
       hasFlat: false
     }
 ,
-    ui: { console: { lines: [], maxLines: 200 } }
+    ui: {
+      disableInfoPopups: true, console: { lines: [], maxLines: 200 } }
   };
 
   function deepClone(obj) {

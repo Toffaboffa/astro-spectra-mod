@@ -175,6 +175,15 @@ document.getElementById("errorBlock").addEventListener("click", () => {
  * Opens a message window
  */
 function showInfoPopup(messageTranslate, buttonTranslate){
+    try {
+        const sp = window.SpectraPro;
+        if (sp && sp.store && sp.store.getState && sp.store.getState().ui && sp.store.getState().ui.disableInfoPopups) {
+            // Suppress disruptive info popups; log to PRO console if available.
+            try { sp.consoleLog && sp.consoleLog.append && sp.consoleLog.append('POPUP suppressed: ' + String(messageTranslate)); } catch(e) {}
+            return;
+        }
+    } catch (e) {}
+
     document.activeElement.blur()
     const messageSpan = document.getElementById('infoPopupMessage');
     messageSpan.dataset.translate = messageTranslate;
