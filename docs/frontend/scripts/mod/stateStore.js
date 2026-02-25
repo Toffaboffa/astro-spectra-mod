@@ -37,6 +37,11 @@
       yAxisMax: 255,
       overlaysEnabled: true
     },
+    peaks: {
+      threshold: null,
+      distance: null,
+      smoothing: null
+    },
     analysis: {
       presetId: null,
       topHits: [],

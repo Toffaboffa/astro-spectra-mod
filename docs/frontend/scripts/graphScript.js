@@ -96,6 +96,39 @@ function resolveSpectraProYAxisMax(pixels, dynamicMaxValue) {
     return dynamicMaxValue;
 }
 
+function getSpectraProPeakSettings() {
+    try {
+        const sp = window.SpectraPro || {};
+        const st = (sp.store && typeof sp.store.getState === 'function') ? (sp.store.getState() || {}) : {};
+        const fallback = { threshold: lowerPeakBound, distance: 1, smoothing: 0 };
+        if (sp.v15 && sp.v15.peakControls && typeof sp.v15.peakControls.getEffective === 'function') {
+            return sp.v15.peakControls.getEffective(st, fallback);
+        }
+        const p = st.peaks || {};
+        return {
+            threshold: Number.isFinite(Number(p.threshold)) ? Math.max(0, Math.min(255, Math.round(Number(p.threshold)))) : fallback.threshold,
+            distance: Number.isFinite(Number(p.distance)) ? Math.max(1, Math.min(512, Math.round(Number(p.distance)))) : fallback.distance,
+            smoothing: Number.isFinite(Number(p.smoothing)) ? Math.max(0, Math.min(8, Math.round(Number(p.smoothing)))) : fallback.smoothing
+        };
+    } catch (_) {
+        return { threshold: lowerPeakBound, distance: 1, smoothing: 0 };
+    }
+}
+
+function smoothPeakValues(values, passes) {
+    let count = Math.max(0, Math.min(8, Math.round(Number(passes) || 0)));
+    if (!count || !Array.isArray(values) || values.length < 3) return values;
+    let src = values.slice();
+    while (count-- > 0) {
+        const out = src.slice();
+        for (let i = 1; i < src.length - 1; i++) {
+            out[i] = (src[i - 1] + src[i] + src[i + 1]) / 3;
+        }
+        src = out;
+    }
+    return src;
+}
+
 /**
  * Plots the RGB line graph from the camera or image element, deals with resizing, event listeners and drawing
  */
@@ -175,21 +208,23 @@ function drawGraph() {
     }
 
 
+    const spPeakSettings = getSpectraProPeakSettings();
+
     if (needToRecalculateMaxima && document.getElementById('togglePeaksCheckbox').checked) {
         if (getCheckedComparisonId() !== null) {
             const [comparisonDataPixels, comparisonDataPixelWidth] = getCheckedComparisonImageData();
-            maxima = findPeaks(comparisonDataPixels, comparisonDataPixelWidth, minValue);
+            maxima = findPeaks(comparisonDataPixels, comparisonDataPixelWidth, minValue, -1, spPeakSettings.distance, spPeakSettings);
         }
         else {
-            maxima = findPeaks(displayPixels, pixelWidth, minValue);
+            maxima = findPeaks(displayPixels, pixelWidth, minValue, -1, spPeakSettings.distance, spPeakSettings);
             if (toggleR) {
-                maximaR = findPeaks(displayPixels, pixelWidth, minValue, 0);
+                maximaR = findPeaks(displayPixels, pixelWidth, minValue, 0, spPeakSettings.distance, spPeakSettings);
             }
             if (toggleG) {
-                maximaG = findPeaks(displayPixels, pixelWidth, minValue, 1);
+                maximaG = findPeaks(displayPixels, pixelWidth, minValue, 1, spPeakSettings.distance, spPeakSettings);
             }
             if (toggleB) {
-                maximaB = findPeaks(displayPixels, pixelWidth, minValue, 2);
+                maximaB = findPeaks(displayPixels, pixelWidth, minValue, 2, spPeakSettings.distance, spPeakSettings);
             }
         }
         needToRecalculateMaxima = false;
@@ -331,7 +366,7 @@ function averagePixels(pixels, pixelWidth) {
 /**
  * Finds the peaks of the graph
  */
-function findPeaks(pixels, pixelWidth, minValue, colorOffset = -1, minDistance = 1) {
+function findPeaks(pixels, pixelWidth, minValue, colorOffset = -1, minDistance = 1, peakSettings = null) {
     function getValue(x) {
         return colorOffset === -1
             ? calculateMaxColor(pixels, x)
@@ -339,6 +374,13 @@ function findPeaks(pixels, pixelWidth, minValue, colorOffset = -1, minDistance =
     }
 
     let values = new Array(pixelWidth).fill(0).map((_, x) => getValue(x));
+    const effectiveThreshold = (peakSettings && Number.isFinite(Number(peakSettings.threshold)))
+        ? Math.max(0, Math.min(255, Math.round(Number(peakSettings.threshold))))
+        : lowerPeakBound;
+    const smoothingPasses = (peakSettings && Number.isFinite(Number(peakSettings.smoothing)))
+        ? Math.max(0, Math.min(8, Math.round(Number(peakSettings.smoothing))))
+        : 0;
+    values = smoothPeakValues(values, smoothingPasses);
     let candidates = [];
 
     let x = 1;
@@ -375,7 +417,7 @@ function findPeaks(pixels, pixelWidth, minValue, colorOffset = -1, minDistance =
 
             if (leftDropped && rightDropped) {
                 const prominence = peakVal - Math.min(leftMin, rightMin);
-                if (prominence >= lowerPeakBound) {
+                if (prominence >= effectiveThreshold) {
                     candidates.push({ x: peakX, value: peakVal, prominence });
                 }
             }

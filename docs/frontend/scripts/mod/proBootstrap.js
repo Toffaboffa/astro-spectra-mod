@@ -146,6 +146,26 @@
     } catch (_) { return ['AUTO']; }
   }
 
+  function getInitialPeakUiValues() {
+    const state = getStoreState();
+    const peaks = state.peaks || {};
+    let threshold = Number.isFinite(Number(peaks.threshold)) ? Math.round(Number(peaks.threshold)) : null;
+    let distance = Number.isFinite(Number(peaks.distance)) ? Math.round(Number(peaks.distance)) : null;
+    let smoothing = Number.isFinite(Number(peaks.smoothing)) ? Math.round(Number(peaks.smoothing)) : null;
+    if (threshold == null) {
+      const el = $('peakSizeLower');
+      const n = el ? Number(el.value) : NaN;
+      if (Number.isFinite(n)) threshold = Math.round(n);
+    }
+    if (distance == null) distance = 1;
+    if (smoothing == null) smoothing = 0;
+    return {
+      threshold: Math.max(0, Math.min(255, threshold == null ? 1 : threshold)),
+      distance: Math.max(1, Math.min(512, distance)),
+      smoothing: Math.max(0, Math.min(8, smoothing))
+    };
+  }
+
 
   function updateStorePath(path, value, meta) {
     if (!store || !store.update) return;
@@ -327,6 +347,9 @@
         '  <label>Display mode<select id="spDisplayMode">' + displayOptions + '</select></label>',
         '  <label>Y-axis<select id="spYAxisMode">' + yAxisOptions + '</select></label>',
         '  <label id="spYAxisMaxWrap">Y max<input id="spYAxisMax" type="number" min="1" max="4096" step="1" value="255"></label>',
+        '  <label>Peak threshold<input id="spPeakThreshold" type="number" min="0" max="255" step="1" value="1"></label>',
+        '  <label>Peak distance<input id="spPeakDistance" type="number" min="1" max="512" step="1" value="1"></label>',
+        '  <label>Peak smoothing<input id="spPeakSmoothing" type="number" min="0" max="8" step="1" value="0"></label>',
         '</div>',
         '<div class="sp-actions">',
         '  <button type="button" id="spInitLibBtn">Init libraries</button>',
@@ -343,7 +366,14 @@
       const displaySel = card.querySelector('#spDisplayMode');
       const yAxisSel = card.querySelector('#spYAxisMode');
       const yAxisMaxInput = card.querySelector('#spYAxisMax');
+      const peakThresholdInput = card.querySelector('#spPeakThreshold');
+      const peakDistanceInput = card.querySelector('#spPeakDistance');
+      const peakSmoothingInput = card.querySelector('#spPeakSmoothing');
       const setVal = (path, value) => { if (store && store.update) store.update(path, value, { source: 'proBootstrap.core' }); };
+      const peakInit = getInitialPeakUiValues();
+      if (peakThresholdInput) peakThresholdInput.value = String(peakInit.threshold);
+      if (peakDistanceInput) peakDistanceInput.value = String(peakInit.distance);
+      if (peakSmoothingInput) peakSmoothingInput.value = String(peakInit.smoothing);
 
       modeSel && modeSel.addEventListener('change', (e) => {
         const mode = String(e.target.value || 'CORE').toUpperCase();
@@ -369,6 +399,28 @@
         const n = Number(e.target.value);
         if (!Number.isFinite(n) || n <= 0) return;
         setVal('display.yAxisMax', Math.round(n));
+      });
+
+      peakThresholdInput && peakThresholdInput.addEventListener('change', (e) => {
+        const n = Number(e.target.value);
+        if (!Number.isFinite(n)) return;
+        const v = Math.max(0, Math.min(255, Math.round(n)));
+        e.target.value = String(v);
+        setVal('peaks.threshold', v);
+      });
+      peakDistanceInput && peakDistanceInput.addEventListener('change', (e) => {
+        const n = Number(e.target.value);
+        if (!Number.isFinite(n)) return;
+        const v = Math.max(1, Math.min(512, Math.round(n)));
+        e.target.value = String(v);
+        setVal('peaks.distance', v);
+      });
+      peakSmoothingInput && peakSmoothingInput.addEventListener('change', (e) => {
+        const n = Number(e.target.value);
+        if (!Number.isFinite(n)) return;
+        const v = Math.max(0, Math.min(8, Math.round(n)));
+        e.target.value = String(v);
+        setVal('peaks.smoothing', v);
       });
 
       card.addEventListener('click', (e) => {
@@ -421,53 +473,23 @@
   }
 
   function computeDataQualityLines(state) {
-    const f = state && state.frame ? state.frame : {};
-    const latest = getLiveFrame(state) || f.latest || null;
-    let min = '—', max = '—', avg = '—', dyn = '—', satText = '0/0 (0%)';
-
-    const arr = Array.isArray(latest?.combined)
-      ? latest.combined
-      : Array.isArray(latest?.intensity)
-      ? latest.intensity
-      : Array.isArray(latest?.I)
-      ? latest.I
-      : Array.isArray(latest?.values)
-      ? latest.values
-      : null;
-
-    if (arr && arr.length) {
-      let mn = Infinity, mx = -Infinity, sum = 0, sat = 0;
-      for (let i = 0; i < arr.length; i += 1) {
-        const v = Number(arr[i]);
-        if (!Number.isFinite(v)) continue;
-        if (v < mn) mn = v;
-        if (v > mx) mx = v;
-        sum += v;
-        if (v >= 254) sat += 1;
+    try {
+      const mod = sp.v15 && sp.v15.dataQualityPanel;
+      if (mod && typeof mod.compute === 'function') {
+        const computed = mod.compute(state, { latestFrame: getLiveFrame(state) });
+        if (computed && Array.isArray(computed.status) && Array.isArray(computed.dq)) return computed;
       }
-      if (mn !== Infinity && mx !== -Infinity) {
-        min = mn.toFixed(1); max = mx.toFixed(1);
-        avg = (sum / arr.length).toFixed(1);
-        dyn = (mx - mn).toFixed(1);
-        const pct = arr.length ? ((sat / arr.length) * 100).toFixed(1) : '0.0';
-        satText = `${sat}/${arr.length} (${pct}%)`;
-      }
-    }
+    } catch (_) {}
 
     return {
       status: [
         `Mode: ${state.appMode || 'CORE'}`,
-        `Worker: ${state.worker?.status || 'idle'}${state.worker?.analysisHz ? ` · ${state.worker.analysisHz} Hz` : ''}`,
-        `Frame source: ${latest?.source || state.frame?.source || 'none'}${latest?.pixelWidth ? ` · ${latest.pixelWidth} px` : ''}`,
-        `Calibration: ${(state.calibration?.isCalibrated ? 'calibrated' : 'uncalibrated')} · pts ${state.calibration?.points?.length || state.calibration?.pointCount || 0}` ,
-        `Reference: ${(state.reference?.hasReference ? 'yes' : 'no')} · count ${state.reference?.count || 0}` ,
-        `v1.5 modules: ${Object.values(((window.SpectraPro||{}).v15?.registry?.modules)||{}).filter(Boolean).length}/8 loaded`
+        `Worker: ${state.worker?.status || 'idle'}`,
+        `Frame source: ${(state.frame && state.frame.source) || 'none'}`
       ],
       dq: [
-        `Signal: ${min} - ${max}`,
-        `Avg: ${avg} · Dyn: ${dyn}`,
-        `Saturation: ${satText}`,
-        `Hits/QC: ${(state.analysis?.topHits || []).length}/${(state.analysis?.qcFlags || []).length}`
+        'Data Quality module unavailable',
+        'Fallback rendering active'
       ]
     };
   }
@@ -506,6 +528,22 @@
       const v = Number((state.display && state.display.yAxisMax));
       const next = Number.isFinite(v) && v > 0 ? String(Math.round(v)) : '255';
       if (String(yAxisMaxInput.value) !== next) yAxisMaxInput.value = next;
+    }
+    const peakThresholdInput = $('spPeakThreshold');
+    const peakDistanceInput = $('spPeakDistance');
+    const peakSmoothingInput = $('spPeakSmoothing');
+    const peaks = state.peaks || {};
+    if (peakThresholdInput && Number.isFinite(Number(peaks.threshold))) {
+      const next = String(Math.max(0, Math.min(255, Math.round(Number(peaks.threshold)))));
+      if (String(peakThresholdInput.value) !== next) peakThresholdInput.value = next;
+    }
+    if (peakDistanceInput && Number.isFinite(Number(peaks.distance))) {
+      const next = String(Math.max(1, Math.min(512, Math.round(Number(peaks.distance)))));
+      if (String(peakDistanceInput.value) !== next) peakDistanceInput.value = next;
+    }
+    if (peakSmoothingInput && Number.isFinite(Number(peaks.smoothing))) {
+      const next = String(Math.max(0, Math.min(8, Math.round(Number(peaks.smoothing)))));
+      if (String(peakSmoothingInput.value) !== next) peakSmoothingInput.value = next;
     }
   }
 

@@ -328,11 +328,11 @@ Phase 1.5 scaffold modules have been converted to **classic-script-compatible na
 #### 14) Display modes
 - `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
 #### 15) Data Quality panel module
-- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired; current visible DQ is rendered inside `proBootstrap.js`)
+- `PARTIAL` (wired into `proBootstrap.js` status rail computation via `sp.v15.dataQualityPanel.compute(...)`; still no standalone panel UI yet)
 #### 16) Y-axis controls
 - `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
 #### 17) Peak controls (threshold/distance/smoothing)
-- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
+- `PARTIAL` (wired into CORE controls + `graphScript.js` peak detection for threshold/distance/smoothing; advanced split visual-vs-analysis controls still pending)
 #### 18) Graph appearance / fill modes
 - `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
 #### 19) Camera capability abstraction
@@ -449,7 +449,7 @@ Success criteria:
 - Controls affect graph behavior intentionally (not placeholder-only)
 - Features are safe to disable
 
-**Status:** `TODO`
+**Status:** `IN PROGRESS`
 
 ### Phase 2 — Worker foundation + LAB MVP (after 1.5 shell activation)
 **Goal:** live identification in LAB mode without freezing UI.
@@ -641,7 +641,7 @@ This prevents “spec drift” where the GUI looks newer than the documentation.
 - CORE DOM/selectors untouched.
 
 **What remains next**
-- Step 4: wire Phase 1.5 controls into actual graph behavior in small slices (start with Display modes + Y-axis). [IN PROGRESS: Display mode + Y-axis slice implemented]
+- Step 4: wire Phase 1.5 controls into actual graph behavior in small slices (start with Display modes + Y-axis). [IN PROGRESS: Display mode + Y-axis slice implemented]; Data Quality module + Peak controls slice implemented
 
 ## Final principle
 SPECTRA-PRO should feel like a **real instrument first** and a smart analyzer second.
@@ -651,3 +651,7 @@ This spec therefore prioritizes:
 - explicit file ownership,
 - CORE safety,
 - and honest status tracking over feature-hype.
+
+
+### Session patch log (latest)
+- Step 4 slice 2: integrated `dataQualityPanel.js` compute path into status rail and wired Peak controls (threshold/distance/smoothing) from CORE tab into `graphScript.js` peak detection.
