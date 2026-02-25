@@ -15,7 +15,11 @@
     if (cls) n.className = cls;
     if (text != null) n.textContent = text;
     return n;
+    function escapeHtml(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
+
+}
 
   function ensureHost() {
     const left = $('graphSettingsDrawerLeft');
@@ -198,6 +202,45 @@
     if (!latest.timestamp) latest.timestamp = Date.now();
     return latest;
   }
+
+let lastLabAnalyzeAt = 0;
+
+function shouldRunLabAnalysis(state) {
+  if (!state) return false;
+  if (String(state.appMode || 'CORE').toUpperCase() !== 'LAB') return false;
+  if (!(state.analysis && state.analysis.enabled)) return false;
+  const wm = (state.worker && state.worker.mode) ? String(state.worker.mode).toLowerCase() : 'auto';
+  if (wm === 'off') return false;
+  return true;
+}
+
+function maybeRunLabAnalyze(frameNormalized) {
+  try {
+    const state = getStoreState();
+    if (!shouldRunLabAnalysis(state)) return;
+    if (!frameNormalized || !Array.isArray(frameNormalized.I) || !frameNormalized.I.length) return;
+    const libsLoaded = !!(state.worker && state.worker.librariesLoaded);
+    if (!libsLoaded) return;
+    const maxHz = Number(state.analysis && state.analysis.maxHz);
+    const minInterval = (Number.isFinite(maxHz) && maxHz > 0) ? (1000 / maxHz) : 250;
+    const now = (window.performance && performance.now) ? performance.now() : Date.now();
+    if (now - lastLabAnalyzeAt < minInterval) return;
+    lastLabAnalyzeAt = now;
+
+    const client = ensureWorkerClient();
+    if (!client || typeof client.analyzeFrame !== 'function') return;
+
+    const nmOk = Array.isArray(frameNormalized.nm) && frameNormalized.nm.length === frameNormalized.I.length;
+    const payloadFrame = {
+      I: frameNormalized.I,
+      nm: nmOk ? frameNormalized.nm : null,
+      calibrated: nmOk,
+      timestamp: frameNormalized.timestamp || Date.now()
+    };
+
+    client.analyzeFrame(payloadFrame);
+  } catch (e) {}
+}
 
   function normalizeCalibrationState(payload) {
     const p = payload || {};
@@ -551,7 +594,9 @@
       });
     }
 
-    ['lab', 'astro'].forEach((tab) => {
+    ensureLabPanel();
+
+    ['astro'].forEach((tab) => {
       const panel = ui.panels[tab];
       if (!panel || panel.dataset.built) return;
       const card = el('div', 'sp-card sp-card--flat');
@@ -675,6 +720,112 @@ function applyShellCalibrationPointsToOriginal() {
   } catch (err) {
     return { ok: false, reason: String(err && err.message || err) };
   }
+}
+
+function ensureLabPanel() {
+  if (!ui || !ui.panels.lab) return;
+  const panel = ui.panels.lab;
+  let card = $('spLabCard');
+  if (card) return card;
+  card = el('div', 'sp-card sp-card--flat');
+  card.id = 'spLabCard';
+  card.innerHTML = [
+    '<div class="sp-lab-head">',
+    '  <div class="sp-lab-title">LAB</div>',
+    '  <div id="spLabFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
+    '</div>',
+    '<div class="sp-form-grid sp-form-grid--lab">',
+    '  <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled">Analyze<input id="spLabEnabled" type="checkbox"></label>',
+    '  <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
+    '  <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">',
+    '    <option value="">(default)</option>',
+    '    <option value="general">General</option>',
+    '    <option value="alkali">Alkali</option>',
+    '    <option value="metal">Metals</option>',
+    '    <option value="gas">Gases</option>',
+    '  </select></label>',
+    '</div>',
+    '<div class="sp-actions sp-actions--lab">',
+    '  <button type="button" id="spLabInitLibBtn">Init libraries</button>',
+    '  <button type="button" id="spLabPingBtn">Ping worker</button>',
+    '  <button type="button" id="spLabQueryBtn">Query library</button>',
+    '</div>',
+    '<div class="sp-lab-split">',
+    '  <div class="sp-lab-col">',
+    '    <h4 class="sp-subtitle">Top hits</h4>',
+    '    <div id="spLabHits" class="sp-lab-hits"></div>',
+    '  </div>',
+    '  <div class="sp-lab-col">',
+    '    <h4 class="sp-subtitle">QC</h4>',
+    '    <div id="spLabQc" class="sp-lab-qc"></div>',
+    '  </div>',
+    '</div>'
+  ].join('');
+  panel.appendChild(card);
+  panel.dataset.built = '1';
+
+  const setFeedback = function (text, tone) {
+    const fb = $('spLabFeedback');
+    if (!fb) return;
+    fb.textContent = text || '';
+    fb.dataset.tone = tone || '';
+  };
+
+  const s = getStoreState();
+  const enabled = !!(s.analysis && s.analysis.enabled);
+  const maxHz = Number(s.analysis && s.analysis.maxHz);
+  const presetId = (s.analysis && s.analysis.presetId) ? String(s.analysis.presetId) : '';
+  const enabledEl = $('spLabEnabled');
+  const hzEl = $('spLabMaxHz');
+  const presetEl = $('spLabPreset');
+  if (enabledEl) enabledEl.checked = enabled;
+  if (hzEl && Number.isFinite(maxHz) && maxHz > 0) hzEl.value = String(maxHz);
+  if (presetEl) presetEl.value = presetId;
+
+  const setVal = (path, value) => { if (store && store.update) store.update(path, value, { source: 'proBootstrap.lab' }); };
+
+  enabledEl && enabledEl.addEventListener('change', function (e) {
+    const on = !!e.target.checked;
+    setVal('analysis.enabled', on);
+    setFeedback(on ? 'LAB analysis enabled.' : 'LAB analysis disabled.', on ? 'ok' : 'info');
+  });
+
+  hzEl && hzEl.addEventListener('change', function (e) {
+    const n = Number(e.target.value);
+    if (!Number.isFinite(n) || n <= 0) return;
+    setVal('analysis.maxHz', Math.max(1, Math.min(30, Math.round(n))));
+    setFeedback('Max Hz set to ' + String(Math.max(1, Math.min(30, Math.round(n)))) + '.', 'info');
+  });
+
+  presetEl && presetEl.addEventListener('change', function (e) {
+    const v = String(e.target.value || '');
+    setVal('analysis.presetId', v || null);
+    setFeedback(v ? ('Preset: ' + v) : 'Preset cleared.', 'info');
+  });
+
+  $('spLabInitLibBtn') && $('spLabInitLibBtn').addEventListener('click', function () {
+    const client = ensureWorkerClient();
+    if (!client || !client.initLibraries) { setFeedback('Worker client unavailable.', 'warn'); return; }
+    setFeedback('Initializing libraries…', 'info');
+    try {
+      client.initLibraries(null);
+    } catch (err) {
+      setFeedback('Init libraries failed: ' + String(err && err.message || err), 'error');
+    }
+  });
+
+  $('spLabPingBtn') && $('spLabPingBtn').addEventListener('click', function () {
+    const client = ensureWorkerClient();
+    if (!client || !client.ping) { setFeedback('Worker client unavailable.', 'warn'); return; }
+    setFeedback('Pinging worker…', 'info');
+    try { client.ping(); } catch (err) { setFeedback('Ping failed: ' + String(err && err.message || err), 'error'); }
+  });
+
+  $('spLabQueryBtn') && $('spLabQueryBtn').addEventListener('click', function () {
+    setFeedback('Query library (coming next).', 'info');
+  });
+
+  return card;
 }
 
 function ensureCalibrationShell() {
@@ -909,20 +1060,53 @@ function ensureCalibrationShell() {
     }
   }
 
-  function cleanupSpuriousPopup() {
-    const popup = $('infoPopup');
-    const blocker = $('infoPopupBlock');
-    const msg = $('infoPopupMessage');
-    if (!popup) return;
-    const defaultMsg = (msg && (msg.textContent || '').trim()) === 'Info message';
-    if (popup.classList.contains('show') && defaultMsg && typeof window.closeInfoPopup === 'function') {
-      try { window.closeInfoPopup(); } catch (_) {}
-      return;
-    }
-    if (blocker && blocker.classList.contains('show') && !popup.classList.contains('show')) {
-      blocker.classList.remove('show');
-    }
+  
+function cleanupSpuriousPopup() {
+  const popup = $('infoPopup');
+  const msg = $('infoPopupMessage');
+  if (!popup) return;
+  const defaultMsg = (msg && (msg.textContent || '').trim()) === 'Info message';
+  if (popup.classList.contains('show') && defaultMsg && typeof window.closeInfoPopup === 'function') {
+    try { window.closeInfoPopup(); } catch (e) {}
   }
+}
+
+function renderLabPanel() {
+  if (!ui || !ui.panels || !ui.panels.lab) return;
+  const hitsEl = $('spLabHits');
+  const qcEl = $('spLabQc');
+  if (!hitsEl || !qcEl) return;
+  const state = getStoreState();
+  const hits = (state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : [];
+  const qc = (state.analysis && Array.isArray(state.analysis.qcFlags)) ? state.analysis.qcFlags : [];
+  const libsLoaded = !!(state.worker && state.worker.librariesLoaded);
+
+  if (!libsLoaded) {
+    hitsEl.innerHTML = '<div class="sp-empty">Libraries not initialized yet. Click Init libraries.</div>';
+  } else if (!hits.length) {
+    hitsEl.innerHTML = '<div class="sp-empty">No hits yet. Enable Analyze and point at a source.</div>';
+  } else {
+    const rows = hits.slice(0, 8).map(function (h) {
+      const name = String(h && (h.label || h.element || h.name) || 'Unknown');
+      const score = (h && (h.confidence ?? h.score)) != null ? Number(h.confidence ?? h.score) : null;
+      const nm = (h && h.nm) != null ? Number(h.nm) : null;
+      const scoreTxt = Number.isFinite(score) ? (Math.round(score * 100) / 100).toFixed(2) : '';
+      const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
+      return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt) + (scoreTxt ? (' · ' + escapeHtml(scoreTxt)) : '') + '</div></div>';
+    }).join('');
+    hitsEl.innerHTML = rows;
+  }
+
+  if (!qc.length) {
+    qcEl.innerHTML = '<div class="sp-empty">No QC flags.</div>';
+  } else {
+    qcEl.innerHTML = qc.slice(0, 8).map(function (q) {
+      return '<div class="sp-qc-flag">' + escapeHtml(String(q)) + '</div>';
+    }).join('');
+  }
+}
+
+
 
   function render() {
     const hostBits = ensureHost();
@@ -936,6 +1120,7 @@ function ensureCalibrationShell() {
     const active = String(state.ui?.activeTab || 'general').toLowerCase();
     setActiveTab(active);
     renderStatus();
+    renderLabPanel();
     cleanupSpuriousPopup();
   }
 
@@ -983,6 +1168,7 @@ function ensureCalibrationShell() {
             if (normalized) {
               updateStorePath('frame.latest', normalized, { source: 'proBootstrap.frameSync' });
               updateStorePath('frame.source', normalized.source || 'unknown', { source: 'proBootstrap.frameSync' });
+              maybeRunLabAnalyze(normalized);
             }
             if (bus && bus.emit) bus.emit('frame:updated', { source: 'proBootstrap.frameSync' });
             queueStatusRender();

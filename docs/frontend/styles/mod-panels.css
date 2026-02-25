@@ -795,3 +795,18 @@ body{overflow:hidden;}
 #SpectraProDockHost .sp-note--validation.is-ok{ color:inherit; }
 #SpectraProDockHost .sp-note--validation.is-warn{ color:#fbbf24; }
 #SpectraProDockHost .sp-note--validation.is-error{ color:#f87171; }
+
+
+/* === LAB panel (Phase 2) === */
+#spPanel-lab .sp-lab-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+#spPanel-lab .sp-lab-title{font-weight:700;letter-spacing:.02em}
+#spPanel-lab .sp-form-grid--lab{grid-template-columns:repeat(3,minmax(0,1fr))}
+#spPanel-lab .sp-actions--lab{margin-top:8px}
+#spPanel-lab .sp-lab-split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+#spPanel-lab .sp-subtitle{margin:0 0 6px 0;font-size:12px;opacity:.9}
+#spPanel-lab .sp-lab-hits,.sp-lab-qc{min-height:90px}
+#spPanel-lab .sp-hit{padding:6px 8px;border:1px solid rgba(255,255,255,.08);border-radius:8px;margin-bottom:6px;background:rgba(0,0,0,.12)}
+#spPanel-lab .sp-hit-name{font-weight:600;font-size:13px}
+#spPanel-lab .sp-hit-meta{font-size:12px;opacity:.85}
+#spPanel-lab .sp-qc-flag{padding:6px 8px;border:1px dashed rgba(255,255,255,.18);border-radius:8px;margin-bottom:6px;font-size:12px}
+@media (max-width: 900px){#spPanel-lab .sp-lab-split{grid-template-columns:1fr}}

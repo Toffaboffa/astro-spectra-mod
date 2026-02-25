@@ -13,6 +13,7 @@
       lastPingAt: null,
       lastResultAt: null,
       lastError: null,
+      librariesLoaded: false,
       analysisHz: 0,
       droppedJobs: 0
     },
@@ -46,6 +47,8 @@
       smoothing: null
     },
     analysis: {
+      enabled: false,
+      maxHz: 4,
       presetId: null,
       topHits: [],
       offsetNm: null,
