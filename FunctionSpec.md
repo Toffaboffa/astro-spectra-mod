@@ -1,64 +1,102 @@
-## Patch update – Phase 2.1 dock/layout stabilization (current)
+# FunctionSpec.md — SPECTRA-PRO implementation plan, file map and status tracker
 
-- Fixed SPECTRA-PRO dock mounting so **SpectraProDockHost** is now injected directly into `#graphSettingsDrawerLeft` (the drawer under the graph).
-- Moved original graph controls (`#graphSettingsContent`, including p-2/px-2 content) into **General** tab inside the dock.
-- Kept a persistent right-side status rail (`SPStatusRail`) inside the dock body, always visible.
-- Removed/hidden legacy floating SPECTRA-PRO panel if present (prevents duplicate UI).
-- Added authoritative dock CSS rules in `docs/frontend/styles/mod-panels.css` to prevent empty/hidden tab panel regressions.
-- Forced drawer/sidebar toggle handles to remain visible (no hover-disappear behavior).
-- Remaining work: wire actual LAB/ASTRO/Other controls into `sp-tabpanel` containers; refine mobile compaction.
+This document is the **single source of truth** for:
+- what SPECTRA-PRO is supposed to do,
+- which files/modules exist and what they are responsible for,
+- what is currently implemented vs scaffold/placeholder,
+- what was changed in recent patches,
+- what remains (with patch order and QA gates).
 
-# FunctionSpec.md — SPECTRA-PRO implementation plan and status tracker
-
-This file defines **how we build SPECTRA-PRO safely**, in what order files are patched, and how we avoid breaking CORE mode while adding LAB and ASTRO features.
-
-The project is scaffold-first: many files exist as placeholders so the structure is visible before implementation. This spec is the working contract for incremental patching.
+It must be updated on every patch so the codebase and plan do not drift.
 
 ---
 
-## Project naming
-- **App name (UI/product):** `SPECTRA-PRO`
-- **Current GitHub/repo working name:** `astro-spectra-mod`
+## Project identity
+- **Product/UI name:** `SPECTRA-PRO`
+- **Repo working name:** `astro-spectra-mod`
+- **Deployment target:** static frontend (GitHub Pages via `docs/`)
 
 ---
 
-## Current state (updated after Phase 2 LAB-MVP + Phase 2.1 UI docking patch)
+## Product goal (aligned with README)
 
-### What is already present
-- Full folder structure for frontend, worker, docs, tests
-- Placeholder files for original SPECTRA scripts and PRO modules
-- Placeholder data/preset/library files
-- Basic language files
-- Initial README scaffold (now replaced by expanded version)
+SPECTRA-PRO is a **frontend-first spectrum analysis workstation** built on top of the original SPECTRA recording workflow (camera → stripe → live spectrum graph), extended with a PRO shell and staged analysis features.
 
-### Phase 1.5 notes (previous patch)
-- Added **v5-inspired CORE controls bridge** in the SPECTRA-PRO panel (display mode, Y-axis mode placeholders, peak lower bound, fill opacity)
-- Added **data quality mini-readout** (dynamic range / saturation risk shell) derived from live frame hook
-- Restored important **recording layout geometry** from original CSS while keeping dark theme colors
-- Fixed overlay/toast containment so info/error UI does not spill into the right side panel area
-- Added extra resize/layout stabilization on boot to reduce graph/stripe visual mismatch after load
+### Core idea
+Keep the browser instrument feel (fast graph, live camera/stripe workflow) and layer on:
+- **CORE mode** (safe baseline, SPECTRA-like)
+- **LAB mode** (teaching/lab line ID + subtraction/quality workflows)
+- **ASTRO mode** (solar/stellar workflows, normalization, absorption handling, molecular bands, preliminary offset/Doppler)
 
+### Architectural constraint
+Heavy analysis must run in a **Web Worker** so the UI remains responsive.
 
-### Phase 2.1 notes (this patch)
-- Moved SPECTRA-PRO controls from floating bottom-right modal into the **bottom drawer** (integrated with graph controls area)
-- Added **tabbed PRO sections**: General / CORE controls / LAB / ASTRO / Other
-- Added always-visible **Status + Data Quality dock** on the right side of the PRO row (responsive fallback stacks on smaller widths)
-- Removed redundant **Home** button from bottom-right drawer area (reduced clutter)
-- Relabeled original **FLR** button to **Long Exposure** for clarity (kept original functionality)
-- Updated button color styling to fit the blue/dark theme (replacing bright green visual mismatch)
+---
 
-### Audit note (Phase 1 → 1.5 checkpoint)
-- GUI dock/layout (B+C: 9/10/11/13 placement) is visually stable after recovery patches.
-- Shell wiring still had placeholder behavior in CORE controls (app mode + worker buttons) before Step 1 wiring patch.
-- Phase 1.5 modules (14–20) exist mostly as scaffold files and are **not loaded/integrated** yet.
+## Functional scope (what the app should support)
 
-### What is *not* implemented yet
-- Full feature parity with original SPECTRA visual polish (layout is now patched shell + custom theme)
-- Hook patches into `graphScript.js` / `calibrationScript.js`
-- Worker message protocol implementation
-- Any real analysis logic
-- UI panels for LAB/ASTRO
-- Export augmentation
+This section is the product-level checklist. Phases below describe *when* each part lands.
+
+### A. CORE instrument workflow (SPECTRA-compatible foundation)
+- Live camera or loaded image source
+- Stripe width and stripe position controls
+- Stripe preview overlay in camera view
+- Real-time graph rendering from stripe pixel data (RGB + combined intensity)
+- Graph zoom / pan / reset / back / forward
+- Peak visualization (basic)
+- Reference curves / comparison curves
+- Calibration px ↔ nm (polynomial fit)
+- Calibration quality / residual feedback (where original supports it)
+- Export graph image, source image, and numeric data
+
+### B. PRO modes (shell behavior)
+- **CORE mode** — stable baseline behavior
+- **LAB mode** — line ID, subtraction, absorbance/transmittance workflows, top hits, presets
+- **ASTRO mode** — normalization, absorption handling, presets, molecular bands, offset/Doppler (staged)
+
+### C. PRO dock / GUI (integrated under graph)
+- Bottom dock integrated in graph settings area (not floating)
+- Tabs: `General`, `CORE controls`, `LAB`, `ASTRO`, `Other`
+- **General** hosts real original graph controls (no fake duplicates)
+- Persistent status rail on the right: **Status** + **Data Quality**
+- Stable drawer height / no accidental layout jumps
+
+### D. Phase 1.5 (v5-inspired, CORE-safe UX upgrades)
+- Display modes (Normal / Difference / Ratio / etc.)
+- Data quality panel (saturation, dynamic range, QC shell)
+- Y-axis controls (auto/fixed)
+- Peak threshold/distance/smoothing controls
+- Graph appearance / fill controls
+- Camera capability abstraction (unsupported-safe)
+- Calibration I/O + multipoint manager shell
+
+### E. Phase 2 (LAB MVP)
+- Worker foundation + protocol (`PING`, library init, frame analysis)
+- Library loading/index/query (initial atomic lines)
+- Peak detection/scoring/matching + QC + confidence
+- Throttled live LAB analysis
+- Top hits panel + overlays
+- Subtraction modes (dark/reference minimum)
+- Preset plumbing + quick peaks / processing pipeline integration
+
+### F. Phase 3 (ASTRO MVP)
+- Continuum normalization
+- Smoothing/normalization pipeline
+- Absorption/emission mode (auto/manual)
+- Solar/Fraunhofer presets
+- Offset estimate + QC
+- Preliminary Doppler estimate (quality-gated)
+- Molecular band matching (first pass)
+- Species search / preset resolver
+
+### G. Phase 4 (quality/reproducibility/export+)
+- Instrument response correction
+- Response profile store
+- Instrument profile
+- Observation profile
+- Session capture
+- Flat field (staged)
+- Export augmentation (PRO metadata + QC + results)
 
 ---
 
@@ -66,44 +104,40 @@ The project is scaffold-first: many files exist as placeholders so the structure
 
 **CORE mode must remain usable and stable.**
 
-Every patch should be designed so that:
-1. CORE can run without worker analysis,
-2. PRO modules can be disabled,
-3. failure in LAB/ASTRO does not brick the base graph/camera workflow.
+Every patch must preserve:
+1. CORE works without worker analysis,
+2. PRO modules can fail/disable safely,
+3. LAB/ASTRO errors must not brick camera/stripe/graph workflow.
 
 ---
 
-## Implementation strategy (high-level)
+## Canonical file map (what exists and what belongs where)
 
-We build in layers:
-1. **Integrate original SPECTRA files**
-2. **Patch read-only hooks** (no behavior changes)
-3. **Add PRO shell/UI state**
-4. **Add v5-style visual/quality controls**
-5. **Add worker and LAB analysis**
-6. **Add ASTRO preprocessing and matching**
-7. **Add advanced correction/profiles/export augment**
+> This section is the “where things should be” map. It is intentionally explicit.
 
----
+### 1) Entry points / Pages
+- `docs/index.html`
+  - GitHub Pages entry/redirect
+- `docs/frontend/index.html`
+  - Frontend landing page (project shell)
+- `docs/frontend/pages/recording.html`
+  - **Main instrument page** (camera/graph/calibration + SPECTRA-PRO integration)
 
-## Status legend
-- `TODO` = not started
-- `SCAFFOLD` = file exists as placeholder only
-- `PARTIAL` = basic implementation exists, not production-ready
-- `READY` = implemented and manually verified
-- `DEFERRED` = intentionally pushed to later phase
+### 2) Styles
+- `docs/frontend/styles/styles.css`
+  - Base UI/layout styling (original SPECTRA-compatible + merged overrides)
+- `docs/frontend/styles/mod-panels.css`
+  - SPECTRA-PRO dock/status/tab layout styling (currently contains layered hotfix history)
+- `docs/frontend/styles/overlays.css`
+  - Overlay-related styling
+- `docs/frontend/styles/mobile-tweaks.css`
+  - Mobile-specific tweaks
 
----
-
-## File status snapshot (initial)
-
-### Original SPECTRA placeholders (`docs/frontend/scripts/*.js`)
-Status: **PARTIAL** (Phase 0 compatibility harness + placeholder APIs added; still waiting for original file import)
-
-These files should be replaced with the original SPECTRA scripts before feature patching begins:
+### 3) Original SPECTRA scripts (CORE stack) — `docs/frontend/scripts/`
+These are the baseline scripts that must keep working.
 - `cameraScript.js`
-- `graphScript.js`
 - `stripeScript.js`
+- `graphScript.js`
 - `calibrationScript.js`
 - `referenceGraphScript.js`
 - `dataSavingScript.js`
@@ -112,147 +146,288 @@ These files should be replaced with the original SPECTRA scripts before feature 
 - `cameraSelection.js`
 - `languageScript.js`
 - `polynomialRegressionScript.js`
-- `zipScript.js` (if used by original export flow)
+- `zipScript.js`
 
-### PRO integration + UI/state modules (`docs/frontend/scripts/mod/`)
-Status: **PARTIAL** (phase-2 foundation implemented for selected modules; others remain `SCAFFOLD`)
+### 4) PRO integration/UI modules — `docs/frontend/scripts/mod/`
+#### 4a) Shell/foundation (Phase 1 core)
+- `coreHooks.js` — bridge namespace/hooks into original scripts
+- `eventBus.js` — app event bus (`sp.eventBus`)
+- `stateStore.js` — store (`sp.store`)
+- `appMode.js` — mode API (`CORE/LAB/ASTRO`)
+- `uiPanels.js` — panel helpers / UI shell helpers
+- `spectrumFrameAdapter.js` — frame adaptation helpers
+- `overlays.js` — graph overlay hook (currently no-op-safe)
+- `proBootstrap.js` — SPECTRA-PRO dock bootstrap, General hosting, status rail, CORE-tab controls wiring
+- `analysisWorkerClient.js` — browser worker client wrapper
 
-### Worker modules (`docs/frontend/workers/`)
-Status: **PARTIAL** (worker protocol/router/foundation stubs implemented; analysis logic still mostly `SCAFFOLD`)
+#### 4b) Phase 1.5 UX modules (currently mostly scaffold)
+- `displayModes.js`
+- `dataQualityPanel.js`
+- `yAxisController.js`
+- `peakControls.js`
+- `graphAppearance.js`
+- `cameraCapabilities.js`
+- `calibrationIO.js`
+- `calibrationPointManager.js`
 
-### Docs/tests
-Status: **SCAFFOLD** / `README.md` now **PARTIAL** (architecture/spec-level documentation added)
+#### 4c) Phase 2+/support modules (mixed scaffold/partial)
+- `libraryClient.js`
+- `libraryFilters.js`
+- `processingPipeline.js`
+- `subtraction.js`
+- `quickPeaks.js`
+- `presets.js`
+- `calibrationBridge.js`
+
+#### 4d) Phase 3+ ASTRO modules (mostly scaffold)
+- `continuum.js`
+- `normalization.js`
+- `smoothing.js`
+- `calibrationPresets.js`
+- `speciesSearch.js`
+
+#### 4e) Phase 4 modules (mostly scaffold)
+- `instrumentResponse.js`
+- `responseProfileStore.js`
+- `instrumentProfile.js`
+- `observationProfile.js`
+- `sessionCapture.js`
+- `exportAugment.js`
+- `flatField.js`
+
+#### 4f) Utility
+- `utils.js`
+
+### 5) Worker modules — `docs/frontend/workers/`
+#### Worker runtime/foundation
+- `analysis.worker.js`
+- `workerRouter.js`
+- `workerTypes.js`
+- `workerState.js`
+
+#### Library and analysis pipeline
+- `libraryLoader.js`
+- `libraryIndex.js`
+- `libraryQuery.js`
+- `peakDetect.js`
+- `peakScoring.js`
+- `lineMatcher.js`
+- `qcRules.js`
+- `confidenceModel.js`
+- `analysisPipeline.js`
+
+#### ASTRO/advanced worker modules (planned/staged; may be absent or scaffold)
+- `autoMode.js`
+- `offsetEstimate.js`
+- `dopplerEstimate.js`
+- `bandMatcher.js`
+- `presetResolver.js`
+
+### 6) Data assets
+- `docs/frontend/data/` (libraries, response profiles, presets; staged additions)
+- Example currently present/planned:
+  - `instrument_response_profiles.json`
+
+### 7) Documentation and tests
+- `README.md` — product vision + architecture overview
+- `FunctionSpec.md` — implementation contract and status tracker (this file)
+- `docs/v5_gap_additions.md` — gap analysis / planned additions
+- `tests/` — patch-specific test notes/smoke docs (as used)
 
 ---
 
-## New v5-inspired additions added to scaffold (this revision)
+## Runtime load map (what is currently loaded on `recording.html`)
 
-The following modules/files were added to support capabilities missing in the original web app and inspired by v5 desktop behavior:
+### Currently loaded (classic `<script>` path)
+`recording.html` loads these PRO modules directly:
+- `mod/coreHooks.js`
+- `mod/eventBus.js`
+- `mod/stateStore.js`
+- `mod/appMode.js`
+- `mod/uiPanels.js`
+- `mod/spectrumFrameAdapter.js`
+- `mod/overlays.js`
+- `mod/analysisWorkerClient.js`
+- `mod/proBootstrap.js`
 
-### Added files (all currently `SCAFFOLD`)
-- `docs/frontend/scripts/mod/displayModes.js`
-- `docs/frontend/scripts/mod/dataQualityPanel.js`
-- `docs/frontend/scripts/mod/yAxisController.js`
-- `docs/frontend/scripts/mod/peakControls.js`
-- `docs/frontend/scripts/mod/graphAppearance.js`
-- `docs/frontend/scripts/mod/cameraCapabilities.js`
-- `docs/frontend/scripts/mod/calibrationIO.js`
-- `docs/frontend/scripts/mod/calibrationPointManager.js`
-- `docs/frontend/scripts/mod/instrumentResponse.js`
-- `docs/frontend/scripts/mod/responseProfileStore.js`
-- `docs/frontend/scripts/mod/instrumentProfile.js`
-- `docs/frontend/scripts/mod/observationProfile.js`
-- `docs/frontend/data/instrument_response_profiles.json`
-- `docs/v5_gap_additions.md`
+### Not loaded yet (important)
+Phase 1.5 modules (`displayModes.js`, `yAxisController.js`, etc.) are **mostly present as files but not loaded/integrated** yet.
 
-### Removed files (simplification / phase control)
-- `docs/frontend/workers/templateMatcher.js` → **DEFERRED** (too advanced for current scaffold stage; can be reintroduced later)
-- `tests/test-preset-mapping.md` → removed for now (premature before presets are implemented)
+### Compatibility trap (must remember)
+Several Phase 1.5 scaffold files use **ES module `export` syntax** and cannot be added to `recording.html` as classic scripts without either:
+- converting them to browser-safe namespace modules, or
+- introducing a module loader path.
 
 ---
 
-## Patch order (operational sequence)
+## Current implementation status snapshot (aligned with latest patch)
 
-This is the order we should follow when working on the codebase in future patch sessions.
+### Status legend
+- `TODO` = not started
+- `SCAFFOLD` = file exists, placeholder only
+- `PARTIAL` = basic implementation exists, not production-ready
+- `READY` = implemented and manually verified (or patch-level verified)
+- `DEFERRED` = intentionally postponed
 
-### Phase 0 — Baseline import harness (must happen first)
-**Goal:** get original SPECTRA UI running inside this repo.
+### A. CORE baseline import and compatibility
+- **Phase 0 original SPECTRA import into `docs/frontend/`:** `READY`
+- **CORE page pathing / Pages harness:** `READY`
+- **CORE camera/stripe/graph/calibration/export behavior parity:** `PARTIAL` (functional baseline exists; visual polish/asset parity may still differ)
 
-**Files (priority):**
-1. `docs/frontend/pages/recording.html`
-2. `docs/frontend/styles/styles.css`
-3. all `docs/frontend/scripts/*.js` original scripts
+### B. PRO shell (items 5–8)
+#### 5) App mode / mode handling (`CORE/LAB/ASTRO`)
+- `PARTIAL`
+- `appMode.js` API exists and emits `mode:changed`.
+- **Latest Step 1 patch:** CORE-tab App Mode selector in `proBootstrap.js` now routes through `sp.appMode.setMode(...)` when available (instead of store-only writes).
 
-**Output:** CORE baseline works (camera → stripe → graph) with no PRO behavior required.
+#### 6) State store + event bus
+- `PARTIAL` (foundation strong)
+- `eventBus.js` and `stateStore.js` are present and working as shell primitives.
+- Remaining work is normalization/consistent usage (not existence).
 
-**Status:** `READY` (original SPECTRA-1 files imported into docs/frontend, path migration completed, Pages-safe harness active)
+#### 7) Read-only hooks into original scripts (graph/calibration/reference)
+- `PARTIAL` → strong
+- Hooks exist in `graphScript.js`, `calibrationScript.js`, `referenceGraphScript.js` and publish bridge data/events.
+- Remaining work: normalize state sync and reduce hybrid reads.
+
+#### 8) Overlay hook (PRO overlay integration point)
+- `READY` (shell-level)
+- `overlays.js` exists and is no-op-safe; `graphScript.js` can call it without changing CORE rendering semantics.
+
+### C. PRO dock / GUI (items 9–13)
+#### 9) Bottom dock under graph (non-floating)
+- `READY`
+- Recovered from floating-to-bottom regression; dock integrated under graph controls area.
+
+#### 10) Tab row (General / CORE controls / LAB / ASTRO / Other)
+- `READY`
+- Stable tab switching and panel containers present.
+
+#### 11) General tab hosts real original graph controls
+- `READY`
+- Original controls are re-mounted into General (real DOM nodes, original IDs preserved).
+
+#### 12) CORE controls tab (PRO shell controls)
+- `PARTIAL`
+- UI exists and is visible.
+- **Latest Step 1 patch:** Worker controls now attempt to use `analysisWorkerClient` (`start/stop/ping/initLibraries`) with safe fallback behavior.
+- Still not full LAB control surface (many controls remain shell/placeholder level).
+
+#### 13) Status rail (Status + Data Quality)
+- `PARTIAL`
+- Layout/placement is good and stable.
+- Data flow currently uses hybrid sources (store + coreBridge + core graph fallback) and needs normalization for deterministic updates.
+
+### D. Phase 1.5 v5-inspired UX upgrades (items 14–20)
+#### 14) Display modes
+- `SCAFFOLD` (file exists, not loaded)
+#### 15) Data Quality panel module
+- `SCAFFOLD` (file exists, not loaded; current visible DQ is rendered inside `proBootstrap.js`)
+#### 16) Y-axis controls
+- `SCAFFOLD` (file exists, not loaded)
+#### 17) Peak controls (threshold/distance/smoothing)
+- `SCAFFOLD` (file exists, not loaded)
+#### 18) Graph appearance / fill modes
+- `SCAFFOLD` (file exists, not loaded)
+#### 19) Camera capability abstraction
+- `SCAFFOLD` (file exists, not loaded)
+#### 20) Calibration I/O + multipoint manager
+- `SCAFFOLD` (files exist, not loaded)
+
+### E. Phase 2 LAB MVP
+- `PARTIAL` foundation
+- Worker client and worker foundation files exist; protocol shell and basic LAB scaffolding exist.
+- Real end-to-end LAB mode integration remains incomplete.
+
+### F. Phase 3 ASTRO MVP
+- `SCAFFOLD/PARTIAL` (mostly scaffold modules present)
+
+### G. Phase 4 correction/profiles/export+
+- `SCAFFOLD` (modules/files mostly placeholders)
 
 ---
 
-### Phase 1 — Safe hooks + PRO shell (no heavy logic)
+## Patch order and roadmap (controlled implementation plan)
 
-**Goal:** create integration points without changing instrument behavior.
+### Phase 0 — Baseline import harness (completed)
+**Goal:** run original SPECTRA UI inside this repo.
+- `recording.html`, styles, original scripts imported into `docs/frontend/`
+- Pages-safe pathing/harness validated
 
-**Primary files:**
-- `docs/frontend/scripts/mod/appMode.js`
-- `docs/frontend/scripts/mod/stateStore.js`
-- `docs/frontend/scripts/mod/eventBus.js`
-- `docs/frontend/scripts/mod/spectrumFrameAdapter.js`
-- `docs/frontend/scripts/mod/uiPanels.js`
-- `docs/frontend/scripts/mod/overlays.js`
-- patches in `docs/frontend/scripts/graphScript.js`
-- patches in `docs/frontend/scripts/calibrationScript.js`
-- patches in `docs/frontend/scripts/referenceGraphScript.js`
+**Status:** `READY`
 
-**Must be true before phase ends:**
+### Phase 1 — Safe hooks + PRO shell (in progress)
+**Goal:** create integration points and dock shell without changing instrument behavior.
+
+Primary files:
+- `mod/appMode.js`, `mod/stateStore.js`, `mod/eventBus.js`
+- `mod/spectrumFrameAdapter.js`, `mod/uiPanels.js`, `mod/overlays.js`
+- hook patches in `graphScript.js`, `calibrationScript.js`, `referenceGraphScript.js`
+- `mod/proBootstrap.js`
+
+Must be true before Phase 1 closes:
 - CORE still behaves correctly
-- last frame can be exported to mod state (read-only hook)
-- calibration state can be read by mod bridge
-- overlay hook exists (can be no-op)
-- mode tabs visible (CORE/LAB/ASTRO)
+- frame/calibration/reference states are readable via hooks/bridge
+- dock UI exists and does not break original graph controls
+- overlays hook exists and is safe
 
-**Status:** `PARTIAL` (hooks derived from real SPECTRA draw/cal/reference flow, mode tabs + P1 panel wired, overlay hook no-op installed)
+**Status:** `PARTIAL`
 
----
+### Recovery roadmap to complete Phase 1 → 1.5 (current focus)
 
-#
-## Recovery roadmap to complete Phase 1 → 1.5 (shell + dock + v5 UX)
+#### Step 1 — Shell wiring hardening (implemented)
+**Goal:** make PRO shell controls talk to real shell APIs instead of placeholder state writes.
 
-This roadmap focuses on **the currently visible gaps** after dock integration: shell wiring (5/6/7/8/12/13) and Phase 1.5 activation (14–20).
-
-### Step 1 — Shell wiring hardening (NOW)
-**Goal:** make PRO shell controls talk to the real shell APIs instead of placeholder state writes.
-
-Scope:
-- Route **App mode** UI through `sp.appMode.setMode(...)` (emit `mode:changed` correctly)
-- Wire CORE-tab **Worker** controls to `analysisWorkerClient` when available
-- Make **Ping worker / Init libraries** buttons call real worker client methods (with safe fallback)
-- Keep status/data-quality rail render sync responsive to worker events
-- No DOM/layout/CSS refactor in this step
+Implemented in latest patch:
+- Route App mode UI through `sp.appMode.setMode(...)`
+- Add safe worker client singleton init in `proBootstrap.js`
+- Wire CORE-tab Worker mode (`Auto/On/Off`) to worker client start/stop behavior (with fallback)
+- Wire `Ping worker` to real client `ping()` (with fallback)
+- Wire `Init libraries` to real client `initLibraries(...)` (with fallback marker state)
+- Add worker-event listeners (`worker:ready`, `worker:libraries`, `worker:error`, `worker:timeout`, `worker:result`) so status UI refreshes more reliably
 
 Success criteria:
-- Changing mode from CORE-tab emits `mode:changed`
-- Ping button causes worker status to transition `starting → ready` (or explicit error if unsupported)
-- Init libraries triggers worker init request (or safe fallback)
-- No new null errors in graph/setup/camera scripts
+- Mode changes emit `mode:changed`
+- Ping/Init trigger real worker path when client is available
+- No new CORE null errors
 
-**Status:** `READY` (implemented in `proBootstrap.js` as compatibility-safe wiring patch)
+**Status:** `READY`
 
-### Step 2 — Shell state normalization + status rail correctness
-**Goal:** remove hybrid “reads from everywhere” behavior and make status/data quality deterministic.
+#### Step 2 — Shell state normalization + status rail correctness (next)
+**Goal:** remove hybrid “reads from everywhere” behavior and make Status/Data Quality deterministic.
 
-Scope:
+Planned scope:
 - Normalize live frame sync into `store.frame.latest` via throttled bridge updates
 - Normalize calibration/reference sync into store-backed state nodes
-- Make status/data-quality read primarily from store (fallbacks only as guard rails)
-- Add explicit worker mode state (`auto|on|off`) instead of inferring from `enabled/status`
-- Small UI polish only (equal card heights / readable text if needed)
+- Make status/data-quality read primarily from store (fallbacks only as guards)
+- Add explicit worker mode state (`auto|on|off`) instead of inferring from enabled/status
+- Keep UI changes minimal (only readability/equal-height polish if needed)
 
 Success criteria:
-- Status/Data Quality updates are stable across mode switches and reloads
-- Minimal/no direct reads from `window.SpectraCore` in status rendering path
+- Stable Status/Data Quality across reloads and mode switches
+- Minimal direct reads from `window.SpectraCore` in render path
 - No render-loop regressions
 
 **Status:** `TODO`
 
-### Step 3 — Phase 1.5 activation scaffold (load path + compatibility wrappers)
+#### Step 3 — Phase 1.5 activation scaffold (load path + compatibility wrappers)
 **Goal:** make 14–20 load safely without breaking classic-script pages.
 
-Scope:
-- Convert Phase 1.5 scaffold modules from ESM `export` syntax to browser-safe namespace modules **or** add a dedicated loader wrapper
-- Load selected modules in `recording.html` in safe order
+Planned scope:
+- Convert Phase 1.5 scaffold modules from ESM `export` syntax to browser-safe namespace modules **or** add module loader wrapper
+- Add safe script load path/order in `recording.html`
 - Expose a single `sp.v15` namespace for panel integration
-- Keep all features default-off until wired
+- Keep features default-off until each slice is wired
 
 Success criteria:
-- No `Unexpected token 'export'` syntax errors
-- Modules are loaded and introspectable from console
-- CORE mode still unaffected when features are idle
+- No `Unexpected token 'export'` errors
+- Modules are loaded and inspectable
+- CORE unaffected when idle
 
 **Status:** `TODO`
 
-### Step 4 — Phase 1.5 functional controls (incremental)
-**Goal:** implement actual user-facing v5-style controls in small slices.
+#### Step 4 — Phase 1.5 functional controls (incremental slices)
+**Goal:** implement actual user-facing v5-style controls in small, testable slices.
 
 Recommended order:
 1. Display modes (14)
@@ -264,401 +439,157 @@ Recommended order:
 7. Calibration I/O + multipoint shell (20)
 
 Success criteria:
-- Each slice lands with manual CORE regression check
-- Controls affect graph behavior intentionally (not just placeholders)
-- Features can be disabled safely
+- Each slice lands with CORE regression check
+- Controls affect graph behavior intentionally (not placeholder-only)
+- Features are safe to disable
 
 **Status:** `TODO`
 
-## Phase 1.5 — v5-style instrument UX upgrades (still CORE-safe)
-**Goal:** add useful graph/instrument controls before LAB/ASTRO analysis, plus layout parity fixes after real SPECTRA import.
-
-**Primary files:**
-- `docs/frontend/scripts/mod/displayModes.js`
-- `docs/frontend/scripts/mod/dataQualityPanel.js`
-- `docs/frontend/scripts/mod/yAxisController.js`
-- `docs/frontend/scripts/mod/peakControls.js`
-- `docs/frontend/scripts/mod/graphAppearance.js`
-- `docs/frontend/scripts/mod/cameraCapabilities.js`
-- `docs/frontend/scripts/mod/calibrationIO.js`
-- `docs/frontend/scripts/mod/calibrationPointManager.js`
-
-**Features targeted:**
-- display mode separation (Normal / Difference / Ratio / etc.)
-- saturation indicator + data quality panel shell
-- y-axis auto/fixed controls
-- peak threshold/distance/smoothing UI
-- graph color fill modes
-- camera capability abstraction (unsupported-safe)
-- calibration import/export + multipoint manager shell
-
-**Status:** `PARTIAL` (dock/tab shell stable; Phase 1.5 files 14–20 mostly scaffold and not yet loaded/integrated in `recording.html`)
-
----
-
-### Phase 2 — Worker foundation + LAB MVP
+### Phase 2 — Worker foundation + LAB MVP (after 1.5 shell activation)
 **Goal:** live identification in LAB mode without freezing UI.
 
-**Primary files:**
-- `docs/frontend/scripts/mod/analysisWorkerClient.js`
-- `docs/frontend/workers/analysis.worker.js`
-- `docs/frontend/workers/workerRouter.js`
-- `docs/frontend/workers/workerTypes.js`
-- `docs/frontend/workers/workerState.js`
-- `docs/frontend/workers/libraryLoader.js`
-- `docs/frontend/workers/libraryIndex.js`
-- `docs/frontend/workers/libraryQuery.js`
-- `docs/frontend/workers/peakDetect.js`
-- `docs/frontend/workers/peakScoring.js`
-- `docs/frontend/workers/lineMatcher.js`
-- `docs/frontend/workers/qcRules.js`
-- `docs/frontend/workers/confidenceModel.js`
-- `docs/frontend/workers/analysisPipeline.js`
-- `docs/frontend/scripts/mod/libraryClient.js`
-- `docs/frontend/scripts/mod/libraryFilters.js`
-- `docs/frontend/scripts/mod/processingPipeline.js`
-- `docs/frontend/scripts/mod/subtraction.js`
-- `docs/frontend/scripts/mod/quickPeaks.js`
-- `docs/frontend/scripts/mod/presets.js`
+Key modules:
+- `analysisWorkerClient.js`
+- worker protocol/router/state + loader/index/query/matching pipeline files
+- `subtraction.js`, `quickPeaks.js`, `processingPipeline.js`, `presets.js`, `library*` modules
 
-**Must be true before phase ends:**
-- worker responds to `PING`
-- worker can load atomic library
+Must be true before phase ends:
+- Worker responds to `PING`
+- Library can initialize/load (at least minimal atomic set)
 - LAB mode can analyze throttled frames
-- top hits panel shows results
-- overlays can label lines
-- subtraction modes (dark/ref at minimum) work
+- Top hits panel shows results
+- Overlay labels work
+- Dark/reference subtraction minimum path works
 
-**Status:** `PARTIAL` (dock/tab shell stable; Phase 1.5 files 14–20 mostly scaffold and not yet loaded/integrated in `recording.html`)
+**Status:** `PARTIAL` (foundation/scaffold exists; full LAB integration not complete)
 
----
+### Phase 3 — ASTRO MVP
+**Goal:** make ASTRO mode meaningfully different and useful for solar/stellar data.
 
-### Phase 3 — ASTRO MVP (continuum + absorption + solar presets)
-**Goal:** make ASTRO mode meaningfully different from LAB and useful for solar/stellar data.
+Must be true before phase ends:
+- Continuum normalization available
+- Absorption/emission handling works (auto/manual)
+- Solar/Fraunhofer preset exists
+- Offset estimate + QC shown
+- Preliminary Doppler display quality-gated
+- Basic molecular band matching first pass
 
-**Primary files:**
-- `docs/frontend/scripts/mod/continuum.js`
-- `docs/frontend/scripts/mod/normalization.js`
-- `docs/frontend/scripts/mod/smoothing.js`
-- `docs/frontend/workers/autoMode.js`
-- `docs/frontend/workers/offsetEstimate.js`
-- `docs/frontend/workers/dopplerEstimate.js`
-- `docs/frontend/workers/bandMatcher.js`
-- `docs/frontend/workers/presetResolver.js`
-- `docs/frontend/scripts/mod/calibrationPresets.js`
-- `docs/frontend/scripts/mod/speciesSearch.js`
+**Status:** `SCAFFOLD/PARTIAL`
 
-**Must be true before phase ends:**
-- continuum normalization available in ASTRO
-- absorption/emission auto or manual mode works
-- solar/Fraunhofer preset exists
-- offset estimate shown with QC
-- preliminary Doppler display available with warnings
-- molecular band matching supports a basic first pass
+### Phase 4 — Response correction, profiles, export augmentation
+**Goal:** improve measurement quality, reproducibility, and export completeness.
 
-**Status:** `PARTIAL` (dock/tab shell stable; Phase 1.5 files 14–20 mostly scaffold and not yet loaded/integrated in `recording.html`)
+Must be true before phase ends:
+- Response correction workflow works (basic)
+- Instrument/observation profiles captured
+- Export augmented with PRO metadata + QC
+
+**Status:** `SCAFFOLD`
 
 ---
 
-### Phase 4 — Response correction, reproducibility profiles, export augmentation
-**Goal:** improve measurement quality and repeatability.
+## Known risks / regression traps (must be remembered)
 
-**Primary files:**
-- `docs/frontend/scripts/mod/instrumentResponse.js`
-- `docs/frontend/scripts/mod/responseProfileStore.js`
-- `docs/frontend/data/instrument_response_profiles.json`
-- `docs/frontend/scripts/mod/instrumentProfile.js`
-- `docs/frontend/scripts/mod/observationProfile.js`
-- `docs/frontend/scripts/mod/sessionCapture.js`
-- `docs/frontend/scripts/mod/exportAugment.js`
-- `docs/frontend/scripts/mod/flatField.js`
+### GUI/dock risks
+- `mod-panels.css` still contains historical layered hotfixes; newer patches currently win by appending authoritative overrides.
+- Moving children inside `#graphSettingsDrawerLeft` can break General-tab rehosting if selectors/host timing are changed carelessly.
+- Broad CSS resets can hide original graph controls and cause downstream null errors.
 
-**Must be true before phase ends:**
-- user can create/apply response correction profile (basic workflow)
-- instrument + observation profiles can be captured/exported
-- export includes key PRO metadata and QC flags
-
-**Status:** `PARTIAL` (dock/tab shell stable; Phase 1.5 files 14–20 mostly scaffold and not yet loaded/integrated in `recording.html`)
+### Runtime integration risks
+- Status/Data Quality currently reads from a hybrid source chain (store + bridge + graph fallback) and can drift until Step 2 normalization is done.
+- Phase 1.5 modules use mixed syntax/style; naive loading can crash `recording.html` with syntax errors.
+- Worker controls in CORE-tab are now wired, but must remain optional and fail-safe.
 
 ---
 
-## Dependency notes (important)
+## QA gates (minimum required checks)
 
-### Hard dependencies
-- `graphScript.js` hook must exist before `spectrumFrameAdapter.js` is useful.
-- `calibrationScript.js` hook must exist before ASTRO/Doppler results are meaningful.
-- `libraryLoader.js` + `libraryIndex.js` are required before matchers do anything.
-- `stateStore.js` and `eventBus.js` should be stable before adding many UI panels.
-
-### Soft dependencies / can stub early
-- `bandMatcher.js` can initially return no results.
-- `dopplerEstimate.js` can be hidden until offset confidence is good enough.
-- `instrumentResponse.js` can begin as pass-through with on/off plumbing.
-
----
-
-## QA gates (minimum per phase)
-
-### CORE gate (before Phase 2)
+### CORE gate (must pass before Phase 2 work expands)
 - Camera starts/stops
 - Stripe moves and updates graph
 - Graph remains responsive
 - Calibration still works
 - Export still works
-- No console errors from PRO scripts when mode=CORE
+- No console errors from PRO scripts when mode=`CORE`
 
 ### LAB gate (before Phase 3)
 - Worker loop does not tank FPS
 - Top hits update and are mode-filtered
 - Ratio/difference/absorbance produce expected changes
 - Saturation warning appears when signal clips
-- Turning off overlays restores clean graph
+- Turning overlays off restores clean graph
 
 ### ASTRO gate (before Phase 4)
 - Continuum normalization improves line visibility on solar sample
 - Fraunhofer preset reduces false positives vs general mode
-- Offset/Doppler display hides itself when confidence is low
+- Offset/Doppler display hides at low confidence
 
 ---
 
-## How this file should be updated during development
+## Patch maintenance protocol (how to update this file every patch)
 
-Each patch session should update:
-1. **Current phase** (`TODO` → `PARTIAL` → `READY`)
-2. **Files touched** (short list)
-3. **Regression notes** (especially CORE behavior)
-4. **Known breakages / deferred items**
+Every patch session must update **all five**:
+1. **Current status snapshot** (what is READY/PARTIAL/SCAFFOLD/TODO)
+2. **Files touched** (exact list)
+3. **What changed** (functional summary)
+4. **What remains / known risks**
+5. **Session log entry** (append-only)
 
-Suggested section to append after each patch:
-- `## Session log YYYY-MM-DD`
-  - Touched files
-  - What changed
-  - What passed
-  - What remains
+This prevents “spec drift” where the GUI looks newer than the documentation.
 
 ---
 
-## Final note
+## Session log (append-only)
 
-SPECTRA-PRO should feel like a real instrument first and a smart analyzer second.
-That means this function spec intentionally optimizes for **stable patch order**, **clear module boundaries**, and **CORE safety** over feature rush.
+### 2026-02-24 — GUI recovery + dock stabilization (v2/v3 hotfix line)
+**Touched files (across hotfixes):**
+- `docs/frontend/scripts/mod/proBootstrap.js`
+- `docs/frontend/styles/mod-panels.css`
+- (spec updated later)
 
+**What changed**
+- Recovered bottom-docked PRO layout after floating→bottom regression.
+- Rebuilt a compatibility-first dock bootstrap.
+- General tab now hosts real original graph controls (DOM rehosting, IDs preserved).
+- Status/Data Quality rail restored on right side of dock.
+- Drawer/dock CSS stabilized so bottom dock renders in normal flow.
+- Fixed hidden-dock regression caused by legacy CSS selector expecting `#SpectraProDockHost` as direct child.
+- Added status/data-quality live rendering improvements and drawer-height/overflow stabilizers (v3 CSS/JS hotfix line).
 
-## Session log 2026-02-23 (Phase 2 foundation patch #1)
-- **Touched files**
-  - `docs/frontend/pages/recording.html`
-  - `docs/frontend/scripts/mod/eventBus.js`
-  - `docs/frontend/scripts/mod/stateStore.js`
-  - `docs/frontend/scripts/mod/appMode.js`
-  - `docs/frontend/scripts/mod/uiPanels.js`
-  - `docs/frontend/scripts/mod/spectrumFrameAdapter.js`
-  - `docs/frontend/scripts/mod/quickPeaks.js`
-  - `docs/frontend/scripts/mod/subtraction.js`
-  - `docs/frontend/scripts/mod/processingPipeline.js`
-  - `docs/frontend/scripts/mod/analysisWorkerClient.js`
-  - `docs/frontend/workers/analysis.worker.js`
-  - `docs/frontend/workers/workerTypes.js`
-  - `docs/frontend/workers/workerState.js`
-  - `docs/frontend/workers/workerRouter.js`
-  - `docs/frontend/workers/libraryLoader.js`
-  - `docs/frontend/workers/libraryIndex.js`
-  - `docs/frontend/workers/libraryQuery.js`
-  - `docs/frontend/workers/peakDetect.js`
-  - `docs/frontend/workers/peakScoring.js`
-  - `docs/frontend/workers/lineMatcher.js`
-  - `docs/frontend/workers/qcRules.js`
-  - `docs/frontend/workers/confidenceModel.js`
-  - `docs/frontend/workers/analysisPipeline.js`
+**Known remaining issues after this line**
+- Status/Data Quality logic still hybrid (needs Step 2 normalization).
+- `mod-panels.css` still carries historical override baggage.
 
-- **What changed**
-  - Added a working event bus + state store + mode switching foundation (`CORE/LAB/ASTRO`).
-  - Added a basic scaffold UI page for GitHub Pages sanity checks (worker ping + dummy analyze button).
-  - Implemented a first worker protocol shell (`PING`, `INIT_LIBRARIES`, `ANALYZE_FRAME`) with router + state.
-  - Added placeholder LAB pipeline primitives (quick peaks, subtraction modes, processing pipeline) to support later integration.
-  - Kept all logic decoupled from original SPECTRA files (no CORE patches yet).
+### 2026-02-25 — Phase 1→1.5 Step 1 shell wiring hardening
+**Touched files:**
+- `docs/frontend/scripts/mod/proBootstrap.js`
+- `FunctionSpec.md`
 
-- **What passed (sanity)**
-  - Page-level script load order is valid in scaffold mode.
-  - Worker entrypoint can be started from frontend (subject to static hosting path support).
-  - Dummy frame analysis returns a structured result payload without blocking UI.
+**What changed**
+- CORE-tab App mode control now uses `sp.appMode.setMode(...)` when available.
+- Added safe worker client bootstrap (`analysisWorkerClient`) in `proBootstrap.js`.
+- Wired worker mode (`Auto/On/Off`) to start/stop/lazy behavior with safe fallback.
+- Wired `Ping worker` and `Init libraries` buttons to real worker-client methods when available.
+- Added worker-event listeners to keep status UI refresh responsive.
+- No layout/CSS/DOM refactor in this step.
 
-- **What remains / known gaps**
-  - Original SPECTRA files are not imported yet (Phase 0 still pending).
-  - No graph hooks, calibration hooks, or reference hooks yet.
-  - Worker library loading/matching is stubbed (no real atomic library parsing yet).
-  - No overlay rendering into the actual SPECTRA graph.
-  - `workerTypes` are duplicated in demo page bootstrap and should later come from a shared bridge/module.
+**What passed (patch-level expectations)**
+- No original control IDs renamed/removed.
+- Shell wiring improved without changing recording.html script order.
+- Fallback behavior remains when worker client is unavailable.
 
+**What remains next**
+- Step 2: state normalization + deterministic status/data quality.
+- Step 3: safely load/activate Phase 1.5 scaffold modules.
+- Step 4: implement 14–20 in small slices.
 
-## Session log
+---
 
-### Session update — GitHub Pages path migration (`/docs/frontend/`)
+## Final principle
+SPECTRA-PRO should feel like a **real instrument first** and a smart analyzer second.
 
-- Deploy target normalized to **GitHub Pages `/docs`**.
-- Web app tree moved to **`docs/frontend/`** (capital F) to match current repo layout.
-- Added **`docs/index.html`** redirect to `frontend/index.html` so Pages root resolves correctly.
-- Updated documentation paths in `README.md` and `FunctionSpec.md` from `frontend/...` to `docs/frontend/...`.
-- Sanity check: relative paths inside `docs/frontend/pages/recording.html` remain valid (`../scripts`, `../workers`).
-
-**Phase 0 readiness:** ✅ Ready to upload and proceed (original SPECTRA file integration can start next).
-
-
-- Added note: paths normalized to lowercase `docs/frontend/...` and Phase 0 harness patch applied.
-
-
-## Session log 2026-02-23 (Phase 0 harness patch #2)
-- **Touched files**
-  - `docs/index.html`
-  - `docs/frontend/index.html`
-  - `docs/frontend/pages/recording.html`
-  - `docs/frontend/scripts/graphScript.js`
-  - `docs/frontend/scripts/calibrationScript.js`
-  - `docs/frontend/scripts/referenceGraphScript.js`
-  - `docs/frontend/scripts/cameraScript.js`
-  - `docs/frontend/scripts/stripeScript.js`
-  - `docs/frontend/scripts/setupScript.js`
-  - `docs/frontend/scripts/imageLoadingScript.js`
-  - `docs/frontend/scripts/dataSavingScript.js`
-  - `docs/frontend/scripts/cameraSelection.js`
-  - `docs/frontend/scripts/languageScript.js`
-  - `docs/frontend/scripts/polynomialRegressionScript.js`
-  - `docs/frontend/scripts/zipScript.js`
-  - `docs/frontend/scripts/mod/coreHooks.js`
-  - `README.md`
-  - `FunctionSpec.md`
-
-- **What changed**
-  - Implemented a **Phase 0 baseline harness** with a placeholder CORE graph loop so script order, paths, and hook wiring can be tested on GitHub Pages before importing original SPECTRA files.
-  - Added `coreHooks` + `coreBridge` read-only integration layer for upcoming Phase 1 patches.
-  - Added lightweight compatibility placeholders for core SPECTRA globals/APIs (`SpectraCore`, graph, calibration, reference, stripe, camera).
-  - Normalized documentation and deploy references to **`docs/frontend/`** (lowercase).
-
-- **What passed (sanity)**
-  - Relative script paths and worker path remain valid from `docs/frontend/pages/recording.html`.
-  - Placeholder graph renders and emits frame hooks.
-  - Calibration/reference hooks emit without breaking CORE placeholder runtime.
-  - Existing worker demo buttons can still ping/analyze using the foundation worker client.
-
-- **What remains / known gaps**
-  - Original SPECTRA files are still placeholders and must be imported for real Phase 0 baseline parity.
-  - No real camera → stripe → pixel extraction yet (placeholder render loop only).
-  - Core HTML/CSS is a temporary harness, not the real SPECTRA recording UI.
-
-
-## Session Log Update — Phase 0 real import (SPECTRA-1)
-
-- **Status:** PARTIAL → Phase 0 real import baseline completed.
-- Replaced placeholder core scripts in `docs/frontend/scripts/` with originals from `SPECTRA-1.zip` (recording stack scripts + helpers).
-- Rebased `docs/frontend/pages/recording.html` on original SPECTRA-1 `recording.html` and patched component paths to local `../scripts/*`.
-- Added non-invasive SPECTRA-PRO Phase 0 bridge overlay panel + mode tabs on top of original UI.
-- Added `coreHooks` bridge and hook emit patches in `graphScript.js`, `calibrationScript.js`, and `referenceGraphScript.js`.
-- Exposed minimal `window.SpectraCore` adapters for camera/stripe/calibration/reference/graph access.
-- Known gaps: original SPECTRA style assets (`customColorsStyle.css`, `recordingStyle.css`) and translation dictionaries are not included in source zip, so layout/text polish may be degraded until those assets are copied.
-- Next: Phase 1 patch = verify runtime errors on Pages, then harden hooks against exact SPECTRA globals and add CORE regression checklist results.
-
-
-## Latest patch notes (Phase 1 hook shell)
-
-### Done in this patch
-- Patched `graphScript.js` with a **read-only frame hook** on `drawGraph()` (emits frame every render tick; includes RGB + combined intensity and nm-axis when calibrated).
-- Patched `calibrationScript.js` / `referenceGraphScript.js` bridge helpers with richer state accessors.
-- Added `mod/proBootstrap.js` to wire core hook events → store, create the **SPECTRA-PRO P1 panel**, and start worker foundation safely.
-- Implemented minimal `overlays.js` no-op overlay hook (reserved integration point, no CORE rendering changes).
-- Added dark-theme `styles.css` that preserves the **original SPECTRA layout structure** (large graph, sidebars, calibration list behavior) while using custom colors.
-- Added `mod-panels.css`, `overlays.css`, `mobile-tweaks.css` shells for PRO UI styling.
-
-### Sanity expectations after patch
-- CORE view should still load and render graph/camera flow.
-- A small **SPECTRA-PRO** panel should appear bottom-right with CORE/LAB/ASTRO tabs and live status.
-- Switching modes updates panel state only (no heavy analysis claims yet).
-- If the worker file is still scaffolded, worker status may show `error` or stay `idle` without breaking CORE.
-
-
-## Hotfix after Phase 1.5 (2026-02-23)
-
-### Fixed
-- **Lag / stack overflow loop** in `proBootstrap.js` + `stateStore.js` (state render -> state update recursion on `state:changed`).
-- **`drawGraph` wrapper crash** (`Cannot set properties of undefined (setting 'width')`) by guarding Phase 1 wrapper until original graph canvases are initialized.
-- **Info popup close UX** improved by restoring sane popup box sizing (`#infoPopupInside`, `#errorBoxInside`) instead of the oversized 20% padding rule.
-- **GitHub Actions CI** made scaffold-safe when no `backend/` exists yet, and frontend smoke paths updated to `docs/frontend/...`.
-
-### Notes
-- P1.5 layout fix no longer mutates stripe canvas geometry (this could desync stripe preview vs graph in original SPECTRA layout).
-- CORE safety remains priority: hooks/panel must never break original draw loop.
-
-
-## Patch Update – Phase 2 (LAB-MVP kickoff)
-
-### Done in this patch
-- Fixed adapter to derive `nm[]` from calibration polynomial when CORE frame only has px/intensity.
-- Added built-in lite atomic library in worker (H, Na, Hg, Ne, Ca) so LAB-MVP can produce real top hits without engine7 files yet.
-- Implemented basic worker line matching + median offset estimate (calibrated data only).
-- Upgraded SPECTRA-PRO panel from passive shell to LAB-MVP control surface:
-  - Init libraries / Ping worker
-  - LAB preset selector (state only for now)
-  - Worker on/off toggle (state flag)
-  - Capture Dark / Capture Ref / Clear (buffer-state stubs)
-  - Top Hits list rendering + confidence + observed nm
-  - Worker libs-ready status in panel
-- Removed recursive store-write from panel render loop (the old `qualityRender` update) to avoid lag/stack overflows.
-- Blue/dark button color cleanup in PRO panel (removes green feel).
-
-### Still missing for full LAB-MVP
-- True subtraction math (currently capture buttons store state only)
-- Overlay markers in graph for matches
-- Preset-aware filtering in worker
-- Export of LAB hits/QC metadata
-- Engine7 library loading from JSON files (currently built-in lite fallback)
-
-## Incremental Updates
-
-- **Hotfix (P2.1 UI dock):** Forced SPECTRA-PRO panel to dock inside `#graphSettingsDrawerLeft` with explicit non-floating style reset (prevents legacy/cached floating panel CSS from collapsing layout in bottom-right corner).
-
-## Latest hotfix notes
-- Hotfix 2.1.3: CI frontend-smoke path check now accepts merged `docs/frontend/styles/styles.css`; SPECTRA-PRO dock moved to dedicated host below graph settings; compact layout to avoid page scrollbar and stop overlap with drawer toggles.
-
-
-- **Phase 2.1 hotfix (dock placement + CSS):** PRO dock is now mounted below `#graphSettingsDrawer` (not nested inside graph controls), scrollbar overflow guarded, and drawer toggle arrows forced above overlays. CI frontend smoke CSS check accepts consolidated styles file.
-
-## Phase 2.1 UI hotfix (General + status rail layout)
-
-### Fixed in this patch
-- **General tab now loads the real original SPECTRA graph controls** (the existing `.p-2` / `.px-2` blocks from `#graphSettingsDrawerLeft`) instead of an empty placeholder panel.
-- **SPECTRA-PRO dock host is the only visible panel container** in the lower drawer; legacy drawer children are hidden after being re-mounted into the dock UI.
-- **Status + Data Quality rail** is now a fixed right-side area and renders the two cards **side-by-side** (desktop) instead of stacked.
-- Removed redundant **brandline / pill branding UI** in the status rail to save vertical space.
-- **CORE controls placeholder restored** with `App mode`, `Worker`, and action buttons (`Init libraries`, `Ping worker`, `Refresh UI`).
-- **Double-border issue reduced** by removing inner card framing in the General tab so original controls can use the panel space directly.
-- **Drawer toggle arrows** are force-kept visible via CSS overrides (`opacity/visibility/display/pointer-events`) to stop the disappearing-hover bug.
-- **CI/frontend smoke** remains fixed (path checks no longer fail after style consolidation).
-
-### Notes
-- This patch intentionally uses strong CSS overrides at the end of `mod-panels.css` to beat legacy rules while the layout is still evolving.
-- Next UI cleanup pass can move these overrides into a single canonical PRO stylesheet once layout stabilizes.
-
-## Patch 2026-02-24 – GUI recovery (bottom dock regression)
-
-### klart
-- `proBootstrap.js` rewritten to a **minimal, compatibility-first dock bootstrap**.
-- General-tab now mounts the **actual original graph controls** from `#graphSettingsDrawerLeft` (Reset Zoom, Step Back, RGB toggles, x-axis labels, peaks, lower bound, etc.) without renaming IDs.
-- Dock tabs (General / CORE controls / LAB / ASTRO / Other) rebuilt with stable tab switching (no panel duplication).
-- Status/Data Quality rail rebuilt as a fixed right column with **two cards side-by-side**.
-- Added popup cleanup guard for accidental default `Info message` visibility on load.
-- CSS overrides appended to keep dock in normal flow under graph and preserve drawer handles.
-
-### påbörjat
-- Data Quality text is rendered defensively from available frame data if present (falls back gracefully when worker/frame payload shape differs).
-- CORE controls tab is placeholder wiring only (safe state updates, no heavy logic changes).
-
-### kvar
-- Deeper cleanup of historical `mod-panels.css` hotfix layers (many old conflicting overrides still remain in file, but are superseded by final patch block).
-- Optional refactor to move dock styles into one canonical stylesheet section once UI is stable.
-
-### kända risker
-- `mod-panels.css` contains many legacy overrides from earlier sessions; this patch intentionally wins by appending authoritative rules last.
-- If future patches again move `#graphSettingsDrawerLeft` children before `proBootstrap` runs, General mounting may need a small selector adjustment.
-
-### regression-logg
-- Root cause was a **wrong DOM hosting strategy** while converting a floating dock to a bottom-docked dock: previous patch moved/targeted the wrong drawer side (`Right`) and stacked multiple incompatible CSS hotfixes.
-- A critical CSS rule (`#graphSettingsDrawerLeft > :not(#SpectraProDockHost){display:none !important;}`) hid the real original controls unless they were rehosted correctly.
-- Repeated broad CSS overrides changed dock DOM assumptions (`.sp-*` class names/layout models), causing tabs/visibility mismatches and null lookups in surrounding UI code.
+This spec therefore prioritizes:
+- stable patch order,
+- explicit file ownership,
+- CORE safety,
+- and honest status tracking over feature-hype.
