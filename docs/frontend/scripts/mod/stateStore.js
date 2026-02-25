@@ -34,6 +34,7 @@
     display: {
       mode: 'normal',
       yAxisMode: 'auto',
+      yAxisMax: 255,
       overlaysEnabled: true
     },
     analysis: {

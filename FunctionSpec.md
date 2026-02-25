@@ -641,7 +641,7 @@ This prevents “spec drift” where the GUI looks newer than the documentation.
 - CORE DOM/selectors untouched.
 
 **What remains next**
-- Step 4: wire Phase 1.5 controls into actual graph behavior in small slices (start with Display modes + Y-axis).
+- Step 4: wire Phase 1.5 controls into actual graph behavior in small slices (start with Display modes + Y-axis). [IN PROGRESS: Display mode + Y-axis slice implemented]
 
 ## Final principle
 SPECTRA-PRO should feel like a **real instrument first** and a smart analyzer second.

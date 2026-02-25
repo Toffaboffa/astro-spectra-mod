@@ -9,5 +9,5 @@
   mod.Y_AXIS_MODES = Y_AXIS_MODES.slice();
   mod.getModes = function () { return Y_AXIS_MODES.slice(); };
   mod.getDefaultMode = function () { return 'AUTO'; };
-  mod.version = 'step3-scaffold';
+  mod.version = 'step4-scaffold';
 })();

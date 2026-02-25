@@ -109,7 +109,7 @@
         },
         loadedAt: Date.now(),
         scaffold: true,
-        version: 'step3'
+        version: 'step4'
       };
     } else {
       const mods = v15.registry.modules || (v15.registry.modules = {});
@@ -118,7 +118,7 @@
       });
       v15.registry.loadedAt = v15.registry.loadedAt || Date.now();
       v15.registry.scaffold = true;
-      v15.registry.version = 'step3';
+      v15.registry.version = 'step4';
     }
     return v15.registry;
   }
@@ -126,6 +126,24 @@
   function getStoreState() {
     try { return (store && store.getState) ? (store.getState() || {}) : {}; }
     catch (_) { return {}; }
+  }
+
+  function getV15DisplayModes() {
+    try {
+      const list = (sp.v15 && sp.v15.displayModes && typeof sp.v15.displayModes.getDisplayModes === 'function')
+        ? sp.v15.displayModes.getDisplayModes()
+        : ['NORMAL', 'DIFFERENCE', 'RATIO', 'TRANSMITTANCE', 'ABSORBANCE'];
+      return Array.isArray(list) && list.length ? list : ['NORMAL'];
+    } catch (_) { return ['NORMAL']; }
+  }
+
+  function getV15YAxisModes() {
+    try {
+      const list = (sp.v15 && sp.v15.yAxisController && typeof sp.v15.yAxisController.getModes === 'function')
+        ? sp.v15.yAxisController.getModes()
+        : ['AUTO', 'FIXED_255', 'MANUAL'];
+      return Array.isArray(list) && list.length ? list : ['AUTO'];
+    } catch (_) { return ['AUTO']; }
   }
 
 
@@ -299,10 +317,16 @@
     const core = ui.panels.core;
     if (core && !core.dataset.built) {
       const card = el('div', 'sp-card sp-card--flat');
+      const displayOptions = getV15DisplayModes().map(function (m) { return `<option value=\"${String(m).toLowerCase()}\">${m}</option>`; }).join('');
+      const yAxisOptions = getV15YAxisModes().map(function (m) { return `<option value=\"${String(m).toLowerCase()}\">${m}</option>`; }).join('');
+
       card.innerHTML = [
         '<div class="sp-form-grid">',
         '  <label>App mode<select id="spAppMode"><option value="CORE">CORE</option><option value="LAB">LAB</option><option value="ASTRO">ASTRO</option></select></label>',
         '  <label>Worker<select id="spWorkerMode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>',
+        '  <label>Display mode<select id="spDisplayMode">' + displayOptions + '</select></label>',
+        '  <label>Y-axis<select id="spYAxisMode">' + yAxisOptions + '</select></label>',
+        '  <label id="spYAxisMaxWrap">Y max<input id="spYAxisMax" type="number" min="1" max="4096" step="1" value="255"></label>',
         '</div>',
         '<div class="sp-actions">',
         '  <button type="button" id="spInitLibBtn">Init libraries</button>',
@@ -316,6 +340,9 @@
 
       const modeSel = card.querySelector('#spAppMode');
       const workerSel = card.querySelector('#spWorkerMode');
+      const displaySel = card.querySelector('#spDisplayMode');
+      const yAxisSel = card.querySelector('#spYAxisMode');
+      const yAxisMaxInput = card.querySelector('#spYAxisMax');
       const setVal = (path, value) => { if (store && store.update) store.update(path, value, { source: 'proBootstrap.core' }); };
 
       modeSel && modeSel.addEventListener('change', (e) => {
@@ -329,6 +356,21 @@
       workerSel && workerSel.addEventListener('change', (e) => {
         setCoreWorkerMode(e.target.value || 'auto');
       });
+      displaySel && displaySel.addEventListener('change', (e) => {
+        const mode = String(e.target.value || 'normal').toLowerCase();
+        setVal('display.mode', mode);
+      });
+      yAxisSel && yAxisSel.addEventListener('change', (e) => {
+        const mode = String(e.target.value || 'auto').toLowerCase();
+        setVal('display.yAxisMode', mode);
+        if (yAxisMaxInput) yAxisMaxInput.disabled = (mode !== 'manual');
+      });
+      yAxisMaxInput && yAxisMaxInput.addEventListener('change', (e) => {
+        const n = Number(e.target.value);
+        if (!Number.isFinite(n) || n <= 0) return;
+        setVal('display.yAxisMax', Math.round(n));
+      });
+
       card.addEventListener('click', (e) => {
         const t = e.target;
         if (!(t instanceof HTMLElement)) return;
@@ -447,6 +489,23 @@
       const inferred = ws.enabled ? (ws.status === 'idle' ? 'auto' : 'on') : 'off';
       const nextWorkerSel = (ws.mode === 'auto' || ws.mode === 'on' || ws.mode === 'off') ? ws.mode : inferred;
       if (workerSel.value !== nextWorkerSel) workerSel.value = nextWorkerSel;
+    }
+    const displaySel = $('spDisplayMode');
+    if (displaySel) {
+      const m = String((state.display && state.display.mode) || 'normal').toLowerCase();
+      if (displaySel.value !== m) displaySel.value = m;
+    }
+    const yAxisSel = $('spYAxisMode');
+    const yAxisMaxInput = $('spYAxisMax');
+    if (yAxisSel) {
+      const ym = String((state.display && state.display.yAxisMode) || 'auto').toLowerCase();
+      if (yAxisSel.value !== ym) yAxisSel.value = ym;
+      if (yAxisMaxInput) yAxisMaxInput.disabled = (ym !== 'manual');
+    }
+    if (yAxisMaxInput) {
+      const v = Number((state.display && state.display.yAxisMax));
+      const next = Number.isFinite(v) && v > 0 ? String(Math.round(v)) : '255';
+      if (String(yAxisMaxInput.value) !== next) yAxisMaxInput.value = next;
     }
   }
 

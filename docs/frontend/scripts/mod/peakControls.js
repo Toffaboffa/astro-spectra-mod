@@ -12,5 +12,5 @@
       placeholder: true
     };
   };
-  mod.version = 'step3-scaffold';
+  mod.version = 'step4-scaffold';
 })();

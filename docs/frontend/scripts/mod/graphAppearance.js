@@ -8,5 +8,5 @@
   mod.apply = function applyGraphAppearance(opts) {
     return { applied: false, placeholder: true, options: opts || {} };
   };
-  mod.version = 'step3-scaffold';
+  mod.version = 'step4-scaffold';
 })();

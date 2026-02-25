@@ -9,5 +9,5 @@
   mod.DISPLAY_MODES = DISPLAY_MODES.slice();
   mod.getDisplayModes = function () { return DISPLAY_MODES.slice(); };
   mod.getDefaultDisplayMode = function () { return 'NORMAL'; };
-  mod.version = 'step3-scaffold';
+  mod.version = 'step4-scaffold';
 })();

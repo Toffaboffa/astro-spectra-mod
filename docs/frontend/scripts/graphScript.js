@@ -39,6 +39,63 @@ let gradientOpacity = 0.7;
 
 let lowerPeakBound = 1;
 
+function getSpectraProDisplaySettings() {
+    try {
+        const sp = window.SpectraPro || {};
+        const st = (sp.store && typeof sp.store.getState === 'function') ? (sp.store.getState() || {}) : {};
+        const d = st.display || {};
+        return {
+            mode: String(d.mode || 'normal').toLowerCase(),
+            yAxisMode: String(d.yAxisMode || 'auto').toLowerCase(),
+            yAxisMax: Number(d.yAxisMax)
+        };
+    } catch (_) {
+        return { mode: 'normal', yAxisMode: 'auto', yAxisMax: 255 };
+    }
+}
+
+function applySpectraProDisplayMode(basePixels, pixelWidth) {
+    const settings = getSpectraProDisplaySettings();
+    const mode = settings.mode;
+    if (!basePixels || !basePixels.length || mode === 'normal') return basePixels;
+    if (!referenceGraph || !referenceGraph.length || !referenceGraph[0] || !referenceGraph[0][0]) return basePixels;
+
+    const refPixels = referenceGraph[0][0];
+    if (!refPixels || refPixels.length !== basePixels.length) return basePixels;
+
+    const out = new Uint8ClampedArray(basePixels.length);
+    const eps = 1e-6;
+    for (let i = 0; i < basePixels.length; i += 4) {
+        for (let c = 0; c < 3; c += 1) {
+            const a = Number(basePixels[i + c]) || 0;
+            const r = Number(refPixels[i + c]) || 0;
+            let v = a;
+            if (mode === 'difference') {
+                v = Math.abs(a - r);
+            } else if (mode === 'ratio' || mode === 'transmittance') {
+                v = (a / Math.max(r, 1)) * 255;
+            } else if (mode === 'absorbance') {
+                const t = Math.max(a / Math.max(r, 1), eps);
+                v = Math.min(255, Math.max(0, (-Math.log10(t)) * 128));
+            }
+            out[i + c] = Math.max(0, Math.min(255, Math.round(v)));
+        }
+        out[i + 3] = basePixels[i + 3];
+    }
+    return out;
+}
+
+function resolveSpectraProYAxisMax(pixels, dynamicMaxValue) {
+    const settings = getSpectraProDisplaySettings();
+    const mode = settings.yAxisMode;
+    if (mode === 'fixed_255') return 255 + MAX_Y_VALUE_PADDING;
+    if (mode === 'manual') {
+        const n = Number(settings.yAxisMax);
+        if (Number.isFinite(n) && n > 0) return n + MAX_Y_VALUE_PADDING;
+    }
+    return dynamicMaxValue;
+}
+
 /**
  * Plots the RGB line graph from the camera or image element, deals with resizing, event listeners and drawing
  */
@@ -110,6 +167,8 @@ function drawGraph() {
     else {
     }
 
+    let displayPixels = applySpectraProDisplayMode(pixels, pixelWidth);
+
     if (captureReferenceGraph) {
         referenceGraph.push([pixels, pixelWidth, minValue, calculateMaxValue(pixels) - MAX_Y_VALUE_PADDING]);
         captureReferenceGraph = false;
@@ -122,15 +181,15 @@ function drawGraph() {
             maxima = findPeaks(comparisonDataPixels, comparisonDataPixelWidth, minValue);
         }
         else {
-            maxima = findPeaks(pixels, pixelWidth, minValue);
+            maxima = findPeaks(displayPixels, pixelWidth, minValue);
             if (toggleR) {
-                maximaR = findPeaks(pixels, pixelWidth, minValue, 0);
+                maximaR = findPeaks(displayPixels, pixelWidth, minValue, 0);
             }
             if (toggleG) {
-                maximaG = findPeaks(pixels, pixelWidth, minValue, 1);
+                maximaG = findPeaks(displayPixels, pixelWidth, minValue, 1);
             }
             if (toggleB) {
-                maximaB = findPeaks(pixels, pixelWidth, minValue, 2);
+                maximaB = findPeaks(displayPixels, pixelWidth, minValue, 2);
             }
         }
         needToRecalculateMaxima = false;
@@ -143,9 +202,9 @@ function drawGraph() {
     }
 
     clearGraph(graphCtx, graphCanvas);
-    drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels);
+    drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, displayPixels);
 
-    let maxValue = calculateMaxValue(pixels);
+    let maxValue = resolveSpectraProYAxisMax(displayPixels, calculateMaxValue(displayPixels));
 
     if (showReferenceGraph) {
         for (let i = 0; i < referenceGraph.length; i++) {
@@ -177,32 +236,32 @@ function drawGraph() {
             drawGradient(graphCtx, tempPixels, tempPixelWidth, maxValue);
         }
         else {
-            drawGradient(graphCtx, pixels, pixelWidth, maxValue);
+            drawGradient(graphCtx, displayPixels, pixelWidth, maxValue);
         }
     }
     let peaksToggled = document.getElementById('togglePeaksCheckbox').checked;
     const shouldHighlightCameraLine = getCheckedComparisonId() === null && comparisonGraph.length !== 0;
 
     if (toggleCombined) {
-        drawLine(graphCtx, pixels, pixelWidth, 'black', -1, maxValue, shouldHighlightCameraLine, zoomStart, zoomEnd);
+        drawLine(graphCtx, displayPixels, pixelWidth, 'black', -1, maxValue, shouldHighlightCameraLine, zoomStart, zoomEnd);
         if (peaksToggled && maxima.length > 0 && (shouldHighlightCameraLine || !isComparisonChecked)) {
             drawPeaks(maxima, maxValue, 'black');
         }
     }
     if (toggleR) {
-        drawLine(graphCtx, pixels, pixelWidth, 'red', 0, maxValue, shouldHighlightCameraLine, zoomStart, zoomEnd);
+        drawLine(graphCtx, displayPixels, pixelWidth, 'red', 0, maxValue, shouldHighlightCameraLine, zoomStart, zoomEnd);
         if (peaksToggled && maximaR.length > 0 && (shouldHighlightCameraLine || !isComparisonChecked)) {
             drawPeaks(maximaR, maxValue, 'red');
         }
     }
     if (toggleG) {
-        drawLine(graphCtx, pixels, pixelWidth, 'green', 1, maxValue, shouldHighlightCameraLine, zoomStart, zoomEnd);
+        drawLine(graphCtx, displayPixels, pixelWidth, 'green', 1, maxValue, shouldHighlightCameraLine, zoomStart, zoomEnd);
         if (peaksToggled && maximaG.length > 0 && (shouldHighlightCameraLine || !isComparisonChecked)) {
             drawPeaks(maximaG, maxValue, 'green');
         }
     }
     if (toggleB) {
-        drawLine(graphCtx, pixels, pixelWidth, 'blue', 2, maxValue, shouldHighlightCameraLine, zoomStart, zoomEnd);
+        drawLine(graphCtx, displayPixels, pixelWidth, 'blue', 2, maxValue, shouldHighlightCameraLine, zoomStart, zoomEnd);
         if (peaksToggled && maximaB.length > 0 && (shouldHighlightCameraLine || !isComparisonChecked)) {
             drawPeaks(maximaB, maxValue, 'blue');
         }
@@ -755,7 +814,7 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
     const height = graphCanvas.getBoundingClientRect().height;
     const padding = 30;
 
-    let maxValue = calculateMaxValue(pixels);
+    let maxValue = resolveSpectraProYAxisMax(pixels, calculateMaxValue(pixels));
 
     const numOfYLabels = Math.min(25, Math.floor(maxValue));
     const yStep = niceStep(maxValue, numOfYLabels);
