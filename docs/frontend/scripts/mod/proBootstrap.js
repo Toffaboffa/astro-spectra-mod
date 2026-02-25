@@ -510,11 +510,13 @@
             } catch (err) {
               setVal('worker.status', 'error');
               setVal('worker.lastError', String(err && err.message || err));
-              setCoreActionFeedback('Init libraries failed: ' + String(err && err.message || err), 'error');
+              setCoreActionFeedback('Ping worker failed: ' + String(err && err.message || err), 'error');
             }
           } else {
             setVal('worker.lastPingAt', Date.now());
+            setVal('worker.lastError', 'Worker client unavailable (fallback ping marker)');
             if (store && store.getState && store.getState().worker && store.getState().worker.enabled) setVal('worker.status', 'ready');
+            setCoreActionFeedback('Worker client unavailable; recorded fallback ping marker.', 'warn');
           }
         }
         if (t.id === 'spInitLibBtn') {
@@ -531,10 +533,13 @@
               setVal('worker.lastError', String(err && err.message || err));
               setCoreActionFeedback('Init libraries failed: ' + String(err && err.message || err), 'error');
             }
+          } else {
+            setVal('worker.lastError', 'Worker client unavailable (cannot init libraries)');
+            setCoreActionFeedback('Worker client unavailable; cannot init libraries yet.', 'warn');
           }
         }
         if (t.id === 'spRefreshUiBtn') {
-          setCoreActionFeedback('UI refreshed.', 'ok');
+          setCoreActionFeedback('UI refreshed (dock + status rerender).', 'ok');
           render();
           return;
         }
@@ -567,6 +572,84 @@ function setCoreActionFeedback(text, tone) {
   el.dataset.tone = tone || 'info';
 }
 
+
+
+function getCalibrationShellManager() {
+  try {
+    if (sp.calibrationPointManager) return sp.calibrationPointManager;
+    const mgrMod = sp.v15 && sp.v15.calibrationPointManager;
+    if (mgrMod && typeof mgrMod.create === 'function') {
+      sp.calibrationPointManager = mgrMod.create();
+      return sp.calibrationPointManager;
+    }
+  } catch (_) {}
+  return null;
+}
+
+function getNormalizedShellCalibrationPoints() {
+  const mgr = getCalibrationShellManager();
+  const raw = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
+  const ioMod = sp.v15 && sp.v15.calibrationIO;
+  if (ioMod && typeof ioMod.normalizeAndValidatePoints === 'function') {
+    return ioMod.normalizeAndValidatePoints(raw, { minPoints: 2, maxPoints: 15, sortBy: 'px', dedupe: true });
+  }
+  const pts = Array.isArray(raw) ? raw.filter(function (p) {
+    return p && Number.isFinite(Number(p.px)) && Number.isFinite(Number(p.nm));
+  }).map(function (p) { return { px: Number(p.px), nm: Number(p.nm), label: p.label }; }) : [];
+  pts.sort(function (a, b) { return (a.px - b.px) || (a.nm - b.nm); });
+  const limited = pts.slice(0, 15);
+  return { ok: limited.length >= 2, points: limited, count: limited.length, truncated: pts.length > limited.length, message: limited.length >= 2 ? 'OK' : 'Need at least 2 points' };
+}
+
+function applyShellCalibrationPointsToOriginal() {
+  const normalized = getNormalizedShellCalibrationPoints();
+  if (!normalized || !normalized.ok) {
+    return { ok: false, reason: (normalized && normalized.message) || 'No valid shell points' };
+  }
+  const pts = normalized.points;
+  try {
+    if (typeof window.resetCalibrationPoints !== 'function' || typeof window.setCalibrationPoints !== 'function') {
+      return { ok: false, reason: 'Original calibration functions unavailable' };
+    }
+    window.resetCalibrationPoints();
+    while (true) {
+      const nextIndex = document.getElementById('point' + (pts.length) + 'px') ? pts.length : null;
+      if (nextIndex != null) break;
+      if (typeof window.addInputPair !== 'function') return { ok: false, reason: 'Cannot create calibration input pairs' };
+      const before = document.querySelectorAll('#input-container .input-pair').length;
+      window.addInputPair();
+      const after = document.querySelectorAll('#input-container .input-pair').length;
+      if (after <= before) break;
+    }
+    for (let i = 0; i < pts.length; i += 1) {
+      const idx = i + 1;
+      const pxEl = document.getElementById('point' + idx + 'px');
+      const nmEl = document.getElementById('point' + idx + 'nm');
+      if (!pxEl || !nmEl) return { ok: false, reason: 'Calibration input pair #' + idx + ' missing' };
+      pxEl.value = String(pts[i].px);
+      nmEl.value = String(pts[i].nm);
+    }
+    try { window.setCalibrationPoints(); } catch (err) { return { ok: false, reason: String(err && err.message || err) }; }
+
+    let detailed = null;
+    try {
+      if (window.SpectraCore && window.SpectraCore.calibration) {
+        if (typeof window.SpectraCore.calibration.emitCalibrationState === 'function') window.SpectraCore.calibration.emitCalibrationState();
+        if (typeof window.SpectraCore.calibration.getDetailedState === 'function') detailed = window.SpectraCore.calibration.getDetailedState();
+        else if (typeof window.SpectraCore.calibration.getState === 'function') detailed = window.SpectraCore.calibration.getState();
+      }
+    } catch (_) {}
+    if (detailed) {
+      updateStorePath('calibration', normalizeCalibrationState(detailed), { source: 'proBootstrap.calIO.apply' });
+    } else {
+      updateStorePath('calibration.shellPointCount', pts.length, { source: 'proBootstrap.calIO.apply' });
+    }
+    return { ok: true, count: pts.length, truncated: !!normalized.truncated, calibrated: !!(detailed && (detailed.calibrated || (detailed.coefficients && detailed.coefficients.length))) };
+  } catch (err) {
+    return { ok: false, reason: String(err && err.message || err) };
+  }
+}
+
 function ensureCalibrationShell() {
   if (!ui || !ui.panels.other) return;
   const panel = ui.panels.other;
@@ -583,6 +666,7 @@ function ensureCalibrationShell() {
     '  <button type="button" id="spCalCaptureBtn">Capture current points</button>',
     '  <button type="button" id="spCalExportBtn">Export points</button>',
     '  <button type="button" id="spCalImportBtn">Import to shell</button>',
+    '  <button type="button" id="spCalApplyBtn">Apply shell to calibration</button>',
     '  <button type="button" id="spCalClearBtn">Clear shell points</button>',
     '</div>',
     '<div id="spCalIoFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>'
@@ -639,6 +723,19 @@ function ensureCalibrationShell() {
       setCoreActionFeedback('Imported ' + pts.length + ' calibration point(s) into shell manager.', pts.length ? 'ok' : 'warn');
       renderStatus();
     }
+
+    if (t.id === 'spCalApplyBtn') {
+      const result = applyShellCalibrationPointsToOriginal();
+      if (!result || !result.ok) {
+        setCoreActionFeedback('Apply failed: ' + String((result && result.reason) || 'unknown error'), 'error');
+        return;
+      }
+      updateStorePath('calibration.shellPointCount', Number(result.count) || 0, { source: 'proBootstrap.calIO' });
+      setCoreActionFeedback('Applied ' + result.count + ' shell point(s) to original calibration' + (result.truncated ? ' (truncated to max).' : '.') , 'ok');
+      renderStatus();
+      return;
+    }
+
     if (t.id === 'spCalClearBtn') {
       if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints([]);
       if (txt) txt.value = '';
@@ -795,7 +892,7 @@ function ensureCalibrationShell() {
       bus.on('worker:ready', function(){ setCoreActionFeedback('Worker ready.', 'ok'); renderStatus(); });
       bus.on('worker:libraries', function(){ setCoreActionFeedback('Worker libraries initialized.', 'ok'); renderStatus(); });
       bus.on('worker:error', function(){ setCoreActionFeedback('Worker error. See STATUS.', 'error'); renderStatus(); });
-      bus.on('worker:timeout', renderStatus);
+      bus.on('worker:timeout', function(){ setCoreActionFeedback('Worker timeout.', 'warn'); renderStatus(); });
       bus.on('worker:result', renderStatus);
     }
     if (window.SpectraPro && window.SpectraPro.coreHooks && window.SpectraPro.coreHooks.on) {

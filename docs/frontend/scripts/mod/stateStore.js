@@ -24,7 +24,8 @@
       isCalibrated: false,
       coefficients: [],
       points: [],
-      residualStatus: 'unknown'
+      residualStatus: 'unknown',
+      shellPointCount: 0
     },
     reference: {
       count: 0,

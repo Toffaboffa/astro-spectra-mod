@@ -21,19 +21,20 @@
     let min = '—', max = '—', avg = '—', dyn = '—', satText = '0/0 (0%)', snrText = '—';
 
     if (arr && arr.length) {
-      let mn = Infinity, mx = -Infinity, sum = 0, sat = 0;
+      let mn = Infinity, mx = -Infinity, sum = 0, sat = 0, validCount = 0;
       for (let i = 0; i < arr.length; i += 1) {
         const v = Number(arr[i]);
         if (!Number.isFinite(v)) continue;
         if (v < mn) mn = v;
         if (v > mx) mx = v;
         sum += v;
+        validCount += 1;
         if (v >= 254) sat += 1;
       }
       if (mn !== Infinity && mx !== -Infinity) {
         min = mn.toFixed(1);
         max = mx.toFixed(1);
-        avg = (sum / arr.length).toFixed(1);
+        avg = (sum / Math.max(1, validCount)).toFixed(1);
         const dynamicRange = (mx - mn);
         dyn = dynamicRange.toFixed(1);
         // Support both raw 0..255 and normalized 0..1 arrays.
@@ -51,8 +52,9 @@
             if (Number.isFinite(vv) && vv >= 250) sat += 1;
           }
         }
-        const pct = arr.length ? ((sat / arr.length) * 100).toFixed(1) : '0.0';
-        satText = `${sat}/${arr.length} (${pct}%)`;
+        const pctBase = Math.max(1, validCount);
+        const pct = ((sat / pctBase) * 100).toFixed(1);
+        satText = `${sat}/${validCount} (${pct}%)`;
         const noiseFloor = Math.max(1, mn);
         snrText = (dynamicRange / noiseFloor).toFixed(2);
       }

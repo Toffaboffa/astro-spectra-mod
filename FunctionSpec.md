@@ -338,7 +338,7 @@ Phase 1.5 scaffold modules have been converted to **classic-script-compatible na
 #### 19) Camera capability abstraction
 - `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
 #### 20) Calibration I/O + multipoint manager
-- `PARTIAL` (classic-script scaffolds loaded via `sp.v15`, not yet wired)
+- `PARTIAL` (functional shell + import/export + apply-to-original-calibration bridge; advanced validation/UX still pending)
 
 ### E. Phase 2 LAB MVP
 - `PARTIAL` foundation
@@ -740,3 +740,18 @@ This spec therefore prioritizes:
 **Status update**
 - Point **20 (Calibration I/O + multipoint manager shell)**: **PARTIAL → functional shell** (standalone shell manager + import/export text workflows).  
   Not yet applied to original calibration pipeline / coefficient solving automatically (kept isolated for compatibility).
+
+
+### 2026-02-25 — Step 4 slice 6: CORE hardening (A+B) + point 20 apply bridge
+- Added **Apply shell to calibration** action in `Other` tab (point 20) that safely maps shell points into original calibration input pairs and calls original `setCalibrationPoints()` pipeline.
+- Added point normalization/validation helper in `calibrationIO.js` (sort by px, dedupe exact duplicates, min/max count guard).
+- CORE action button hardening: clearer fallback feedback for `Ping worker` / `Init libraries`, timeout feedback, and more explicit refresh message.
+- Data Quality hardening: averages/saturation percentage now use valid numeric sample count (avoids skew when arrays contain non-numeric values).
+
+**Status update**
+- Point **20 (Calibration I/O + multipoint manager shell)**: **PARTIAL → PARTIAL+** (shell + import/export + apply bridge to original calibration flow now wired).
+- CORE hardening (A+B): in progress but materially improved feedback/error semantics for worker actions and DQ stability.
+
+**What remains next (CORE before LAB freeze)**
+- Additional validation UX for calibration apply (duplicate px-only/nm-only warnings, preview/diff, rollback affordance).
+- Final CORE QA freeze checklist pass (worker modes, calibration apply, exports, no console nulls).

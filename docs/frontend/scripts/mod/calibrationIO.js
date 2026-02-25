@@ -57,5 +57,36 @@
     }
     return JSON.stringify({ points: arr, count: arr.length, exportedAt: Date.now() }, null, 2);
   };
-  mod.version = 'step4-calibration-io-shell';
+
+  mod.normalizeAndValidatePoints = function normalizeAndValidatePoints(points, opts) {
+    const options = Object.assign({ minPoints: 2, maxPoints: 15, sortBy: 'px', dedupe: true }, opts || {});
+    const arr = Array.isArray(points) ? points.map(normalizePoint).filter(Boolean) : [];
+    const seen = new Set();
+    const out = [];
+    for (let i = 0; i < arr.length; i += 1) {
+      const p = arr[i];
+      const key = String(p.px) + '|' + String(p.nm);
+      if (options.dedupe && seen.has(key)) continue;
+      seen.add(key);
+      out.push(p);
+    }
+    if (String(options.sortBy || '').toLowerCase() === 'px') {
+      out.sort(function (a, b) { return (a.px - b.px) || (a.nm - b.nm); });
+    }
+    const limited = out.slice(0, Math.max(1, Number(options.maxPoints) || 15));
+    const minPoints = Math.max(2, Number(options.minPoints) || 2);
+    const valid = limited.length >= minPoints;
+    const message = valid
+      ? ('OK (' + limited.length + ' point(s))')
+      : ('Need at least ' + minPoints + ' valid point(s), got ' + limited.length);
+    return {
+      ok: valid,
+      points: limited,
+      count: limited.length,
+      truncated: out.length > limited.length,
+      message: message
+    };
+  };
+
+  mod.version = 'step6-calibration-io-apply-ready';
 })();

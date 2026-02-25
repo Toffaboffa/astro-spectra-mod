@@ -783,3 +783,7 @@ body{overflow:hidden;}
 #SpectraProDockHost .sp-note--feedback[data-tone="error"] { color:#fca5a5; }
 #SpectraProDockHost .sp-note--feedback[data-tone="warn"] { color:#fcd34d; }
 #SpectraProDockHost .sp-note--feedback[data-tone="ok"] { color:#86efac; }
+
+
+/* Step A+B: calibration shell apply button + minor hardening */
+#spCalApplyBtn { min-width: 170px; }
