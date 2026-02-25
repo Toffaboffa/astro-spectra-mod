@@ -752,3 +752,34 @@ body{overflow:hidden;}
   min-height: auto;
 }
 #SpectraProDockHost #spProbeCameraBtn { min-width: 110px; }
+
+
+/* === Step4 slice 5 hotfix + calibration shell === */
+#drawerExpandButton {
+  position: fixed !important;
+  bottom: 8px !important;
+  right: 10px !important;
+  z-index: 2001 !important;
+}
+#drawerExpandButton:not(.disabled) {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 26px;
+  opacity: 0.98 !important;
+}
+#SpectraProDockHost .spctl-textarea {
+  width: 100% !important;
+  min-width: 280px;
+  resize: vertical;
+  line-height: 1.25;
+}
+#SpectraProDockHost .sp-field--wide { grid-column: 1 / -1; }
+#SpectraProDockHost .sp-note--feedback {
+  min-height: 1.1em;
+  margin-top: 6px;
+}
+#SpectraProDockHost .sp-note--feedback[data-tone="error"] { color:#fca5a5; }
+#SpectraProDockHost .sp-note--feedback[data-tone="warn"] { color:#fcd34d; }
+#SpectraProDockHost .sp-note--feedback[data-tone="ok"] { color:#86efac; }

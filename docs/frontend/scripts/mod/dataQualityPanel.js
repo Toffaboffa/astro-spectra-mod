@@ -71,7 +71,7 @@
       `Mode: ${st.appMode || 'CORE'}`,
       `Worker: ${(st.worker && st.worker.status) || 'idle'}${(st.worker && st.worker.analysisHz) ? ` · ${st.worker.analysisHz} Hz` : ''}`,
       `Frame source: ${(latest && latest.source) || (st.frame && st.frame.source) || 'none'}${(latest && latest.pixelWidth) ? ` · ${latest.pixelWidth} px` : ''}`,
-      `Calibration: ${(st.calibration && st.calibration.isCalibrated) ? 'calibrated' : 'uncalibrated'} · pts ${(st.calibration && (st.calibration.points || []).length) || (st.calibration && st.calibration.pointCount) || 0}`,
+      `Calibration: ${(st.calibration && st.calibration.isCalibrated) ? 'calibrated' : 'uncalibrated'} · pts ${(st.calibration && (st.calibration.points || []).length) || (st.calibration && st.calibration.pointCount) || 0} · shell ${(st.calibration && st.calibration.shellPointCount) || 0}`,
       `Reference: ${(st.reference && st.reference.hasReference) ? 'yes' : 'no'} · count ${(st.reference && st.reference.count) || 0}`,
       `Camera: ${camStatus} · ${camRes} · ${camExposure} ${camZoom}`,
       `v1.5 modules: ${loadedV15}/8 loaded`

@@ -395,7 +395,7 @@
         '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
         '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
         '  <label id="spFieldFillMode" class="sp-field sp-field--fill-mode">Fill mode<select id="spFillMode" class="spctl-select spctl-select--fill-mode">' + fillModeOptions + '</select></label>',
-        '  <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity">Fill opacity<span class="sp-inline-value" id="spFillOpacityValue">0.70</span><input id="spFillOpacity" class="spctl-input spctl-input--fill-opacity spctl-range spctl-range--fill-opacity" type="range" min="0" max="1" step="0.01" value="0.70"></label>',
+        '  <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity">Fill opacity<input id="spFillOpacity" class="spctl-input spctl-input--fill-opacity spctl-range spctl-range--fill-opacity" type="range" min="0" max="1" step="0.01" value="0.70"></label>',
         '</div>',
         '<div class="sp-actions">',
         '  <button type="button" id="spInitLibBtn">Init libraries</button>',
@@ -403,7 +403,7 @@
         '  <button type="button" id="spRefreshUiBtn">Refresh UI</button>',
         '  <button type="button" id="spProbeCameraBtn">Probe camera</button>',
         '</div>',
-        '<p class="sp-note">Placeholder controls for SPECTRA-PRO. Original graph controls live in General.</p>'
+        '<div id="spCoreActionFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>'
       ].join('');
       core.appendChild(card);
       core.dataset.built = '1';
@@ -429,8 +429,6 @@
         const fo = Number(displayStateInit.fillOpacity);
         fillOpacityInput.value = Number.isFinite(fo) ? String(Math.max(0, Math.min(1, fo))) : '0.70';
       }
-      const fillOpacityValueInit = card.querySelector('#spFillOpacityValue');
-      if (fillOpacityValueInit && fillOpacityInput) fillOpacityValueInit.textContent = (Number(fillOpacityInput.value) || 0.70).toFixed(2);
 
       modeSel && modeSel.addEventListener('change', (e) => {
         const mode = String(e.target.value || 'CORE').toUpperCase();
@@ -462,25 +460,17 @@
         const mode = String(e.target.value || 'inherit').toLowerCase();
         setVal('display.fillMode', mode);
       });
-      const fillOpacityValueEl = card.querySelector('#spFillOpacityValue');
-      const syncFillOpacityLabel = function (val) {
-        if (!fillOpacityValueEl) return;
-        const n = Number(val);
-        const shown = Number.isFinite(n) ? (Math.round(Math.max(0, Math.min(1, n)) * 100) / 100) : 0.70;
-        fillOpacityValueEl.textContent = shown.toFixed(2);
-      };
+      const syncFillOpacityLabel = function (_val) { return; };
       fillOpacityInput && fillOpacityInput.addEventListener('input', (e) => {
         const n = Number(e.target.value);
         if (!Number.isFinite(n)) return;
         const v = Math.max(0, Math.min(1, n));
-        syncFillOpacityLabel(v);
         setVal('display.fillOpacity', v);
       });
       fillOpacityInput && fillOpacityInput.addEventListener('change', (e) => {
         const n = Number(e.target.value);
         const v = Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0.70;
         e.target.value = String(v);
-        syncFillOpacityLabel(v);
       });
 
       peakThresholdInput && peakThresholdInput.addEventListener('input', (e) => {
@@ -510,14 +500,17 @@
         const t = e.target;
         if (!(t instanceof HTMLElement)) return;
         if (t.id === 'spPingWorkerBtn') {
+          setCoreActionFeedback('Pinging worker…', 'info');
           const client = ensureWorkerClient();
           if (client && typeof client.ping === 'function') {
             try {
               store.update('worker.enabled', true, { source: 'proBootstrap.core' });
               client.ping();
+              setCoreActionFeedback('Worker ping sent.', 'ok');
             } catch (err) {
               setVal('worker.status', 'error');
               setVal('worker.lastError', String(err && err.message || err));
+              setCoreActionFeedback('Init libraries failed: ' + String(err && err.message || err), 'error');
             }
           } else {
             setVal('worker.lastPingAt', Date.now());
@@ -525,30 +518,35 @@
           }
         }
         if (t.id === 'spInitLibBtn') {
+          setCoreActionFeedback('Initializing libraries…', 'info');
           const client = ensureWorkerClient();
           setVal('analysis.presetId', 'libraries-init-requested');
           if (client && typeof client.initLibraries === 'function') {
             try {
               store.update('worker.enabled', true, { source: 'proBootstrap.core' });
               client.initLibraries(null);
+              setCoreActionFeedback('Library init request sent to worker.', 'ok');
             } catch (err) {
               setVal('worker.status', 'error');
               setVal('worker.lastError', String(err && err.message || err));
+              setCoreActionFeedback('Init libraries failed: ' + String(err && err.message || err), 'error');
             }
           }
         }
         if (t.id === 'spRefreshUiBtn') {
+          setCoreActionFeedback('UI refreshed.', 'ok');
           render();
           return;
         }
         if (t.id === 'spProbeCameraBtn') {
-          probeCameraCapabilitiesIntoStore().then(function () { renderStatus(); });
+          setCoreActionFeedback('Probing camera capabilities…', 'info');
+          probeCameraCapabilitiesIntoStore().then(function (res) { setCoreActionFeedback('Probe camera done (' + String((res && res.status) || 'unknown') + ').', 'ok'); renderStatus(); }).catch(function (err) { setCoreActionFeedback('Probe camera failed: ' + String(err && err.message || err), 'error'); });
           return;
         }
       });
     }
 
-    ['lab', 'astro', 'other'].forEach((tab) => {
+    ['lab', 'astro'].forEach((tab) => {
       const panel = ui.panels[tab];
       if (!panel || panel.dataset.built) return;
       const card = el('div', 'sp-card sp-card--flat');
@@ -557,8 +555,101 @@
       panel.dataset.built = '1';
     });
 
+    ensureCalibrationShell();
     ensureStatusRail();
   }
+
+
+function setCoreActionFeedback(text, tone) {
+  const el = $('spCoreActionFeedback') || $('spCalIoFeedback');
+  if (!el) return;
+  el.textContent = text || '';
+  el.dataset.tone = tone || 'info';
+}
+
+function ensureCalibrationShell() {
+  if (!ui || !ui.panels.other) return;
+  const panel = ui.panels.other;
+  let shell = $('spCalShell');
+  if (shell) return shell;
+  const card = el('div', 'sp-card sp-card--flat');
+  card.id = 'spCalShell';
+  card.innerHTML = [
+    '<div class="sp-form-grid">',
+    '  <label id="spFieldCalIoFormat" class="sp-field">Cal format<select id="spCalIoFormat" class="spctl-select"><option value="json">JSON</option><option value="csv">CSV</option></select></label>',
+    '  <label id="spFieldCalIoText" class="sp-field sp-field--wide">Calibration I/O<textarea id="spCalIoText" class="spctl-input spctl-textarea" rows="5" placeholder="Paste calibration points here (JSON/CSV)"></textarea></label>',
+    '</div>',
+    '<div class="sp-actions">',
+    '  <button type="button" id="spCalCaptureBtn">Capture current points</button>',
+    '  <button type="button" id="spCalExportBtn">Export points</button>',
+    '  <button type="button" id="spCalImportBtn">Import to shell</button>',
+    '  <button type="button" id="spCalClearBtn">Clear shell points</button>',
+    '</div>',
+    '<div id="spCalIoFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>'
+  ].join('');
+  panel.appendChild(card);
+  panel.dataset.built = '1';
+
+  const mgrMod = sp.v15 && sp.v15.calibrationPointManager;
+  if (!sp.calibrationPointManager && mgrMod && typeof mgrMod.create === 'function') {
+    try { sp.calibrationPointManager = mgrMod.create(); } catch (_) {}
+  }
+  const getMgr = function () {
+    return sp.calibrationPointManager || (mgrMod && typeof mgrMod.create === 'function' ? (sp.calibrationPointManager = mgrMod.create()) : null);
+  };
+  const ioMod = sp.v15 && sp.v15.calibrationIO;
+
+  panel.addEventListener('click', function (e) {
+    const t = e.target.closest('button');
+    if (!t) return;
+    const txt = $('spCalIoText');
+    const fmtSel = $('spCalIoFormat');
+    const fmt = String((fmtSel && fmtSel.value) || 'json').toLowerCase();
+    const mgr = getMgr();
+
+    if (t.id === 'spCalCaptureBtn') {
+      const st = getStoreState();
+      const pts = (st.calibration && Array.isArray(st.calibration.points)) ? st.calibration.points : [];
+      if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(pts);
+      if (txt) txt.value = '';
+      updateStorePath('calibration.shellPointCount', Array.isArray(pts) ? pts.length : 0, { source: 'proBootstrap.calIO' });
+      setCoreActionFeedback('Captured calibration points from current state into shell.', 'ok');
+      renderStatus();
+    }
+    if (t.id === 'spCalExportBtn') {
+      const pts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
+      let out = '';
+      if (ioMod && typeof ioMod.serializeCalibrationPoints === 'function') {
+        out = ioMod.serializeCalibrationPoints(pts, { format: fmt });
+      } else {
+        out = JSON.stringify(pts, null, 2);
+      }
+      if (txt) txt.value = out || '';
+      updateStorePath('calibration.shellPointCount', Array.isArray(pts) ? pts.length : 0, { source: 'proBootstrap.calIO' });
+      setCoreActionFeedback('Exported shell points to text area (' + fmt.toUpperCase() + ').', 'ok');
+    }
+    if (t.id === 'spCalImportBtn') {
+      const raw = String((txt && txt.value) || '');
+      if (!raw.trim()) { setCoreActionFeedback('Nothing to import. Paste JSON/CSV calibration points first.', 'warn'); return; }
+      let pts = [];
+      if (ioMod && typeof ioMod.parseCalibrationFile === 'function') pts = ioMod.parseCalibrationFile(raw, { formatHint: fmt });
+      if (!Array.isArray(pts)) pts = [];
+      if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(pts);
+      updateStorePath('calibration.shellPointCount', pts.length, { source: 'proBootstrap.calIO' });
+      setCoreActionFeedback('Imported ' + pts.length + ' calibration point(s) into shell manager.', pts.length ? 'ok' : 'warn');
+      renderStatus();
+    }
+    if (t.id === 'spCalClearBtn') {
+      if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints([]);
+      if (txt) txt.value = '';
+      updateStorePath('calibration.shellPointCount', 0, { source: 'proBootstrap.calIO' });
+      setCoreActionFeedback('Cleared shell calibration points.', 'ok');
+      renderStatus();
+    }
+  });
+
+  return card;
+}
 
   function computeDataQualityLines(state) {
     try {
@@ -640,13 +731,6 @@
         if (String(fillOpacityInput.value) !== next) fillOpacityInput.value = next;
       }
     }
-    const fillOpacityValueEl = $('spFillOpacityValue');
-    if (fillOpacityValueEl) {
-      const fo2 = Number(state.display && state.display.fillOpacity);
-      const shown = Number.isFinite(fo2) ? Math.max(0, Math.min(1, Math.round(fo2 * 100) / 100)) : Number(fillOpacityInput && fillOpacityInput.value);
-      if (Number.isFinite(shown)) fillOpacityValueEl.textContent = shown.toFixed(2);
-    }
-
     if (peakThresholdInput && !shouldSkipSyncValue(peakThresholdInput) && Number.isFinite(Number(peaks.threshold))) {
       const next = String(Math.max(0, Math.min(255, Math.round(Number(peaks.threshold)))));
       if (String(peakThresholdInput.value) !== next) peakThresholdInput.value = next;
@@ -708,9 +792,9 @@
       bus.on('ui:refresh', render);
       bus.on('mode:changed', render);
       bus.on('frame:updated', renderStatus);
-      bus.on('worker:ready', renderStatus);
-      bus.on('worker:libraries', renderStatus);
-      bus.on('worker:error', renderStatus);
+      bus.on('worker:ready', function(){ setCoreActionFeedback('Worker ready.', 'ok'); renderStatus(); });
+      bus.on('worker:libraries', function(){ setCoreActionFeedback('Worker libraries initialized.', 'ok'); renderStatus(); });
+      bus.on('worker:error', function(){ setCoreActionFeedback('Worker error. See STATUS.', 'error'); renderStatus(); });
       bus.on('worker:timeout', renderStatus);
       bus.on('worker:result', renderStatus);
     }

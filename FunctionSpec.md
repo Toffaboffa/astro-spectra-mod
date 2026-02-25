@@ -723,3 +723,20 @@ This spec therefore prioritizes:
 
 **What remains next**
 - Step 4 slice: Calibration I/O + multipoint shell (20).
+
+
+### 2026-02-25 — Step 4 slice 5: Calibration I/O + multipoint shell (20) + UI action feedback hotfixes
+- **Implemented point 20 shell** in `Other` tab:
+  - calibration text area
+  - format select (JSON/CSV)
+  - actions: capture current points, export shell points, import to shell manager, clear shell
+- `calibrationIO.js` upgraded from placeholder to basic JSON/CSV parse + serialize for `{px,nm,label}` points.
+- `calibrationPointManager.js` upgraded from placeholder to simple validated point manager (`set/get/add/clear/count`).
+- Added shell point count into state (`calibration.shellPointCount`) and surfaced in Status rail (`Calibration ... shell N`).
+- CORE action buttons now provide visible feedback text (Init libraries, Ping worker, Refresh UI, Probe camera) so clicks are not silent.
+- Fill opacity slider label value removed per UI request.
+- Bottom drawer expand handle made visible/recoverable after collapse via fixed-position CSS override.
+
+**Status update**
+- Point **20 (Calibration I/O + multipoint manager shell)**: **PARTIAL → functional shell** (standalone shell manager + import/export text workflows).  
+  Not yet applied to original calibration pipeline / coefficient solving automatically (kept isolated for compatibility).
