@@ -823,4 +823,4 @@ This spec therefore prioritizes:
 
 
 ## Patch log
-- Console visibility fix: ensureStatusRail now creates CONSOLE card and popup auto-close runs on init for generic 'Info message'.
+- LAB console rootfix: Fixed proBootstrap syntax corruption, ensured CONSOLE card is built in status rail, and suppressed generic 'Info message' popup by wrapping showInfoPopup.

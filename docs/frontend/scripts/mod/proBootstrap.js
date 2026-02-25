@@ -31,15 +31,21 @@ sp.consoleLog = { append: appendConsole, error: appendConsoleErr };
   let booted = false;
 
   const $ = (id) => document.getElementById(id);
-  function el(tag, cls, text) {
-    const n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (text != null) n.textContent = text;
-    return n;
-    function escapeHtml(s){
-    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
 
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
 }
 
   function ensureHost() {
@@ -422,7 +428,7 @@ function maybeRunLabAnalyze(frameNormalized) {
 
   function ensureStatusRail() {
     if (!ui || !ui.statusRail) return;
-    if ($('spStatusText') && $('spDataQualityText') && $('spConsolePre')) return;
+    if ($('spStatusText') && $('spDataQualityText')) return;
 
     ui.statusRail.innerHTML = '';
     const grid = el('div', 'sp-status-grid');
@@ -435,12 +441,7 @@ function maybeRunLabAnalyze(frameNormalized) {
 
     grid.appendChild(status);
     grid.appendChild(dq);
-    
-
-    const console = el('div', 'sp-status-card sp-console-card');
-    console.innerHTML = '<h4>CONSOLE</h4><div id="spConsoleBody" class="sp-console-body"><pre id="spConsolePre" class="sp-console-pre"></pre><span class="sp-console-cursor">█</span></div>';
-
-    grid.appendChild(console);ui.statusRail.appendChild(grid);
+    ui.statusRail.appendChild(grid);
   }
 
   function ensurePanelContent() {
@@ -610,7 +611,6 @@ function maybeRunLabAnalyze(frameNormalized) {
         if (t.id === 'spRefreshUiBtn') {
           setCoreActionFeedback('UI refreshed (dock + status rerender).', 'ok');
           try { render(); 
-    try { autoCloseInfoPopupIfDefault(); } catch (e) {}
     autoCloseInfoPopupIfDefault();
 } catch (e) {}
           try { renderStatus(); } catch (e) {}
@@ -647,8 +647,6 @@ function setCoreActionFeedback(text, tone) {
   if (!el) return;
   el.textContent = text || '';
   el.dataset.tone = tone || 'info';
-}
-  try { if (text) appendConsole(String(text)); } catch (e) {}
 }
 
 
@@ -914,7 +912,6 @@ function ensureCalibrationShell() {
       var pvCapture = formatCalValidationPreview(previewShellCalibrationNormalization(pts));
       setCalIoValidationText(pvCapture.text, pvCapture.level);
       renderStatus();
-    renderConsole();
     }
     if (t.id === 'spCalExportBtn') {
       const pts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
@@ -942,7 +939,6 @@ function ensureCalibrationShell() {
       setCalIoValidationText(pvImport.text, pvImport.level);
       setCoreActionFeedback('Imported ' + pts.length + ' calibration point(s) into shell manager.', pts.length ? 'ok' : 'warn');
       renderStatus();
-    renderConsole();
     }
 
     if (t.id === 'spCalApplyBtn') {
@@ -959,7 +955,6 @@ function ensureCalibrationShell() {
       var warnTag = (pvApply && Array.isArray(pvApply.warnings) && pvApply.warnings.length) ? (' [' + pvApply.warnings.join('; ') + ']') : '';
       setCoreActionFeedback('Applied ' + result.count + ' shell point(s) to original calibration' + (result.truncated ? ' (truncated to max).' : '.') + warnTag, 'ok');
       renderStatus();
-    renderConsole();
       return;
     }
 
@@ -970,7 +965,6 @@ function ensureCalibrationShell() {
       setCoreActionFeedback('Cleared shell calibration points.', 'ok');
       setCalIoValidationText('', '');
       renderStatus();
-    renderConsole();
     }
   });
 
@@ -1170,12 +1164,27 @@ function renderLabPanel() {
     const active = String(state.ui?.activeTab || 'general').toLowerCase();
     setActiveTab(active);
     renderStatus();
-    renderConsole();
     renderLabPanel();
     cleanupSpuriousPopup();
   }
 
   function init() {
+function wrapShowInfoPopup() {
+  try {
+    if (window.__spOriginalShowInfoPopup) return;
+    if (typeof window.showInfoPopup !== 'function') return;
+    window.__spOriginalShowInfoPopup = window.showInfoPopup;
+    window.showInfoPopup = function (message, buttonContainer, callback) {
+      const msg = String(message == null ? '' : message).trim();
+      if (msg === 'Info message' || msg === 'Info') {
+        // swallow generic placeholder popup
+        return;
+      }
+      return window.__spOriginalShowInfoPopup(message, buttonContainer, callback);
+    };
+  } catch (e) {}
+}
+
 function autoCloseInfoPopupIfDefault() {
   try {
     const popup = document.getElementById('infoPopup');
@@ -1191,6 +1200,7 @@ function autoCloseInfoPopupIfDefault() {
 
     if (booted) return;
     booted = true;
+    wrapShowInfoPopup();
     render();
     // Step 1 wiring: create a singleton worker client if available (lazy worker start remains in client).
     ensureWorkerClient();
@@ -1220,7 +1230,6 @@ function autoCloseInfoPopupIfDefault() {
         statusRafId = requestAnimationFrame(function () {
           statusRafId = 0;
           renderStatus();
-    renderConsole();
         });
       };
       window.SpectraPro.coreHooks.on('graphFrame', function (payload) {
