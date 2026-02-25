@@ -3,6 +3,27 @@
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
   const store = sp.store;
+// --- PRO Console Log (LAB Step 1 UI Hotfix) ---
+const CONSOLE_PATH = 'ui.console.lines';
+function getConsoleLines() {
+  try { return (store?.getState()?.ui?.console?.lines) || []; } catch { return []; }
+}
+function appendConsole(line) {
+  const ts = new Date();
+  const hh = String(ts.getHours()).padStart(2,'0');
+  const mm = String(ts.getMinutes()).padStart(2,'0');
+  const ss = String(ts.getSeconds()).padStart(2,'0');
+  const prefix = `[${hh}:${mm}:${ss}] `;
+  const safe = (line ?? '').toString().replace(/\s+$/,'');
+  const lines = getConsoleLines();
+  const maxLines = store?.getState()?.ui?.console?.maxLines || 200;
+  const next = lines.concat(prefix + safe).slice(-maxLines);
+  try { store.update(CONSOLE_PATH, next); } catch {}
+}
+function appendConsoleErr(line) { appendConsole('ERROR: ' + line); }
+
+sp.consoleLog = { append: appendConsole, error: appendConsoleErr };
+
   const bus = sp.eventBus;
   const TABS = ['general', 'core', 'lab', 'astro', 'other'];
 
@@ -583,12 +604,14 @@ function maybeRunLabAnalyze(frameNormalized) {
         }
         if (t.id === 'spRefreshUiBtn') {
           setCoreActionFeedback('UI refreshed (dock + status rerender).', 'ok');
-          render();
-          return;
+          \1
+  renderConsole();
+return;
         }
         if (t.id === 'spProbeCameraBtn') {
           setCoreActionFeedback('Probing camera capabilities…', 'info');
-          probeCameraCapabilitiesIntoStore().then(function (res) { setCoreActionFeedback('Probe camera done (' + String((res && res.status) || 'unknown') + ').', 'ok'); renderStatus(); }).catch(function (err) { setCoreActionFeedback('Probe camera failed: ' + String(err && err.message || err), 'error'); });
+          probeCameraCapabilitiesIntoStore().then(function (res) { setCoreActionFeedback('Probe camera done (' + String((res && res.status) || 'unknown') + ').', 'ok'); renderStatus();
+    renderConsole(); }).catch(function (err) { setCoreActionFeedback('Probe camera failed: ' + String(err && err.message || err), 'error'); });
           return;
         }
       });
@@ -992,6 +1015,18 @@ function ensureCalibrationShell() {
   function shouldSkipSyncValue(el) {
     try { return !!el && document.activeElement === el; } catch (_) { return false; }
   }
+function renderConsole() {
+  const pre = document.getElementById('spConsolePre');
+  if (!pre) return;
+  const lines = getConsoleLines();
+  pre.textContent = lines.join('\n');
+  try {
+    const body = document.getElementById('spConsoleBody');
+    if (body) body.scrollTop = body.scrollHeight;
+  } catch {}
+}
+
+
 
   function renderStatus() {
     const sEl = $('spStatusText');

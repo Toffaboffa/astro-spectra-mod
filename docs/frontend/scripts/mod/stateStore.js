@@ -69,6 +69,8 @@
       hasReference: false,
       hasFlat: false
     }
+,
+    ui: { console: { lines: [], maxLines: 200 } }
   };
 
   function deepClone(obj) {

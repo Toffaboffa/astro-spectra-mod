@@ -808,3 +808,7 @@ This spec therefore prioritizes:
 - LAB tab now renders functional UI (Analyze toggle, Max Hz, Preset placeholder, Init libraries, Ping worker).
 - When App mode = LAB and Analyze enabled and libraries loaded, frames are sent to worker for analysis (throttled).
 - Top hits and QC flags render from `state.analysis.topHits` / `state.analysis.qcFlags`.
+
+
+## Patch log
+- LAB Step 1 UI: Added bottom-right CONSOLE log panel (monospace + blinking cursor) that records key actions/events and worker messages.
