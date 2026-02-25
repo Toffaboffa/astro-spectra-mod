@@ -114,6 +114,46 @@
     return null;
   }
 
+
+  function ensureWorkerClient() {
+    try {
+      if (!sp.workerClient && typeof sp.createAnalysisWorkerClient === 'function') {
+        sp.workerClient = sp.createAnalysisWorkerClient();
+      }
+      return sp.workerClient || null;
+    } catch (err) {
+      console.warn('[SPECTRA-PRO] Failed to create worker client', err);
+      if (store && store.update) {
+        try { store.update('worker.status', 'error', { source: 'proBootstrap.workerClient' }); } catch (_) {}
+        try { store.update('worker.lastError', String(err && err.message || err), { source: 'proBootstrap.workerClient' }); } catch (_) {}
+      }
+      return null;
+    }
+  }
+
+  function setCoreWorkerMode(mode) {
+    const val = String(mode || 'auto').toLowerCase();
+    if (!store || !store.update) return;
+    const client = ensureWorkerClient();
+    if (val === 'on') {
+      store.update('worker.enabled', true, { source: 'proBootstrap.core' });
+      if (client && typeof client.start === 'function') client.start();
+      return;
+    }
+    if (val === 'off') {
+      if (client && typeof client.stop === 'function') client.stop();
+      store.update('worker.enabled', false, { source: 'proBootstrap.core' });
+      store.update('worker.status', 'idle', { source: 'proBootstrap.core' });
+      return;
+    }
+    // auto = enabled but lazy-start only when mode/analysis needs it.
+    store.update('worker.enabled', true, { source: 'proBootstrap.core' });
+    if ((store.getState().worker || {}).status === 'error') {
+      store.update('worker.status', 'idle', { source: 'proBootstrap.core' });
+      store.update('worker.lastError', null, { source: 'proBootstrap.core' });
+    }
+  }
+
   function syncActiveTabToStore(tab) {
     if (!store || !store.setState) return;
     const state = getStoreState();
@@ -197,22 +237,45 @@
 
       modeSel && modeSel.addEventListener('change', (e) => {
         const mode = String(e.target.value || 'CORE').toUpperCase();
-        setVal('appMode', mode);
+        if (sp.appMode && typeof sp.appMode.setMode === 'function') {
+          sp.appMode.setMode(mode, { source: 'proBootstrap.core' });
+        } else {
+          setVal('appMode', mode);
+        }
       });
       workerSel && workerSel.addEventListener('change', (e) => {
-        const val = String(e.target.value || 'auto');
-        if (val === 'on') { setVal('worker.enabled', true); setVal('worker.status', 'ready'); }
-        else if (val === 'off') { setVal('worker.enabled', false); setVal('worker.status', 'idle'); }
+        setCoreWorkerMode(e.target.value || 'auto');
       });
       card.addEventListener('click', (e) => {
         const t = e.target;
         if (!(t instanceof HTMLElement)) return;
         if (t.id === 'spPingWorkerBtn') {
-          setVal('worker.lastPingAt', Date.now());
-          if (store && store.getState && store.getState().worker && store.getState().worker.enabled) setVal('worker.status', 'ready');
+          const client = ensureWorkerClient();
+          if (client && typeof client.ping === 'function') {
+            try {
+              store.update('worker.enabled', true, { source: 'proBootstrap.core' });
+              client.ping();
+            } catch (err) {
+              setVal('worker.status', 'error');
+              setVal('worker.lastError', String(err && err.message || err));
+            }
+          } else {
+            setVal('worker.lastPingAt', Date.now());
+            if (store && store.getState && store.getState().worker && store.getState().worker.enabled) setVal('worker.status', 'ready');
+          }
         }
         if (t.id === 'spInitLibBtn') {
+          const client = ensureWorkerClient();
           setVal('analysis.presetId', 'libraries-init-requested');
+          if (client && typeof client.initLibraries === 'function') {
+            try {
+              store.update('worker.enabled', true, { source: 'proBootstrap.core' });
+              client.initLibraries(null);
+            } catch (err) {
+              setVal('worker.status', 'error');
+              setVal('worker.lastError', String(err && err.message || err));
+            }
+          }
         }
         if (t.id === 'spRefreshUiBtn') {
           render();
@@ -293,6 +356,12 @@
 
     const appModeSel = $('spAppMode');
     if (appModeSel && state.appMode && appModeSel.value !== state.appMode) appModeSel.value = state.appMode;
+    const workerSel = $('spWorkerMode');
+    if (workerSel) {
+      const ws = state.worker || {};
+      const nextWorkerSel = ws.enabled ? (ws.status === 'idle' ? 'auto' : 'on') : 'off';
+      if (workerSel.value !== nextWorkerSel) workerSel.value = nextWorkerSel;
+    }
   }
 
   function cleanupSpuriousPopup() {
@@ -329,11 +398,18 @@
     if (booted) return;
     booted = true;
     render();
+    // Step 1 wiring: create a singleton worker client if available (lazy worker start remains in client).
+    ensureWorkerClient();
     if (bus && bus.on) {
       bus.on('state:changed', render);
       bus.on('ui:refresh', render);
       bus.on('mode:changed', render);
       bus.on('frame:updated', render);
+      bus.on('worker:ready', renderStatus);
+      bus.on('worker:libraries', renderStatus);
+      bus.on('worker:error', renderStatus);
+      bus.on('worker:timeout', renderStatus);
+      bus.on('worker:result', renderStatus);
     }
     if (window.SpectraPro && window.SpectraPro.coreHooks && window.SpectraPro.coreHooks.on) {
       let rafId = 0;

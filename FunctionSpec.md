@@ -47,6 +47,11 @@ The project is scaffold-first: many files exist as placeholders so the structure
 - Relabeled original **FLR** button to **Long Exposure** for clarity (kept original functionality)
 - Updated button color styling to fit the blue/dark theme (replacing bright green visual mismatch)
 
+### Audit note (Phase 1 → 1.5 checkpoint)
+- GUI dock/layout (B+C: 9/10/11/13 placement) is visually stable after recovery patches.
+- Shell wiring still had placeholder behavior in CORE controls (app mode + worker buttons) before Step 1 wiring patch.
+- Phase 1.5 modules (14–20) exist mostly as scaffold files and are **not loaded/integrated** yet.
+
 ### What is *not* implemented yet
 - Full feature parity with original SPECTRA visual polish (layout is now patched shell + custom theme)
 - Hook patches into `graphScript.js` / `calibrationScript.js`
@@ -190,7 +195,82 @@ This is the order we should follow when working on the codebase in future patch 
 
 ---
 
-### Phase 1.5 — v5-style instrument UX upgrades (still CORE-safe)
+#
+## Recovery roadmap to complete Phase 1 → 1.5 (shell + dock + v5 UX)
+
+This roadmap focuses on **the currently visible gaps** after dock integration: shell wiring (5/6/7/8/12/13) and Phase 1.5 activation (14–20).
+
+### Step 1 — Shell wiring hardening (NOW)
+**Goal:** make PRO shell controls talk to the real shell APIs instead of placeholder state writes.
+
+Scope:
+- Route **App mode** UI through `sp.appMode.setMode(...)` (emit `mode:changed` correctly)
+- Wire CORE-tab **Worker** controls to `analysisWorkerClient` when available
+- Make **Ping worker / Init libraries** buttons call real worker client methods (with safe fallback)
+- Keep status/data-quality rail render sync responsive to worker events
+- No DOM/layout/CSS refactor in this step
+
+Success criteria:
+- Changing mode from CORE-tab emits `mode:changed`
+- Ping button causes worker status to transition `starting → ready` (or explicit error if unsupported)
+- Init libraries triggers worker init request (or safe fallback)
+- No new null errors in graph/setup/camera scripts
+
+**Status:** `READY` (implemented in `proBootstrap.js` as compatibility-safe wiring patch)
+
+### Step 2 — Shell state normalization + status rail correctness
+**Goal:** remove hybrid “reads from everywhere” behavior and make status/data quality deterministic.
+
+Scope:
+- Normalize live frame sync into `store.frame.latest` via throttled bridge updates
+- Normalize calibration/reference sync into store-backed state nodes
+- Make status/data-quality read primarily from store (fallbacks only as guard rails)
+- Add explicit worker mode state (`auto|on|off`) instead of inferring from `enabled/status`
+- Small UI polish only (equal card heights / readable text if needed)
+
+Success criteria:
+- Status/Data Quality updates are stable across mode switches and reloads
+- Minimal/no direct reads from `window.SpectraCore` in status rendering path
+- No render-loop regressions
+
+**Status:** `TODO`
+
+### Step 3 — Phase 1.5 activation scaffold (load path + compatibility wrappers)
+**Goal:** make 14–20 load safely without breaking classic-script pages.
+
+Scope:
+- Convert Phase 1.5 scaffold modules from ESM `export` syntax to browser-safe namespace modules **or** add a dedicated loader wrapper
+- Load selected modules in `recording.html` in safe order
+- Expose a single `sp.v15` namespace for panel integration
+- Keep all features default-off until wired
+
+Success criteria:
+- No `Unexpected token 'export'` syntax errors
+- Modules are loaded and introspectable from console
+- CORE mode still unaffected when features are idle
+
+**Status:** `TODO`
+
+### Step 4 — Phase 1.5 functional controls (incremental)
+**Goal:** implement actual user-facing v5-style controls in small slices.
+
+Recommended order:
+1. Display modes (14)
+2. Y-axis controls (16)
+3. Data Quality module integration (15)
+4. Peak controls (17)
+5. Graph appearance/fill (18)
+6. Camera capability abstraction (19)
+7. Calibration I/O + multipoint shell (20)
+
+Success criteria:
+- Each slice lands with manual CORE regression check
+- Controls affect graph behavior intentionally (not just placeholders)
+- Features can be disabled safely
+
+**Status:** `TODO`
+
+## Phase 1.5 — v5-style instrument UX upgrades (still CORE-safe)
 **Goal:** add useful graph/instrument controls before LAB/ASTRO analysis, plus layout parity fixes after real SPECTRA import.
 
 **Primary files:**
@@ -212,7 +292,7 @@ This is the order we should follow when working on the codebase in future patch 
 - camera capability abstraction (unsupported-safe)
 - calibration import/export + multipoint manager shell
 
-**Status:** `PARTIAL` (LAB MVP shell + worker hooks present; PRO controls now docked in bottom drawer with tabbed sections and always-visible status/data-quality area)
+**Status:** `PARTIAL` (dock/tab shell stable; Phase 1.5 files 14–20 mostly scaffold and not yet loaded/integrated in `recording.html`)
 
 ---
 
@@ -249,7 +329,7 @@ This is the order we should follow when working on the codebase in future patch 
 - overlays can label lines
 - subtraction modes (dark/ref at minimum) work
 
-**Status:** `PARTIAL` (LAB MVP shell + worker hooks present; PRO controls now docked in bottom drawer with tabbed sections and always-visible status/data-quality area)
+**Status:** `PARTIAL` (dock/tab shell stable; Phase 1.5 files 14–20 mostly scaffold and not yet loaded/integrated in `recording.html`)
 
 ---
 
@@ -276,7 +356,7 @@ This is the order we should follow when working on the codebase in future patch 
 - preliminary Doppler display available with warnings
 - molecular band matching supports a basic first pass
 
-**Status:** `PARTIAL` (LAB MVP shell + worker hooks present; PRO controls now docked in bottom drawer with tabbed sections and always-visible status/data-quality area)
+**Status:** `PARTIAL` (dock/tab shell stable; Phase 1.5 files 14–20 mostly scaffold and not yet loaded/integrated in `recording.html`)
 
 ---
 
@@ -298,7 +378,7 @@ This is the order we should follow when working on the codebase in future patch 
 - instrument + observation profiles can be captured/exported
 - export includes key PRO metadata and QC flags
 
-**Status:** `PARTIAL` (LAB MVP shell + worker hooks present; PRO controls now docked in bottom drawer with tabbed sections and always-visible status/data-quality area)
+**Status:** `PARTIAL` (dock/tab shell stable; Phase 1.5 files 14–20 mostly scaffold and not yet loaded/integrated in `recording.html`)
 
 ---
 
