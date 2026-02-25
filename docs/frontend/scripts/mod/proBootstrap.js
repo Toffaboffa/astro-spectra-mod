@@ -422,7 +422,7 @@ function maybeRunLabAnalyze(frameNormalized) {
 
   function ensureStatusRail() {
     if (!ui || !ui.statusRail) return;
-    if ($('spStatusText') && $('spDataQualityText')) return;
+    if ($('spStatusText') && $('spDataQualityText') && $('spConsolePre')) return;
 
     ui.statusRail.innerHTML = '';
     const grid = el('div', 'sp-status-grid');
@@ -435,7 +435,12 @@ function maybeRunLabAnalyze(frameNormalized) {
 
     grid.appendChild(status);
     grid.appendChild(dq);
-    ui.statusRail.appendChild(grid);
+    
+
+    const console = el('div', 'sp-status-card sp-console-card');
+    console.innerHTML = '<h4>CONSOLE</h4><div id="spConsoleBody" class="sp-console-body"><pre id="spConsolePre" class="sp-console-pre"></pre><span class="sp-console-cursor">█</span></div>';
+
+    grid.appendChild(console);ui.statusRail.appendChild(grid);
   }
 
   function ensurePanelContent() {
@@ -605,6 +610,7 @@ function maybeRunLabAnalyze(frameNormalized) {
         if (t.id === 'spRefreshUiBtn') {
           setCoreActionFeedback('UI refreshed (dock + status rerender).', 'ok');
           try { render(); 
+    try { autoCloseInfoPopupIfDefault(); } catch (e) {}
     autoCloseInfoPopupIfDefault();
 } catch (e) {}
           try { renderStatus(); } catch (e) {}
@@ -641,6 +647,8 @@ function setCoreActionFeedback(text, tone) {
   if (!el) return;
   el.textContent = text || '';
   el.dataset.tone = tone || 'info';
+}
+  try { if (text) appendConsole(String(text)); } catch (e) {}
 }
 
 
@@ -906,6 +914,7 @@ function ensureCalibrationShell() {
       var pvCapture = formatCalValidationPreview(previewShellCalibrationNormalization(pts));
       setCalIoValidationText(pvCapture.text, pvCapture.level);
       renderStatus();
+    renderConsole();
     }
     if (t.id === 'spCalExportBtn') {
       const pts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
@@ -933,6 +942,7 @@ function ensureCalibrationShell() {
       setCalIoValidationText(pvImport.text, pvImport.level);
       setCoreActionFeedback('Imported ' + pts.length + ' calibration point(s) into shell manager.', pts.length ? 'ok' : 'warn');
       renderStatus();
+    renderConsole();
     }
 
     if (t.id === 'spCalApplyBtn') {
@@ -949,6 +959,7 @@ function ensureCalibrationShell() {
       var warnTag = (pvApply && Array.isArray(pvApply.warnings) && pvApply.warnings.length) ? (' [' + pvApply.warnings.join('; ') + ']') : '';
       setCoreActionFeedback('Applied ' + result.count + ' shell point(s) to original calibration' + (result.truncated ? ' (truncated to max).' : '.') + warnTag, 'ok');
       renderStatus();
+    renderConsole();
       return;
     }
 
@@ -959,6 +970,7 @@ function ensureCalibrationShell() {
       setCoreActionFeedback('Cleared shell calibration points.', 'ok');
       setCalIoValidationText('', '');
       renderStatus();
+    renderConsole();
     }
   });
 
@@ -1158,6 +1170,7 @@ function renderLabPanel() {
     const active = String(state.ui?.activeTab || 'general').toLowerCase();
     setActiveTab(active);
     renderStatus();
+    renderConsole();
     renderLabPanel();
     cleanupSpuriousPopup();
   }
@@ -1207,6 +1220,7 @@ function autoCloseInfoPopupIfDefault() {
         statusRafId = requestAnimationFrame(function () {
           statusRafId = 0;
           renderStatus();
+    renderConsole();
         });
       };
       window.SpectraPro.coreHooks.on('graphFrame', function (payload) {

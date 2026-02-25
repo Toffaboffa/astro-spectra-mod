@@ -820,3 +820,7 @@ This spec therefore prioritizes:
 
 ## Patch log
 - Fix: Added right-rail CONSOLE panel and auto-close of generic 'Info message' popup on load.
+
+
+## Patch log
+- Console visibility fix: ensureStatusRail now creates CONSOLE card and popup auto-close runs on init for generic 'Info message'.
