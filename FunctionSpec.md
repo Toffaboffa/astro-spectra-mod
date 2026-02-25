@@ -766,7 +766,7 @@ This spec therefore prioritizes:
 - Added **Probe camera** button in CORE controls to re-probe current active camera track without touching original camera flow.
 - Surface camera capability summary in Status rail (`Camera: status · resolution · exp/zoom support`) via `dataQualityPanel.js`.
 - Renamed fill mode label/value from `REAL_SAMPLED` to **`SOURCE`** (legacy aliases preserved for compatibility).
-- Converted **Fill opacity** control from numeric input to **slider** (`range`) with live numeric readout (`#spFillOpacityValue`).
+- Converted **Fill opacity** control from numeric input to **slider** (`range`).
 
 **What remains next**
 - Step 4 slice: Calibration I/O + multipoint shell (20).
@@ -802,3 +802,25 @@ This spec therefore prioritizes:
 **What remains next (CORE before LAB freeze)**
 - Final CORE QA freeze checklist pass (worker modes, calibration apply, exports, no console nulls).
 - Optional polish (deferred): point disable/outlier UX and rollback affordance for point 20 shell.
+
+
+### 2026-02-25 — CORE freeze support: test scaffolding + explicit QA gate
+- Added a **manual CORE freeze checklist** at `tests/manual-test-checklist.md`.
+- Added a **static DOM sanity check** script at `tests/core_dom_check.js` to ensure required CORE element IDs exist in `docs/frontend/pages/recording.html`.
+
+**Status update**
+- CORE is now in **freeze-candidate** state: feature set is in place; remaining work is validation + any bug fixes discovered by the checklist.
+
+**How to sanity-check (recommended)**
+- Run static check:
+  - `node tests/core_dom_check.js`
+- Run manual checklist:
+  - Follow `tests/manual-test-checklist.md` in the browser.
+
+**Freeze criteria (CORE → LAB handoff)**
+- No recurring console errors during normal use.
+- Camera/stripe/graph loops remain responsive.
+- Display/Y-axis/peaks/fill overrides work and can be toggled without breaking CORE.
+- Calibration shell import/export/apply works (bridge applies to original calibration).
+- Hide/show left + bottom panels remains recoverable.
+- Export still works.
