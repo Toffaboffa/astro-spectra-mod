@@ -683,7 +683,7 @@ body{overflow:hidden;}
 #SpectraProDockHost #spAppMode,
 #SpectraProDockHost #spWorkerMode,
 #SpectraProDockHost #spDisplayMode,
-#SpectraProDockHost #spYAxisMode { width: 180px !important; max-width: 100%; }
+#SpectraProDockHost #spYAxisMode { width: 110px !important; max-width: 100%; }
 #SpectraProDockHost #spYAxisMax,
 #SpectraProDockHost #spPeakThreshold,
 #SpectraProDockHost #spPeakDistance,
