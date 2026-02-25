@@ -655,3 +655,20 @@ This spec therefore prioritizes:
 
 ### Session patch log (latest)
 - Step 4 slice 2: integrated `dataQualityPanel.js` compute path into status rail and wired Peak controls (threshold/distance/smoothing) from CORE tab into `graphScript.js` peak detection.
+
+
+## Patch Update — Step 4 follow-up hotfix (2026-02-25)
+
+### Fixed
+- **Data Quality saturation**: `dataQualityPanel.js` now prioritizes raw `frame.I` before normalized arrays (`combined/intensity`) and supports both **0..255** and **0..1** signal ranges when computing saturation. Added near-clipping fallback (`>=250`) so saturation is not misleadingly stuck at zero.
+- **Peak controls input usability**: `spPeakThreshold`, `spPeakDistance`, `spPeakSmoothing` no longer get value-overwritten while typing due to frequent `renderStatus()` sync. Added focus guard in `proBootstrap.js` and switched peak inputs to `input` event updates with blur-time normalization.
+- **Styling hooks / fixed widths**: Added explicit unique field wrapper ids and control classes in CORE controls UI (`spField*`, `.spctl-*`) plus fixed-width CSS rules for `select`/`input` ids to simplify future theming.
+
+### Files changed in this hotfix
+- `docs/frontend/scripts/mod/dataQualityPanel.js`
+- `docs/frontend/scripts/mod/proBootstrap.js`
+- `docs/frontend/styles/mod-panels.css`
+
+### Notes
+- No original SPECTRA-1 ids/selectors were renamed or removed.
+- No layout structure changes; CSS additions are scoped to `#SpectraProDockHost`.

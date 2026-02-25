@@ -342,14 +342,14 @@
 
       card.innerHTML = [
         '<div class="sp-form-grid">',
-        '  <label>App mode<select id="spAppMode"><option value="CORE">CORE</option><option value="LAB">LAB</option><option value="ASTRO">ASTRO</option></select></label>',
-        '  <label>Worker<select id="spWorkerMode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>',
-        '  <label>Display mode<select id="spDisplayMode">' + displayOptions + '</select></label>',
-        '  <label>Y-axis<select id="spYAxisMode">' + yAxisOptions + '</select></label>',
-        '  <label id="spYAxisMaxWrap">Y max<input id="spYAxisMax" type="number" min="1" max="4096" step="1" value="255"></label>',
-        '  <label>Peak threshold<input id="spPeakThreshold" type="number" min="0" max="255" step="1" value="1"></label>',
-        '  <label>Peak distance<input id="spPeakDistance" type="number" min="1" max="512" step="1" value="1"></label>',
-        '  <label>Peak smoothing<input id="spPeakSmoothing" type="number" min="0" max="8" step="1" value="0"></label>',
+        '  <label id="spFieldAppMode" class="sp-field sp-field--app-mode">App mode<select id="spAppMode" class="spctl-select spctl-select--app-mode"><option value="CORE">CORE</option><option value="LAB">LAB</option><option value="ASTRO">ASTRO</option></select></label>',
+        '  <label id="spFieldWorkerMode" class="sp-field sp-field--worker-mode">Worker<select id="spWorkerMode" class="spctl-select spctl-select--worker-mode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>',
+        '  <label id="spFieldDisplayMode" class="sp-field sp-field--display-mode">Display mode<select id="spDisplayMode" class="spctl-select spctl-select--display-mode">' + displayOptions + '</select></label>',
+        '  <label id="spFieldYAxisMode" class="sp-field sp-field--y-axis-mode">Y-axis<select id="spYAxisMode" class="spctl-select spctl-select--y-axis-mode">' + yAxisOptions + '</select></label>',
+        '  <label id="spYAxisMaxWrap" class="sp-field sp-field--y-axis-max">Y max<input id="spYAxisMax" class="spctl-input spctl-input--y-axis-max" type="number" min="1" max="4096" step="1" value="255"></label>',
+        '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
+        '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
+        '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
         '</div>',
         '<div class="sp-actions">',
         '  <button type="button" id="spInitLibBtn">Init libraries</button>',
@@ -401,27 +401,28 @@
         setVal('display.yAxisMax', Math.round(n));
       });
 
-      peakThresholdInput && peakThresholdInput.addEventListener('change', (e) => {
+      peakThresholdInput && peakThresholdInput.addEventListener('input', (e) => {
         const n = Number(e.target.value);
         if (!Number.isFinite(n)) return;
         const v = Math.max(0, Math.min(255, Math.round(n)));
-        e.target.value = String(v);
         setVal('peaks.threshold', v);
       });
-      peakDistanceInput && peakDistanceInput.addEventListener('change', (e) => {
+      peakDistanceInput && peakDistanceInput.addEventListener('input', (e) => {
         const n = Number(e.target.value);
         if (!Number.isFinite(n)) return;
         const v = Math.max(1, Math.min(512, Math.round(n)));
-        e.target.value = String(v);
         setVal('peaks.distance', v);
       });
-      peakSmoothingInput && peakSmoothingInput.addEventListener('change', (e) => {
+      peakSmoothingInput && peakSmoothingInput.addEventListener('input', (e) => {
         const n = Number(e.target.value);
         if (!Number.isFinite(n)) return;
         const v = Math.max(0, Math.min(8, Math.round(n)));
-        e.target.value = String(v);
         setVal('peaks.smoothing', v);
       });
+
+      peakThresholdInput && peakThresholdInput.addEventListener('blur', (e) => { const n = Number(e.target.value); e.target.value = String(Number.isFinite(n) ? Math.max(0, Math.min(255, Math.round(n))) : 1); });
+      peakDistanceInput && peakDistanceInput.addEventListener('blur', (e) => { const n = Number(e.target.value); e.target.value = String(Number.isFinite(n) ? Math.max(1, Math.min(512, Math.round(n))) : 1); });
+      peakSmoothingInput && peakSmoothingInput.addEventListener('blur', (e) => { const n = Number(e.target.value); e.target.value = String(Number.isFinite(n) ? Math.max(0, Math.min(8, Math.round(n))) : 0); });
 
       card.addEventListener('click', (e) => {
         const t = e.target;
@@ -494,6 +495,11 @@
     };
   }
 
+
+  function shouldSkipSyncValue(el) {
+    try { return !!el && document.activeElement === el; } catch (_) { return false; }
+  }
+
   function renderStatus() {
     const sEl = $('spStatusText');
     const qEl = $('spDataQualityText');
@@ -504,27 +510,27 @@
     qEl.innerHTML = lines.dq.join('<br>');
 
     const appModeSel = $('spAppMode');
-    if (appModeSel && state.appMode && appModeSel.value !== state.appMode) appModeSel.value = state.appMode;
+    if (appModeSel && !shouldSkipSyncValue(appModeSel) && state.appMode && appModeSel.value !== state.appMode) appModeSel.value = state.appMode;
     const workerSel = $('spWorkerMode');
-    if (workerSel) {
+    if (workerSel && !shouldSkipSyncValue(workerSel)) {
       const ws = state.worker || {};
       const inferred = ws.enabled ? (ws.status === 'idle' ? 'auto' : 'on') : 'off';
       const nextWorkerSel = (ws.mode === 'auto' || ws.mode === 'on' || ws.mode === 'off') ? ws.mode : inferred;
       if (workerSel.value !== nextWorkerSel) workerSel.value = nextWorkerSel;
     }
     const displaySel = $('spDisplayMode');
-    if (displaySel) {
+    if (displaySel && !shouldSkipSyncValue(displaySel)) {
       const m = String((state.display && state.display.mode) || 'normal').toLowerCase();
       if (displaySel.value !== m) displaySel.value = m;
     }
     const yAxisSel = $('spYAxisMode');
     const yAxisMaxInput = $('spYAxisMax');
-    if (yAxisSel) {
+    if (yAxisSel && !shouldSkipSyncValue(yAxisSel)) {
       const ym = String((state.display && state.display.yAxisMode) || 'auto').toLowerCase();
       if (yAxisSel.value !== ym) yAxisSel.value = ym;
       if (yAxisMaxInput) yAxisMaxInput.disabled = (ym !== 'manual');
     }
-    if (yAxisMaxInput) {
+    if (yAxisMaxInput && !shouldSkipSyncValue(yAxisMaxInput)) {
       const v = Number((state.display && state.display.yAxisMax));
       const next = Number.isFinite(v) && v > 0 ? String(Math.round(v)) : '255';
       if (String(yAxisMaxInput.value) !== next) yAxisMaxInput.value = next;

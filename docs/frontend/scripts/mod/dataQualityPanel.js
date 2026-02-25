@@ -6,9 +6,9 @@
 
   function getSignalArray(frame) {
     if (!frame || typeof frame !== 'object') return null;
-    return Array.isArray(frame.combined) ? frame.combined
+    return Array.isArray(frame.I) ? frame.I
+      : Array.isArray(frame.combined) ? frame.combined
       : Array.isArray(frame.intensity) ? frame.intensity
-      : Array.isArray(frame.I) ? frame.I
       : Array.isArray(frame.values) ? frame.values
       : null;
   }
@@ -36,6 +36,21 @@
         avg = (sum / arr.length).toFixed(1);
         const dynamicRange = (mx - mn);
         dyn = dynamicRange.toFixed(1);
+        // Support both raw 0..255 and normalized 0..1 arrays.
+        if (mx <= 1.01) {
+          sat = 0;
+          for (let i = 0; i < arr.length; i += 1) {
+            const vv = Number(arr[i]);
+            if (Number.isFinite(vv) && vv >= 0.995) sat += 1;
+          }
+        } else if (sat === 0 && mx >= 250) {
+          // Near-clipping fallback: count high values so DQ is useful even when source rarely hits 254+.
+          sat = 0;
+          for (let i = 0; i < arr.length; i += 1) {
+            const vv = Number(arr[i]);
+            if (Number.isFinite(vv) && vv >= 250) sat += 1;
+          }
+        }
         const pct = arr.length ? ((sat / arr.length) * 100).toFixed(1) : '0.0';
         satText = `${sat}/${arr.length} (${pct}%)`;
         const noiseFloor = Math.max(1, mn);

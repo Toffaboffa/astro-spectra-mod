@@ -484,7 +484,7 @@ body{overflow:hidden;}
 /* === HOTFIX authoritative dock layout === */
 #spMain{display:block !important; position:relative !important; margin:0 !important; padding:0 !important; min-height:168px !important;}
 #SpectraProDockHost.sp-dock-host{display:block !important; width:100% !important; height:100% !important;}
-#SpectraProDockHost .sp-shell{display:flex !important; flex-direction:column !important; gap:10px !important; width:100% !important; min-height:160px !important; padding:10px 12px !important; background:transparent !important;}
+#SpectraProDockHost .sp-shell{display:flex !important; flex-direction:column !important; width:100% !important; min-height:160px !important; padding:10px 12px !important; background:transparent !important;}
 #SpectraProDockHost .sp-tabs{display:flex !important; flex-wrap:wrap !important; gap:8px !important; align-items:center !important;}
 #SpectraProDockHost .sp-tab{background:#071b39 !important; border:2px solid #00f0c8 !important; color:#b6fff3 !important; border-radius:8px !important; padding:6px 12px !important; font-weight:700 !important; cursor:pointer !important;}
 #SpectraProDockHost .sp-tab.is-active{background:#0d2e5f !important; color:#fff !important; box-shadow:inset 0 0 0 1px rgba(255,255,255,.15) !important;}
@@ -494,7 +494,7 @@ body{overflow:hidden;}
 #SpectraProDockHost .sp-tabpanel[hidden]{display:none !important;}
 #SpectraProDockHost .sp-card--flat{background:transparent !important; border:0 !important; padding:0 !important; margin:0 !important; box-shadow:none !important;}
 #SpectraProDockHost .sp-form-grid{display:grid !important; grid-template-columns:repeat(2,minmax(160px,1fr)) !important; gap:10px !important; max-width:520px !important;}
-#SpectraProDockHost .sp-form-grid label{display:flex !important; flex-direction:column !important; gap:4px !important; color:#d2e8ff !important; font-size:12px !important;}
+#SpectraProDockHost .sp-form-grid label{display:flex !important; flex-direction:column !important; gap:4px !important; color:#d2e8ff !important; font-size:13px !important;}
 #SpectraProDockHost .sp-actions{display:flex !important; flex-wrap:wrap !important; gap:8px !important; margin-top:8px !important;}
 #SpectraProDockHost .sp-actions button{background:#2f5f9f !important; color:#fff !important; border:1px solid #4e7fbf !important; border-radius:8px !important; padding:6px 10px !important;}
 #SpectraProDockHost .sp-note{margin:8px 0 0 !important; color:#9cb7d5 !important; font-size:12px !important;}
@@ -531,7 +531,7 @@ body{overflow:hidden;}
 #graphSettingsDrawerLeft #spGeneralHost{display:block; width:100%;}
 #graphSettingsDrawerLeft #spGeneralHost > .d-flex{width:100%;}
 
-#SpectraProDockHost .sp-shell{display:flex !important; flex-direction:column !important; gap:8px !important; padding:8px 10px 10px !important; border-top:1px solid rgba(120,180,255,.14) !important; background:transparent !important;}
+#SpectraProDockHost .sp-shell{display:flex !important; flex-direction:column !important; padding:8px 10px 10px !important; border-top:1px solid rgba(120,180,255,.14) !important; background:transparent !important;}
 #SpectraProDockHost .sp-tabs{display:flex !important; flex-wrap:wrap !important; gap:8px !important; align-items:center !important;}
 #SpectraProDockHost .sp-tab{
   border:1px solid rgba(16,185,129,.85) !important;
@@ -556,7 +556,7 @@ body{overflow:hidden;}
 #SpectraProDockHost .sp-status-card h4{margin:0 0 6px !important; font-size:12px !important; color:#dfefff !important;}
 #SpectraProDockHost .sp-status-lines{font-size:11px !important; line-height:1.35 !important; color:#e8f3ff !important;}
 #SpectraProDockHost .sp-card--flat{background:transparent !important; border:0 !important; padding:0 !important; margin:0 !important; box-shadow:none !important;}
-#SpectraProDockHost .sp-form-grid{display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; max-width:560px !important;}
+#SpectraProDockHost .sp-form-grid{display:grid !important; grid-template-columns:repeat(6,minmax(0,1fr)) !important; gap:10px !important; max-width:100% !important;}
 #SpectraProDockHost .sp-actions{display:flex !important; flex-wrap:wrap !important; gap:8px !important; margin-top:8px !important;}
 #SpectraProDockHost .sp-actions button{background:#2f5f9f !important; color:#fff !important; border:1px solid #4e7fbf !important; border-radius:8px !important; padding:6px 10px !important;}
 #SpectraProDockHost .sp-empty{color:#9cb7d5 !important; padding:8px 2px !important;}
@@ -677,3 +677,24 @@ body{overflow:hidden;}
     max-height:36vh !important;
   }
 }
+
+
+/* === Step4 next hotfix: explicit control IDs widths + easier theming hooks === */
+#SpectraProDockHost #spAppMode,
+#SpectraProDockHost #spWorkerMode,
+#SpectraProDockHost #spDisplayMode,
+#SpectraProDockHost #spYAxisMode { width: 180px !important; max-width: 100%; }
+#SpectraProDockHost #spYAxisMax,
+#SpectraProDockHost #spPeakThreshold,
+#SpectraProDockHost #spPeakDistance,
+#SpectraProDockHost #spPeakSmoothing { width: 120px !important; max-width: 100%; }
+#SpectraProDockHost #spFieldAppMode,
+#SpectraProDockHost #spFieldWorkerMode,
+#SpectraProDockHost #spFieldDisplayMode,
+#SpectraProDockHost #spFieldYAxisMode { min-width: 180px; }
+#SpectraProDockHost #spFieldYAxisMax,
+#SpectraProDockHost #spFieldPeakThreshold,
+#SpectraProDockHost #spFieldPeakDistance,
+#SpectraProDockHost #spFieldPeakSmoothing { min-width: 120px; }
+#SpectraProDockHost .spctl-select,
+#SpectraProDockHost .spctl-input { box-sizing:border-box; }
