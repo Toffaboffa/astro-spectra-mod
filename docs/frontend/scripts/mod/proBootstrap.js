@@ -9,16 +9,12 @@ function getConsoleLines() {
   try { return (store?.getState()?.ui?.console?.lines) || []; } catch { return []; }
 }
 function appendConsole(line) {
-  const ts = new Date();
-  const hh = String(ts.getHours()).padStart(2,'0');
-  const mm = String(ts.getMinutes()).padStart(2,'0');
-  const ss = String(ts.getSeconds()).padStart(2,'0');
-  const prefix = `[${hh}:${mm}:${ss}] `;
   const safe = (line ?? '').toString().replace(/\s+$/,'');
   const lines = getConsoleLines();
-  const maxLines = store?.getState()?.ui?.console?.maxLines || 200;
-  const next = lines.concat(prefix + safe).slice(-maxLines);
-  try { store.update(CONSOLE_PATH, next); } catch {}
+  const maxLines = store?.getState()?.ui?.console?.maxLines || 300;
+  const next = lines.concat(safe).slice(-maxLines);
+  try { store.update(CONSOLE_PATH, next); } catch (e) {}
+  try { renderConsole(); } catch (e) {}
 }
 function appendConsoleErr(line) { appendConsole('ERROR: ' + line); }
 
@@ -427,10 +423,10 @@ function maybeRunLabAnalyze(frameNormalized) {
   }
 
   
+
 function ensureStatusRail() {
     if (!ui || !ui.statusRail) return;
-    // only rebuild if any of the three panes are missing
-    if ($('spStatusText') && $('spDataQualityText') && $('spConsolePre')) return;
+    if ($('spStatusText') && $('spDataQualityText')) return;
 
     ui.statusRail.innerHTML = '';
     const grid = el('div', 'sp-status-grid');
@@ -441,16 +437,39 @@ function ensureStatusRail() {
     const dq = el('div', 'sp-status-card');
     dq.innerHTML = '<h4>DATA QUALITY</h4><div id="spDataQualityText" class="sp-status-lines"></div>';
 
-    const consoleCard = el('div', 'sp-status-card sp-console-card');
-    consoleCard.innerHTML = '<div id="spConsoleBody" class="sp-console-body"><pre id="spConsolePre" class="sp-console-pre"></pre><span class="sp-console-cursor">█</span></div>';
-
     grid.appendChild(status);
     grid.appendChild(dq);
-    grid.appendChild(consoleCard);
     ui.statusRail.appendChild(grid);
   }
 
-  function ensurePanelContent() {
+  function ensureSideConsole() {
+  const host = document.getElementById('cameraSettingsWindow');
+  if (!host) return;
+  if (document.getElementById('spSideConsolePre')) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'spSideConsoleWrap';
+  wrap.className = 'sp-side-console';
+
+  const body = document.createElement('div');
+  body.id = 'spSideConsoleBody';
+  body.className = 'sp-side-console-body';
+
+  const pre = document.createElement('pre');
+  pre.id = 'spSideConsolePre';
+  pre.className = 'sp-side-console-pre';
+  body.appendChild(pre);
+
+  const cursor = document.createElement('span');
+  cursor.className = 'sp-side-console-cursor';
+  cursor.textContent = '█';
+  body.appendChild(cursor);
+
+  wrap.appendChild(body);
+  host.appendChild(wrap);
+}
+
+  function ensurePanelContentfunction ensurePanelContent() {
     if (!ui) return;
 
     const core = ui.panels.core;
@@ -616,7 +635,8 @@ function ensureStatusRail() {
         }
         if (t.id === 'spRefreshUiBtn') {
           setCoreActionFeedback('UI refreshed (dock + status rerender).', 'ok');
-          try { render(); 
+          try { render();
+    clearInlineFeedbackAreas(); 
     
     clearInlineFeedbackAreas();
 autoCloseInfoPopupIfDefault();
@@ -647,19 +667,13 @@ autoCloseInfoPopupIfDefault();
 
     ensureCalibrationShell();
     ensureStatusRail();
+    ensureSideConsole();
   }
 
 
 function setCoreActionFeedback(text, tone) {
-  try {
-    const s = store && store.getState ? store.getState() : null;
-    const inline = !!(s && s.ui && s.ui.inlineFeedback);
-    if (inline) {
-      const el = $('spCoreActionFeedback');
-      if (el) {
-        el.textContent = text || '';
-        el.dataset.tone = tone || 'info';
-      }
+  try { if (text) appendConsole(String(text)); } catch (e) {}
+}
     }
   } catch (e) {}
   try { if (text) appendConsole(String(text)); } catch (e) {}
@@ -1041,15 +1055,17 @@ function ensureCalibrationShell() {
     try { return !!el && document.activeElement === el; } catch (_) { return false; }
   }
 function renderConsole() {
-  const pre = document.getElementById('spConsolePre');
+  const pre = document.getElementById('spSideConsolePre');
   if (!pre) return;
   const lines = getConsoleLines();
-  pre.textContent = lines.join('\n');
+  pre.textContent = lines.join('
+');
   try {
-    const body = document.getElementById('spConsoleBody');
+    const body = document.getElementById('spSideConsoleBody');
     if (body) body.scrollTop = body.scrollHeight;
-  } catch {}
+  } catch (e) {}
 }
+
 
 
 

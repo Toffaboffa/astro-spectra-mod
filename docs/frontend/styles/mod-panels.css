@@ -861,3 +861,48 @@ body{overflow:hidden;}
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
 }
+/* === Restore Status rail (2 columns) === */
+.sp-status-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-auto-rows:auto;
+  gap:10px;
+  align-items:stretch;
+}
+
+/* === Sidebar console === */
+#spSideConsoleWrap.sp-side-console{
+  margin-top: 10px;
+  padding: 6px;
+}
+
+.sp-side-console-body{
+  height: 170px;
+  overflow:auto;
+  background:#050a14;
+  border:1px solid rgba(148,163,184,0.15);
+  border-radius:8px;
+  padding:8px;
+}
+
+.sp-side-console-pre{
+  margin:0;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size:10pt;
+  line-height:1.2;
+  color:#d1fae5;
+}
+
+.sp-side-console-cursor{
+  display:inline-block;
+  margin-left:2px;
+  color:#86efac;
+  animation: spConsoleBlink 1s steps(1,end) infinite;
+}
+
+@keyframes spConsoleBlink{
+  0%,49%{opacity:1;}
+  50%,100%{opacity:0;}
+}

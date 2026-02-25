@@ -828,3 +828,7 @@ This spec therefore prioritizes:
 
 ## Patch log
 - Console tune: Removed CONSOLE header, set console font to 10pt, routed all CORE/LAB/OTHER action feedback into console (inline feedback disabled by default).
+
+
+## Patch log
+- Console moved to left sidebar (fixed height), right rail restored to 2 columns, timestamps removed, and all action feedback routed exclusively to console.
