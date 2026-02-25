@@ -322,19 +322,19 @@ Phase 1.5 scaffold modules have been converted to **classic-script-compatible na
 #### 13) Status rail (Status + Data Quality)
 - `PARTIAL`
 - Layout/placement is good and stable.
-- Data flow currently uses hybrid sources (store + coreBridge + core graph fallback) and needs normalization for deterministic updates.
+- Status/Data Quality is store-normalized (Step 2) with module-based DQ compute; standalone DQ panel UI still pending.
 
 ### D. Phase 1.5 v5-inspired UX upgrades (items 14–20)
 #### 14) Display modes
-- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
+- `PARTIAL` (wired into CORE controls + `graphScript.js` display transform; advanced mode semantics still evolving)
 #### 15) Data Quality panel module
 - `PARTIAL` (wired into `proBootstrap.js` status rail computation via `sp.v15.dataQualityPanel.compute(...)`; still no standalone panel UI yet)
 #### 16) Y-axis controls
-- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
+- `PARTIAL` (wired into CORE controls + `graphScript.js` y-axis scaling: AUTO/FIXED_255/MANUAL)
 #### 17) Peak controls (threshold/distance/smoothing)
 - `PARTIAL` (wired into CORE controls + `graphScript.js` peak detection for threshold/distance/smoothing; advanced split visual-vs-analysis controls still pending)
 #### 18) Graph appearance / fill modes
-- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
+- `PARTIAL` (wired into CORE controls + `graphScript.js` fill mode/opacity override; camera capability/calibration integrations still pending)
 #### 19) Camera capability abstraction
 - `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
 #### 20) Calibration I/O + multipoint manager
@@ -672,3 +672,27 @@ This spec therefore prioritizes:
 ### Notes
 - No original SPECTRA-1 ids/selectors were renamed or removed.
 - No layout structure changes; CSS additions are scoped to `#SpectraProDockHost`.
+
+
+
+### 2026-02-25 — Step 4 slice 3: Graph appearance / fill modes (18)
+**Touched files:**
+- `docs/frontend/scripts/mod/graphAppearance.js`
+- `docs/frontend/scripts/mod/stateStore.js`
+- `docs/frontend/scripts/mod/proBootstrap.js`
+- `docs/frontend/scripts/graphScript.js`
+- `docs/frontend/styles/mod-panels.css`
+- `FunctionSpec.md`
+
+**What changed**
+- Implemented `sp.v15.graphAppearance.getFillModes()` + `getEffective(...)` for normalized fill mode (`inherit|off|synthetic|real_sampled`) and optional fill opacity.
+- Added CORE controls for **Fill mode** and **Fill opacity** with store-backed state (`display.fillMode`, `display.fillOpacity`) and UI sync.
+- Wired `graphScript.js` to honor PRO fill mode/opacity overrides:
+  - `OFF` disables area fill even if original checkbox is on
+  - `SYNTHETIC` forces fill on and uses spectral hue gradient by x-position
+  - `REAL_SAMPLED` forces fill on and uses existing sampled-color fill
+  - `INHERIT` preserves original SPECTRA-1 behavior
+- Added stable CSS hooks/widths for new controls (`#spFillMode`, `#spFillOpacity`, wrapper ids).
+
+**What remains next**
+- Step 4 slices: Camera capability abstraction (19), Calibration I/O + multipoint shell (20).

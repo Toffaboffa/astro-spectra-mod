@@ -146,6 +146,16 @@
     } catch (_) { return ['AUTO']; }
   }
 
+
+  function getV15FillModes() {
+    try {
+      const list = (sp.v15 && sp.v15.graphAppearance && typeof sp.v15.graphAppearance.getFillModes === 'function')
+        ? sp.v15.graphAppearance.getFillModes()
+        : ['INHERIT', 'OFF', 'SYNTHETIC', 'REAL_SAMPLED'];
+      return Array.isArray(list) && list.length ? list : ['INHERIT', 'OFF', 'REAL_SAMPLED'];
+    } catch (_) { return ['INHERIT', 'OFF', 'REAL_SAMPLED']; }
+  }
+
   function getInitialPeakUiValues() {
     const state = getStoreState();
     const peaks = state.peaks || {};
@@ -339,6 +349,7 @@
       const card = el('div', 'sp-card sp-card--flat');
       const displayOptions = getV15DisplayModes().map(function (m) { return `<option value=\"${String(m).toLowerCase()}\">${m}</option>`; }).join('');
       const yAxisOptions = getV15YAxisModes().map(function (m) { return `<option value=\"${String(m).toLowerCase()}\">${m}</option>`; }).join('');
+      const fillModeOptions = getV15FillModes().map(function (m) { return `<option value=\"${String(m).toLowerCase()}\">${m}</option>`; }).join('');
 
       card.innerHTML = [
         '<div class="sp-form-grid">',
@@ -350,6 +361,8 @@
         '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
         '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
         '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
+        '  <label id="spFieldFillMode" class="sp-field sp-field--fill-mode">Fill mode<select id="spFillMode" class="spctl-select spctl-select--fill-mode">' + fillModeOptions + '</select></label>',
+        '  <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity">Fill opacity<input id="spFillOpacity" class="spctl-input spctl-input--fill-opacity" type="number" min="0" max="1" step="0.05" value="0.70" placeholder="inherit"></label>',
         '</div>',
         '<div class="sp-actions">',
         '  <button type="button" id="spInitLibBtn">Init libraries</button>',
@@ -369,11 +382,19 @@
       const peakThresholdInput = card.querySelector('#spPeakThreshold');
       const peakDistanceInput = card.querySelector('#spPeakDistance');
       const peakSmoothingInput = card.querySelector('#spPeakSmoothing');
+      const fillModeSel = card.querySelector('#spFillMode');
+      const fillOpacityInput = card.querySelector('#spFillOpacity');
       const setVal = (path, value) => { if (store && store.update) store.update(path, value, { source: 'proBootstrap.core' }); };
       const peakInit = getInitialPeakUiValues();
       if (peakThresholdInput) peakThresholdInput.value = String(peakInit.threshold);
       if (peakDistanceInput) peakDistanceInput.value = String(peakInit.distance);
       if (peakSmoothingInput) peakSmoothingInput.value = String(peakInit.smoothing);
+      const displayStateInit = (getStoreState().display || {});
+      if (fillModeSel) fillModeSel.value = String(displayStateInit.fillMode || 'inherit').toLowerCase();
+      if (fillOpacityInput) {
+        const fo = Number(displayStateInit.fillOpacity);
+        fillOpacityInput.value = Number.isFinite(fo) ? String(Math.max(0, Math.min(1, fo))) : '0.70';
+      }
 
       modeSel && modeSel.addEventListener('change', (e) => {
         const mode = String(e.target.value || 'CORE').toUpperCase();
@@ -399,6 +420,25 @@
         const n = Number(e.target.value);
         if (!Number.isFinite(n) || n <= 0) return;
         setVal('display.yAxisMax', Math.round(n));
+      });
+
+      fillModeSel && fillModeSel.addEventListener('change', (e) => {
+        const mode = String(e.target.value || 'inherit').toLowerCase();
+        setVal('display.fillMode', mode);
+      });
+      fillOpacityInput && fillOpacityInput.addEventListener('input', (e) => {
+        const raw = String(e.target.value || '').trim();
+        if (!raw) return;
+        const n = Number(raw);
+        if (!Number.isFinite(n)) return;
+        const v = Math.max(0, Math.min(1, n));
+        setVal('display.fillOpacity', v);
+      });
+      fillOpacityInput && fillOpacityInput.addEventListener('blur', (e) => {
+        const raw = String(e.target.value || '').trim();
+        if (!raw) { e.target.value = '0.70'; return; }
+        const n = Number(raw);
+        e.target.value = Number.isFinite(n) ? String(Math.max(0, Math.min(1, Math.round(n * 100) / 100))) : '0.70';
       });
 
       peakThresholdInput && peakThresholdInput.addEventListener('input', (e) => {
@@ -538,16 +578,30 @@
     const peakThresholdInput = $('spPeakThreshold');
     const peakDistanceInput = $('spPeakDistance');
     const peakSmoothingInput = $('spPeakSmoothing');
+    const fillModeSel = $('spFillMode');
+    const fillOpacityInput = $('spFillOpacity');
     const peaks = state.peaks || {};
-    if (peakThresholdInput && Number.isFinite(Number(peaks.threshold))) {
+    if (fillModeSel && !shouldSkipSyncValue(fillModeSel)) {
+      const mode = String((state.display && state.display.fillMode) || 'inherit').toLowerCase();
+      if (fillModeSel.value !== mode) fillModeSel.value = mode;
+    }
+    if (fillOpacityInput && !shouldSkipSyncValue(fillOpacityInput)) {
+      const fo = Number(state.display && state.display.fillOpacity);
+      if (Number.isFinite(fo)) {
+        const next = String(Math.max(0, Math.min(1, Math.round(fo * 100) / 100)));
+        if (String(fillOpacityInput.value) !== next) fillOpacityInput.value = next;
+      }
+    }
+
+    if (peakThresholdInput && !shouldSkipSyncValue(peakThresholdInput) && Number.isFinite(Number(peaks.threshold))) {
       const next = String(Math.max(0, Math.min(255, Math.round(Number(peaks.threshold)))));
       if (String(peakThresholdInput.value) !== next) peakThresholdInput.value = next;
     }
-    if (peakDistanceInput && Number.isFinite(Number(peaks.distance))) {
+    if (peakDistanceInput && !shouldSkipSyncValue(peakDistanceInput) && Number.isFinite(Number(peaks.distance))) {
       const next = String(Math.max(1, Math.min(512, Math.round(Number(peaks.distance)))));
       if (String(peakDistanceInput.value) !== next) peakDistanceInput.value = next;
     }
-    if (peakSmoothingInput && Number.isFinite(Number(peaks.smoothing))) {
+    if (peakSmoothingInput && !shouldSkipSyncValue(peakSmoothingInput) && Number.isFinite(Number(peaks.smoothing))) {
       const next = String(Math.max(0, Math.min(8, Math.round(Number(peaks.smoothing)))));
       if (String(peakSmoothingInput.value) !== next) peakSmoothingInput.value = next;
     }

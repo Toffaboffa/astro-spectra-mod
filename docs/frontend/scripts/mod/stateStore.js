@@ -35,6 +35,8 @@
       mode: 'normal',
       yAxisMode: 'auto',
       yAxisMax: 255,
+      fillMode: 'inherit',
+      fillOpacity: null,
       overlaysEnabled: true
     },
     peaks: {

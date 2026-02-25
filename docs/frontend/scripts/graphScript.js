@@ -96,6 +96,40 @@ function resolveSpectraProYAxisMax(pixels, dynamicMaxValue) {
     return dynamicMaxValue;
 }
 
+
+function getSpectraProGraphAppearanceSettings() {
+    const fallback = { fillMode: 'inherit', fillOpacity: null };
+    try {
+        const sp = window.SpectraPro || {};
+        const st = (sp.store && typeof sp.store.getState === 'function') ? (sp.store.getState() || {}) : {};
+        if (sp.v15 && sp.v15.graphAppearance && typeof sp.v15.graphAppearance.getEffective === 'function') {
+            const eff = sp.v15.graphAppearance.getEffective(st, fallback) || fallback;
+            return {
+                fillMode: String(eff.fillMode || 'inherit').toLowerCase(),
+                fillOpacity: Number.isFinite(Number(eff.fillOpacity)) ? Math.max(0, Math.min(1, Number(eff.fillOpacity))) : null
+            };
+        }
+        const d = st.display || {};
+        return {
+            fillMode: String(d.fillMode || 'inherit').toLowerCase(),
+            fillOpacity: Number.isFinite(Number(d.fillOpacity)) ? Math.max(0, Math.min(1, Number(d.fillOpacity))) : null
+        };
+    } catch (_) {
+        return fallback;
+    }
+}
+
+function getSpectraProEffectiveGradientOpacity() {
+    const a = getSpectraProGraphAppearanceSettings();
+    return Number.isFinite(Number(a.fillOpacity)) ? Math.max(0, Math.min(1, Number(a.fillOpacity))) : gradientOpacity;
+}
+
+function spectraSyntheticColorAt(xIndex, zoomRange, alpha) {
+    const t = zoomRange > 1 ? (xIndex / (zoomRange - 1)) : 0;
+    const h = (1 - t) * 240;
+    return `hsla(${h}, 95%, 55%, ${alpha})`;
+}
+
 function getSpectraProPeakSettings() {
     try {
         const sp = window.SpectraPro || {};
@@ -184,6 +218,10 @@ function drawGraph() {
     toggleB = toggleStates.toggleB;
 
     fillArea = document.getElementById("colorGraph").checked;
+    const spAppearance = getSpectraProGraphAppearanceSettings();
+    const spFillMode = String(spAppearance.fillMode || 'inherit').toLowerCase();
+    if (spFillMode === 'off') fillArea = false;
+    else if (spFillMode === 'synthetic' || spFillMode === 'real_sampled') fillArea = true;
     const startY = getElementHeight(videoElement) * getYPercentage() - stripeWidth / 2;
     let pixelWidth = getElementWidth(videoElement);
 
@@ -969,6 +1007,10 @@ function drawLine(graphCtx, pixels, pixelWidth, color, colorOffset, maxValue, is
 function drawGradient(graphCtx, pixels, pixelWidth, maxValue) {
     const [zoomStart, zoomEnd] = getZoomRange(pixelWidth);
     const zoomRange = zoomEnd - zoomStart;
+    const spAppearance = getSpectraProGraphAppearanceSettings();
+    const spFillMode = String(spAppearance.fillMode || 'inherit').toLowerCase();
+    const useSyntheticFill = spFillMode === 'synthetic';
+    const effectiveGradientOpacity = getSpectraProEffectiveGradientOpacity();
     const padding = 30;
     const width = graphCanvas.getBoundingClientRect().width;
     const height = graphCanvas.getBoundingClientRect().height;
@@ -993,7 +1035,7 @@ function drawGradient(graphCtx, pixels, pixelWidth, maxValue) {
             const yLower = calculateYPosition(0, height, maxValue);
             const yUpper = calculateYPosition(maxVal, height, maxValue);
 
-            graphCtx.fillStyle = `rgba(${255*r/maxValue},${255*g/maxValue},${255*b/maxValue},${gradientOpacity})`;
+            graphCtx.fillStyle = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity) : `rgba(${255*r/maxValue},${255*g/maxValue},${255*b/maxValue},${effectiveGradientOpacity})`;
             graphCtx.fillRect(leftX, Math.floor(yUpper), rectWidth, Math.ceil(yLower - yUpper));
         }
         return;
@@ -1008,13 +1050,13 @@ function drawGradient(graphCtx, pixels, pixelWidth, maxValue) {
         let maxVal = 0, fillColor = null;
         if (toggleR && r >= g && r >= b) {
             maxVal = r;
-            fillColor = `rgba(${255*r/maxValue},0,0,${gradientOpacity})`;
+            fillColor = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity) : `rgba(${255*r/maxValue},0,0,${effectiveGradientOpacity})`;
         } else if (toggleG && g >= r && g >= b) {
             maxVal = g;
-            fillColor = `rgba(0,${255*g/maxValue},0,${gradientOpacity})`;
+            fillColor = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity) : `rgba(0,${255*g/maxValue},0,${effectiveGradientOpacity})`;
         } else if (toggleB && b >= r && b >= g) {
             maxVal = b;
-            fillColor = `rgba(0,0,${255*b/maxValue},${gradientOpacity})`;
+            fillColor = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity) : `rgba(0,0,${255*b/maxValue},${effectiveGradientOpacity})`;
         }
 
         if (maxVal === 0 || !fillColor) continue;

@@ -727,3 +727,10 @@ body{overflow:hidden;}
 #drawerHoverZone {
   cursor: pointer;
 }
+
+
+/* === Step4 slice 3: graph appearance controls hooks === */
+#SpectraProDockHost #spFillMode { width: 140px !important; max-width:100%; }
+#SpectraProDockHost #spFillOpacity { width: 120px !important; max-width:100%; }
+#SpectraProDockHost #spFieldFillMode { min-width: 180px; }
+#SpectraProDockHost #spFieldFillOpacity { min-width: 160px; }
