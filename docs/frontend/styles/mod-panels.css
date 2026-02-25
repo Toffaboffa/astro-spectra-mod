@@ -750,6 +750,7 @@ body{overflow:hidden;}
   max-width: 100%;
   padding: 0;
   min-height: auto;
+  margin-top: 7px;
 }
 #SpectraProDockHost #spProbeCameraBtn { min-width: 110px; }
 
@@ -787,3 +788,10 @@ body{overflow:hidden;}
 
 /* Step A+B: calibration shell apply button + minor hardening */
 #spCalApplyBtn { min-width: 170px; }
+
+
+/* Calibration I/O validation preview (CORE point 20 hardening) */
+#SpectraProDockHost .sp-note--validation{ font-size:12px; line-height:1.35; opacity:.95; }
+#SpectraProDockHost .sp-note--validation.is-ok{ color:inherit; }
+#SpectraProDockHost .sp-note--validation.is-warn{ color:#fbbf24; }
+#SpectraProDockHost .sp-note--validation.is-error{ color:#f87171; }

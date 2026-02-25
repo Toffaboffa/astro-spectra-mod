@@ -601,6 +601,33 @@ function getNormalizedShellCalibrationPoints() {
   return { ok: limited.length >= 2, points: limited, count: limited.length, truncated: pts.length > limited.length, message: limited.length >= 2 ? 'OK' : 'Need at least 2 points' };
 }
 
+function setCalIoValidationText(msg, level) {
+  const el = $('spCalIoValidation');
+  if (!el) return;
+  const text = String(msg || '').trim();
+  el.textContent = text;
+  el.className = 'sp-note sp-note--validation' + (level ? (' is-' + level) : '');
+  el.style.display = text ? '' : 'none';
+}
+
+function previewShellCalibrationNormalization(points) {
+  try {
+    const ioMod = sp.v15 && sp.v15.calibrationIO;
+    if (!ioMod || typeof ioMod.normalizeAndValidatePoints !== 'function') return null;
+    return ioMod.normalizeAndValidatePoints(points, { minPoints: 2, maxPoints: 15, sortBy: 'px', dedupe: true });
+  } catch (_) { return null; }
+}
+
+function formatCalValidationPreview(result) {
+  if (!result) return { text: '', level: '' };
+  const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+  let text = result.message || ('Points: ' + (result.count || 0));
+  if (warnings.length) text += ' — ' + warnings.join('; ');
+  let level = result.ok ? 'ok' : 'warn';
+  if (warnings.length && result.ok) level = 'warn';
+  return { text: text, level: level };
+}
+
 function applyShellCalibrationPointsToOriginal() {
   const normalized = getNormalizedShellCalibrationPoints();
   if (!normalized || !normalized.ok) {
@@ -669,7 +696,8 @@ function ensureCalibrationShell() {
     '  <button type="button" id="spCalApplyBtn">Apply shell to calibration</button>',
     '  <button type="button" id="spCalClearBtn">Clear shell points</button>',
     '</div>',
-    '<div id="spCalIoFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>'
+    '<div id="spCalIoFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
+    '<div id="spCalIoValidation" class="sp-note sp-note--validation" style="display:none"></div>'
   ].join('');
   panel.appendChild(card);
   panel.dataset.built = '1';
@@ -698,6 +726,8 @@ function ensureCalibrationShell() {
       if (txt) txt.value = '';
       updateStorePath('calibration.shellPointCount', Array.isArray(pts) ? pts.length : 0, { source: 'proBootstrap.calIO' });
       setCoreActionFeedback('Captured calibration points from current state into shell.', 'ok');
+      var pvCapture = formatCalValidationPreview(previewShellCalibrationNormalization(pts));
+      setCalIoValidationText(pvCapture.text, pvCapture.level);
       renderStatus();
     }
     if (t.id === 'spCalExportBtn') {
@@ -711,6 +741,8 @@ function ensureCalibrationShell() {
       if (txt) txt.value = out || '';
       updateStorePath('calibration.shellPointCount', Array.isArray(pts) ? pts.length : 0, { source: 'proBootstrap.calIO' });
       setCoreActionFeedback('Exported shell points to text area (' + fmt.toUpperCase() + ').', 'ok');
+      var pvExport = formatCalValidationPreview(previewShellCalibrationNormalization(pts));
+      setCalIoValidationText(pvExport.text, pvExport.level);
     }
     if (t.id === 'spCalImportBtn') {
       const raw = String((txt && txt.value) || '');
@@ -720,6 +752,8 @@ function ensureCalibrationShell() {
       if (!Array.isArray(pts)) pts = [];
       if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(pts);
       updateStorePath('calibration.shellPointCount', pts.length, { source: 'proBootstrap.calIO' });
+      var pvImport = formatCalValidationPreview(previewShellCalibrationNormalization(pts));
+      setCalIoValidationText(pvImport.text, pvImport.level);
       setCoreActionFeedback('Imported ' + pts.length + ' calibration point(s) into shell manager.', pts.length ? 'ok' : 'warn');
       renderStatus();
     }
@@ -731,7 +765,12 @@ function ensureCalibrationShell() {
         return;
       }
       updateStorePath('calibration.shellPointCount', Number(result.count) || 0, { source: 'proBootstrap.calIO' });
-      setCoreActionFeedback('Applied ' + result.count + ' shell point(s) to original calibration' + (result.truncated ? ' (truncated to max).' : '.') , 'ok');
+      var mgrPts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
+      var pvApply = previewShellCalibrationNormalization(mgrPts);
+      var pvApplyFmt = formatCalValidationPreview(pvApply);
+      setCalIoValidationText(pvApplyFmt.text, pvApplyFmt.level);
+      var warnTag = (pvApply && Array.isArray(pvApply.warnings) && pvApply.warnings.length) ? (' [' + pvApply.warnings.join('; ') + ']') : '';
+      setCoreActionFeedback('Applied ' + result.count + ' shell point(s) to original calibration' + (result.truncated ? ' (truncated to max).' : '.') + warnTag, 'ok');
       renderStatus();
       return;
     }
@@ -741,8 +780,36 @@ function ensureCalibrationShell() {
       if (txt) txt.value = '';
       updateStorePath('calibration.shellPointCount', 0, { source: 'proBootstrap.calIO' });
       setCoreActionFeedback('Cleared shell calibration points.', 'ok');
+      setCalIoValidationText('', '');
       renderStatus();
     }
+  });
+
+  panel.addEventListener('input', function (e) {
+    var t = e.target;
+    if (!t || t.id !== 'spCalIoText') return;
+    var raw = String(t.value || '');
+    if (!raw.trim()) { setCalIoValidationText('', ''); return; }
+    var fmtSel2 = $('spCalIoFormat');
+    var fmt2 = String((fmtSel2 && fmtSel2.value) || 'json').toLowerCase();
+    var ioMod2 = sp.v15 && sp.v15.calibrationIO;
+    var pts2 = [];
+    try { if (ioMod2 && typeof ioMod2.parseCalibrationFile === 'function') pts2 = ioMod2.parseCalibrationFile(raw, { formatHint: fmt2 }); } catch (_) {}
+    var pvText = formatCalValidationPreview(previewShellCalibrationNormalization(pts2));
+    setCalIoValidationText(pvText.text, pvText.level);
+  });
+
+  panel.addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t || t.id !== 'spCalIoFormat') return;
+    var txt2 = $('spCalIoText');
+    var raw2 = String((txt2 && txt2.value) || '');
+    if (!raw2.trim()) { setCalIoValidationText('', ''); return; }
+    var ioMod3 = sp.v15 && sp.v15.calibrationIO;
+    var pts3 = [];
+    try { if (ioMod3 && typeof ioMod3.parseCalibrationFile === 'function') pts3 = ioMod3.parseCalibrationFile(raw2, { formatHint: String(t.value || 'json').toLowerCase() }); } catch (_) {}
+    var pvFmt2 = formatCalValidationPreview(previewShellCalibrationNormalization(pts3));
+    setCalIoValidationText(pvFmt2.text, pvFmt2.level);
   });
 
   return card;

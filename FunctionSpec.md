@@ -111,6 +111,37 @@ Every patch must preserve:
 
 ---
 
+## Ownership and duplication policy (CORE boundary map)
+
+This section clarifies **what is original SPECTRA-1 vs what is SPECTRA-PRO**, so we avoid accidental duplicate engines while preserving all PRO ideas.
+
+### Ownership types
+- **Primary (Original)** — the original script/DOM is the real source of truth. PRO may host or observe it, but must not create a parallel engine in CORE.
+- **Primary (PRO)** — new SPECTRA-PRO behavior/control added on top of the original instrument.
+- **Bridge** — PRO imports/exports/manages workflow state, then applies into the original pipeline.
+- **Host/Mirror** — PRO re-homes the real original controls/UI in a new tab/container (no fake duplicate logic).
+- **Override (visual)** — PRO may override rendering behavior in a reversible way without mutating underlying captured data.
+
+### CORE boundary map (current decisions)
+| Area | Owner | PRO role | Rule / duplicate-risk decision |
+|---|---|---|---|
+| Camera acquisition / stream lifecycle | Original | Observe + status + capability probe | No parallel camera engine in CORE. `Probe camera` is diagnostic only. |
+| Stripe selection / preview overlay | Original | Observe/status hooks | Preserve original interaction model. |
+| Live graph rendering loop | Original | Visual override hooks | PRO may alter display transform / scaling / fill, but must keep graph loop intact and reversible. |
+| General graph controls | Original | Host/Mirror in `General` tab | Same DOM nodes, same IDs. No cloned controls. |
+| Calibration solve / coefficients | Original | Bridge (`point 20`) | PRO shell may import/manage/export points and apply them into original calibration inputs + `setCalibrationPoints()`. No parallel solver in CORE. |
+| Reference capture / compare curves | Original | Observe + status | Original behavior remains authoritative in CORE. |
+| Status + Data Quality | PRO | Primary (PRO) | Unified diagnostics layer reading store/hooks without replacing instrument logic. |
+| Worker controls / library init | PRO | Primary (PRO) | Optional path; CORE must remain usable without worker. |
+| Display modes / Y-axis / Fill modes | PRO | Primary (PRO visual override) | Accepted PRO additions because they are reversible and LAB/ASTRO-prep. |
+| Peak threshold/distance/smoothing (PRO panel) | PRO | Primary (PRO analysis-facing control) | Coexists with original graph controls; semantics must stay documented. |
+| Calibration I/O text shell / point manager | PRO | Primary (PRO shell) + Bridge | Workflow layer for import/export/presets; apply target is original calibration pipeline. |
+
+### Anti-duplication rule (explicit)
+If a new CORE patch adds a control resembling an original capability, patch notes/spec must tag it as **Host/Mirror**, **Bridge**, or **Primary PRO**. This preserves your feature ideas while preventing hidden duplicate engines.
+
+---
+
 ## Canonical file map (what exists and what belongs where)
 
 > This section is the “where things should be” map. It is intentionally explicit.
@@ -336,9 +367,9 @@ Phase 1.5 scaffold modules have been converted to **classic-script-compatible na
 #### 18) Graph appearance / fill modes
 - `PARTIAL` (wired into CORE controls + `graphScript.js` fill mode/opacity override; camera capability/calibration integrations still pending)
 #### 19) Camera capability abstraction
-- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
+- `PARTIAL+` (probe abstraction wired into CORE controls + Status rail; no direct camera parameter control UI yet)
 #### 20) Calibration I/O + multipoint manager
-- `PARTIAL` (functional shell + import/export + apply-to-original-calibration bridge; advanced validation/UX still pending)
+- `PARTIAL+` (functional shell + import/export + apply-to-original-calibration bridge; validation preview/warnings added, advanced point disable/outlier UX still pending)
 
 ### E. Phase 2 LAB MVP
 - `PARTIAL` foundation
@@ -643,6 +674,22 @@ This prevents “spec drift” where the GUI looks newer than the documentation.
 **What remains next**
 - Step 4: wire Phase 1.5 controls into actual graph behavior in small slices (start with Display modes + Y-axis). [IN PROGRESS: Display mode + Y-axis slice implemented]; Data Quality module + Peak controls slice implemented
 
+### 2026-02-25 — CORE boundary cleanup + point 20 validation UX hardening (pre-LAB freeze prep)
+**Touched files:**
+- `FunctionSpec.md`
+- `docs/frontend/scripts/mod/calibrationIO.js`
+- `docs/frontend/scripts/mod/proBootstrap.js`
+- `docs/frontend/styles/mod-panels.css`
+
+**What changed**
+- Added explicit **Ownership and duplication policy** section to separate original SPECTRA-1 responsibilities from SPECTRA-PRO Host/Bridge/Override roles without removing planned PRO features.
+- Point 20 now shows a **validation preview** in `Other` tab (counts/warnings before apply), including invalid rows dropped, exact duplicate removal, duplicate `px`/`nm` warnings, sorting notice, and max-point trim notice.
+- Apply feedback now includes normalization warnings, making shell→original calibration apply less opaque.
+
+**What remains next (last CORE step before LAB freeze)**
+- Final CORE QA freeze checklist pass (manual runtime smoke): worker modes, calibration apply, exports, no console nulls, drawer hide/show, display/y-axis/peaks/fill regressions.
+- Optional polish (deferred): point disable/outlier UX and rollback affordance in point 20 shell.
+
 ## Final principle
 SPECTRA-PRO should feel like a **real instrument first** and a smart analyzer second.
 
@@ -753,5 +800,5 @@ This spec therefore prioritizes:
 - CORE hardening (A+B): in progress but materially improved feedback/error semantics for worker actions and DQ stability.
 
 **What remains next (CORE before LAB freeze)**
-- Additional validation UX for calibration apply (duplicate px-only/nm-only warnings, preview/diff, rollback affordance).
 - Final CORE QA freeze checklist pass (worker modes, calibration apply, exports, no console nulls).
+- Optional polish (deferred): point disable/outlier UX and rollback affordance for point 20 shell.

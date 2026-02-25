@@ -60,22 +60,51 @@
 
   mod.normalizeAndValidatePoints = function normalizeAndValidatePoints(points, opts) {
     const options = Object.assign({ minPoints: 2, maxPoints: 15, sortBy: 'px', dedupe: true }, opts || {});
-    const arr = Array.isArray(points) ? points.map(normalizePoint).filter(Boolean) : [];
-    const seen = new Set();
+    const inputArr = Array.isArray(points) ? points : [];
+    const rawCount = inputArr.length;
+    const arr = inputArr.map(normalizePoint).filter(Boolean);
+    const invalidDropped = Math.max(0, rawCount - arr.length);
+    const seenExact = new Set();
+    const seenPx = new Set();
+    const seenNm = new Set();
+    let duplicateExact = 0;
+    let duplicatePxOnly = 0;
+    let duplicateNmOnly = 0;
     const out = [];
     for (let i = 0; i < arr.length; i += 1) {
       const p = arr[i];
-      const key = String(p.px) + '|' + String(p.nm);
-      if (options.dedupe && seen.has(key)) continue;
-      seen.add(key);
+      const keyExact = String(p.px) + '|' + String(p.nm);
+      const keyPx = String(p.px);
+      const keyNm = String(p.nm);
+      if (seenPx.has(keyPx)) duplicatePxOnly += 1;
+      if (seenNm.has(keyNm)) duplicateNmOnly += 1;
+      if (options.dedupe && seenExact.has(keyExact)) {
+        duplicateExact += 1;
+        continue;
+      }
+      seenExact.add(keyExact);
+      seenPx.add(keyPx);
+      seenNm.add(keyNm);
       out.push(p);
     }
+    let sorted = false;
     if (String(options.sortBy || '').toLowerCase() === 'px') {
+      const before = JSON.stringify(out.map(function (p) { return [p.px, p.nm]; }));
       out.sort(function (a, b) { return (a.px - b.px) || (a.nm - b.nm); });
+      sorted = before !== JSON.stringify(out.map(function (p) { return [p.px, p.nm]; }));
     }
-    const limited = out.slice(0, Math.max(1, Number(options.maxPoints) || 15));
+    const maxPoints = Math.max(1, Number(options.maxPoints) || 15);
+    const limited = out.slice(0, maxPoints);
     const minPoints = Math.max(2, Number(options.minPoints) || 2);
     const valid = limited.length >= minPoints;
+    const truncated = out.length > limited.length;
+    const warnings = [];
+    if (invalidDropped) warnings.push(invalidDropped + ' invalid row(s) dropped');
+    if (duplicateExact) warnings.push(duplicateExact + ' exact duplicate(s) removed');
+    if (duplicatePxOnly > duplicateExact) warnings.push((duplicatePxOnly - duplicateExact) + ' duplicate px value(s) remain');
+    if (duplicateNmOnly > duplicateExact) warnings.push((duplicateNmOnly - duplicateExact) + ' duplicate nm value(s) remain');
+    if (sorted) warnings.push('points sorted by px');
+    if (truncated) warnings.push('trimmed to max ' + maxPoints + ' points');
     const message = valid
       ? ('OK (' + limited.length + ' point(s))')
       : ('Need at least ' + minPoints + ' valid point(s), got ' + limited.length);
@@ -83,8 +112,19 @@
       ok: valid,
       points: limited,
       count: limited.length,
-      truncated: out.length > limited.length,
-      message: message
+      truncated: truncated,
+      message: message,
+      warnings: warnings,
+      stats: {
+        rawCount: rawCount,
+        validCount: arr.length,
+        invalidDropped: invalidDropped,
+        duplicateExactRemoved: duplicateExact,
+        duplicatePxSeen: duplicatePxOnly,
+        duplicateNmSeen: duplicateNmOnly,
+        sortedByPx: sorted,
+        trimmedToMax: truncated
+      }
     };
   };
 
