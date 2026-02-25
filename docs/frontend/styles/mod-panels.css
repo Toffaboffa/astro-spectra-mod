@@ -642,9 +642,9 @@ body{overflow:hidden;}
 
 /* 3) Keep graph settings drawer height stable (desktop) */
 #graphSettingsDrawer{
-  height:30vh !important;
+  height:40vh !important;
   min-height:30vh !important;
-  max-height:30vh !important;
+  max-height:40vh !important;
   overflow:hidden !important;
   align-items:stretch !important;
 }
