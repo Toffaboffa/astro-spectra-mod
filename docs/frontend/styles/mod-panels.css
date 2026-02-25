@@ -900,6 +900,7 @@ body{overflow:hidden;}
   margin-left:2px;
   color:#86efac;
   animation: spConsoleBlink 1s steps(1,end) infinite;
+  font-size: 10px;
 }
 
 @keyframes spConsoleBlink{
