@@ -151,9 +151,9 @@
     try {
       const list = (sp.v15 && sp.v15.graphAppearance && typeof sp.v15.graphAppearance.getFillModes === 'function')
         ? sp.v15.graphAppearance.getFillModes()
-        : ['INHERIT', 'OFF', 'SYNTHETIC', 'REAL_SAMPLED'];
-      return Array.isArray(list) && list.length ? list : ['INHERIT', 'OFF', 'REAL_SAMPLED'];
-    } catch (_) { return ['INHERIT', 'OFF', 'REAL_SAMPLED']; }
+        : ['INHERIT', 'OFF', 'SYNTHETIC', 'SOURCE'];
+      return Array.isArray(list) && list.length ? list : ['INHERIT', 'OFF', 'SOURCE'];
+    } catch (_) { return ['INHERIT', 'OFF', 'SOURCE']; }
   }
 
   function getInitialPeakUiValues() {
@@ -254,6 +254,39 @@
         try { store.update('worker.status', 'error', { source: 'proBootstrap.workerClient' }); } catch (_) {}
         try { store.update('worker.lastError', String(err && err.message || err), { source: 'proBootstrap.workerClient' }); } catch (_) {}
       }
+      return null;
+    }
+  }
+
+
+  async function probeCameraCapabilitiesIntoStore() {
+    const mod = sp.v15 && sp.v15.cameraCapabilities;
+    if (!store || !store.update) return null;
+    try {
+      store.update('camera.status', 'probing', { source: 'proBootstrap.cameraCaps' });
+      let result = null;
+      if (mod && typeof mod.probeCurrent === 'function') {
+        result = await mod.probeCurrent();
+      } else if (mod && typeof mod.probe === 'function') {
+        result = await mod.probe();
+      } else {
+        result = { status: 'unavailable', source: 'none', supported: {}, values: {}, summary: {} };
+      }
+      const supported = (result && result.supported && typeof result.supported === 'object') ? result.supported : {};
+      const values = (result && result.values && typeof result.values === 'object') ? result.values : {};
+      const summary = (result && result.summary && typeof result.summary === 'object') ? result.summary : {};
+      const status = String((result && result.status) || (result && result.source === 'track' ? 'ok' : 'no-track'));
+      store.update('camera.source', String((result && result.source) || 'none'), { source: 'proBootstrap.cameraCaps' });
+      store.update('camera.supported', supported, { source: 'proBootstrap.cameraCaps' });
+      store.update('camera.values', values, { source: 'proBootstrap.cameraCaps' });
+      store.update('camera.summary', summary, { source: 'proBootstrap.cameraCaps' });
+      store.update('camera.lastProbeAt', Date.now(), { source: 'proBootstrap.cameraCaps' });
+      store.update('camera.error', result && result.error ? String(result.error) : null, { source: 'proBootstrap.cameraCaps' });
+      store.update('camera.status', status, { source: 'proBootstrap.cameraCaps' });
+      return result;
+    } catch (err) {
+      try { store.update('camera.status', 'error', { source: 'proBootstrap.cameraCaps' }); } catch (_) {}
+      try { store.update('camera.error', String(err && err.message || err), { source: 'proBootstrap.cameraCaps' }); } catch (_) {}
       return null;
     }
   }
@@ -362,12 +395,13 @@
         '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
         '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
         '  <label id="spFieldFillMode" class="sp-field sp-field--fill-mode">Fill mode<select id="spFillMode" class="spctl-select spctl-select--fill-mode">' + fillModeOptions + '</select></label>',
-        '  <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity">Fill opacity<input id="spFillOpacity" class="spctl-input spctl-input--fill-opacity" type="number" min="0" max="1" step="0.05" value="0.70" placeholder="inherit"></label>',
+        '  <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity">Fill opacity<span class="sp-inline-value" id="spFillOpacityValue">0.70</span><input id="spFillOpacity" class="spctl-input spctl-input--fill-opacity spctl-range spctl-range--fill-opacity" type="range" min="0" max="1" step="0.01" value="0.70"></label>',
         '</div>',
         '<div class="sp-actions">',
         '  <button type="button" id="spInitLibBtn">Init libraries</button>',
         '  <button type="button" id="spPingWorkerBtn">Ping worker</button>',
         '  <button type="button" id="spRefreshUiBtn">Refresh UI</button>',
+        '  <button type="button" id="spProbeCameraBtn">Probe camera</button>',
         '</div>',
         '<p class="sp-note">Placeholder controls for SPECTRA-PRO. Original graph controls live in General.</p>'
       ].join('');
@@ -395,6 +429,8 @@
         const fo = Number(displayStateInit.fillOpacity);
         fillOpacityInput.value = Number.isFinite(fo) ? String(Math.max(0, Math.min(1, fo))) : '0.70';
       }
+      const fillOpacityValueInit = card.querySelector('#spFillOpacityValue');
+      if (fillOpacityValueInit && fillOpacityInput) fillOpacityValueInit.textContent = (Number(fillOpacityInput.value) || 0.70).toFixed(2);
 
       modeSel && modeSel.addEventListener('change', (e) => {
         const mode = String(e.target.value || 'CORE').toUpperCase();
@@ -426,19 +462,25 @@
         const mode = String(e.target.value || 'inherit').toLowerCase();
         setVal('display.fillMode', mode);
       });
+      const fillOpacityValueEl = card.querySelector('#spFillOpacityValue');
+      const syncFillOpacityLabel = function (val) {
+        if (!fillOpacityValueEl) return;
+        const n = Number(val);
+        const shown = Number.isFinite(n) ? (Math.round(Math.max(0, Math.min(1, n)) * 100) / 100) : 0.70;
+        fillOpacityValueEl.textContent = shown.toFixed(2);
+      };
       fillOpacityInput && fillOpacityInput.addEventListener('input', (e) => {
-        const raw = String(e.target.value || '').trim();
-        if (!raw) return;
-        const n = Number(raw);
+        const n = Number(e.target.value);
         if (!Number.isFinite(n)) return;
         const v = Math.max(0, Math.min(1, n));
+        syncFillOpacityLabel(v);
         setVal('display.fillOpacity', v);
       });
-      fillOpacityInput && fillOpacityInput.addEventListener('blur', (e) => {
-        const raw = String(e.target.value || '').trim();
-        if (!raw) { e.target.value = '0.70'; return; }
-        const n = Number(raw);
-        e.target.value = Number.isFinite(n) ? String(Math.max(0, Math.min(1, Math.round(n * 100) / 100))) : '0.70';
+      fillOpacityInput && fillOpacityInput.addEventListener('change', (e) => {
+        const n = Number(e.target.value);
+        const v = Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0.70;
+        e.target.value = String(v);
+        syncFillOpacityLabel(v);
       });
 
       peakThresholdInput && peakThresholdInput.addEventListener('input', (e) => {
@@ -497,6 +539,11 @@
         }
         if (t.id === 'spRefreshUiBtn') {
           render();
+          return;
+        }
+        if (t.id === 'spProbeCameraBtn') {
+          probeCameraCapabilitiesIntoStore().then(function () { renderStatus(); });
+          return;
         }
       });
     }
@@ -588,9 +635,16 @@
     if (fillOpacityInput && !shouldSkipSyncValue(fillOpacityInput)) {
       const fo = Number(state.display && state.display.fillOpacity);
       if (Number.isFinite(fo)) {
-        const next = String(Math.max(0, Math.min(1, Math.round(fo * 100) / 100)));
+        const nextNum = Math.max(0, Math.min(1, Math.round(fo * 100) / 100));
+        const next = String(nextNum);
         if (String(fillOpacityInput.value) !== next) fillOpacityInput.value = next;
       }
+    }
+    const fillOpacityValueEl = $('spFillOpacityValue');
+    if (fillOpacityValueEl) {
+      const fo2 = Number(state.display && state.display.fillOpacity);
+      const shown = Number.isFinite(fo2) ? Math.max(0, Math.min(1, Math.round(fo2 * 100) / 100)) : Number(fillOpacityInput && fillOpacityInput.value);
+      if (Number.isFinite(shown)) fillOpacityValueEl.textContent = shown.toFixed(2);
     }
 
     if (peakThresholdInput && !shouldSkipSyncValue(peakThresholdInput) && Number.isFinite(Number(peaks.threshold))) {
@@ -643,6 +697,7 @@
     render();
     // Step 1 wiring: create a singleton worker client if available (lazy worker start remains in client).
     ensureWorkerClient();
+    setTimeout(function () { probeCameraCapabilitiesIntoStore(); }, 0);
     if (bus && bus.on) {
       bus.on('state:changed', function (evt) {
         const src = evt && evt.meta && evt.meta.source ? String(evt.meta.source) : '';

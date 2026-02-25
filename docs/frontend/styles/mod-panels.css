@@ -730,7 +730,25 @@ body{overflow:hidden;}
 
 
 /* === Step4 slice 3: graph appearance controls hooks === */
-#SpectraProDockHost #spFillMode { width: 140px !important; max-width:100%; }
+#SpectraProDockHost #spFillMode { width: 117px !important; max-width:100%; }
 #SpectraProDockHost #spFillOpacity { width: 120px !important; max-width:100%; }
 #SpectraProDockHost #spFieldFillMode { min-width: 180px; }
 #SpectraProDockHost #spFieldFillOpacity { min-width: 160px; }
+
+
+/* Step 4 slice 4: fill opacity slider + camera control hooks */
+#SpectraProDockHost #spFieldFillOpacity .sp-inline-value {
+  display:inline-block;
+  margin-left:6px;
+  min-width: 3.2em;
+  text-align:right;
+  color: var(--sp-muted, #bfc6d4);
+  font-variant-numeric: tabular-nums;
+}
+#SpectraProDockHost #spFillOpacity.spctl-range {
+  width: 160px !important;
+  max-width: 100%;
+  padding: 0;
+  min-height: auto;
+}
+#SpectraProDockHost #spProbeCameraBtn { min-width: 110px; }

@@ -50,6 +50,15 @@
       offsetNm: null,
       qcFlags: []
     },
+    camera: {
+      status: 'unknown',
+      source: 'none',
+      supported: {},
+      values: {},
+      summary: {},
+      lastProbeAt: null,
+      error: null
+    },
     subtraction: {
       mode: 'raw',
       hasDark: false,

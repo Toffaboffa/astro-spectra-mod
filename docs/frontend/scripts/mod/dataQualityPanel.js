@@ -60,6 +60,12 @@
 
     const registryModules = (((window.SpectraPro || {}).v15 || {}).registry || {}).modules || {};
     const loadedV15 = Object.values(registryModules).filter(Boolean).length;
+    const camera = st.camera || {};
+    const camSummary = camera.summary || {};
+    const camRes = camSummary.resolution || ((camera.values && camera.values.width && camera.values.height) ? `${camera.values.width}x${camera.values.height}` : '—');
+    const camStatus = camera.status || 'unknown';
+    const camExposure = (camera.supported && camera.supported.exposureTime) ? 'exp✓' : 'exp—';
+    const camZoom = (camera.supported && camera.supported.zoom) ? 'zoom✓' : 'zoom—';
 
     const status = [
       `Mode: ${st.appMode || 'CORE'}`,
@@ -67,6 +73,7 @@
       `Frame source: ${(latest && latest.source) || (st.frame && st.frame.source) || 'none'}${(latest && latest.pixelWidth) ? ` · ${latest.pixelWidth} px` : ''}`,
       `Calibration: ${(st.calibration && st.calibration.isCalibrated) ? 'calibrated' : 'uncalibrated'} · pts ${(st.calibration && (st.calibration.points || []).length) || (st.calibration && st.calibration.pointCount) || 0}`,
       `Reference: ${(st.reference && st.reference.hasReference) ? 'yes' : 'no'} · count ${(st.reference && st.reference.count) || 0}`,
+      `Camera: ${camStatus} · ${camRes} · ${camExposure} ${camZoom}`,
       `v1.5 modules: ${loadedV15}/8 loaded`
     ];
 

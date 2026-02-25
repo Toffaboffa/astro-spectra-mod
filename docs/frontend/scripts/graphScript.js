@@ -221,7 +221,7 @@ function drawGraph() {
     const spAppearance = getSpectraProGraphAppearanceSettings();
     const spFillMode = String(spAppearance.fillMode || 'inherit').toLowerCase();
     if (spFillMode === 'off') fillArea = false;
-    else if (spFillMode === 'synthetic' || spFillMode === 'real_sampled') fillArea = true;
+    else if (spFillMode === 'synthetic' || spFillMode === 'real_sampled' || spFillMode === 'source') fillArea = true;
     const startY = getElementHeight(videoElement) * getYPercentage() - stripeWidth / 2;
     let pixelWidth = getElementWidth(videoElement);
 
@@ -1009,7 +1009,7 @@ function drawGradient(graphCtx, pixels, pixelWidth, maxValue) {
     const zoomRange = zoomEnd - zoomStart;
     const spAppearance = getSpectraProGraphAppearanceSettings();
     const spFillMode = String(spAppearance.fillMode || 'inherit').toLowerCase();
-    const useSyntheticFill = spFillMode === 'synthetic';
+    const useSyntheticFill = (spFillMode === 'synthetic');
     const effectiveGradientOpacity = getSpectraProEffectiveGradientOpacity();
     const padding = 30;
     const width = graphCanvas.getBoundingClientRect().width;

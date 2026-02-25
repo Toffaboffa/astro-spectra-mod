@@ -4,11 +4,11 @@
   const v15 = sp.v15 || (sp.v15 = {});
   const mod = v15.graphAppearance || (v15.graphAppearance = {});
 
-  mod.FILL_MODES = ['INHERIT', 'OFF', 'SYNTHETIC', 'REAL_SAMPLED'];
+  mod.FILL_MODES = ['INHERIT', 'OFF', 'SYNTHETIC', 'SOURCE'];
 
   function normMode(mode) {
     const m = String(mode || 'inherit').trim().toUpperCase();
-    if (m === 'REAL' || m === 'REAL-SAMPLED' || m === 'REAL_SAMPLED') return 'REAL_SAMPLED';
+    if (m === 'REAL' || m === 'REAL-SAMPLED' || m === 'REAL_SAMPLED' || m === 'SOURCE') return 'SOURCE';
     if (m === 'SYNTH' || m === 'SYNTHETIC') return 'SYNTHETIC';
     if (m === 'OFF' || m === 'NONE') return 'OFF';
     return 'INHERIT';
@@ -37,5 +37,5 @@
   mod.apply = function applyGraphAppearance(opts) {
     return { applied: false, placeholder: true, options: opts || {} };
   };
-  mod.version = 'step4-appearance';
+  mod.version = 'step4-appearance-source';
 })();

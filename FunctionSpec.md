@@ -685,14 +685,41 @@ This spec therefore prioritizes:
 - `FunctionSpec.md`
 
 **What changed**
-- Implemented `sp.v15.graphAppearance.getFillModes()` + `getEffective(...)` for normalized fill mode (`inherit|off|synthetic|real_sampled`) and optional fill opacity.
+- Implemented `sp.v15.graphAppearance.getFillModes()` + `getEffective(...)` for normalized fill mode (`inherit|off|synthetic|source` with alias support for legacy `real_sampled`) and optional fill opacity.
 - Added CORE controls for **Fill mode** and **Fill opacity** with store-backed state (`display.fillMode`, `display.fillOpacity`) and UI sync.
 - Wired `graphScript.js` to honor PRO fill mode/opacity overrides:
   - `OFF` disables area fill even if original checkbox is on
   - `SYNTHETIC` forces fill on and uses spectral hue gradient by x-position
-  - `REAL_SAMPLED` forces fill on and uses existing sampled-color fill
+  - `SOURCE` (renamed from `REAL_SAMPLED`) forces fill on and uses existing sampled-color fill
   - `INHERIT` preserves original SPECTRA-1 behavior
 - Added stable CSS hooks/widths for new controls (`#spFillMode`, `#spFillOpacity`, wrapper ids).
 
 **What remains next**
 - Step 4 slices: Camera capability abstraction (19), Calibration I/O + multipoint shell (20).
+
+
+### 2026-02-25 — Step 4 slice 4: Camera capability abstraction (19) + fill UI polish
+**Touched files:**
+- `docs/frontend/scripts/mod/cameraCapabilities.js`
+- `docs/frontend/scripts/mod/stateStore.js`
+- `docs/frontend/scripts/mod/proBootstrap.js`
+- `docs/frontend/scripts/mod/dataQualityPanel.js`
+- `docs/frontend/scripts/mod/graphAppearance.js`
+- `docs/frontend/scripts/graphScript.js`
+- `docs/frontend/styles/mod-panels.css`
+- `FunctionSpec.md`
+
+**What changed**
+- Implemented `cameraCapabilities` module as a real probe abstraction (classic-script safe) with:
+  - `getActiveTrack()`
+  - `probe(track)`
+  - `probeCurrent()`
+  - normalized `supported/values/ranges/summary/status`
+- Added store-backed camera capability state (`state.camera.*`) and non-blocking capability probe on bootstrap.
+- Added **Probe camera** button in CORE controls to re-probe current active camera track without touching original camera flow.
+- Surface camera capability summary in Status rail (`Camera: status · resolution · exp/zoom support`) via `dataQualityPanel.js`.
+- Renamed fill mode label/value from `REAL_SAMPLED` to **`SOURCE`** (legacy aliases preserved for compatibility).
+- Converted **Fill opacity** control from numeric input to **slider** (`range`) with live numeric readout (`#spFillOpacityValue`).
+
+**What remains next**
+- Step 4 slice: Calibration I/O + multipoint shell (20).
