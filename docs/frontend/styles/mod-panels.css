@@ -698,3 +698,32 @@ body{overflow:hidden;}
 #SpectraProDockHost #spFieldPeakSmoothing { min-width: 50px; }
 #SpectraProDockHost .spctl-select,
 #SpectraProDockHost .spctl-input { box-sizing:border-box; }
+
+
+/* === STEP 4 UI HOTFIX === */
+
+/* Match inputs to select styling */
+.spctl-input {
+  background: #111827;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  min-height: 30px;
+}
+
+.spctl-input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96,165,250,0.3);
+}
+
+/* Pointer cursor for hide/expand controls */
+#sidebarToggleHandleLeft,
+#drawerCollapseButton,
+#drawerExpandButton,
+#sidebarHoverZoneLeft,
+#drawerHoverZone {
+  cursor: pointer;
+}
