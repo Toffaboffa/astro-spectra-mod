@@ -446,7 +446,7 @@ body{overflow:hidden;}
 /* === SPECTRA-PRO dock final overrides (hotfix) === */
 #graphSettingsDrawer{display:flex;align-items:stretch;gap:8px;min-height:174px;overflow:hidden;}
 #graphSettingsDrawerLeft{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;overflow:hidden;}
-#graphSettingsDrawerRight{flex:0 0 auto;display:flex;align-items:flex-start;justify-content:center;width:22px;}
+#graphSettingsDrawerRight{flex:0 0 auto;display:flex;align-items:flex-start;justify-content:center;width:22px;margin-right: 22px}
 #SpectraProDockHost{display:flex;flex:1 1 auto;min-width:0;min-height:0;}
 #SpectraProDockHost .sp-main{display:flex;flex-direction:column;width:100%;min-width:0;min-height:0;background:transparent;border:none;}
 #SpectraProDockHost .sp-tabs{display:flex;flex-wrap:wrap;gap:10px;padding:8px 12px 6px;}
