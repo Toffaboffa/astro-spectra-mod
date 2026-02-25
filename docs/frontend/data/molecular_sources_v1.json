@@ -1,1 +1,45 @@
-{}
+{
+  "schema_version": "1.0",
+  "library_name": "Spectra-1 molecular coarse libraries",
+  "created_for": "Krille / Spectra-1",
+  "purpose": "Coarse molecular candidate generation and domain presets. Not a substitute for HITRAN/ExoMol line-by-line data.",
+  "upstream_sources": [
+    {
+      "name": "HITRAN",
+      "url": "https://hitran.org/",
+      "type": "molecular absorption/transmission database",
+      "intended_use": "Atmospheric and laboratory molecular spectroscopy; line-by-line and cross-sections.",
+      "notes": "Use HAPI/HITRANonline export in a preprocessing pipeline for precision libraries."
+    },
+    {
+      "name": "ExoMol",
+      "url": "https://www.exomol.com/",
+      "type": "molecular line lists for hot atmospheres",
+      "intended_use": "Exoplanets, brown dwarfs, cool stars, hot atmospheres; line lists and cross-sections/opacities.",
+      "notes": "Prefer temperature-dependent cross-sections/opacities for low/medium-resolution frontend workflows."
+    }
+  ],
+  "files": [
+    {
+      "file": "molecular_species_catalog_v2.json",
+      "role": "species metadata catalog"
+    },
+    {
+      "file": "molecular_bands_general_v2.json",
+      "role": "coarse band anchors/ranges"
+    },
+    {
+      "file": "molecular_detection_presets_v1.json",
+      "role": "domain-specific detection presets"
+    },
+    {
+      "file": "molecular_bands_v2_merged_from_legacy.json",
+      "role": "legacy anchors + curated additions merged"
+    }
+  ],
+  "caveats": [
+    "Band anchors are approximate and curated for coarse candidate generation.",
+    "Many molecules have dense line forests; use line-by-line / cross-section verification before final identification.",
+    "Visible-band entries for some hot species are observationally useful anchors but not exhaustive."
+  ]
+}

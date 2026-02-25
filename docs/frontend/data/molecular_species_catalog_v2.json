@@ -1,1 +1,1828 @@
-{}
+{
+  "schema_version": "2.0",
+  "library_type": "molecular_species_catalog",
+  "species_count": 91,
+  "entries": [
+    {
+      "id": "mol_001",
+      "species": "H2O",
+      "name": "Water",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_002",
+      "species": "CO2",
+      "name": "Carbon dioxide",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_003",
+      "species": "O3",
+      "name": "Ozone",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_004",
+      "species": "N2O",
+      "name": "Nitrous oxide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_005",
+      "species": "CO",
+      "name": "Carbon monoxide",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_006",
+      "species": "CH4",
+      "name": "Methane",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_007",
+      "species": "O2",
+      "name": "Oxygen",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_008",
+      "species": "NO",
+      "name": "Nitric oxide",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary",
+        "stellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_009",
+      "species": "SO2",
+      "name": "Sulfur dioxide",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary",
+        "volcanic"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_010",
+      "species": "NO2",
+      "name": "Nitrogen dioxide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_011",
+      "species": "NH3",
+      "name": "Ammonia",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_012",
+      "species": "HNO3",
+      "name": "Nitric acid",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_013",
+      "species": "OH",
+      "name": "Hydroxyl",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_014",
+      "species": "HF",
+      "name": "Hydrogen fluoride",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_015",
+      "species": "HCl",
+      "name": "Hydrogen chloride",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_016",
+      "species": "HBr",
+      "name": "Hydrogen bromide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_017",
+      "species": "HI",
+      "name": "Hydrogen iodide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_018",
+      "species": "ClO",
+      "name": "Chlorine monoxide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_019",
+      "species": "OCS",
+      "name": "Carbonyl sulfide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_020",
+      "species": "H2CO",
+      "name": "Formaldehyde",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_021",
+      "species": "HOCl",
+      "name": "Hypochlorous acid",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_022",
+      "species": "N2",
+      "name": "Nitrogen",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary",
+        "stellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_023",
+      "species": "HCN",
+      "name": "Hydrogen cyanide",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_024",
+      "species": "CH3Cl",
+      "name": "Methyl chloride",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_025",
+      "species": "H2O2",
+      "name": "Hydrogen peroxide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_026",
+      "species": "C2H2",
+      "name": "Acetylene",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_027",
+      "species": "C2H6",
+      "name": "Ethane",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_028",
+      "species": "PH3",
+      "name": "Phosphine",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "planetary",
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_029",
+      "species": "COF2",
+      "name": "Carbonyl fluoride",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_030",
+      "species": "SF6",
+      "name": "Sulfur hexafluoride",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_031",
+      "species": "H2S",
+      "name": "Hydrogen sulfide",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_032",
+      "species": "HCOOH",
+      "name": "Formic acid",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_033",
+      "species": "HO2",
+      "name": "Hydroperoxyl",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_034",
+      "species": "O",
+      "name": "Atomic oxygen",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "solar",
+        "stellar"
+      ],
+      "supported_modes": [
+        "emission",
+        "absorption"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_035",
+      "species": "ClONO2",
+      "name": "Chlorine nitrate",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_036",
+      "species": "NO+",
+      "name": "Nitric oxide cation",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric_ionosphere",
+        "plasma"
+      ],
+      "supported_modes": [
+        "emission",
+        "absorption"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_037",
+      "species": "HOBr",
+      "name": "Hypobromous acid",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_038",
+      "species": "C2H4",
+      "name": "Ethylene",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_039",
+      "species": "CH3OH",
+      "name": "Methanol",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary",
+        "interstellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_040",
+      "species": "CH3Br",
+      "name": "Methyl bromide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_041",
+      "species": "CH3CN",
+      "name": "Acetonitrile",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary",
+        "interstellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_042",
+      "species": "CF4",
+      "name": "Carbon tetrafluoride",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_043",
+      "species": "C4H2",
+      "name": "Diacetylene",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_044",
+      "species": "HC3N",
+      "name": "Cyanoacetylene",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "planetary",
+        "interstellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_045",
+      "species": "H2",
+      "name": "Molecular hydrogen",
+      "source_family": "ExoMol",
+      "domains": [
+        "planetary",
+        "stellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_046",
+      "species": "CS",
+      "name": "Carbon monosulfide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary",
+        "interstellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_047",
+      "species": "SO",
+      "name": "Sulfur monoxide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary",
+        "interstellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_048",
+      "species": "SiO",
+      "name": "Silicon monoxide",
+      "source_family": "ExoMol",
+      "domains": [
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_049",
+      "species": "TiO",
+      "name": "Titanium monoxide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_050",
+      "species": "VO",
+      "name": "Vanadium monoxide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_051",
+      "species": "FeH",
+      "name": "Iron hydride",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar_cool",
+        "brown_dwarf"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_052",
+      "species": "MgH",
+      "name": "Magnesium hydride",
+      "source_family": "astro-compiled",
+      "domains": [
+        "solar",
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_053",
+      "species": "CaH",
+      "name": "Calcium hydride",
+      "source_family": "astro-compiled",
+      "domains": [
+        "solar",
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_054",
+      "species": "CrH",
+      "name": "Chromium hydride",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar_cool",
+        "brown_dwarf"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_055",
+      "species": "AlO",
+      "name": "Aluminium monoxide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_056",
+      "species": "ZrO",
+      "name": "Zirconium monoxide",
+      "source_family": "astro-compiled",
+      "domains": [
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_057",
+      "species": "YO",
+      "name": "Yttrium monoxide",
+      "source_family": "astro-compiled",
+      "domains": [
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_058",
+      "species": "ScO",
+      "name": "Scandium monoxide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_059",
+      "species": "LaO",
+      "name": "Lanthanum monoxide",
+      "source_family": "astro-compiled",
+      "domains": [
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_060",
+      "species": "CeO",
+      "name": "Cerium monoxide",
+      "source_family": "astro-compiled",
+      "domains": [
+        "stellar_cool"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_061",
+      "species": "CH",
+      "name": "Methylidyne",
+      "source_family": "astro-compiled",
+      "domains": [
+        "solar",
+        "stellar",
+        "cometary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_062",
+      "species": "CN",
+      "name": "Cyanogen radical",
+      "source_family": "astro-compiled",
+      "domains": [
+        "solar",
+        "stellar",
+        "cometary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_063",
+      "species": "C2",
+      "name": "Dicarbon",
+      "source_family": "astro-compiled",
+      "domains": [
+        "solar",
+        "stellar",
+        "cometary",
+        "flame"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_064",
+      "species": "NH",
+      "name": "Imidogen",
+      "source_family": "astro-compiled",
+      "domains": [
+        "solar",
+        "stellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_065",
+      "species": "SH",
+      "name": "Mercapto radical",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_066",
+      "species": "PO",
+      "name": "Phosphorus monoxide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_067",
+      "species": "PS",
+      "name": "Phosphorus monosulfide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_068",
+      "species": "NaCl",
+      "name": "Sodium chloride",
+      "source_family": "ExoMol",
+      "domains": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_069",
+      "species": "KCl",
+      "name": "Potassium chloride",
+      "source_family": "ExoMol",
+      "domains": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_070",
+      "species": "LiCl",
+      "name": "Lithium chloride",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_071",
+      "species": "AlCl",
+      "name": "Aluminium chloride",
+      "source_family": "ExoMol",
+      "domains": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_072",
+      "species": "AlF",
+      "name": "Aluminium fluoride",
+      "source_family": "ExoMol",
+      "domains": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_073",
+      "species": "BeH",
+      "name": "Beryllium hydride",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_074",
+      "species": "CaO",
+      "name": "Calcium monoxide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_075",
+      "species": "MgO",
+      "name": "Magnesium monoxide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_076",
+      "species": "SiS",
+      "name": "Silicon monosulfide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_077",
+      "species": "PN",
+      "name": "Phosphorus nitride",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_078",
+      "species": "NS",
+      "name": "Nitrogen sulfide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_079",
+      "species": "CP",
+      "name": "Carbon monophosphide",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_080",
+      "species": "C3",
+      "name": "Tricarbon",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "cometary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_081",
+      "species": "SiH",
+      "name": "Silylidyne",
+      "source_family": "ExoMol",
+      "domains": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_082",
+      "species": "OH+",
+      "name": "Hydroxyl cation",
+      "source_family": "ExoMol",
+      "domains": [
+        "plasma",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_083",
+      "species": "HeH+",
+      "name": "Helium hydride ion",
+      "source_family": "ExoMol",
+      "domains": [
+        "plasma",
+        "early_universe_modeling"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_084",
+      "species": "H3+",
+      "name": "Trihydrogen cation",
+      "source_family": "ExoMol",
+      "domains": [
+        "planetary",
+        "plasma"
+      ],
+      "supported_modes": [
+        "emission",
+        "absorption"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_085",
+      "species": "CH+",
+      "name": "Methylidyne cation",
+      "source_family": "ExoMol",
+      "domains": [
+        "interstellar",
+        "plasma"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_086",
+      "species": "NH2",
+      "name": "Amidogen",
+      "source_family": "ExoMol",
+      "domains": [
+        "planetary",
+        "interstellar"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_087",
+      "species": "HDO",
+      "name": "Semi-heavy water",
+      "source_family": "HITRAN+ExoMol",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption",
+        "emission"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_088",
+      "species": "COCl2",
+      "name": "Phosgene",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_089",
+      "species": "SO3",
+      "name": "Sulfur trioxide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric",
+        "planetary"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_090",
+      "species": "BrO",
+      "name": "Bromine monoxide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    },
+    {
+      "id": "mol_091",
+      "species": "N2O5",
+      "name": "Dinitrogen pentoxide",
+      "source_family": "HITRAN",
+      "domains": [
+        "telluric"
+      ],
+      "supported_modes": [
+        "absorption"
+      ],
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "status": "active",
+      "notes": "Curated species entry for coarse candidate generation; use HITRAN/ExoMol line lists or cross-sections for precision verification."
+    }
+  ]
+}

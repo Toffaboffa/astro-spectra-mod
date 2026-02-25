@@ -1,1 +1,6711 @@
-{}
+{
+  "schema_version": "2.0",
+  "library_type": "coarse_molecular_bands",
+  "entry_count": 303,
+  "units": {
+    "wavelength": "nm"
+  },
+  "entries": [
+    {
+      "id": "legacy_001",
+      "species": "CH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 430.5,
+      "range_nm": [
+        429.0,
+        432.0
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_002",
+      "species": "CN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 388.3,
+      "range_nm": [
+        386.8,
+        389.8
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_003",
+      "species": "CN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 421.6,
+      "range_nm": [
+        420.1,
+        423.1
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_004",
+      "species": "C2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 516.5,
+      "range_nm": [
+        515.0,
+        518.0
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_005",
+      "species": "C2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 563.5,
+      "range_nm": [
+        562.0,
+        565.0
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_006",
+      "species": "C2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 619.1,
+      "range_nm": [
+        617.6,
+        620.6
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_007",
+      "species": "O2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 687.0,
+      "range_nm": [
+        685.5,
+        688.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_008",
+      "species": "O2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 760.5,
+      "range_nm": [
+        759.0,
+        762.0
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_009",
+      "species": "O2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 762.1,
+      "range_nm": [
+        760.6,
+        763.6
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_010",
+      "species": "O2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 765.0,
+      "range_nm": [
+        763.5,
+        766.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_011",
+      "species": "H2O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 730.0,
+      "range_nm": [
+        728.5,
+        731.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_012",
+      "species": "H2O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 820.0,
+      "range_nm": [
+        818.5,
+        821.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_013",
+      "species": "H2O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 880.0,
+      "range_nm": [
+        878.5,
+        881.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_014",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 380.5,
+      "range_nm": [
+        379.0,
+        382.0
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_015",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 394.3,
+      "range_nm": [
+        392.8,
+        395.8
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_016",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 399.8,
+      "range_nm": [
+        398.3,
+        401.3
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_017",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 404.3,
+      "range_nm": [
+        402.8,
+        405.8
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_018",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 406.3,
+      "range_nm": [
+        404.8,
+        407.8
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_019",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 410.1,
+      "range_nm": [
+        408.6,
+        411.6
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_020",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 414.3,
+      "range_nm": [
+        412.8,
+        415.8
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_021",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 417.8,
+      "range_nm": [
+        416.3,
+        419.3
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_022",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 662.0,
+      "range_nm": [
+        660.5,
+        663.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_023",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 682.0,
+      "range_nm": [
+        680.5,
+        683.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_024",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 703.0,
+      "range_nm": [
+        701.5,
+        704.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_025",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 724.0,
+      "range_nm": [
+        722.5,
+        725.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_026",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 747.0,
+      "range_nm": [
+        745.5,
+        748.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_027",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 771.0,
+      "range_nm": [
+        769.5,
+        772.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_028",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 800.0,
+      "range_nm": [
+        798.5,
+        801.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_029",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 820.0,
+      "range_nm": [
+        818.5,
+        821.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_030",
+      "species": "N2+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 391.4,
+      "range_nm": [
+        389.9,
+        392.9
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_031",
+      "species": "N2+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 427.8,
+      "range_nm": [
+        426.3,
+        429.3
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_032",
+      "species": "OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 690.0,
+      "range_nm": [
+        688.5,
+        691.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_033",
+      "species": "OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 740.0,
+      "range_nm": [
+        738.5,
+        741.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_034",
+      "species": "OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 840.0,
+      "range_nm": [
+        838.5,
+        841.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_035",
+      "species": "OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 900.0,
+      "range_nm": [
+        898.5,
+        901.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_036",
+      "species": "Eu3_red",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 611.0,
+      "range_nm": [
+        609.5,
+        612.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_037",
+      "species": "Eu3_red",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 593.0,
+      "range_nm": [
+        591.5,
+        594.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_038",
+      "species": "Eu3_red",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 620.0,
+      "range_nm": [
+        618.5,
+        621.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_039",
+      "species": "Eu3_red",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 652.0,
+      "range_nm": [
+        650.5,
+        653.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_040",
+      "species": "Tb3_green",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 544.0,
+      "range_nm": [
+        542.5,
+        545.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_041",
+      "species": "Tb3_green",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 488.0,
+      "range_nm": [
+        486.5,
+        489.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "legacy_042",
+      "species": "Eu2_blue",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 450.0,
+      "range_nm": [
+        448.5,
+        451.5
+      ],
+      "source_family": "legacy_user_v1",
+      "domain": [
+        "generic"
+      ],
+      "strength_hint": "unknown",
+      "temperature_regime": [
+        "unknown"
+      ],
+      "notes": "Imported from user's molecular_bands_v1.json"
+    },
+    {
+      "id": "band_0043",
+      "species": "O2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 627.0,
+      "range_nm": [
+        626.0,
+        629.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "B-γ-like weak red/orange (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0044",
+      "species": "O2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1268.0,
+      "range_nm": [
+        1260.0,
+        1280.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "a1Δg band (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0045",
+      "species": "H2O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 720.0,
+      "range_nm": [
+        700.0,
+        740.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "VIS/NIR weak band (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0046",
+      "species": "H2O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 940.0,
+      "range_nm": [
+        930.0,
+        970.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "strong telluric (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0047",
+      "species": "H2O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1130.0,
+      "range_nm": [
+        1080.0,
+        1160.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0048",
+      "species": "H2O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1380.0,
+      "range_nm": [
+        1330.0,
+        1450.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "strong (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0049",
+      "species": "H2O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1870.0,
+      "range_nm": [
+        1800.0,
+        1950.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "strong (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0050",
+      "species": "H2O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2700.0,
+      "range_nm": [
+        2500.0,
+        2900.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "strong IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0051",
+      "species": "CO2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1400.0,
+      "range_nm": [
+        1360.0,
+        1450.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR combo (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0052",
+      "species": "CO2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1600.0,
+      "range_nm": [
+        1570.0,
+        1630.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR combo (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0053",
+      "species": "CO2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2000.0,
+      "range_nm": [
+        1960.0,
+        2060.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "combo/overtone (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0054",
+      "species": "CO2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 4300.0,
+      "range_nm": [
+        4200.0,
+        4400.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "fundamental region (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0055",
+      "species": "CO2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 15000.0,
+      "range_nm": [
+        14000.0,
+        16000.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "15 µm fundamental (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0056",
+      "species": "CH4",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 890.0,
+      "range_nm": [
+        880.0,
+        905.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR onset (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0057",
+      "species": "CH4",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1000.0,
+      "range_nm": [
+        995.0,
+        1035.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0058",
+      "species": "CH4",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1150.0,
+      "range_nm": [
+        1120.0,
+        1180.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0059",
+      "species": "CH4",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1400.0,
+      "range_nm": [
+        1320.0,
+        1450.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR strong (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0060",
+      "species": "CH4",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1660.0,
+      "range_nm": [
+        1620.0,
+        1720.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0061",
+      "species": "CH4",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2300.0,
+      "range_nm": [
+        2200.0,
+        2400.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "strong (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0062",
+      "species": "O3",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 255.0,
+      "range_nm": [
+        240.0,
+        310.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "Hartley (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0063",
+      "species": "O3",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 330.0,
+      "range_nm": [
+        310.0,
+        360.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "Huggins (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0064",
+      "species": "O3",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 600.0,
+      "range_nm": [
+        500.0,
+        700.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "Chappuis broad (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0065",
+      "species": "O3",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 9600.0,
+      "range_nm": [
+        9000.0,
+        10000.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "9.6 µm (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0066",
+      "species": "N2O",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 2200.0,
+      "range_nm": [
+        2150.0,
+        2260.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0067",
+      "species": "N2O",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 2900.0,
+      "range_nm": [
+        2800.0,
+        3000.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0068",
+      "species": "N2O",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 4500.0,
+      "range_nm": [
+        4300.0,
+        4700.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0069",
+      "species": "N2O",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 7800.0,
+      "range_nm": [
+        7400.0,
+        8200.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "7.8 µm (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0070",
+      "species": "CO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1560.0,
+      "range_nm": [
+        1540.0,
+        1590.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "2nd overtone (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0071",
+      "species": "CO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2340.0,
+      "range_nm": [
+        2280.0,
+        2380.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "fundamental (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0072",
+      "species": "CO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 4600.0,
+      "range_nm": [
+        4300.0,
+        4900.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "overtone region (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0073",
+      "species": "NO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 226.0,
+      "range_nm": [
+        220.0,
+        230.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "UV gamma (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0074",
+      "species": "NO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 5300.0,
+      "range_nm": [
+        5000.0,
+        5600.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR fundamental (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0075",
+      "species": "SO2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 300.0,
+      "range_nm": [
+        280.0,
+        330.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "volcanic"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0076",
+      "species": "SO2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 4000.0,
+      "range_nm": [
+        3700.0,
+        4200.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "volcanic"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0077",
+      "species": "SO2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 7300.0,
+      "range_nm": [
+        7000.0,
+        7600.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "volcanic"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0078",
+      "species": "SO2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 8600.0,
+      "range_nm": [
+        8200.0,
+        9000.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "volcanic"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0079",
+      "species": "NO2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 400.0,
+      "range_nm": [
+        350.0,
+        500.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "visible broad (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0080",
+      "species": "NO2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 6200.0,
+      "range_nm": [
+        5800.0,
+        6600.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0081",
+      "species": "NO2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 16000.0,
+      "range_nm": [
+        15000.0,
+        17000.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0082",
+      "species": "NH3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 645.0,
+      "range_nm": [
+        630.0,
+        660.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "visible weak (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0083",
+      "species": "NH3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 930.0,
+      "range_nm": [
+        900.0,
+        970.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0084",
+      "species": "NH3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1500.0,
+      "range_nm": [
+        1450.0,
+        1560.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0085",
+      "species": "NH3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2000.0,
+      "range_nm": [
+        1950.0,
+        2100.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0086",
+      "species": "NH3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2800.0,
+        3300.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0087",
+      "species": "NH3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 10000.0,
+      "range_nm": [
+        9000.0,
+        11000.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "10 µm class (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0088",
+      "species": "HNO3",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 1700.0,
+      "range_nm": [
+        1650.0,
+        1750.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "NIR/IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0089",
+      "species": "HNO3",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 7500.0,
+      "range_nm": [
+        7000.0,
+        8000.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0090",
+      "species": "OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 308.0,
+      "range_nm": [
+        306.0,
+        311.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "A-X UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0091",
+      "species": "OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1600.0,
+      "range_nm": [
+        1500.0,
+        1700.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR rovib (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0092",
+      "species": "OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2800.0,
+      "range_nm": [
+        2600.0,
+        3100.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0093",
+      "species": "HF",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2335.0,
+      "range_nm": [
+        2280.0,
+        2380.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "fundamental (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0094",
+      "species": "HCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1740.0,
+      "range_nm": [
+        1700.0,
+        1780.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "first overtone (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0095",
+      "species": "HCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3500.0,
+      "range_nm": [
+        3400.0,
+        3600.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "fundamental (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0096",
+      "species": "HBr",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 2500.0,
+      "range_nm": [
+        2430.0,
+        2580.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "fundamental (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0097",
+      "species": "HI",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 4200.0,
+      "range_nm": [
+        4000.0,
+        4400.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "fundamental (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0098",
+      "species": "ClO",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 260.0,
+      "range_nm": [
+        245.0,
+        285.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0099",
+      "species": "ClO",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 1200.0,
+      "range_nm": [
+        1100.0,
+        1300.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0100",
+      "species": "OCS",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 2060.0,
+      "range_nm": [
+        2000.0,
+        2120.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "strong (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0101",
+      "species": "OCS",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 4800.0,
+      "range_nm": [
+        4600.0,
+        5000.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0102",
+      "species": "H2CO",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 3300.0,
+      "range_nm": [
+        3100.0,
+        3500.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "C-H stretch (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0103",
+      "species": "H2CO",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 5800.0,
+      "range_nm": [
+        5400.0,
+        6200.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0104",
+      "species": "HOCl",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2800.0,
+        3200.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0105",
+      "species": "HOCl",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 8000.0,
+      "range_nm": [
+        7600.0,
+        8400.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0106",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 337.0,
+      "range_nm": [
+        336.0,
+        338.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "2nd positive emission (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0107",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 357.0,
+      "range_nm": [
+        356.0,
+        358.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "2nd positive (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0108",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 380.0,
+      "range_nm": [
+        375.0,
+        381.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "2nd positive (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0109",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 391.4,
+      "range_nm": [
+        390.0,
+        393.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "N2+ 1N overlap in air/plasma (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0110",
+      "species": "N2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1040.0,
+      "range_nm": [
+        1000.0,
+        1080.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR weak (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0111",
+      "species": "HCN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3090.0,
+      "range_nm": [
+        2950.0,
+        3250.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "stretch (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0112",
+      "species": "HCN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1400.0,
+      "range_nm": [
+        1350.0,
+        1450.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "bend overtone (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0113",
+      "species": "HCN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2950.0,
+        3150.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0114",
+      "species": "CH3Cl",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 3400.0,
+      "range_nm": [
+        3200.0,
+        3600.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0115",
+      "species": "CH3Cl",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 7300.0,
+      "range_nm": [
+        7000.0,
+        7600.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0116",
+      "species": "H2O2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 1400.0,
+      "range_nm": [
+        1350.0,
+        1450.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0117",
+      "species": "H2O2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 2800.0,
+      "range_nm": [
+        2600.0,
+        3000.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0118",
+      "species": "H2O2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 7800.0,
+      "range_nm": [
+        7400.0,
+        8200.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0119",
+      "species": "C2H2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 770.0,
+      "range_nm": [
+        760.0,
+        780.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "visible Swan-adjacent flame overlap sometimes (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0120",
+      "species": "C2H2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1530.0,
+      "range_nm": [
+        1500.0,
+        1560.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0121",
+      "species": "C2H2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2900.0,
+        3100.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "C-H stretch (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0122",
+      "species": "C2H2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 7600.0,
+      "range_nm": [
+        7200.0,
+        8000.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "13 µm class (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0123",
+      "species": "C2H6",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1200.0,
+      "range_nm": [
+        1150.0,
+        1250.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0124",
+      "species": "C2H6",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1680.0,
+      "range_nm": [
+        1600.0,
+        1760.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0125",
+      "species": "C2H6",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2850.0,
+        3100.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0126",
+      "species": "C2H6",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 6700.0,
+      "range_nm": [
+        6400.0,
+        7000.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0127",
+      "species": "PH3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1100.0,
+      "range_nm": [
+        1050.0,
+        1150.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0128",
+      "species": "PH3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1600.0,
+      "range_nm": [
+        1550.0,
+        1700.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0129",
+      "species": "PH3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 4300.0,
+      "range_nm": [
+        4000.0,
+        4600.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0130",
+      "species": "PH3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 10000.0,
+      "range_nm": [
+        9500.0,
+        10500.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "planetary",
+        "stellar_cool"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "10 µm class (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0131",
+      "species": "COF2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 1900.0,
+      "range_nm": [
+        1800.0,
+        2000.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0132",
+      "species": "COF2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 5400.0,
+      "range_nm": [
+        5000.0,
+        5800.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0133",
+      "species": "SF6",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 9500.0,
+      "range_nm": [
+        9000.0,
+        10000.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "strong 10.5 µm (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0134",
+      "species": "SF6",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 6250.0,
+      "range_nm": [
+        6000.0,
+        6500.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0135",
+      "species": "H2S",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1570.0,
+      "range_nm": [
+        1520.0,
+        1620.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0136",
+      "species": "H2S",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2600.0,
+      "range_nm": [
+        2500.0,
+        2700.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0137",
+      "species": "H2S",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3900.0,
+      "range_nm": [
+        3700.0,
+        4100.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0138",
+      "species": "HCOOH",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 1700.0,
+      "range_nm": [
+        1650.0,
+        1760.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "C=O (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0139",
+      "species": "HCOOH",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 2900.0,
+      "range_nm": [
+        2800.0,
+        3100.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0140",
+      "species": "HCOOH",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 9100.0,
+      "range_nm": [
+        8600.0,
+        9500.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0141",
+      "species": "HO2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 1450.0,
+      "range_nm": [
+        1400.0,
+        1500.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0142",
+      "species": "HO2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 3400.0,
+      "range_nm": [
+        3200.0,
+        3600.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0143",
+      "species": "O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 777.4,
+      "range_nm": [
+        776.5,
+        778.5
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "solar",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "OI triplet (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0144",
+      "species": "O",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 844.6,
+      "range_nm": [
+        843.5,
+        845.5
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "solar",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "OI triplet (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0145",
+      "species": "ClONO2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 7800.0,
+      "range_nm": [
+        7400.0,
+        8200.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0146",
+      "species": "ClONO2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 12900.0,
+      "range_nm": [
+        12200.0,
+        13600.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0147",
+      "species": "NO+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2140.0,
+      "range_nm": [
+        2080.0,
+        2200.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric_ionosphere",
+        "plasma"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR ion (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0148",
+      "species": "HOBr",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 6200.0,
+      "range_nm": [
+        5800.0,
+        6600.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0149",
+      "species": "HOBr",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 8500.0,
+      "range_nm": [
+        8000.0,
+        9000.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0150",
+      "species": "C2H4",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1630.0,
+      "range_nm": [
+        1600.0,
+        1670.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "C=C (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0151",
+      "species": "C2H4",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2900.0,
+        3100.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "C-H stretch (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0152",
+      "species": "C2H4",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 9500.0,
+      "range_nm": [
+        9000.0,
+        10000.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "10.5 µm (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0153",
+      "species": "CH3OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1030.0,
+      "range_nm": [
+        1000.0,
+        1060.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR/vis weak (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0154",
+      "species": "CH3OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1700.0,
+      "range_nm": [
+        1650.0,
+        1750.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0155",
+      "species": "CH3OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2300.0,
+      "range_nm": [
+        2200.0,
+        2400.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0156",
+      "species": "CH3OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2850.0,
+        3150.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0157",
+      "species": "CH3OH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 9600.0,
+      "range_nm": [
+        9000.0,
+        10200.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0158",
+      "species": "CH3Br",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2850.0,
+        3150.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0159",
+      "species": "CH3Br",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 6800.0,
+      "range_nm": [
+        6400.0,
+        7200.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0160",
+      "species": "CH3CN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1450.0,
+      "range_nm": [
+        1400.0,
+        1500.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0161",
+      "species": "CH3CN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2250.0,
+      "range_nm": [
+        2200.0,
+        2300.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "CN stretch (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0162",
+      "species": "CH3CN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2900.0,
+        3100.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0163",
+      "species": "CF4",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 7800.0,
+      "range_nm": [
+        7400.0,
+        8200.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "7.8 µm (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0164",
+      "species": "CF4",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 12800.0,
+      "range_nm": [
+        12200.0,
+        13500.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0165",
+      "species": "C4H2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 630.0,
+      "range_nm": [
+        620.0,
+        640.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "planetary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "visible weak (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0166",
+      "species": "C4H2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1600.0,
+      "range_nm": [
+        1500.0,
+        1700.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0167",
+      "species": "C4H2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2900.0,
+        3100.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0168",
+      "species": "HC3N",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2200.0,
+      "range_nm": [
+        2150.0,
+        2260.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "CN stretch (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0169",
+      "species": "HC3N",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2900.0,
+        3100.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0170",
+      "species": "HC3N",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 7300.0,
+      "range_nm": [
+        6900.0,
+        7700.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0171",
+      "species": "H2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2120.0,
+      "range_nm": [
+        2050.0,
+        2200.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary",
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "quadrupole 1-0 (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0172",
+      "species": "H2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2400.0,
+      "range_nm": [
+        2300.0,
+        2500.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary",
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "quadrupole (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0173",
+      "species": "H2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 28000.0,
+      "range_nm": [
+        26000.0,
+        30000.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary",
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "rotational far-IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0174",
+      "species": "CS",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2570.0,
+      "range_nm": [
+        2500.0,
+        2650.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "fundamental (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0175",
+      "species": "SO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 250.0,
+      "range_nm": [
+        230.0,
+        280.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0176",
+      "species": "SO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1300.0,
+      "range_nm": [
+        1200.0,
+        1400.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0177",
+      "species": "SO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1900.0,
+      "range_nm": [
+        1800.0,
+        2000.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0178",
+      "species": "SiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 410.0,
+      "range_nm": [
+        400.0,
+        420.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "electronic (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0179",
+      "species": "SiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 4300.0,
+      "range_nm": [
+        4000.0,
+        4600.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "fundamental (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0180",
+      "species": "SiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 8000.0,
+      "range_nm": [
+        7600.0,
+        8400.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "solar",
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0181",
+      "species": "TiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 495.0,
+      "range_nm": [
+        490.0,
+        500.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "γ heads (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0182",
+      "species": "TiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 516.0,
+      "range_nm": [
+        510.0,
+        520.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "γ (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0183",
+      "species": "TiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 544.0,
+      "range_nm": [
+        540.0,
+        548.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "γ (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0184",
+      "species": "TiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 615.0,
+      "range_nm": [
+        610.0,
+        620.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "γ/γ' (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0185",
+      "species": "TiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 665.0,
+      "range_nm": [
+        660.0,
+        670.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "TiO red (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0186",
+      "species": "TiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 705.0,
+      "range_nm": [
+        700.0,
+        710.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "strong red (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0187",
+      "species": "TiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 760.0,
+      "range_nm": [
+        750.0,
+        770.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red/NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0188",
+      "species": "TiO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 845.0,
+      "range_nm": [
+        835.0,
+        855.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0189",
+      "species": "VO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 573.0,
+      "range_nm": [
+        565.0,
+        580.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "green-orange (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0190",
+      "species": "VO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 740.0,
+      "range_nm": [
+        730.0,
+        750.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0191",
+      "species": "VO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 790.0,
+      "range_nm": [
+        780.0,
+        800.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0192",
+      "species": "VO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1050.0,
+      "range_nm": [
+        1000.0,
+        1100.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0193",
+      "species": "FeH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 869.0,
+      "range_nm": [
+        865.0,
+        875.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar_cool",
+        "brown_dwarf"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "Wing-Ford (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0194",
+      "species": "FeH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 990.0,
+      "range_nm": [
+        980.0,
+        1005.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar_cool",
+        "brown_dwarf"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0195",
+      "species": "FeH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1200.0,
+      "range_nm": [
+        1170.0,
+        1230.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar_cool",
+        "brown_dwarf"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0196",
+      "species": "MgH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 478.0,
+      "range_nm": [
+        475.0,
+        481.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "b-system (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0197",
+      "species": "MgH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 514.0,
+      "range_nm": [
+        510.0,
+        518.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "green band (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0198",
+      "species": "MgH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 520.0,
+      "range_nm": [
+        518.0,
+        522.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "MgH (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0199",
+      "species": "MgH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 560.0,
+      "range_nm": [
+        555.0,
+        565.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0200",
+      "species": "CaH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 638.0,
+      "range_nm": [
+        634.0,
+        642.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0201",
+      "species": "CaH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 675.0,
+      "range_nm": [
+        670.0,
+        680.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0202",
+      "species": "CaH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 694.0,
+      "range_nm": [
+        690.0,
+        699.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "A-X (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0203",
+      "species": "CaH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 705.0,
+      "range_nm": [
+        700.0,
+        710.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0204",
+      "species": "CaH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 715.0,
+      "range_nm": [
+        712.0,
+        718.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0205",
+      "species": "CrH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 861.0,
+      "range_nm": [
+        857.0,
+        865.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar_cool",
+        "brown_dwarf"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "A-X (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0206",
+      "species": "CrH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 996.0,
+      "range_nm": [
+        990.0,
+        1002.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar_cool",
+        "brown_dwarf"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0207",
+      "species": "AlO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 465.0,
+      "range_nm": [
+        460.0,
+        470.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "B-X (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0208",
+      "species": "AlO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 484.0,
+      "range_nm": [
+        480.0,
+        488.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0209",
+      "species": "AlO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 507.0,
+      "range_nm": [
+        503.0,
+        511.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0210",
+      "species": "AlO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 790.0,
+      "range_nm": [
+        780.0,
+        800.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0211",
+      "species": "ZrO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 555.0,
+      "range_nm": [
+        550.0,
+        560.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0212",
+      "species": "ZrO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 615.0,
+      "range_nm": [
+        610.0,
+        620.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0213",
+      "species": "ZrO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 647.0,
+      "range_nm": [
+        642.0,
+        652.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0214",
+      "species": "ZrO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 690.0,
+      "range_nm": [
+        685.0,
+        695.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0215",
+      "species": "ZrO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 740.0,
+      "range_nm": [
+        735.0,
+        745.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red/NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0216",
+      "species": "YO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 597.0,
+      "range_nm": [
+        592.0,
+        602.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0217",
+      "species": "YO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 613.0,
+      "range_nm": [
+        608.0,
+        618.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0218",
+      "species": "ScO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 603.0,
+      "range_nm": [
+        598.0,
+        608.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0219",
+      "species": "ScO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 640.0,
+      "range_nm": [
+        635.0,
+        645.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0220",
+      "species": "ScO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 806.0,
+      "range_nm": [
+        798.0,
+        814.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0221",
+      "species": "LaO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 740.0,
+      "range_nm": [
+        730.0,
+        750.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red/NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0222",
+      "species": "LaO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 790.0,
+      "range_nm": [
+        780.0,
+        800.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0223",
+      "species": "CeO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 560.0,
+      "range_nm": [
+        555.0,
+        565.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0224",
+      "species": "CeO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 590.0,
+      "range_nm": [
+        585.0,
+        595.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "stellar_cool"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0225",
+      "species": "CH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 314.0,
+      "range_nm": [
+        312.0,
+        316.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar",
+        "cometary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0226",
+      "species": "CH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 389.0,
+      "range_nm": [
+        387.0,
+        390.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar",
+        "cometary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "B-X (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0227",
+      "species": "CH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 431.2,
+      "range_nm": [
+        430.0,
+        432.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar",
+        "cometary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "CH blend (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0228",
+      "species": "CN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 790.0,
+      "range_nm": [
+        780.0,
+        810.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar",
+        "cometary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "red system (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0229",
+      "species": "CN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 910.0,
+      "range_nm": [
+        900.0,
+        920.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar",
+        "cometary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "red/NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0230",
+      "species": "C2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 438.0,
+      "range_nm": [
+        436.0,
+        440.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar",
+        "cometary",
+        "flame"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "Swan (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0231",
+      "species": "C2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 473.7,
+      "range_nm": [
+        472.0,
+        475.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar",
+        "cometary",
+        "flame"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "Swan (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0232",
+      "species": "C2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 4740.0,
+      "range_nm": [
+        4600.0,
+        4900.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar",
+        "cometary",
+        "flame"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0233",
+      "species": "NH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 336.0,
+      "range_nm": [
+        334.0,
+        338.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "A-X (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0234",
+      "species": "NH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1020.0,
+      "range_nm": [
+        1000.0,
+        1040.0
+      ],
+      "source_family": "astro-compiled",
+      "domain": [
+        "solar",
+        "stellar"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR/NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0235",
+      "species": "SH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 327.0,
+      "range_nm": [
+        325.0,
+        330.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0236",
+      "species": "SH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3600.0,
+      "range_nm": [
+        3400.0,
+        3800.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0237",
+      "species": "PO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 246.0,
+      "range_nm": [
+        240.0,
+        252.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0238",
+      "species": "PO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 540.0,
+      "range_nm": [
+        535.0,
+        545.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0239",
+      "species": "PO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1100.0,
+      "range_nm": [
+        1050.0,
+        1150.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0240",
+      "species": "PS",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 330.0,
+      "range_nm": [
+        325.0,
+        335.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0241",
+      "species": "PS",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 700.0,
+      "range_nm": [
+        690.0,
+        710.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0242",
+      "species": "NaCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2350.0,
+      "range_nm": [
+        2250.0,
+        2450.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0243",
+      "species": "NaCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 5000.0,
+      "range_nm": [
+        4700.0,
+        5300.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0244",
+      "species": "KCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2900.0,
+      "range_nm": [
+        2750.0,
+        3050.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0245",
+      "species": "KCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 7000.0,
+      "range_nm": [
+        6600.0,
+        7400.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0246",
+      "species": "LiCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1810.0,
+      "range_nm": [
+        1750.0,
+        1870.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0247",
+      "species": "LiCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 5000.0,
+      "range_nm": [
+        4700.0,
+        5300.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0248",
+      "species": "AlCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 261.0,
+      "range_nm": [
+        255.0,
+        266.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0249",
+      "species": "AlCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 490.0,
+      "range_nm": [
+        485.0,
+        495.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0250",
+      "species": "AlCl",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3300.0,
+      "range_nm": [
+        3100.0,
+        3500.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0251",
+      "species": "AlF",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 227.0,
+      "range_nm": [
+        222.0,
+        232.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0252",
+      "species": "AlF",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 484.0,
+      "range_nm": [
+        480.0,
+        488.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0253",
+      "species": "AlF",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 4100.0,
+      "range_nm": [
+        3900.0,
+        4300.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary_hot",
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0254",
+      "species": "BeH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 313.0,
+      "range_nm": [
+        310.0,
+        316.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0255",
+      "species": "BeH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 520.0,
+      "range_nm": [
+        515.0,
+        525.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0256",
+      "species": "BeH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2100.0,
+      "range_nm": [
+        2000.0,
+        2200.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0257",
+      "species": "CaO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 553.0,
+      "range_nm": [
+        548.0,
+        558.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0258",
+      "species": "CaO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 620.0,
+      "range_nm": [
+        615.0,
+        625.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0259",
+      "species": "CaO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 5000.0,
+      "range_nm": [
+        4700.0,
+        5300.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0260",
+      "species": "MgO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 500.0,
+      "range_nm": [
+        495.0,
+        505.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0261",
+      "species": "MgO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3800.0,
+      "range_nm": [
+        3600.0,
+        4000.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0262",
+      "species": "SiS",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 740.0,
+      "range_nm": [
+        730.0,
+        750.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0263",
+      "species": "SiS",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 13000.0,
+      "range_nm": [
+        12000.0,
+        14000.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0264",
+      "species": "SiS",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 19000.0,
+      "range_nm": [
+        18000.0,
+        20000.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0265",
+      "species": "PN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 336.0,
+      "range_nm": [
+        330.0,
+        342.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0266",
+      "species": "PN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 750.0,
+      "range_nm": [
+        740.0,
+        760.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "red (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0267",
+      "species": "PN",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1500.0,
+      "range_nm": [
+        1400.0,
+        1600.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0268",
+      "species": "NS",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 300.0,
+      "range_nm": [
+        295.0,
+        305.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0269",
+      "species": "NS",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1300.0,
+      "range_nm": [
+        1200.0,
+        1400.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0270",
+      "species": "CP",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 958.0,
+      "range_nm": [
+        950.0,
+        966.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0271",
+      "species": "CP",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1600.0,
+      "range_nm": [
+        1500.0,
+        1700.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0272",
+      "species": "C3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 405.0,
+      "range_nm": [
+        402.0,
+        408.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "cometary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "cometary (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0273",
+      "species": "C3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 465.0,
+      "range_nm": [
+        460.0,
+        470.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "cometary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "Swan-like (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0274",
+      "species": "C3",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 600.0,
+      "range_nm": [
+        595.0,
+        605.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "cometary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0275",
+      "species": "SiH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 414.0,
+      "range_nm": [
+        412.0,
+        416.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0276",
+      "species": "SiH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 520.0,
+      "range_nm": [
+        515.0,
+        525.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0277",
+      "species": "SiH",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2000.0,
+      "range_nm": [
+        1900.0,
+        2100.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "stellar",
+        "planetary_hot"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0278",
+      "species": "OH+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 358.0,
+      "range_nm": [
+        355.0,
+        362.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "plasma",
+        "planetary"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0279",
+      "species": "OH+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 970.0,
+      "range_nm": [
+        950.0,
+        990.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "plasma",
+        "planetary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0280",
+      "species": "HeH+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1490.0,
+      "range_nm": [
+        1450.0,
+        1530.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "plasma",
+        "early_universe_modeling"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0281",
+      "species": "HeH+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3000.0,
+      "range_nm": [
+        2800.0,
+        3200.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "plasma",
+        "early_universe_modeling"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0282",
+      "species": "H3+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1950.0,
+      "range_nm": [
+        1900.0,
+        2000.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary",
+        "plasma"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0283",
+      "species": "H3+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3500.0,
+      "range_nm": [
+        3300.0,
+        3700.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary",
+        "plasma"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0284",
+      "species": "H3+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 4000.0,
+      "range_nm": [
+        3700.0,
+        4300.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary",
+        "plasma"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0285",
+      "species": "CH+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 395.0,
+      "range_nm": [
+        393.0,
+        397.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "interstellar",
+        "plasma"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "A-X (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0286",
+      "species": "CH+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 423.0,
+      "range_nm": [
+        421.0,
+        425.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "interstellar",
+        "plasma"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "A-X (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0287",
+      "species": "CH+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 835.0,
+      "range_nm": [
+        820.0,
+        850.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "interstellar",
+        "plasma"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0288",
+      "species": "CH+",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 3600.0,
+      "range_nm": [
+        3300.0,
+        3900.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "interstellar",
+        "plasma"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0289",
+      "species": "NH2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 570.0,
+      "range_nm": [
+        560.0,
+        580.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0290",
+      "species": "NH2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 930.0,
+      "range_nm": [
+        900.0,
+        960.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0291",
+      "species": "NH2",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1500.0,
+      "range_nm": [
+        1400.0,
+        1600.0
+      ],
+      "source_family": "ExoMol",
+      "domain": [
+        "planetary",
+        "interstellar"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0292",
+      "species": "HDO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 950.0,
+      "range_nm": [
+        930.0,
+        980.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0293",
+      "species": "HDO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 1450.0,
+      "range_nm": [
+        1400.0,
+        1500.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "NIR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0294",
+      "species": "HDO",
+      "kind": "band",
+      "mode": "both",
+      "ref_nm": 2720.0,
+      "range_nm": [
+        2550.0,
+        2850.0
+      ],
+      "source_family": "HITRAN+ExoMol",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0295",
+      "species": "COCl2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 1770.0,
+      "range_nm": [
+        1720.0,
+        1820.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "C=O (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0296",
+      "species": "COCl2",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 8500.0,
+      "range_nm": [
+        8000.0,
+        9000.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0297",
+      "species": "SO3",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 1390.0,
+      "range_nm": [
+        1350.0,
+        1430.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0298",
+      "species": "SO3",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 7300.0,
+      "range_nm": [
+        7000.0,
+        7600.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0299",
+      "species": "SO3",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 11700.0,
+      "range_nm": [
+        11000.0,
+        12400.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric",
+        "planetary"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0300",
+      "species": "BrO",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 338.0,
+      "range_nm": [
+        335.0,
+        341.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "UV (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0301",
+      "species": "BrO",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 650.0,
+      "range_nm": [
+        640.0,
+        660.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "weak",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "visible (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0302",
+      "species": "N2O5",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 1720.0,
+      "range_nm": [
+        1680.0,
+        1760.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "medium",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    },
+    {
+      "id": "band_0303",
+      "species": "N2O5",
+      "kind": "band",
+      "mode": "absorption",
+      "ref_nm": 7900.0,
+      "range_nm": [
+        7600.0,
+        8200.0
+      ],
+      "source_family": "HITRAN",
+      "domain": [
+        "telluric"
+      ],
+      "strength_hint": "strong",
+      "temperature_regime": [
+        "cold",
+        "warm"
+      ],
+      "notes": "IR (coarse anchor, not line-by-line)"
+    }
+  ]
+}

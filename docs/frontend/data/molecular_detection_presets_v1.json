@@ -1,1 +1,145 @@
-{}
+{
+  "schema_version": "1.0",
+  "presets": [
+    {
+      "name": "earth_atmosphere_telluric",
+      "description": "Telluric absorption-focused candidate set for ground-based spectra.",
+      "preferred_mode": "absorption",
+      "species_priority": [
+        "O2",
+        "H2O",
+        "CO2",
+        "O3",
+        "CH4",
+        "N2O",
+        "CO",
+        "NO2",
+        "SO2",
+        "NH3",
+        "HCl",
+        "HF",
+        "H2CO",
+        "HNO3",
+        "HO2",
+        "H2O2",
+        "OCS"
+      ],
+      "wavelength_focus_nm": [
+        [
+          300,
+          1100
+        ],
+        [
+          1100,
+          2500
+        ],
+        [
+          9000,
+          17000
+        ]
+      ],
+      "verification_strategy": "Require multiple bands for H2O/CO2/CH4/O2 when SNR allows."
+    },
+    {
+      "name": "solar_optical_molecules",
+      "description": "Optical/NIR molecular bands for solar photosphere, sunspots and cool stellar spectra.",
+      "preferred_mode": "absorption",
+      "species_priority": [
+        "CH",
+        "CN",
+        "C2",
+        "OH",
+        "NH",
+        "MgH",
+        "CaH",
+        "FeH",
+        "TiO",
+        "VO",
+        "SiO",
+        "CrH",
+        "ZrO",
+        "AlO"
+      ],
+      "wavelength_focus_nm": [
+        [
+          300,
+          1000
+        ],
+        [
+          1000,
+          1700
+        ]
+      ],
+      "verification_strategy": "Band-head pattern consistency > single-line coincidences."
+    },
+    {
+      "name": "hot_exoplanet_brown_dwarf",
+      "description": "Hot atmosphere candidates; favor ExoMol-backed species and temperature-aware scoring.",
+      "preferred_mode": "both",
+      "species_priority": [
+        "H2O",
+        "CO",
+        "CO2",
+        "CH4",
+        "NH3",
+        "HCN",
+        "C2H2",
+        "H2S",
+        "PH3",
+        "TiO",
+        "VO",
+        "FeH",
+        "SiO",
+        "OH",
+        "NaCl",
+        "KCl",
+        "AlO",
+        "H3+"
+      ],
+      "wavelength_focus_nm": [
+        [
+          500,
+          2500
+        ],
+        [
+          2500,
+          6000
+        ],
+        [
+          6000,
+          20000
+        ]
+      ],
+      "verification_strategy": "Use cross-sections/opacities convolved to instrument resolution for final score."
+    },
+    {
+      "name": "flame_plasma_lab",
+      "description": "Useful molecular emitters in flames/plasma/lamps when atomic line library is already loaded.",
+      "preferred_mode": "emission",
+      "species_priority": [
+        "C2",
+        "CH",
+        "CN",
+        "OH",
+        "N2",
+        "NO",
+        "NH",
+        "SiO",
+        "AlO",
+        "CH+",
+        "OH+"
+      ],
+      "wavelength_focus_nm": [
+        [
+          250,
+          1000
+        ],
+        [
+          1000,
+          2500
+        ]
+      ],
+      "verification_strategy": "Co-detect atomic lines + molecular bands to reduce false positives."
+    }
+  ]
+}
