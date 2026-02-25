@@ -816,3 +816,7 @@ This spec therefore prioritizes:
 
 ## Patch log
 - Hotfix: Fixed proBootstrap.js SyntaxError (stray `\1` token) that prevented dock from rendering and could trigger popup on load.
+
+
+## Patch log
+- Fix: Added right-rail CONSOLE panel and auto-close of generic 'Info message' popup on load.

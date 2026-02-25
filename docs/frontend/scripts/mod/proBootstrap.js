@@ -604,7 +604,9 @@ function maybeRunLabAnalyze(frameNormalized) {
         }
         if (t.id === 'spRefreshUiBtn') {
           setCoreActionFeedback('UI refreshed (dock + status rerender).', 'ok');
-          try { render(); } catch (e) {}
+          try { render(); 
+    autoCloseInfoPopupIfDefault();
+} catch (e) {}
           try { renderStatus(); } catch (e) {}
           try { renderConsole(); } catch (e) {}
           return;
@@ -1161,6 +1163,19 @@ function renderLabPanel() {
   }
 
   function init() {
+function autoCloseInfoPopupIfDefault() {
+  try {
+    const popup = document.getElementById('infoPopup');
+    const msgEl = document.getElementById('infoPopupMessage');
+    if (!popup || !msgEl) return;
+    const msg = (msgEl.textContent || '').trim();
+    // only close the generic default popup, never real error popups
+    if (msg === 'Info message' || msg === 'Info') {
+      popup.classList.remove('show');
+    }
+  } catch (e) {}
+}
+
     if (booted) return;
     booted = true;
     render();
