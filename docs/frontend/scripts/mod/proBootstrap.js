@@ -98,6 +98,54 @@
   }
 
 
+  function updateStorePath(path, value, meta) {
+    if (!store || !store.update) return;
+    try { store.update(path, value, meta || { source: 'proBootstrap' }); } catch (_) {}
+  }
+
+  function normalizeGraphFrame(frame) {
+    if (!frame || typeof frame !== 'object') return null;
+    const latest = Object.assign({}, frame);
+    const I = Array.isArray(frame.I) ? frame.I.slice()
+      : Array.isArray(frame.intensity) ? frame.intensity.slice()
+      : Array.isArray(frame.combined) ? frame.combined.slice()
+      : Array.isArray(frame.values) ? frame.values.slice()
+      : null;
+    if (I && !Array.isArray(latest.I)) latest.I = I;
+    if (!latest.pixelWidth) {
+      latest.pixelWidth = Array.isArray(latest.px) ? latest.px.length : (I ? I.length : 0);
+    }
+    if (!latest.source) latest.source = 'camera';
+    if (!latest.timestamp) latest.timestamp = Date.now();
+    return latest;
+  }
+
+  function normalizeCalibrationState(payload) {
+    const p = payload || {};
+    const points = Array.isArray(p.points) ? p.points.slice() : [];
+    const coefficients = Array.isArray(p.coefficients) ? p.coefficients.slice() : [];
+    const isCalibrated = !!(p.isCalibrated || p.calibrated || coefficients.length);
+    return {
+      isCalibrated,
+      coefficients,
+      points,
+      residualStatus: p.residualStatus || (isCalibrated ? 'available' : 'uncalibrated'),
+      pointCount: Number.isFinite(p.pointCount) ? p.pointCount : points.length,
+      timestamp: p.timestamp || Date.now()
+    };
+  }
+
+  function normalizeReferenceState(payload) {
+    const p = payload || {};
+    const count = Number.isFinite(p.count) ? p.count : 0;
+    return {
+      count,
+      hasReference: !!(p.hasReference || count > 0),
+      updatedAt: p.updatedAt || Date.now()
+    };
+  }
+
+
   function getLiveFrame(state) {
     const st = state || getStoreState();
     const byState = st && st.frame && st.frame.latest ? st.frame.latest : null;
@@ -136,17 +184,20 @@
     if (!store || !store.update) return;
     const client = ensureWorkerClient();
     if (val === 'on') {
+      store.update('worker.mode', 'on', { source: 'proBootstrap.core' });
       store.update('worker.enabled', true, { source: 'proBootstrap.core' });
       if (client && typeof client.start === 'function') client.start();
       return;
     }
     if (val === 'off') {
       if (client && typeof client.stop === 'function') client.stop();
+      store.update('worker.mode', 'off', { source: 'proBootstrap.core' });
       store.update('worker.enabled', false, { source: 'proBootstrap.core' });
       store.update('worker.status', 'idle', { source: 'proBootstrap.core' });
       return;
     }
     // auto = enabled but lazy-start only when mode/analysis needs it.
+    store.update('worker.mode', 'auto', { source: 'proBootstrap.core' });
     store.update('worker.enabled', true, { source: 'proBootstrap.core' });
     if ((store.getState().worker || {}).status === 'error') {
       store.update('worker.status', 'idle', { source: 'proBootstrap.core' });
@@ -334,7 +385,8 @@
         `Mode: ${state.appMode || 'CORE'}`,
         `Worker: ${state.worker?.status || 'idle'}${state.worker?.analysisHz ? ` · ${state.worker.analysisHz} Hz` : ''}`,
         `Frame source: ${latest?.source || state.frame?.source || 'none'}${latest?.pixelWidth ? ` · ${latest.pixelWidth} px` : ''}`,
-        `Calibration: ${((state.calibration?.isCalibrated || (typeof window.isCalibrated === 'function' && window.isCalibrated())) ? 'calibrated' : 'uncalibrated')} · pts ${state.calibration?.points?.length || 0}`
+        `Calibration: ${(state.calibration?.isCalibrated ? 'calibrated' : 'uncalibrated')} · pts ${state.calibration?.points?.length || state.calibration?.pointCount || 0}` ,
+        `Reference: ${(state.reference?.hasReference ? 'yes' : 'no')} · count ${state.reference?.count || 0}`
       ],
       dq: [
         `Signal: ${min} - ${max}`,
@@ -359,7 +411,8 @@
     const workerSel = $('spWorkerMode');
     if (workerSel) {
       const ws = state.worker || {};
-      const nextWorkerSel = ws.enabled ? (ws.status === 'idle' ? 'auto' : 'on') : 'off';
+      const inferred = ws.enabled ? (ws.status === 'idle' ? 'auto' : 'on') : 'off';
+      const nextWorkerSel = (ws.mode === 'auto' || ws.mode === 'on' || ws.mode === 'off') ? ws.mode : inferred;
       if (workerSel.value !== nextWorkerSel) workerSel.value = nextWorkerSel;
     }
   }
@@ -401,10 +454,15 @@
     // Step 1 wiring: create a singleton worker client if available (lazy worker start remains in client).
     ensureWorkerClient();
     if (bus && bus.on) {
-      bus.on('state:changed', render);
+      bus.on('state:changed', function (evt) {
+        const src = evt && evt.meta && evt.meta.source ? String(evt.meta.source) : '';
+        if (src.indexOf('proBootstrap.frameSync') === 0) { renderStatus(); return; }
+        if (src.indexOf('proBootstrap.calibrationSync') === 0 || src.indexOf('proBootstrap.referenceSync') === 0) { renderStatus(); return; }
+        render();
+      });
       bus.on('ui:refresh', render);
       bus.on('mode:changed', render);
-      bus.on('frame:updated', render);
+      bus.on('frame:updated', renderStatus);
       bus.on('worker:ready', renderStatus);
       bus.on('worker:libraries', renderStatus);
       bus.on('worker:error', renderStatus);
@@ -412,13 +470,41 @@
       bus.on('worker:result', renderStatus);
     }
     if (window.SpectraPro && window.SpectraPro.coreHooks && window.SpectraPro.coreHooks.on) {
-      let rafId = 0;
-      window.SpectraPro.coreHooks.on('graphFrame', function () {
-        if (rafId) return;
-        rafId = requestAnimationFrame(function () {
-          rafId = 0;
+      let statusRafId = 0;
+      let frameSyncRafId = 0;
+      let pendingFrame = null;
+      const queueStatusRender = function () {
+        if (statusRafId) return;
+        statusRafId = requestAnimationFrame(function () {
+          statusRafId = 0;
           renderStatus();
         });
+      };
+      window.SpectraPro.coreHooks.on('graphFrame', function (payload) {
+        pendingFrame = payload || pendingFrame;
+        if (!frameSyncRafId) {
+          frameSyncRafId = requestAnimationFrame(function () {
+            frameSyncRafId = 0;
+            const normalized = normalizeGraphFrame(pendingFrame);
+            pendingFrame = null;
+            if (normalized) {
+              updateStorePath('frame.latest', normalized, { source: 'proBootstrap.frameSync' });
+              updateStorePath('frame.source', normalized.source || 'unknown', { source: 'proBootstrap.frameSync' });
+            }
+            if (bus && bus.emit) bus.emit('frame:updated', { source: 'proBootstrap.frameSync' });
+            queueStatusRender();
+          });
+        }
+      });
+      window.SpectraPro.coreHooks.on('calibrationChanged', function (payload) {
+        const normalized = normalizeCalibrationState(payload);
+        updateStorePath('calibration', normalized, { source: 'proBootstrap.calibrationSync' });
+        queueStatusRender();
+      });
+      window.SpectraPro.coreHooks.on('referenceChanged', function (payload) {
+        const normalized = normalizeReferenceState(payload);
+        updateStorePath('reference', normalized, { source: 'proBootstrap.referenceSync' });
+        queueStatusRender();
       });
     }
     window.addEventListener('resize', render, { passive: true });

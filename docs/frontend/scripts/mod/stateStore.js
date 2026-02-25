@@ -9,6 +9,7 @@
     worker: {
       enabled: false,
       status: 'idle', // idle|starting|ready|running|error
+      mode: 'auto', // auto|on|off
       lastPingAt: null,
       lastResultAt: null,
       lastError: null,
@@ -24,6 +25,11 @@
       coefficients: [],
       points: [],
       residualStatus: 'unknown'
+    },
+    reference: {
+      count: 0,
+      hasReference: false,
+      updatedAt: null
     },
     display: {
       mode: 'normal',

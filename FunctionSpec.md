@@ -393,7 +393,7 @@ Success criteria:
 
 **Status:** `READY`
 
-#### Step 2 — Shell state normalization + status rail correctness (next)
+#### Step 2 — Shell state normalization + status rail correctness (implemented)
 **Goal:** remove hybrid “reads from everywhere” behavior and make Status/Data Quality deterministic.
 
 Planned scope:
@@ -408,7 +408,7 @@ Success criteria:
 - Minimal direct reads from `window.SpectraCore` in render path
 - No render-loop regressions
 
-**Status:** `TODO`
+**Status:** `READY`
 
 #### Step 3 — Phase 1.5 activation scaffold (load path + compatibility wrappers)
 **Goal:** make 14–20 load safely without breaking classic-script pages.
@@ -496,7 +496,7 @@ Must be true before phase ends:
 - Broad CSS resets can hide original graph controls and cause downstream null errors.
 
 ### Runtime integration risks
-- Status/Data Quality currently reads from a hybrid source chain (store + bridge + graph fallback) and can drift until Step 2 normalization is done.
+- Status/Data Quality now normalizes graph/calibration/reference into store; guarded fallbacks remain only as resilience if sync has not fired yet.
 - Phase 1.5 modules use mixed syntax/style; naive loading can crash `recording.html` with syntax errors.
 - Worker controls in CORE-tab are now wired, but must remain optional and fail-safe.
 
@@ -557,7 +557,7 @@ This prevents “spec drift” where the GUI looks newer than the documentation.
 - Added status/data-quality live rendering improvements and drawer-height/overflow stabilizers (v3 CSS/JS hotfix line).
 
 **Known remaining issues after this line**
-- Status/Data Quality logic still hybrid (needs Step 2 normalization).
+- Status/Data Quality normalized to store-backed state with throttled graph/calibration/reference sync; guarded fallback reads remain.
 - `mod-panels.css` still carries historical override baggage.
 
 ### 2026-02-25 — Phase 1→1.5 Step 1 shell wiring hardening
@@ -579,11 +579,35 @@ This prevents “spec drift” where the GUI looks newer than the documentation.
 - Fallback behavior remains when worker client is unavailable.
 
 **What remains next**
-- Step 2: state normalization + deterministic status/data quality.
 - Step 3: safely load/activate Phase 1.5 scaffold modules.
+- Step 4: implement 14–20 in small slices.
 - Step 4: implement 14–20 in small slices.
 
 ---
+
+
+### 2026-02-25 — Phase 1→1.5 Step 2 state normalization + status rail correctness
+**Touched files:**
+- `docs/frontend/scripts/mod/proBootstrap.js`
+- `docs/frontend/scripts/mod/stateStore.js`
+- `FunctionSpec.md`
+
+**What changed**
+- Added throttled store synchronization for `graphFrame` → `store.frame.latest/source` via `coreHooks` in `proBootstrap.js`.
+- Added normalization for `calibrationChanged` and `referenceChanged` payloads into deterministic store nodes.
+- Status/Data Quality render path now reads primarily from store-backed state (with guard fallbacks only).
+- Added explicit `worker.mode` (`auto|on|off`) state and bound CORE worker select to that state.
+- Reduced full-shell rerenders on high-frequency frame sync by routing frame/calibration/reference store updates to `renderStatus()` instead of `render()`.
+- Status rail now reports reference state (`hasReference/count`) from store.
+
+**What passed (patch-level expectations)**
+- No original control IDs renamed/removed.
+- No changes to `recording.html` load order.
+- Frame sync is throttled via `requestAnimationFrame` to avoid render-loop pressure.
+
+**What remains next**
+- Step 3: safely load/activate Phase 1.5 scaffold modules (ESM compatibility wrappers / load path).
+- Step 4: implement 14–20 in small slices.
 
 ## Final principle
 SPECTRA-PRO should feel like a **real instrument first** and a smart analyzer second.
