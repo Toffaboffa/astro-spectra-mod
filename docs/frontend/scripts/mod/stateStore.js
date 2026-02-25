@@ -71,6 +71,7 @@
     }
 ,
     ui: {
+      inlineFeedback: false,
       disableInfoPopups: true, console: { lines: [], maxLines: 200 } }
   };
 

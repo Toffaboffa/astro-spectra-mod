@@ -442,7 +442,7 @@ function ensureStatusRail() {
     dq.innerHTML = '<h4>DATA QUALITY</h4><div id="spDataQualityText" class="sp-status-lines"></div>';
 
     const consoleCard = el('div', 'sp-status-card sp-console-card');
-    consoleCard.innerHTML = '<h4>CONSOLE</h4><div id="spConsoleBody" class="sp-console-body"><pre id="spConsolePre" class="sp-console-pre"></pre><span class="sp-console-cursor">█</span></div>';
+    consoleCard.innerHTML = '<div id="spConsoleBody" class="sp-console-body"><pre id="spConsolePre" class="sp-console-pre"></pre><span class="sp-console-cursor">█</span></div>';
 
     grid.appendChild(status);
     grid.appendChild(dq);
@@ -617,7 +617,9 @@ function ensureStatusRail() {
         if (t.id === 'spRefreshUiBtn') {
           setCoreActionFeedback('UI refreshed (dock + status rerender).', 'ok');
           try { render(); 
-    autoCloseInfoPopupIfDefault();
+    
+    clearInlineFeedbackAreas();
+autoCloseInfoPopupIfDefault();
 } catch (e) {}
           try { renderStatus(); } catch (e) {}
           try { renderConsole(); } catch (e) {}
@@ -649,10 +651,18 @@ function ensureStatusRail() {
 
 
 function setCoreActionFeedback(text, tone) {
-  const el = $('spCoreActionFeedback') || $('spCalIoFeedback');
-  if (!el) return;
-  el.textContent = text || '';
-  el.dataset.tone = tone || 'info';
+  try {
+    const s = store && store.getState ? store.getState() : null;
+    const inline = !!(s && s.ui && s.ui.inlineFeedback);
+    if (inline) {
+      const el = $('spCoreActionFeedback');
+      if (el) {
+        el.textContent = text || '';
+        el.dataset.tone = tone || 'info';
+      }
+    }
+  } catch (e) {}
+  try { if (text) appendConsole(String(text)); } catch (e) {}
 }
 
 
@@ -1175,6 +1185,13 @@ function renderLabPanel() {
   }
 
   function init() {
+function clearInlineFeedbackAreas() {
+  try {
+    const a = ['spCoreActionFeedback','spLabFeedback','spCalIoFeedback'];
+    a.forEach((id) => { const elx = document.getElementById(id); if (elx) elx.textContent=''; });
+  } catch (e) {}
+}
+
 function wrapShowInfoPopup() {
   try {
     if (window.__spOriginalShowInfoPopup) return;

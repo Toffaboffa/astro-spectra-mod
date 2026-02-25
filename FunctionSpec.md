@@ -824,3 +824,7 @@ This spec therefore prioritizes:
 
 ## Patch log
 - LAB console rootfix: Fixed proBootstrap syntax corruption, ensured CONSOLE card is built in status rail, and suppressed generic 'Info message' popup by wrapping showInfoPopup.
+
+
+## Patch log
+- Console tune: Removed CONSOLE header, set console font to 10pt, routed all CORE/LAB/OTHER action feedback into console (inline feedback disabled by default).
