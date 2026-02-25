@@ -604,9 +604,10 @@ function maybeRunLabAnalyze(frameNormalized) {
         }
         if (t.id === 'spRefreshUiBtn') {
           setCoreActionFeedback('UI refreshed (dock + status rerender).', 'ok');
-          \1
-  renderConsole();
-return;
+          try { render(); } catch (e) {}
+          try { renderStatus(); } catch (e) {}
+          try { renderConsole(); } catch (e) {}
+          return;
         }
         if (t.id === 'spProbeCameraBtn') {
           setCoreActionFeedback('Probing camera capabilities…', 'info');

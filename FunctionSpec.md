@@ -812,3 +812,7 @@ This spec therefore prioritizes:
 
 ## Patch log
 - LAB Step 1 UI: Added bottom-right CONSOLE log panel (monospace + blinking cursor) that records key actions/events and worker messages.
+
+
+## Patch log
+- Hotfix: Fixed proBootstrap.js SyntaxError (stray `\1` token) that prevented dock from rendering and could trigger popup on load.
