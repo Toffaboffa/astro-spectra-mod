@@ -469,7 +469,7 @@ function ensureStatusRail() {
   host.appendChild(wrap);
 }
 
-  function ensurePanelContentfunction ensurePanelContent() {
+  function ensurePanelContent() {
     if (!ui) return;
 
     const core = ui.panels.core;
@@ -674,14 +674,15 @@ autoCloseInfoPopupIfDefault();
 function setCoreActionFeedback(text, tone) {
   try { if (text) appendConsole(String(text)); } catch (e) {}
 }
-    }
-  } catch (e) {}
+function setLabFeedback(text, tone) {
+  try { if (text) appendConsole(String(text)); } catch (e) {}
+}
+function setCalIoFeedback(text, tone) {
   try { if (text) appendConsole(String(text)); } catch (e) {}
 }
 
-
-
-function getCalibrationShellManager() {
+function getCalibrationShellManager
+() {
   try {
     if (sp.calibrationPointManager) return sp.calibrationPointManager;
     const mgrMod = sp.v15 && sp.v15.calibrationPointManager;
@@ -1058,8 +1059,7 @@ function renderConsole() {
   const pre = document.getElementById('spSideConsolePre');
   if (!pre) return;
   const lines = getConsoleLines();
-  pre.textContent = lines.join('
-');
+  pre.textContent = lines.join('\n');
   try {
     const body = document.getElementById('spSideConsoleBody');
     if (body) body.scrollTop = body.scrollHeight;
