@@ -248,15 +248,21 @@ These are the baseline scripts that must keep working.
 - `mod/spectrumFrameAdapter.js`
 - `mod/overlays.js`
 - `mod/analysisWorkerClient.js`
+- `mod/displayModes.js`
+- `mod/dataQualityPanel.js`
+- `mod/yAxisController.js`
+- `mod/peakControls.js`
+- `mod/graphAppearance.js`
+- `mod/cameraCapabilities.js`
+- `mod/calibrationIO.js`
+- `mod/calibrationPointManager.js`
 - `mod/proBootstrap.js`
 
-### Not loaded yet (important)
-Phase 1.5 modules (`displayModes.js`, `yAxisController.js`, etc.) are **mostly present as files but not loaded/integrated** yet.
+### Activation state (important)
+Phase 1.5 modules (`displayModes.js`, `yAxisController.js`, etc.) are now **loaded as classic-script-compatible scaffold modules** and exposed under `window.SpectraPro.v15`, but are not yet functionally integrated into graph behavior.
 
 ### Compatibility trap (must remember)
-Several Phase 1.5 scaffold files use **ES module `export` syntax** and cannot be added to `recording.html` as classic scripts without either:
-- converting them to browser-safe namespace modules, or
-- introducing a module loader path.
+Phase 1.5 scaffold modules have been converted to **classic-script-compatible namespace modules** under `window.SpectraPro.v15` in Step 3. Future additions should follow the same browser-safe pattern unless the page is migrated to `type=module`.
 
 ---
 
@@ -320,19 +326,19 @@ Several Phase 1.5 scaffold files use **ES module `export` syntax** and cannot be
 
 ### D. Phase 1.5 v5-inspired UX upgrades (items 14–20)
 #### 14) Display modes
-- `SCAFFOLD` (file exists, not loaded)
+- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
 #### 15) Data Quality panel module
-- `SCAFFOLD` (file exists, not loaded; current visible DQ is rendered inside `proBootstrap.js`)
+- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired; current visible DQ is rendered inside `proBootstrap.js`)
 #### 16) Y-axis controls
-- `SCAFFOLD` (file exists, not loaded)
+- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
 #### 17) Peak controls (threshold/distance/smoothing)
-- `SCAFFOLD` (file exists, not loaded)
+- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
 #### 18) Graph appearance / fill modes
-- `SCAFFOLD` (file exists, not loaded)
+- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
 #### 19) Camera capability abstraction
-- `SCAFFOLD` (file exists, not loaded)
+- `PARTIAL` (classic-script scaffold loaded via `sp.v15`, not yet wired)
 #### 20) Calibration I/O + multipoint manager
-- `SCAFFOLD` (files exist, not loaded)
+- `PARTIAL` (classic-script scaffolds loaded via `sp.v15`, not yet wired)
 
 ### E. Phase 2 LAB MVP
 - `PARTIAL` foundation
@@ -410,7 +416,7 @@ Success criteria:
 
 **Status:** `READY`
 
-#### Step 3 — Phase 1.5 activation scaffold (load path + compatibility wrappers)
+#### Step 3 — Phase 1.5 activation scaffold (load path + compatibility wrappers) (implemented)
 **Goal:** make 14–20 load safely without breaking classic-script pages.
 
 Planned scope:
@@ -424,7 +430,7 @@ Success criteria:
 - Modules are loaded and inspectable
 - CORE unaffected when idle
 
-**Status:** `TODO`
+**Status:** `READY`
 
 #### Step 4 — Phase 1.5 functional controls (incremental slices)
 **Goal:** implement actual user-facing v5-style controls in small, testable slices.
@@ -497,7 +503,7 @@ Must be true before phase ends:
 
 ### Runtime integration risks
 - Status/Data Quality now normalizes graph/calibration/reference into store; guarded fallbacks remain only as resilience if sync has not fired yet.
-- Phase 1.5 modules use mixed syntax/style; naive loading can crash `recording.html` with syntax errors.
+- Phase 1.5 scaffold modules are now classic-script-safe, but remain placeholder-only and must not silently alter CORE behavior until each Step 4 slice is wired and QA-tested.
 - Worker controls in CORE-tab are now wired, but must remain optional and fail-safe.
 
 ---
@@ -606,8 +612,36 @@ This prevents “spec drift” where the GUI looks newer than the documentation.
 - Frame sync is throttled via `requestAnimationFrame` to avoid render-loop pressure.
 
 **What remains next**
-- Step 3: safely load/activate Phase 1.5 scaffold modules (ESM compatibility wrappers / load path).
 - Step 4: implement 14–20 in small slices.
+
+
+### 2026-02-25 — Phase 1→1.5 Step 3 activation scaffold (classic-script compatibility)
+**Touched files:**
+- `docs/frontend/pages/recording.html`
+- `docs/frontend/scripts/mod/displayModes.js`
+- `docs/frontend/scripts/mod/dataQualityPanel.js`
+- `docs/frontend/scripts/mod/yAxisController.js`
+- `docs/frontend/scripts/mod/peakControls.js`
+- `docs/frontend/scripts/mod/graphAppearance.js`
+- `docs/frontend/scripts/mod/cameraCapabilities.js`
+- `docs/frontend/scripts/mod/calibrationIO.js`
+- `docs/frontend/scripts/mod/calibrationPointManager.js`
+- `docs/frontend/scripts/mod/proBootstrap.js`
+- `FunctionSpec.md`
+
+**What changed**
+- Converted Phase 1.5 scaffold modules from ESM `export` syntax to classic-script-safe namespace modules under `window.SpectraPro.v15`.
+- Added Phase 1.5 scaffold scripts to `recording.html` load order before `proBootstrap.js`.
+- Added `sp.v15.registry` exposure/normalization in `proBootstrap.js` so loaded scaffold modules are discoverable/inspectable at runtime.
+- Added lightweight status-line visibility of loaded v1.5 module count (scaffold activation only; no graph behavior changes).
+
+**What passed (patch-level expectations)**
+- No `export` syntax remains in the loaded Phase 1.5 scaffold files.
+- `recording.html` still uses classic scripts (no `type=module` migration required).
+- CORE DOM/selectors untouched.
+
+**What remains next**
+- Step 4: wire Phase 1.5 controls into actual graph behavior in small slices (start with Display modes + Y-axis).
 
 ## Final principle
 SPECTRA-PRO should feel like a **real instrument first** and a smart analyzer second.

@@ -92,6 +92,37 @@
     return ui;
   }
 
+
+  function ensureV15Registry() {
+    const v15 = sp.v15 || (sp.v15 = {});
+    if (!v15.registry) {
+      v15.registry = {
+        modules: {
+          displayModes: !!v15.displayModes,
+          dataQualityPanel: !!v15.dataQualityPanel,
+          yAxisController: !!v15.yAxisController,
+          peakControls: !!v15.peakControls,
+          graphAppearance: !!v15.graphAppearance,
+          cameraCapabilities: !!v15.cameraCapabilities,
+          calibrationIO: !!v15.calibrationIO,
+          calibrationPointManager: !!v15.calibrationPointManager
+        },
+        loadedAt: Date.now(),
+        scaffold: true,
+        version: 'step3'
+      };
+    } else {
+      const mods = v15.registry.modules || (v15.registry.modules = {});
+      ['displayModes','dataQualityPanel','yAxisController','peakControls','graphAppearance','cameraCapabilities','calibrationIO','calibrationPointManager'].forEach(function (k) {
+        mods[k] = !!v15[k];
+      });
+      v15.registry.loadedAt = v15.registry.loadedAt || Date.now();
+      v15.registry.scaffold = true;
+      v15.registry.version = 'step3';
+    }
+    return v15.registry;
+  }
+
   function getStoreState() {
     try { return (store && store.getState) ? (store.getState() || {}) : {}; }
     catch (_) { return {}; }
@@ -207,6 +238,7 @@
 
   function syncActiveTabToStore(tab) {
     if (!store || !store.setState) return;
+    ensureV15Registry();
     const state = getStoreState();
     const nextUi = Object.assign({}, state.ui || {}, { activeTab: tab });
     store.setState({ ui: nextUi }, { source: 'proBootstrap.tab' });
@@ -386,7 +418,8 @@
         `Worker: ${state.worker?.status || 'idle'}${state.worker?.analysisHz ? ` · ${state.worker.analysisHz} Hz` : ''}`,
         `Frame source: ${latest?.source || state.frame?.source || 'none'}${latest?.pixelWidth ? ` · ${latest.pixelWidth} px` : ''}`,
         `Calibration: ${(state.calibration?.isCalibrated ? 'calibrated' : 'uncalibrated')} · pts ${state.calibration?.points?.length || state.calibration?.pointCount || 0}` ,
-        `Reference: ${(state.reference?.hasReference ? 'yes' : 'no')} · count ${state.reference?.count || 0}`
+        `Reference: ${(state.reference?.hasReference ? 'yes' : 'no')} · count ${state.reference?.count || 0}` ,
+        `v1.5 modules: ${Object.values(((window.SpectraPro||{}).v15?.registry?.modules)||{}).filter(Boolean).length}/8 loaded`
       ],
       dq: [
         `Signal: ${min} - ${max}`,
