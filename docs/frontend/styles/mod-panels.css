@@ -546,7 +546,7 @@ body{overflow:hidden;}
 #SpectraProDockHost .sp-tab.is-active{background:#0b2d4f !important; box-shadow:0 0 0 1px rgba(16,185,129,.25) inset !important;}
 #SpectraProDockHost .sp-body{display:grid !important; grid-template-columns:minmax(0,1fr) 360px !important; gap:12px !important; align-items:start !important; min-height:120px !important;}
 #SpectraProDockHost .sp-tabpanels{min-width:0 !important;}
-#SpectraProDockHost .sp-tabpanel{display:block !important; min-width:0 !important; min-height:100px !important; border:1px solid rgba(120,180,255,.18) !important; border-radius:10px !important; background:rgba(4,19,43,.45) !important; padding:10px !important;}
+#SpectraProDockHost .sp-tabpanel{display:block !important; min-width:0 !important; min-height:100px !important; border:1px solid rgba(120,180,255,.18) !important; border-radius:10px !important; background:rgba(4,19,43,.45);}
 #SpectraProDockHost .sp-tabpanel[hidden]{display:none !important;}
 #SpectraProDockHost #spPanel-general{padding:0 !important; background:transparent !important; border:none !important;}
 #SpectraProDockHost .sp-general-host{display:block; width:100%;}
