@@ -827,22 +827,24 @@ function ensureLabPanel() {
   panel.appendChild(card);
   panel.dataset.built = '1';
 
-  // Mirror LAB interactions to the real browser console (DevTools), while still
-  // keeping the inline feedback note for quick at-a-glance UI status.
+  // LAB must log to the *on-page* console (the right-side console panel),
+  // not to an inline LAB div and not to DevTools.
   const logLab = function (text, tone) {
     const msg = '[LAB] ' + String(text || '');
     try {
-      if (tone === 'error') console.error(msg);
-      else if (tone === 'warn') console.warn(msg);
-      else console.log(msg);
+      if (sp && sp.consoleLog && typeof sp.consoleLog.append === 'function') {
+        sp.consoleLog.append(msg);
+      }
     } catch (_) {}
   };
 
   const setFeedback = function (text, tone) {
+    // Keep the feedback container empty (layout only). Everything goes to the on-page console.
     const fb = $('spLabFeedback');
-    if (!fb) return;
-    fb.textContent = text || '';
-    fb.dataset.tone = tone || '';
+    if (fb) {
+      fb.textContent = '';
+      fb.dataset.tone = '';
+    }
     if (text) logLab(text, tone);
   };
 
