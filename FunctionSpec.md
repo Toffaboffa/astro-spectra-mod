@@ -832,3 +832,7 @@ This spec therefore prioritizes:
 
 ## Patch log
 - Console moved to left sidebar (fixed height), right rail restored to 2 columns, timestamps removed, and all action feedback routed exclusively to console.
+
+
+## Patch log
+- LAB: Top hits moved to right half of LAB panel; LAB feedback now routes to console and no longer appears inline.
