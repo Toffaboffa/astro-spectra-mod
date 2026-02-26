@@ -797,30 +797,28 @@ function ensureLabPanel() {
     '  <div class="sp-lab-title">LAB</div>',
     '  <div id="spLabFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
     '</div>',
-    '<div class="sp-lab-grid">',
-    '  <div class="sp-lab-left">',
-    '    <div class="sp-form-grid sp-form-grid--lab">',
-    '      <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled">Analyze<input id="spLabEnabled" type="checkbox"></label>',
-    '      <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
-    '      <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">',
-    '        <option value="">(default)</option>',
-    '        <option value="general">General</option>',
-    '        <option value="alkali">Alkali</option>',
-    '        <option value="metal">Metals</option>',
-    '        <option value="gas">Gases</option>',
-    '      </select></label>',
-    '    </div>',
-    '    <div class="sp-actions sp-actions--lab">',
-    '      <button type="button" id="spLabInitLibBtn">Init libraries</button>',
-    '      <button type="button" id="spLabPingBtn">Ping worker</button>',
-    '      <button type="button" id="spLabQueryBtn">Query library</button>',
-    '    </div>',
-    '    <div class="sp-lab-qc-block">',
-    '      <h4 class="sp-subtitle">QC</h4>',
-    '      <div id="spLabQc" class="sp-lab-qc"></div>',
-    '    </div>',
+    '<div class="sp-form-grid sp-form-grid--lab">',
+    '  <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled">Analyze<input id="spLabEnabled" type="checkbox"></label>',
+    '  <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
+    '  <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">',
+    '    <option value="">(default)</option>',
+    '    <option value="general">General</option>',
+    '    <option value="alkali">Alkali</option>',
+    '    <option value="metal">Metals</option>',
+    '    <option value="gas">Gases</option>',
+    '  </select></label>',
+    '</div>',
+    '<div class="sp-actions sp-actions--lab">',
+    '  <button type="button" id="spLabInitLibBtn">Init libraries</button>',
+    '  <button type="button" id="spLabPingBtn">Ping worker</button>',
+    '  <button type="button" id="spLabQueryBtn">Query library</button>',
+    '</div>',
+    '<div class="sp-lab-split">',
+    '  <div class="sp-lab-col">',
+    '    <h4 class="sp-subtitle">QC</h4>',
+    '    <div id="spLabQc" class="sp-lab-qc"></div>',
     '  </div>',
-    '  <div class="sp-lab-right">',
+    '  <div class="sp-lab-col">',
     '    <h4 class="sp-subtitle">Top hits</h4>',
     '    <div id="spLabHits" class="sp-lab-hits"></div>',
     '  </div>',
@@ -829,11 +827,24 @@ function ensureLabPanel() {
   panel.appendChild(card);
   panel.dataset.built = '1';
 
+  // Mirror LAB interactions to the real browser console (DevTools), while still
+  // keeping the inline feedback note for quick at-a-glance UI status.
+  const logLab = function (text, tone) {
+    const msg = '[LAB] ' + String(text || '');
+    try {
+      if (tone === 'error') console.error(msg);
+      else if (tone === 'warn') console.warn(msg);
+      else console.log(msg);
+    } catch (_) {}
+  };
+
   const setFeedback = function (text, tone) {
-  try { if (text) appendConsole(String(text)); } catch (e) {}
-  const fb = $('spLabFeedback');
-  if (fb) fb.textContent = '';
-};
+    const fb = $('spLabFeedback');
+    if (!fb) return;
+    fb.textContent = text || '';
+    fb.dataset.tone = tone || '';
+    if (text) logLab(text, tone);
+  };
 
   const s = getStoreState();
   const enabled = !!(s.analysis && s.analysis.enabled);
@@ -867,8 +878,7 @@ function ensureLabPanel() {
     setFeedback(v ? ('Preset: ' + v) : 'Preset cleared.', 'info');
   });
 
-  $('spLabInitLibBtn') && \1
-      appendConsole('LAB: Init libraries clicked');
+  $('spLabInitLibBtn') && $('spLabInitLibBtn').addEventListener('click', function () {
     const client = ensureWorkerClient();
     if (!client || !client.initLibraries) { setFeedback('Worker client unavailable.', 'warn'); return; }
     setFeedback('Initializing libraries…', 'info');
@@ -879,16 +889,14 @@ function ensureLabPanel() {
     }
   });
 
-  $('spLabPingBtn') && \1
-      appendConsole('LAB: Ping worker clicked');
+  $('spLabPingBtn') && $('spLabPingBtn').addEventListener('click', function () {
     const client = ensureWorkerClient();
     if (!client || !client.ping) { setFeedback('Worker client unavailable.', 'warn'); return; }
     setFeedback('Pinging worker…', 'info');
     try { client.ping(); } catch (err) { setFeedback('Ping failed: ' + String(err && err.message || err), 'error'); }
   });
 
-  $('spLabQueryBtn') && \1
-      appendConsole('LAB: Query library clicked');
+  $('spLabQueryBtn') && $('spLabQueryBtn').addEventListener('click', function () {
     setFeedback('Query library (coming next).', 'info');
   });
 
