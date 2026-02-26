@@ -118,5 +118,26 @@
     return mod.probe(track);
   };
 
-  mod.version = 'step4-camera-capabilities';
+  // Apply a single constraint safely (zoom/exposureTime/etc.).
+  // Returns {ok, applied, reason, value}.
+  mod.applySetting = async function applyCameraSetting(key, value, videoEl) {
+    const track = getActiveTrack(videoEl);
+    if (!track || typeof track.applyConstraints !== 'function') {
+      return { ok: false, applied: false, reason: 'no-track-or-unsupported', key: key, value: value };
+    }
+    try {
+      const caps = (typeof track.getCapabilities === 'function') ? safeObj(track.getCapabilities()) : {};
+      if (!(key in caps)) {
+        return { ok: false, applied: false, reason: 'capability-not-supported', key: key, value: value };
+      }
+      const v = Number(value);
+      if (!Number.isFinite(v)) return { ok: false, applied: false, reason: 'invalid-value', key: key, value: value };
+      await track.applyConstraints({ advanced: [ { [key]: v } ] });
+      return { ok: true, applied: true, key: key, value: v };
+    } catch (err) {
+      return { ok: false, applied: false, reason: String(err && err.message || err), key: key, value: value };
+    }
+  };
+
+  mod.version = 'step4-camera-capabilities+apply';
 })();

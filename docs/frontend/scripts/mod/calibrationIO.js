@@ -15,6 +15,7 @@
     if (px == null || nm == null) return null;
     const out = { px, nm };
     if (obj.label != null && String(obj.label).trim()) out.label = String(obj.label).trim();
+    if (obj.enabled === false) out.enabled = false;
     return out;
   }
   mod.parseCalibrationFile = function parseCalibrationFile(text, opts) {
@@ -43,6 +44,11 @@
       if (px == null || nm == null) return;
       const p = { px, nm };
       if (parts[2]) p.label = parts[2];
+      // Optional 4th column: enabled (0/1/true/false)
+      if (parts[3]) {
+        const e = String(parts[3]).toLowerCase();
+        if (e === '0' || e === 'false' || e === 'no' || e === 'off') p.enabled = false;
+      }
       points.push(p);
     });
     return points;
@@ -51,8 +57,8 @@
     const arr = Array.isArray(points) ? points.map(normalizePoint).filter(Boolean) : [];
     const format = String((opts && opts.format) || 'json').toLowerCase();
     if (format === 'csv') {
-      const lines = ['px,nm,label'];
-      arr.forEach(function (p) { lines.push([p.px, p.nm, p.label || ''].join(',')); });
+      const lines = ['px,nm,label,enabled'];
+      arr.forEach(function (p) { lines.push([p.px, p.nm, p.label || '', (p.enabled === false ? 0 : 1)].join(',')); });
       return lines.join('\n');
     }
     return JSON.stringify({ points: arr, count: arr.length, exportedAt: Date.now() }, null, 2);

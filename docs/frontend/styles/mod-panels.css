@@ -908,3 +908,24 @@ body{overflow:hidden;}
   0%,49%{opacity:1;}
   50%,100%{opacity:0;}
 }
+
+/* Calibration shell table (Other tab) */
+.sp-cal-shell-table{ display:flex; flex-direction:column; gap:6px; }
+.sp-cal-row{
+  display:grid;
+  grid-template-columns: 110px 120px 120px 1fr auto;
+  gap:8px;
+  align-items:center;
+  padding:6px 8px;
+  border-radius:10px;
+  background:rgba(255,255,255,0.04);
+}
+.sp-cal-en{ font-size:12px; opacity:0.9; display:flex; gap:6px; align-items:center; }
+.sp-cal-cell{ font-size:12px; opacity:0.95; white-space:nowrap; }
+.sp-cal-label{ opacity:0.85; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sp-cal-row button{ font-size:12px; padding:6px 10px; }
+
+@media (max-width: 900px){
+  .sp-cal-row{ grid-template-columns: 110px 1fr 1fr auto; }
+  .sp-cal-label{ display:none; }
+}

@@ -340,11 +340,13 @@ function maybeRunLabAnalyze(frameNormalized) {
       }
       const supported = (result && result.supported && typeof result.supported === 'object') ? result.supported : {};
       const values = (result && result.values && typeof result.values === 'object') ? result.values : {};
+      const ranges = (result && result.ranges && typeof result.ranges === 'object') ? result.ranges : {};
       const summary = (result && result.summary && typeof result.summary === 'object') ? result.summary : {};
       const status = String((result && result.status) || (result && result.source === 'track' ? 'ok' : 'no-track'));
       store.update('camera.source', String((result && result.source) || 'none'), { source: 'proBootstrap.cameraCaps' });
       store.update('camera.supported', supported, { source: 'proBootstrap.cameraCaps' });
       store.update('camera.values', values, { source: 'proBootstrap.cameraCaps' });
+      store.update('camera.ranges', ranges, { source: 'proBootstrap.cameraCaps' });
       store.update('camera.summary', summary, { source: 'proBootstrap.cameraCaps' });
       store.update('camera.lastProbeAt', Date.now(), { source: 'proBootstrap.cameraCaps' });
       store.update('camera.error', result && result.error ? String(result.error) : null, { source: 'proBootstrap.cameraCaps' });
@@ -498,6 +500,14 @@ function ensureStatusRail() {
         '  <button type="button" id="spRefreshUiBtn">Refresh UI</button>',
         '  <button type="button" id="spProbeCameraBtn">Probe camera</button>',
         '</div>',
+        '<div id="spCameraCtlWrap" class="sp-card-sub" style="margin-top:10px; display:none">',
+        '  <h4 class="sp-subtitle" style="margin:0 0 8px 0">Camera controls (optional)</h4>',
+        '  <div class="sp-form-grid">',
+        '    <label class="sp-field">Zoom<input id="spCamZoom" class="spctl-input" type="range" min="1" max="10" step="0.1" value="1"></label>',
+        '    <label class="sp-field">Exposure<input id="spCamExposure" class="spctl-input" type="range" min="1" max="1000" step="1" value="1"></label>',
+        '  </div>',
+        '  <div id="spCameraCtlNote" class="sp-note sp-note--feedback" aria-live="polite"></div>',
+        '</div>',
         '<div id="spCoreActionFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>'
       ].join('');
       core.appendChild(card);
@@ -513,6 +523,10 @@ function ensureStatusRail() {
       const peakSmoothingInput = card.querySelector('#spPeakSmoothing');
       const fillModeSel = card.querySelector('#spFillMode');
       const fillOpacityInput = card.querySelector('#spFillOpacity');
+      const camCtlWrap = card.querySelector('#spCameraCtlWrap');
+      const camZoomInput = card.querySelector('#spCamZoom');
+      const camExposureInput = card.querySelector('#spCamExposure');
+      const camCtlNote = card.querySelector('#spCameraCtlNote');
       const setVal = (path, value) => { if (store && store.update) store.update(path, value, { source: 'proBootstrap.core' }); };
       const peakInit = getInitialPeakUiValues();
       if (peakThresholdInput) peakThresholdInput.value = String(peakInit.threshold);
@@ -647,11 +661,89 @@ autoCloseInfoPopupIfDefault();
         }
         if (t.id === 'spProbeCameraBtn') {
           setCoreActionFeedback('Probing camera capabilities…', 'info');
-          probeCameraCapabilitiesIntoStore().then(function (res) { setCoreActionFeedback('Probe camera done (' + String((res && res.status) || 'unknown') + ').', 'ok'); renderStatus();
-    renderConsole(); }).catch(function (err) { setCoreActionFeedback('Probe camera failed: ' + String(err && err.message || err), 'error'); });
+          probeCameraCapabilitiesIntoStore().then(function (res) {
+            setCoreActionFeedback('Probe camera done (' + String((res && res.status) || 'unknown') + ').', 'ok');
+            try { renderStatus(); } catch (_) {}
+            try { renderConsole(); } catch (_) {}
+            try { renderCameraControlsFromStore(); } catch (_) {}
+          }).catch(function (err) { setCoreActionFeedback('Probe camera failed: ' + String(err && err.message || err), 'error'); });
           return;
         }
       });
+
+      // Camera controls (optional) — apply constraints only if supported.
+      const applyCamSetting = function (key, val) {
+        const camMod = sp.v15 && sp.v15.cameraCapabilities;
+        if (!camMod || typeof camMod.applySetting !== 'function') {
+          if (camCtlNote) camCtlNote.textContent = 'Camera controls unavailable (module missing).';
+          return;
+        }
+        // Persist desired value for reproducibility/debugging.
+        setVal('camera.desired.' + key, val);
+        camMod.applySetting(key, val).then(function (res) {
+          const ok = !!(res && res.ok);
+          const msg = ok
+            ? ('Applied ' + key + ' = ' + String(res.value))
+            : ('Failed to apply ' + key + ' (' + String((res && res.reason) || 'unknown') + ')');
+          if (camCtlNote) camCtlNote.textContent = msg;
+          try { appendConsole('[CAM] ' + msg); } catch (_) {}
+          // Refresh probe after apply so Status/DQ stays truthful.
+          return probeCameraCapabilitiesIntoStore();
+        }).then(function () {
+          try { renderStatus(); } catch (_) {}
+          try { renderCameraControlsFromStore(); } catch (_) {}
+        }).catch(function (err) {
+          const msg = 'Camera apply error: ' + String(err && err.message || err);
+          if (camCtlNote) camCtlNote.textContent = msg;
+          try { appendConsole('[CAM] ' + msg); } catch (_) {}
+        });
+      };
+
+      camZoomInput && camZoomInput.addEventListener('change', function (e) {
+        applyCamSetting('zoom', Number(e.target.value));
+      });
+      camExposureInput && camExposureInput.addEventListener('change', function (e) {
+        applyCamSetting('exposureTime', Number(e.target.value));
+      });
+
+      // Render camera controls based on store state.
+      function renderCameraControlsFromStore() {
+        const st = getStoreState();
+        const cam = st.camera || {};
+        const supported = cam.supported || {};
+        const values = cam.values || {};
+        const ranges = cam.ranges || {};
+        const show = !!(supported.zoom || supported.exposureTime);
+        if (camCtlWrap) camCtlWrap.style.display = show ? '' : 'none';
+        if (!show) return;
+
+        if (camZoomInput) {
+          camZoomInput.disabled = !supported.zoom;
+          if (supported.zoom && ranges.zoom) {
+            if (ranges.zoom.min != null) camZoomInput.min = String(ranges.zoom.min);
+            if (ranges.zoom.max != null) camZoomInput.max = String(ranges.zoom.max);
+            if (ranges.zoom.step != null) camZoomInput.step = String(ranges.zoom.step);
+          }
+          const zv = Number(values.zoom);
+          if (Number.isFinite(zv)) camZoomInput.value = String(zv);
+        }
+
+        if (camExposureInput) {
+          camExposureInput.disabled = !supported.exposureTime;
+          if (supported.exposureTime && ranges.exposureTime) {
+            if (ranges.exposureTime.min != null) camExposureInput.min = String(ranges.exposureTime.min);
+            if (ranges.exposureTime.max != null) camExposureInput.max = String(ranges.exposureTime.max);
+            if (ranges.exposureTime.step != null) camExposureInput.step = String(ranges.exposureTime.step);
+          }
+          const ev = Number(values.exposureTime);
+          if (Number.isFinite(ev)) camExposureInput.value = String(ev);
+        }
+
+        if (camCtlNote && cam.error) camCtlNote.textContent = String(cam.error);
+      }
+
+      // Initial render (in case camera already running and a probe ran).
+      try { renderCameraControlsFromStore(); } catch (_) {}
     }
 
     ensureLabPanel();
@@ -666,9 +758,25 @@ autoCloseInfoPopupIfDefault();
     });
 
     ensureCalibrationShell();
+    ensureDataQualityDetails();
     ensureStatusRail();
     ensureSideConsole();
   }
+
+
+function ensureDataQualityDetails() {
+  if (!ui || !ui.panels.other) return;
+  const panel = ui.panels.other;
+  if ($('spDQDetails')) return;
+  const card = el('div', 'sp-card sp-card--flat');
+  card.id = 'spDQDetails';
+  card.innerHTML = [
+    '<h3 style="margin:0 0 8px 0">Data Quality (details)</h3>',
+    '<div class="sp-note" style="opacity:0.9">This is a read-only breakdown of the same metrics shown in the status rail.</div>',
+    '<div id="spDQDetailsBody" class="sp-status-lines" style="margin-top:8px"></div>'
+  ].join('');
+  panel.appendChild(card);
+}
 
 
 function setCoreActionFeedback(text, tone) {
@@ -696,7 +804,8 @@ function getCalibrationShellManager
 
 function getNormalizedShellCalibrationPoints() {
   const mgr = getCalibrationShellManager();
-  const raw = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
+  const raw = (mgr && typeof mgr.getEnabledPoints === 'function') ? mgr.getEnabledPoints()
+    : ((mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : []);
   const ioMod = sp.v15 && sp.v15.calibrationIO;
   if (ioMod && typeof ioMod.normalizeAndValidatePoints === 'function') {
     return ioMod.normalizeAndValidatePoints(raw, { minPoints: 2, maxPoints: 15, sortBy: 'px', dedupe: true });
@@ -746,6 +855,15 @@ function applyShellCalibrationPointsToOriginal() {
     if (typeof window.resetCalibrationPoints !== 'function' || typeof window.setCalibrationPoints !== 'function') {
       return { ok: false, reason: 'Original calibration functions unavailable' };
     }
+
+    // Save a rollback backup (best-effort) before overwriting inputs.
+    try {
+      const st = getStoreState();
+      const cur = (st.calibration && Array.isArray(st.calibration.points)) ? st.calibration.points : [];
+      updateStorePath('calibration.lastApplyBackup', Array.isArray(cur) ? cur.slice() : cur, { source: 'proBootstrap.calIO.apply' });
+      updateStorePath('calibration.lastApplyBackupAt', Date.now(), { source: 'proBootstrap.calIO.apply' });
+    } catch (_) {}
+
     window.resetCalibrationPoints();
     while (true) {
       const nextIndex = document.getElementById('point' + (pts.length) + 'px') ? pts.length : null;
@@ -925,7 +1043,15 @@ function ensureCalibrationShell() {
     '  <button type="button" id="spCalClearBtn">Clear shell points</button>',
     '</div>',
     '<div id="spCalIoFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
-    '<div id="spCalIoValidation" class="sp-note sp-note--validation" style="display:none"></div>'
+    '<div id="spCalIoValidation" class="sp-note sp-note--validation" style="display:none"></div>',
+    '<div class="sp-divider" style="height:1px;background:rgba(255,255,255,0.08);margin:10px 0"></div>',
+    '<h4 class="sp-subtitle" style="margin:0 0 8px 0">Shell points</h4>',
+    '<div id="spCalShellTable" class="sp-cal-shell-table"></div>',
+    '<div class="sp-actions" style="margin-top:8px">',
+    '  <button type="button" id="spCalUndoShellBtn">Undo shell edit</button>',
+    '  <button type="button" id="spCalRollbackBtn">Rollback last apply</button>',
+    '</div>',
+    '<div id="spCalShellNote" class="sp-note sp-note--feedback" aria-live="polite"></div>'
   ].join('');
   panel.appendChild(card);
   panel.dataset.built = '1';
@@ -939,9 +1065,111 @@ function ensureCalibrationShell() {
   };
   const ioMod = sp.v15 && sp.v15.calibrationIO;
 
+  function setShellNote(text) {
+    const n = $('spCalShellNote');
+    if (n) n.textContent = String(text || '');
+  }
+
+  function renderShellPointsTable() {
+    const host = $('spCalShellTable');
+    if (!host) return;
+    const mgr = getMgr();
+    const pts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
+    if (!pts.length) {
+      host.innerHTML = '<div class="sp-empty">No shell points.</div>';
+      return;
+    }
+    const rows = pts.map(function (p, idx) {
+      const en = (p && p.enabled === false) ? '' : 'checked';
+      const label = p && p.label ? String(p.label) : '';
+      return [
+        '<div class="sp-cal-row" data-idx="' + idx + '">',
+        '  <label class="sp-cal-en"><input type="checkbox" class="spCalEn" ' + en + '> enable</label>',
+        '  <div class="sp-cal-cell">px: <span class="sp-cal-val">' + (p && Number.isFinite(Number(p.px)) ? Number(p.px).toFixed(2) : '—') + '</span></div>',
+        '  <div class="sp-cal-cell">nm: <span class="sp-cal-val">' + (p && Number.isFinite(Number(p.nm)) ? Number(p.nm).toFixed(2) : '—') + '</span></div>',
+        '  <div class="sp-cal-cell sp-cal-label">' + label + '</div>',
+        '  <button type="button" class="spCalRemove">Remove</button>',
+        '</div>'
+      ].join('');
+    }).join('');
+    host.innerHTML = rows;
+  }
+
+  function updateShellCountsAndValidation() {
+    const mgr = getMgr();
+    const pts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
+    const enabledPts = (mgr && typeof mgr.getEnabledPoints === 'function') ? mgr.getEnabledPoints() : pts;
+    updateStorePath('calibration.shellPointCount', Array.isArray(pts) ? pts.length : 0, { source: 'proBootstrap.calIO.shell' });
+    updateStorePath('calibration.shellEnabledCount', Array.isArray(enabledPts) ? enabledPts.length : 0, { source: 'proBootstrap.calIO.shell' });
+    const pv = formatCalValidationPreview(previewShellCalibrationNormalization(enabledPts));
+    setCalIoValidationText(pv.text, pv.level);
+  }
+
+  function captureBackupFromCurrentCalibrationState() {
+    const st = getStoreState();
+    const pts = (st.calibration && Array.isArray(st.calibration.points)) ? st.calibration.points : [];
+    // Keep a shallow backup for rollback.
+    updateStorePath('calibration.lastApplyBackup', pts.slice ? pts.slice() : pts, { source: 'proBootstrap.calIO.backup' });
+    updateStorePath('calibration.lastApplyBackupAt', Date.now(), { source: 'proBootstrap.calIO.backup' });
+  }
+
+  function rollbackLastApply() {
+    const st = getStoreState();
+    const backup = st.calibration && Array.isArray(st.calibration.lastApplyBackup) ? st.calibration.lastApplyBackup : [];
+    if (!backup || !backup.length) return { ok: false, reason: 'No backup points saved yet.' };
+    const mgr = getMgr();
+    if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(backup);
+    const normalized = (sp.v15 && sp.v15.calibrationIO && typeof sp.v15.calibrationIO.normalizeAndValidatePoints === 'function')
+      ? sp.v15.calibrationIO.normalizeAndValidatePoints(backup, { minPoints: 2, maxPoints: 15, sortBy: 'px', dedupe: true })
+      : { ok: backup.length >= 2, points: backup.slice(0, 15), count: Math.min(15, backup.length) };
+    if (!normalized.ok) return { ok: false, reason: 'Backup points invalid.' };
+    // Reuse the same apply logic but with the backup points currently in shell.
+    const res = applyShellCalibrationPointsToOriginal();
+    return res && res.ok ? { ok: true, count: res.count } : { ok: false, reason: (res && res.reason) || 'Rollback apply failed.' };
+  }
+
   panel.addEventListener('click', function (e) {
     const t = e.target.closest('button');
     if (!t) return;
+
+    // Shell table row actions
+    if (t.classList && t.classList.contains('spCalRemove')) {
+      const row = t.closest('.sp-cal-row');
+      const idx = row ? Number(row.getAttribute('data-idx')) : NaN;
+      const mgrX = getMgr();
+      if (mgrX && typeof mgrX.removeAt === 'function' && Number.isFinite(idx)) {
+        mgrX.removeAt(idx);
+        renderShellPointsTable();
+        updateShellCountsAndValidation();
+        setShellNote('Removed shell point #' + (idx + 1) + '.');
+      }
+      return;
+    }
+
+    if (t.id === 'spCalUndoShellBtn') {
+      const mgrU = getMgr();
+      if (mgrU && typeof mgrU.undo === 'function') {
+        mgrU.undo();
+        renderShellPointsTable();
+        updateShellCountsAndValidation();
+        setShellNote('Undo applied.');
+      }
+      return;
+    }
+
+    if (t.id === 'spCalRollbackBtn') {
+      const resRb = rollbackLastApply();
+      if (!resRb || !resRb.ok) {
+        setShellNote('Rollback failed: ' + String((resRb && resRb.reason) || 'unknown'));
+      } else {
+        setShellNote('Rollback applied (' + String(resRb.count || 0) + ' point(s)).');
+      }
+      renderShellPointsTable();
+      updateShellCountsAndValidation();
+      renderStatus();
+      return;
+    }
+
     const txt = $('spCalIoText');
     const fmtSel = $('spCalIoFormat');
     const fmt = String((fmtSel && fmtSel.value) || 'json').toLowerCase();
@@ -956,6 +1184,8 @@ function ensureCalibrationShell() {
       setCoreActionFeedback('Captured calibration points from current state into shell.', 'ok');
       var pvCapture = formatCalValidationPreview(previewShellCalibrationNormalization(pts));
       setCalIoValidationText(pvCapture.text, pvCapture.level);
+      renderShellPointsTable();
+      updateShellCountsAndValidation();
       renderStatus();
     }
     if (t.id === 'spCalExportBtn') {
@@ -969,8 +1199,10 @@ function ensureCalibrationShell() {
       if (txt) txt.value = out || '';
       updateStorePath('calibration.shellPointCount', Array.isArray(pts) ? pts.length : 0, { source: 'proBootstrap.calIO' });
       setCoreActionFeedback('Exported shell points to text area (' + fmt.toUpperCase() + ').', 'ok');
-      var pvExport = formatCalValidationPreview(previewShellCalibrationNormalization(pts));
+      var pvExport = formatCalValidationPreview(previewShellCalibrationNormalization((mgr && typeof mgr.getEnabledPoints === 'function') ? mgr.getEnabledPoints() : pts));
       setCalIoValidationText(pvExport.text, pvExport.level);
+      renderShellPointsTable();
+      updateShellCountsAndValidation();
     }
     if (t.id === 'spCalImportBtn') {
       const raw = String((txt && txt.value) || '');
@@ -980,9 +1212,11 @@ function ensureCalibrationShell() {
       if (!Array.isArray(pts)) pts = [];
       if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(pts);
       updateStorePath('calibration.shellPointCount', pts.length, { source: 'proBootstrap.calIO' });
-      var pvImport = formatCalValidationPreview(previewShellCalibrationNormalization(pts));
+      var pvImport = formatCalValidationPreview(previewShellCalibrationNormalization((mgr && typeof mgr.getEnabledPoints === 'function') ? mgr.getEnabledPoints() : pts));
       setCalIoValidationText(pvImport.text, pvImport.level);
       setCoreActionFeedback('Imported ' + pts.length + ' calibration point(s) into shell manager.', pts.length ? 'ok' : 'warn');
+      renderShellPointsTable();
+      updateShellCountsAndValidation();
       renderStatus();
     }
 
@@ -993,12 +1227,14 @@ function ensureCalibrationShell() {
         return;
       }
       updateStorePath('calibration.shellPointCount', Number(result.count) || 0, { source: 'proBootstrap.calIO' });
-      var mgrPts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
+      var mgrPts = (mgr && typeof mgr.getEnabledPoints === 'function') ? mgr.getEnabledPoints() : ((mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : []);
       var pvApply = previewShellCalibrationNormalization(mgrPts);
       var pvApplyFmt = formatCalValidationPreview(pvApply);
       setCalIoValidationText(pvApplyFmt.text, pvApplyFmt.level);
       var warnTag = (pvApply && Array.isArray(pvApply.warnings) && pvApply.warnings.length) ? (' [' + pvApply.warnings.join('; ') + ']') : '';
       setCoreActionFeedback('Applied ' + result.count + ' shell point(s) to original calibration' + (result.truncated ? ' (truncated to max).' : '.') + warnTag, 'ok');
+      renderShellPointsTable();
+      updateShellCountsAndValidation();
       renderStatus();
       return;
     }
@@ -1009,6 +1245,8 @@ function ensureCalibrationShell() {
       updateStorePath('calibration.shellPointCount', 0, { source: 'proBootstrap.calIO' });
       setCoreActionFeedback('Cleared shell calibration points.', 'ok');
       setCalIoValidationText('', '');
+      renderShellPointsTable();
+      updateShellCountsAndValidation();
       renderStatus();
     }
   });
@@ -1029,7 +1267,22 @@ function ensureCalibrationShell() {
 
   panel.addEventListener('change', function (e) {
     var t = e.target;
-    if (!t || t.id !== 'spCalIoFormat') return;
+    if (!t) return;
+
+    // Enable/disable shell points
+    if (t.classList && t.classList.contains('spCalEn')) {
+      const row = t.closest('.sp-cal-row');
+      const idx = row ? Number(row.getAttribute('data-idx')) : NaN;
+      const mgrE = getMgr();
+      if (mgrE && typeof mgrE.setEnabled === 'function' && Number.isFinite(idx)) {
+        mgrE.setEnabled(idx, !!t.checked);
+        updateShellCountsAndValidation();
+        setShellNote('Shell point #' + (idx + 1) + ' ' + (t.checked ? 'enabled' : 'disabled') + '.');
+      }
+      return;
+    }
+
+    if (t.id !== 'spCalIoFormat') return;
     var txt2 = $('spCalIoText');
     var raw2 = String((txt2 && txt2.value) || '');
     if (!raw2.trim()) { setCalIoValidationText('', ''); return; }
@@ -1039,6 +1292,10 @@ function ensureCalibrationShell() {
     var pvFmt2 = formatCalValidationPreview(previewShellCalibrationNormalization(pts3));
     setCalIoValidationText(pvFmt2.text, pvFmt2.level);
   });
+
+  // Initial render
+  try { renderShellPointsTable(); } catch (_) {}
+  try { updateShellCountsAndValidation(); } catch (_) {}
 
   return card;
 }
@@ -1091,6 +1348,16 @@ function renderConsole() {
     const lines = computeDataQualityLines(state);
     sEl.innerHTML = lines.status.join('<br>');
     qEl.innerHTML = lines.dq.join('<br>');
+
+    const dqDetails = $('spDQDetailsBody');
+    if (dqDetails) {
+      const combined = [];
+      combined.push('<b>Status</b>');
+      combined.push(lines.status.join('<br>'));
+      combined.push('<br><br><b>Data Quality</b>');
+      combined.push(lines.dq.join('<br>'));
+      dqDetails.innerHTML = combined.join('');
+    }
 
     const appModeSel = $('spAppMode');
     if (appModeSel && !shouldSkipSyncValue(appModeSel) && state.appMode && appModeSel.value !== state.appMode) appModeSel.value = state.appMode;

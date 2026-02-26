@@ -361,9 +361,9 @@ Phase 1.5 scaffold modules have been converted to **classic-script-compatible na
 - UI selector writes `state.display.mode`; `graphScript.js` applies transforms: `NORMAL`, `DIFFERENCE`, `RATIO`, `TRANSMITTANCE`, `ABSORBANCE` (requires a captured reference curve).
 
 #### 15) Data Quality module
-- `PARTIAL`
+- `READY`
 - `dataQualityPanel.js` computes Status + DQ metrics and is rendered in the Status rail.
-- Standalone “Data Quality” panel UI is not yet implemented (no drill-down UX).
+- `Other` tab now includes **Data Quality (details)**, a read-only breakdown mirroring the rail.
 
 #### 16) Y-axis controls
 - `READY`
@@ -374,20 +374,23 @@ Phase 1.5 scaffold modules have been converted to **classic-script-compatible na
 - UI writes `state.peaks.*`; `graphScript.js` reads them via `sp.v15.peakControls.getEffective(...)` and passes into peak detection.
 
 #### 18) Graph appearance / fill modes
-- `PARTIAL+`
+- `READY`
 - Fill mode + opacity are wired (`state.display.fillMode`, `state.display.fillOpacity`) and applied in `graphScript.js` (`INHERIT|OFF|SYNTHETIC|SOURCE`).
-- Remaining: define final semantics for `SOURCE` across zoom ranges + document in UI/help.
+- `SOURCE` is defined as “use sampled pixel colors, normalized to current y-scale” and behaves consistently across zoom ranges.
 
 #### 19) Camera capability abstraction
-- `PARTIAL+`
-- `cameraCapabilities.js` provides `probeCurrent()` and normalizes supported/values/ranges.
-- Status rail shows camera support summary (exposure/zoom/resolution). No direct camera-parameter controls are exposed (intentionally core-safe).
+- `READY` (core-safe, optional controls)
+- `cameraCapabilities.js` provides `probeCurrent()` + `applySetting()` and normalizes supported/values/ranges.
+- Status rail shows camera support summary (exposure/zoom/resolution).
+- `CORE controls` tab includes optional controls for **Zoom** and **Exposure** when supported; unsupported controls stay hidden/disabled.
 
 #### 20) Calibration I/O + multipoint manager shell
-- `PARTIAL+`
+- `READY`
 - `Other` tab contains the shell manager (JSON/CSV import/export, capture current points).
-- `Apply shell to calibration` maps shell points into the original calibration pipeline (core-safe bridge).
-- Remaining: outlier/disable UX + rollback affordance; more explicit validation preview and warnings.
+- Shell points now have **enable/disable** toggles (apply uses enabled points only), plus **Remove** per point.
+- `Undo shell edit` provides a simple undo stack for shell point edits.
+- `Rollback last apply` restores the previous calibration point set (best-effort backup) and re-applies.
+- Validation preview updates against enabled points.
 
 
 ### E. Phase 2 LAB MVP
@@ -516,7 +519,7 @@ Success criteria:
 - Controls affect graph behavior intentionally (not placeholder-only)
 - Features are safe to disable
 
-**Status:** `IN PROGRESS`
+**Status:** `READY` (Phase 1.5 complete)
 
 ### Phase 2 — Worker foundation + LAB MVP (after 1.5 shell activation)
 **Goal:** live identification in LAB mode without freezing UI.
@@ -865,5 +868,10 @@ This spec therefore prioritizes:
 ### 2026-02-26 — CORE-safe 1.5 controls and calibration shell
 - CORE controls: Display mode, Y-axis mode/max, Peak threshold/distance/smoothing, Fill mode/opacity are wired through `sp.store` and applied in `graphScript.js` (reversible visual overrides).
 - Calibration shell (Other tab): JSON/CSV parse/serialize + shell point manager + “Apply shell to calibration” bridge to the original calibration pipeline.
+
+### 2026-02-26 — Phase 1.5 completion: DQ details + camera controls + calibration safety
+- Other tab: **Data Quality (details)** mirrors the Status rail metrics for drill-down.
+- Camera capabilities: `probeCurrent()` now stores ranges; `applySetting()` enables optional Zoom/Exposure controls when supported.
+- Calibration shell: enable/disable points (apply uses enabled only), remove points, undo shell edits, and rollback last apply.
 
 ---
