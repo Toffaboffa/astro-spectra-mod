@@ -357,24 +357,60 @@ Phase 1.5 scaffold modules have been converted to **classic-script-compatible na
 
 ### D. Phase 1.5 v5-inspired UX upgrades (items 14–20)
 #### 14) Display modes
-- `PARTIAL` (wired into CORE controls + `graphScript.js` display transform; advanced mode semantics still evolving)
-#### 15) Data Quality panel module
-- `PARTIAL` (wired into `proBootstrap.js` status rail computation via `sp.v15.dataQualityPanel.compute(...)`; still no standalone panel UI yet)
+- `READY` (core-safe visual override)
+- UI selector writes `state.display.mode`; `graphScript.js` applies transforms: `NORMAL`, `DIFFERENCE`, `RATIO`, `TRANSMITTANCE`, `ABSORBANCE` (requires a captured reference curve).
+
+#### 15) Data Quality module
+- `PARTIAL`
+- `dataQualityPanel.js` computes Status + DQ metrics and is rendered in the Status rail.
+- Standalone “Data Quality” panel UI is not yet implemented (no drill-down UX).
+
 #### 16) Y-axis controls
-- `PARTIAL` (wired into CORE controls + `graphScript.js` y-axis scaling: AUTO/FIXED_255/MANUAL)
+- `READY`
+- UI selector writes `state.display.yAxisMode` (`auto|fixed_255|manual`) and `state.display.yAxisMax`; `graphScript.js` applies scaling.
+
 #### 17) Peak controls (threshold/distance/smoothing)
-- `PARTIAL` (wired into CORE controls + `graphScript.js` peak detection for threshold/distance/smoothing; advanced split visual-vs-analysis controls still pending)
+- `READY` (basic controls)
+- UI writes `state.peaks.*`; `graphScript.js` reads them via `sp.v15.peakControls.getEffective(...)` and passes into peak detection.
+
 #### 18) Graph appearance / fill modes
-- `PARTIAL` (wired into CORE controls + `graphScript.js` fill mode/opacity override; camera capability/calibration integrations still pending)
+- `PARTIAL+`
+- Fill mode + opacity are wired (`state.display.fillMode`, `state.display.fillOpacity`) and applied in `graphScript.js` (`INHERIT|OFF|SYNTHETIC|SOURCE`).
+- Remaining: define final semantics for `SOURCE` across zoom ranges + document in UI/help.
+
 #### 19) Camera capability abstraction
-- `PARTIAL+` (probe abstraction wired into CORE controls + Status rail; no direct camera parameter control UI yet)
-#### 20) Calibration I/O + multipoint manager
-- `PARTIAL+` (functional shell + import/export + apply-to-original-calibration bridge; validation preview/warnings added, advanced point disable/outlier UX still pending)
+- `PARTIAL+`
+- `cameraCapabilities.js` provides `probeCurrent()` and normalizes supported/values/ranges.
+- Status rail shows camera support summary (exposure/zoom/resolution). No direct camera-parameter controls are exposed (intentionally core-safe).
+
+#### 20) Calibration I/O + multipoint manager shell
+- `PARTIAL+`
+- `Other` tab contains the shell manager (JSON/CSV import/export, capture current points).
+- `Apply shell to calibration` maps shell points into the original calibration pipeline (core-safe bridge).
+- Remaining: outlier/disable UX + rollback affordance; more explicit validation preview and warnings.
+
 
 ### E. Phase 2 LAB MVP
-- `PARTIAL` foundation
-- Worker client and worker foundation files exist; protocol shell and basic LAB scaffolding exist.
-- Real end-to-end LAB mode integration remains incomplete.
+- `PARTIAL` (end-to-end MVP loop exists, but feature surface is incomplete)
+
+**What is implemented now**
+- Worker protocol is functional: `PING → PONG`, `INIT_LIBRARIES`, `ANALYZE_FRAME → ANALYZE_RESULT`.
+- `analysisWorkerClient.js` is wired and updates store:
+  - `worker.*` (status, hz, librariesLoaded, errors)
+  - `analysis.topHits`, `analysis.qcFlags`, `analysis.offsetNm` (when present)
+- LAB panel has a working MVP loop:
+  - App mode = `LAB`
+  - Toggle **Analyze** + set **Max Hz**
+  - After **Init libraries**, frames are throttled and sent to the worker
+  - Results render in **Top hits** and **QC** lists.
+
+**Current limitations / still missing**
+- Library is currently **builtin-lite** (hardcoded minimal atomic lines in worker) — no external JSON library loading yet.
+- Presets are placeholder-level (no real resolver/plumbing yet).
+- “Query library” button is placeholder.
+- Subtraction/absorbance workflows are not yet wired into the live analysis pipeline (modules exist, plumbing pending).
+- Overlay labels are not yet rendered on the graph (overlay hook exists, but labeling is not implemented).
+
 
 ### F. Phase 3 ASTRO MVP
 - `SCAFFOLD/PARTIAL` (mostly scaffold modules present)
@@ -809,26 +845,25 @@ This spec therefore prioritizes:
 - When App mode = LAB and Analyze enabled and libraries loaded, frames are sent to worker for analysis (throttled).
 - Top hits and QC flags render from `state.analysis.topHits` / `state.analysis.qcFlags`.
 
+## Patch log (curated)
 
-## Patch log
-- LAB Step 1 UI: Added bottom-right CONSOLE log panel (monospace + blinking cursor) that records key actions/events and worker messages.
+> This log is intentionally short and accurate. Older duplicate/contradictory entries have been removed to prevent drift.
 
+### 2026-02-26 — Spec audit + status correction
+- Audited Phase **1.5** and **Phase 2** against the current codebase.
+- Updated status snapshot so it matches what is truly implemented (no “wishful READY”).
 
-## Patch log
-- Hotfix: Fixed proBootstrap.js SyntaxError (stray `\1` token) that prevented dock from rendering and could trigger popup on load.
+### 2026-02-26 — LAB MVP loop + on-page console
+- On-page PRO console (`sp.consoleLog`) renders in the dock and is used for action/event feedback.
+- LAB panel renders as a 2-column split (QC + Top hits), and results populate from `state.analysis.*`.
+- LAB analysis loop: when `App mode=LAB`, `Analyze=on`, libs initialized, frames are throttled (Max Hz) and sent to the worker.
 
+### 2026-02-26 — Worker MVP protocol
+- Worker supports `PING/PONG`, `INIT_LIBRARIES`, and `ANALYZE_FRAME`.
+- Library loader currently uses a minimal **builtin-lite** atomic line set (placeholder for real libraries).
 
-## Patch log
-- Fix: Added right-rail CONSOLE panel and auto-close of generic 'Info message' popup on load.
+### 2026-02-26 — CORE-safe 1.5 controls and calibration shell
+- CORE controls: Display mode, Y-axis mode/max, Peak threshold/distance/smoothing, Fill mode/opacity are wired through `sp.store` and applied in `graphScript.js` (reversible visual overrides).
+- Calibration shell (Other tab): JSON/CSV parse/serialize + shell point manager + “Apply shell to calibration” bridge to the original calibration pipeline.
 
-
-## Patch log
-- LAB console rootfix: Fixed proBootstrap syntax corruption, ensured CONSOLE card is built in status rail, and suppressed generic 'Info message' popup by wrapping showInfoPopup.
-
-
-## Patch log
-- Console tune: Removed CONSOLE header, set console font to 10pt, routed all CORE/LAB/OTHER action feedback into console (inline feedback disabled by default).
-
-
-## Patch log
-- Console moved to left sidebar (fixed height), right rail restored to 2 columns, timestamps removed, and all action feedback routed exclusively to console.
+---
