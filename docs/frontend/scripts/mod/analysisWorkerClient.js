@@ -194,7 +194,7 @@
             const st = store.getState();
             const useStable = !!(st.analysis && st.analysis.stableHits);
             if (!useStable) {
-              store.update('analysis.topHits', rawHits);
+              store.update('analysis.topHits', rawHits.slice(0, 18));
             } else {
               const t = nowMs();
               const windowMs = 8000;
@@ -235,7 +235,7 @@
                 .filter(h => (h.stableCount || 0) >= minCount)
                 .sort((a, b) => ((b.stableCount || 0) * 2 + (+b.confidence || 0)) - ((a.stableCount || 0) * 2 + (+a.confidence || 0)));
 
-              store.update('analysis.topHits', stableList.slice(0, 10));
+              store.update('analysis.topHits', stableList.slice(0, 18));
             }
           }
           if (typeof msg.payload.offsetNm === 'number') store.update('analysis.offsetNm', msg.payload.offsetNm);

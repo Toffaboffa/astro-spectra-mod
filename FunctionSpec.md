@@ -935,3 +935,6 @@ This spec therefore prioritizes:
 
 ## Patch log update
 - 2026-02-27 — Phase 2 LAB tuning: added dynamic LAB peak controls (threshold + distance), changed lamp matching from hard-filter to boosted preference, stable-hits now tracks multiple lines per element, and added `Smart` preset that strongly boosts Hg only after ≥3 Hg signature lines are detected.
+
+
+- 2026-02-27: Phase 2 matching refinement actually applied: smoothed/prominence-based peak detection, multi-line-per-peak matching, Smart preset seeds >=3 Hg signature lines then fills with others, stable hits keeps multiple lines per element via element+refNm key, LAB top-hits list expanded to 18.

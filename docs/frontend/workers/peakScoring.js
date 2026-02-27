@@ -4,7 +4,6 @@
   function scorePeaks(peaks, options) {
     const opts = Object.assign({
       maxPeaks: 24,
-      // Relative threshold to suppress tiny noise maxima.
       minRelHeight: 0.06,
       minPeakDistancePx: 4
     }, options || {});
@@ -12,28 +11,35 @@
     const arr = Array.isArray(peaks) ? peaks.slice() : [];
     if (!arr.length) return [];
 
-    // Determine a simple scale for thresholding.
-    let maxV = 0;
+    let maxProm = 0;
+    let maxHeight = 0;
     for (let i = 0; i < arr.length; i += 1) {
-      const v = +arr[i].value || 0;
-      if (v > maxV) maxV = v;
+      const p = arr[i] || {};
+      const prom = +p.prominence || 0;
+      const h = +p.value || +p.height || 0;
+      if (prom > maxProm) maxProm = prom;
+      if (h > maxHeight) maxHeight = h;
     }
-    const minV = maxV * opts.minRelHeight;
+    if (maxProm <= 0) maxProm = maxHeight || 1;
+    if (maxHeight <= 0) maxHeight = 1;
+    const minProm = maxProm * opts.minRelHeight;
 
-    // Enrich peaks with a usable prominence proxy.
     const enriched = arr
       .map(function (p) {
-        const v = +p.value || 0;
+        const prom = +p.prominence || 0;
+        const h = +p.value || +p.height || 0;
         return Object.assign({
-          prominence: v,
-          height: v
+          prominence: prom,
+          height: h,
+          rankScore: (prom / maxProm) * 0.72 + (h / maxHeight) * 0.28
         }, p);
       })
-      .filter(function (p) { return (+p.value || 0) >= minV; });
+      .filter(function (p) { return (+p.prominence || 0) >= minProm; });
 
-    // Prefer strong lines first, then perform simple non-maximum suppression
-    // so nearby small ripples do not crowd out genuine but weaker distant lines.
-    enriched.sort(function (a, b) { return (+b.value || 0) - (+a.value || 0); });
+    enriched.sort(function (a, b) {
+      return (+b.rankScore || 0) - (+a.rankScore || 0) || (+b.prominence || 0) - (+a.prominence || 0);
+    });
+
     const kept = [];
     const minDist = Math.max(1, Math.round(+opts.minPeakDistancePx || 1));
     for (let i = 0; i < enriched.length; i += 1) {
