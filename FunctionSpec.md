@@ -1002,3 +1002,28 @@ Fixes a LAB-breaking runtime error introduced by the Smart Find patch.
 ### Behavioral contract
 - LAB must continue to render ordinary worker hits even if Smart Find grouping fails.
 - Smart Find remains a UI-side grouping/ranking heuristic, not a hard identification engine.
+
+
+---
+
+## Patch notes 2026-02-28
+
+### Smart Find v2
+- Smart Find overlay now keeps the normal LAB hit markers/labels as the base layer.
+- Only the **group-highlighted Smart Find elements** get a gold label background behind the element text.
+- The gold background is drawn **behind the label text itself** instead of as a separate dot marker.
+- Highlighting is limited to one primary label per Smart Find group element on the graph, to avoid turning the whole plot into mustard confetti.
+
+### Smarter element grouping
+- Smart Find grouping now applies a **common-source weighting** so physically plausible tube-gas candidates (for example He, Ne, Ar, Hg, H, Na) are favored over exotic one-off matches.
+- This reduces false-positive domination from rare elements when several near-coincident lines exist in the general atomic library.
+
+### Worker-side Smart preset improvements
+- The `smart` preset now considers common lab-source emitters including **He, Hg, Ne, Ar, H, Na, Kr, Xe, O**.
+- Added lightweight **signature alignment** in the worker: observed peak patterns are compared against known line families for common emitters.
+- Signature alignment can add element boosts and seeded matches before final ranking, improving cases where multiple peaks collectively indicate the same source even if a single line alone is ambiguous.
+- This is intended to move Smart Find closer to source-level reasoning instead of only doing independent nearest-line matching.
+
+### Notes
+- Smart Find is still heuristic and not a full plasma/source inversion engine.
+- Astro mode will likely need a stricter version later, especially for solar/stellar absorption work where line families, offsets, blending and instrument response matter more.

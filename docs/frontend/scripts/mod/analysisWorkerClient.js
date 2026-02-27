@@ -183,6 +183,7 @@
         buckets[element] = bucket;
       }
 
+      const COMMONNESS = { He: 1.0, Hg: 0.82, Ne: 0.9, Ar: 0.86, H: 0.82, Na: 0.74, Kr: 0.55, Xe: 0.5, O: 0.55, N: 0.45 };
       const groups = Object.keys(buckets).map(function (element) {
         const bucket = buckets[element];
         const lineCount = Object.keys(bucket.uniqueBins).length;
@@ -190,7 +191,9 @@
         const avgConfidence = memberCount ? bucket.totalConfidence / memberCount : 0;
         const avgRawScore = memberCount ? bucket.totalRawScore / memberCount : 0;
         const bestConfidence = bucket.best ? (Number(bucket.best.confidence) || 0) : 0;
-        const score = lineCount * 3 + memberCount * 1.25 + avgConfidence * 4 + bestConfidence * 2 + avgRawScore * 0.01;
+        const commonness = Object.prototype.hasOwnProperty.call(COMMONNESS, element) ? COMMONNESS[element] : 0.08;
+        const rarityPenalty = Object.prototype.hasOwnProperty.call(COMMONNESS, element) ? 0 : 1.0;
+        const score = lineCount * 4.2 + memberCount * 1.1 + avgConfidence * 5 + bestConfidence * 2.2 + avgRawScore * 0.01 + commonness * 3.5 - rarityPenalty;
         return {
           element: element,
           lineCount: lineCount,

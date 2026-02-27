@@ -10,9 +10,10 @@
       if (String(mode || 'CORE').toUpperCase() !== 'LAB') return { ok:true, labels:0, bands:0, graphState: !!graphState };
       if (!state || !(state.analysis && state.analysis.enabled)) return { ok:true, labels:0, bands:0, graphState: !!graphState };
       const smartEnabled = !!(state.analysis && state.analysis.smartFindEnabled);
-      const hits = smartEnabled && state.analysis && Array.isArray(state.analysis.smartFindHits) && state.analysis.smartFindHits.length
-        ? state.analysis.smartFindHits
+      const hits = (state.analysis && Array.isArray(state.analysis.rawTopHits) && state.analysis.rawTopHits.length)
+        ? state.analysis.rawTopHits
         : ((state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : []);
+      const smartGroups = (state.analysis && Array.isArray(state.analysis.smartFindGroups)) ? state.analysis.smartFindGroups : [];
       if (!hits.length) return { ok:true, labels:0, bands:0, graphState: !!graphState };
 
       const canvas = ctx && ctx.canvas;
@@ -36,6 +37,12 @@
       const wCalc = widthForCalc || w;
       const maxLabels = Math.max(1, hits.length);
       let labels = 0;
+      const highlightElements = Object.create(null);
+      for (let gi = 0; gi < smartGroups.length && gi < 6; gi += 1) {
+        const el = String((smartGroups[gi] && smartGroups[gi].element) || '').trim();
+        if (el) highlightElements[el] = gi;
+      }
+      const highlightedSeen = Object.create(null);
 
       ctx.save();
       ctx.globalAlpha = 0.9;
@@ -85,22 +92,37 @@
         const txShifted = Math.max(2, Math.min(w - 24, tx + col * 18));
         ctx.save();
         ctx.setLineDash([]);
-        if (hit && hit.smartFind) {
-          const r = 6;
-          const cx = Math.max(r + 2, Math.min(w - r - 2, txShifted - 8));
-          const cy = ty + 7;
+        const isSmartHighlight = !!(smartEnabled && label && Object.prototype.hasOwnProperty.call(highlightElements, label) && !highlightedSeen[label]);
+        if (isSmartHighlight) {
+          highlightedSeen[label] = true;
+          const metrics = ctx.measureText(label);
+          const padX = 5;
+          const padY = 2;
+          const bw = Math.max(14, Math.ceil(metrics.width + padX * 2));
+          const bh = 14;
+          const bx = Math.max(2, Math.min(w - bw - 2, txShifted - padX));
+          const by = Math.max(1, ty - padY);
+          const radius = 7;
           ctx.beginPath();
-          ctx.fillStyle = 'rgba(214, 169, 52, 0.92)';
+          ctx.fillStyle = 'rgba(214, 169, 52, 0.95)';
           ctx.strokeStyle = 'rgba(71, 48, 0, 0.95)';
-          ctx.lineWidth = 1.5;
-          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.lineWidth = 1.2;
+          ctx.moveTo(bx + radius, by);
+          ctx.lineTo(bx + bw - radius, by);
+          ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + radius);
+          ctx.lineTo(bx + bw, by + bh - radius);
+          ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - radius, by + bh);
+          ctx.lineTo(bx + radius, by + bh);
+          ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - radius);
+          ctx.lineTo(bx, by + radius);
+          ctx.quadraticCurveTo(bx, by, bx + radius, by);
           ctx.fill();
           ctx.stroke();
         }
         ctx.lineWidth = 3;
         ctx.strokeStyle = textStroke;
         ctx.strokeText(label, txShifted, ty);
-        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.fillStyle = isSmartHighlight ? 'rgba(22,22,22,0.98)' : 'rgba(255,255,255,0.95)';
         ctx.fillText(label, txShifted, ty);
         ctx.restore();
 
