@@ -38,9 +38,12 @@
       ctx.globalAlpha = 0.9;
       ctx.font = '12px Arial';
       ctx.textBaseline = 'top';
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
       ctx.lineWidth = 1;
+      ctx.setLineDash([4,4]);
+      const textStroke = 'rgba(0,0,0,0.85)';
+      const markerStroke = 'rgba(0,0,0,0.35)';
 
       for (let i = 0; i < hits.length && labels < maxLabels; i++) {
         const hit = hits[i] || {};
@@ -62,7 +65,10 @@
         ctx.beginPath();
         ctx.moveTo(xCanvas, 0);
         ctx.lineTo(xCanvas, h);
+        ctx.save();
+        ctx.strokeStyle = markerStroke;
         ctx.stroke();
+        ctx.restore();
 
         // Label
         // In-graph label should be compact: just the element/symbol.
@@ -70,7 +76,14 @@
         const label = name || '';
         const tx = Math.max(2, Math.min(w - 2, xCanvas + 4));
         const ty = 2 + labels * 14;
+        ctx.save();
+        ctx.setLineDash([]);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = textStroke;
+        ctx.strokeText(label, tx, ty);
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
         ctx.fillText(label, tx, ty);
+        ctx.restore();
 
         labels += 1;
       }
