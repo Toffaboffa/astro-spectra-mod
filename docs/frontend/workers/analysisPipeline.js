@@ -38,7 +38,8 @@
     };
     const preset = presetMap[presetId] || presetMap['general'];
 
-    const peaks = inferPeaks(frame, peakScoring.scorePeaks(peakDetect.detectPeaks(I)));
+    const rawPeaks = peakDetect.detectPeaks(I);
+    const peaks = inferPeaks(frame, peakScoring.scorePeaks(rawPeaks, { maxPeaks: 32, minRelHeight: 0.05 }));
     const nmAvailable = !!(frame && frame.calibrated && Array.isArray(frame.nm));
     const matches = nmAvailable
       ? lineMatcher.matchLines(peaks, state && state.atomLines || [], { toleranceNm: preset.toleranceNm, maxMatches: preset.maxMatches })
@@ -46,10 +47,26 @@
     const qc = qcRules.evaluateQC({ frame: frame, state: state });
     if (!nmAvailable) qc.flags = (qc.flags || []).concat(['uncalibrated']);
     const confidence = confidenceModel.buildConfidence(matches, qc);
+
+    // Peak strength normalization for per-hit confidence.
+    let maxPeak = 0;
+    for (let i = 0; i < peaks.length; i += 1) {
+      const v = +peaks[i].value || 0;
+      if (v > maxPeak) maxPeak = v;
+    }
+    if (!Number.isFinite(maxPeak) || maxPeak <= 0) maxPeak = 1;
+
     const topHits = matches.map(function(m){
-      const conf = Math.max(0, Math.min(1, (m.rawScore || 0) * (confidence.overall || 0)));
+      // Combine distance-based score with peak strength, then apply QC factor.
+      const closeness = Math.max(0, Math.min(1, +m.rawScore || 0));
+      const strength = Math.max(0, Math.min(1, (+m.peakValue || 0) / maxPeak));
+      // Give closeness more weight, but let strength break ties and push strong true lines upward.
+      const base = (0.75 * closeness) + (0.25 * strength);
+      // Small floor so good matches don't collapse to 1σ.
+      const conf = Math.max(0, Math.min(1, (0.15 + 0.85 * base) * (+confidence.qcFactor || +confidence.overall || 0)));
       return {
         species: m.species,
+        element: (m.speciesKey || m.species || '').replace(/[^A-Za-z]/g,'').slice(0,2),
         referenceNm: m.refNm,
         observedNm: m.obsNm,
         deltaNm: m.deltaNm,

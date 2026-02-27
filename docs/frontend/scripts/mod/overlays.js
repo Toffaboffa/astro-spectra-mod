@@ -15,19 +15,22 @@
       const canvas = ctx && ctx.canvas;
       if (!canvas) return { ok:true, labels:0, bands:0, graphState: !!graphState };
 
-      // Access globals used by original SPECTRA scripts.
-      // IMPORTANT: the graph uses padding + zoomStart/zoomEnd when rendering X labels.
-      // Use the same mapping so overlay lines actually land on the plotted area.
+      // Use the same mapping as graphScript.js. The legacy code keeps zoomStart/zoomEnd
+      // inside graphScript, so we rely on graphState injected by the drawGraph wrapper.
       const pxFromNm = (typeof global.getPxByWaveLengthBisection === 'function') ? global.getPxByWaveLengthBisection : null;
       const calcX = (typeof global.calculateXPosition === 'function') ? global.calculateXPosition : null;
-      const zoomStart = (typeof global.zoomStart !== 'undefined') ? Number(global.zoomStart) : null;
-      const zoomEnd = (typeof global.zoomEnd !== 'undefined') ? Number(global.zoomEnd) : null;
-      const padding = 30; // must match graphScript.js
+      const zoomStart = graphState && Number.isFinite(+graphState.zoomStart) ? +graphState.zoomStart : null;
+      const zoomEnd = graphState && Number.isFinite(+graphState.zoomEnd) ? +graphState.zoomEnd : null;
+      const padding = graphState && Number.isFinite(+graphState.padding) ? +graphState.padding : 30;
+      const widthForCalc = (graphState && Number.isFinite(+graphState.cssWidth) && +graphState.cssWidth > 0)
+        ? +graphState.cssWidth
+        : null;
       const hasZoom = Number.isFinite(zoomStart) && Number.isFinite(zoomEnd) && zoomEnd > zoomStart;
       if (!pxFromNm || !calcX || !hasZoom) return { ok:true, labels:0, bands:0, graphState: !!graphState };
 
       const w = canvas.width;
       const h = canvas.height;
+      const wCalc = widthForCalc || w;
       const maxLabels = 6;
       let labels = 0;
 
@@ -48,20 +51,24 @@
         const px = pxFromNm(nm);
         if (!Number.isFinite(px)) continue;
         if (px < zoomStart || px >= zoomEnd) continue;
-        const x = calcX(px - zoomStart, zoomEnd - zoomStart, w);
-        if (!Number.isFinite(x) || x < padding || x > (w - padding)) continue;
+        const x = calcX(px - zoomStart, zoomEnd - zoomStart, wCalc);
+        if (!Number.isFinite(x)) continue;
+
+        // If calculateXPosition used CSS pixels, but the canvas uses device pixels, rescale.
+        const xCanvas = (wCalc && w && wCalc !== w) ? (x * (w / wCalc)) : x;
+        if (!Number.isFinite(xCanvas) || xCanvas < padding || xCanvas > (w - padding)) continue;
 
         // Marker line
         ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
+        ctx.moveTo(xCanvas, 0);
+        ctx.lineTo(xCanvas, h);
         ctx.stroke();
 
         // Label
         // In-graph label should be compact: just the element/symbol.
         const name = String(hit.element || hit.species || '').trim();
         const label = name || '';
-        const tx = Math.max(2, Math.min(w - 2, x + 4));
+        const tx = Math.max(2, Math.min(w - 2, xCanvas + 4));
         const ty = 2 + labels * 14;
         ctx.fillText(label, tx, ty);
 

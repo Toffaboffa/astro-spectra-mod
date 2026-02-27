@@ -1288,7 +1288,28 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
       const frame = buildFrame();
       if (frame) emitGraphFrame(frame);
       if (sp.overlays && sp.overlays.drawOnGraph && typeof graphCtx !== 'undefined') {
-        try { sp.overlays.drawOnGraph(graphCtx, { graphCanvas: (typeof graphCanvas !== 'undefined' ? graphCanvas : null) }); } catch(e){}
+        try {
+          // Provide zoom context to overlays. The legacy app does not expose zoomStart/zoomEnd
+          // globally; they live inside graphScript's zoomList/getZoomRange.
+          let zoomStart = 0, zoomEnd = frame ? frame.pixelWidth : 0;
+          try {
+            if (typeof getZoomRange === 'function' && frame && Number.isFinite(frame.pixelWidth)) {
+              const zr = getZoomRange(frame.pixelWidth);
+              if (Array.isArray(zr) && zr.length === 2) { zoomStart = +zr[0] || 0; zoomEnd = +zr[1] || zoomEnd; }
+            }
+          } catch(_) {}
+          const gc = (typeof graphCanvas !== 'undefined' ? graphCanvas : null);
+          const rect = gc && gc.getBoundingClientRect ? gc.getBoundingClientRect() : null;
+          sp.overlays.drawOnGraph(graphCtx, {
+            graphCanvas: gc,
+            zoomStart: zoomStart,
+            zoomEnd: zoomEnd,
+            cssWidth: rect ? rect.width : null,
+            cssHeight: rect ? rect.height : null,
+            // graphScript draws with a fixed padding of 30 (see drawGrid)
+            padding: 30
+          });
+        } catch(e){}
       }
       return result;
     };
