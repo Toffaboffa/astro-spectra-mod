@@ -931,3 +931,7 @@ This spec therefore prioritizes:
 - LAB form grid now uses a dedicated **4-column** layout so selects/inputs are readable (not squeezed by CORE’s wider grid rules).
 
 ---
+
+
+## Patch log update
+- 2026-02-27 — Phase 2 LAB tuning: added dynamic LAB peak controls (threshold + distance), changed lamp matching from hard-filter to boosted preference, stable-hits now tracks multiple lines per element, and added `Smart` preset that strongly boosts Hg only after ≥3 Hg signature lines are detected.

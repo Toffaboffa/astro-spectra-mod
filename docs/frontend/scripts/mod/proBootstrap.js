@@ -969,6 +969,7 @@ function ensureLabPanel() {
 	    '        <option value="">(default)</option>',
 	    '        <option value="general">General</option>',
 	    '        <option value="lamp-hg">Lamp (Hg/Ar/Ne)</option>',
+	    '        <option value="smart">Smart</option>',
 	    '        <option value="general-tight">General (tight)</option>',
 	    '        <option value="general-wide">General (wide)</option>',
 	    '        <option value="fast">Fast</option>',
@@ -983,6 +984,8 @@ function ensureLabPanel() {
 	    '      </select></label>',
 	    '      <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak">Weak peaks<input id="spLabWeak" type="checkbox"></label>',
 	    '      <label id="spFieldLabStable" class="sp-field sp-field--lab-stable">Stable hits<input id="spLabStable" type="checkbox"></label>',
+	    '      <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="5"></label>',
+	    '      <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="5"></label>',
 	    '    </div>',
 	    '    <div class="sp-actions sp-actions--lab">',
 	    '      <button type="button" id="spLabInitLibBtn">Init libraries</button>',
@@ -1039,11 +1042,15 @@ function ensureLabPanel() {
   const subModeEl = $('spLabSubMode');
   const weakEl = $('spLabWeak');
   const stableEl = $('spLabStable');
+  const peakThrEl = $('spLabPeakThr');
+  const peakDistEl = $('spLabPeakDist');
   if (enabledEl) enabledEl.checked = enabled;
   if (hzEl && Number.isFinite(maxHz) && maxHz > 0) hzEl.value = String(maxHz);
   if (presetEl) presetEl.value = presetId;
   if (weakEl) weakEl.checked = includeWeak;
   if (stableEl) stableEl.checked = stableHits;
+  if (peakThrEl) peakThrEl.value = String(Math.max(0.5, Math.min(50, ((Number(s.analysis && s.analysis.peakThresholdRel) || 0.05) * 100))));
+  if (peakDistEl) peakDistEl.value = String(Math.max(1, Math.min(64, Math.round(Number(s.analysis && s.analysis.peakDistancePx) || 5))));
   // subtraction mode
   try {
     const sm = (s.subtraction && s.subtraction.mode) ? String(s.subtraction.mode) : 'raw';
@@ -1100,6 +1107,22 @@ function ensureLabPanel() {
     const on = !!e.target.checked;
     setVal('analysis.stableHits', on);
     setFeedback(on ? 'Stable hits enabled (rolling).' : 'Stable hits disabled.', 'info');
+  });
+
+  peakThrEl && peakThrEl.addEventListener('change', function (e) {
+    const n = Number(e.target.value);
+    if (!Number.isFinite(n)) return;
+    const pct = Math.max(0.5, Math.min(50, n));
+    setVal('analysis.peakThresholdRel', +(pct / 100).toFixed(4));
+    setFeedback('Peak threshold set to ' + pct + '%.', 'info');
+  });
+
+  peakDistEl && peakDistEl.addEventListener('change', function (e) {
+    const n = Number(e.target.value);
+    if (!Number.isFinite(n)) return;
+    const dist = Math.max(1, Math.min(64, Math.round(n)));
+    setVal('analysis.peakDistancePx', dist);
+    setFeedback('Peak distance set to ' + dist + ' px.', 'info');
   });
 
   $('spLabInitLibBtn') && $('spLabInitLibBtn').addEventListener('click', function () {

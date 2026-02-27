@@ -9,6 +9,24 @@
       return out;
     });
   }
+
+  function countSignatureHits(peaks, signatureNm, toleranceNm) {
+    const tol = Math.max(0.4, Number(toleranceNm) || 1.5);
+    const arr = Array.isArray(peaks) ? peaks : [];
+    let count = 0;
+    for (let i = 0; i < signatureNm.length; i += 1) {
+      const target = Number(signatureNm[i]);
+      if (!Number.isFinite(target)) continue;
+      let found = false;
+      for (let j = 0; j < arr.length; j += 1) {
+        const nm = Number(arr[j] && arr[j].nm);
+        if (Number.isFinite(nm) && Math.abs(nm - target) <= tol) { found = true; break; }
+      }
+      if (found) count += 1;
+    }
+    return count;
+  }
+
   function estimateOffset(matches){
     if (!Array.isArray(matches) || !matches.length) return null;
     const vals = matches.map(m => Number(m.deltaNm)).filter(Number.isFinite);
@@ -37,31 +55,49 @@
       'fast': { toleranceNm: 3.0, maxMatches: 6 },
       // Fluorescent / typical discharge lamp weighting: prefer common gases/metals.
       'lamp-hg': {
-        toleranceNm: 2.5,
-        maxMatches: 10,
+        toleranceNm: 2.8,
+        maxMatches: 14,
         preferredElements: ['Hg', 'Ar', 'Ne', 'Kr', 'Xe'],
-        elementBoost: { Hg: 0.08, Ar: 0.05, Ne: 0.05, Kr: 0.04, Xe: 0.04 }
+        elementBoost: { Hg: 0.12, Ar: 0.07, Ne: 0.07, Kr: 0.06, Xe: 0.06 }
+      },
+      'smart': {
+        toleranceNm: 2.2,
+        maxMatches: 14,
+        preferredElements: ['Hg', 'Ar', 'Ne', 'Kr', 'Xe'],
+        elementBoost: { Hg: 0.16, Ar: 0.08, Ne: 0.08, Kr: 0.06, Xe: 0.06 }
       }
     };
     const preset = presetMap[presetId] || presetMap['general'];
 
     const opt = (options && typeof options === 'object') ? options : {};
     const includeWeak = !!opt.includeWeakPeaks;
+    const peakThresholdRel = Number.isFinite(Number(opt.peakThresholdRel)) ? Number(opt.peakThresholdRel) : (includeWeak ? 0.02 : 0.05);
+    const peakDistancePx = Number.isFinite(Number(opt.peakDistancePx)) ? Number(opt.peakDistancePx) : (includeWeak ? 3 : 5);
 
     const rawPeaks = peakDetect.detectPeaks(I);
-    // Weak peaks matter for lamps (secondary Hg lines etc). When enabled, keep more peaks
-    // and lower the relative height threshold.
     const peaks = inferPeaks(
       frame,
-      peakScoring.scorePeaks(rawPeaks, { maxPeaks: includeWeak ? 64 : 32, minRelHeight: includeWeak ? 0.02 : 0.05 })
+      peakScoring.scorePeaks(rawPeaks, {
+        maxPeaks: includeWeak ? 80 : 40,
+        minRelHeight: Math.max(0.005, Math.min(0.95, peakThresholdRel)),
+        minPeakDistancePx: Math.max(1, Math.min(64, Math.round(peakDistancePx)))
+      })
     );
     const nmAvailable = !!(frame && frame.calibrated && Array.isArray(frame.nm));
+    let effectiveBoost = Object.assign({}, preset.elementBoost || null);
+    if ((presetId === 'smart' || presetId === 'lamp-hg') && nmAvailable) {
+      const hgSignatures = [404.656, 435.833, 546.074, 576.960, 579.066];
+      const hgCount = countSignatureHits(peaks, hgSignatures, presetId === 'smart' ? 1.8 : 2.2);
+      if (hgCount >= 3) {
+        effectiveBoost = Object.assign({}, effectiveBoost || {}, { Hg: 0.35, Ar: 0.12, Ne: 0.10, Kr: 0.10, Xe: 0.10 });
+      }
+    }
     const matches = nmAvailable
       ? lineMatcher.matchLines(peaks, state && state.atomLines || [], {
           toleranceNm: preset.toleranceNm,
           maxMatches: preset.maxMatches,
           preferredElements: preset.preferredElements || null,
-          elementBoost: preset.elementBoost || null
+          elementBoost: effectiveBoost || null
         })
       : [];
     const qc = qcRules.evaluateQC({ frame: frame, state: state });

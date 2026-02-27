@@ -12,18 +12,16 @@
       let best = null;
       for (let j = 0; j < lines.length; j += 1) {
         const l = lines[j]; if (!Number.isFinite(l.nm)) continue;
-        // Optional filtering: keep only preferred elements (useful for lamp/known-source presets).
-        if (preferred && preferred.length) {
-          const el = String(l.element || '').trim();
-          if (!el || preferred.indexOf(el) === -1) continue;
-        }
+        // Preferred elements are *boosted*, not hard-filtered.
+        // Hard filtering caused legitimate secondary lines to disappear in lamp workflows.
         const d = Math.abs(l.nm - p.nm);
         if (d > opts.toleranceNm) continue;
         if (!best || d < best.deltaNm) best = { line:l, deltaNm:d };
       }
       if (best) {
         const el = String(best.line.element || '').trim();
-        const bonus = boostMap && el && Number.isFinite(+boostMap[el]) ? +boostMap[el] : 0;
+        let bonus = boostMap && el && Number.isFinite(+boostMap[el]) ? +boostMap[el] : 0;
+        if (preferred && preferred.length && el && preferred.indexOf(el) !== -1) bonus += 0.04;
         out.push({
           species: best.line.species,
           speciesKey: best.line.speciesKey || best.line.species,

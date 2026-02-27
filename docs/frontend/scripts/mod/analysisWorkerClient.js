@@ -117,7 +117,9 @@
       const requestId = send(types.MSG && types.MSG.ANALYZE_FRAME || 'ANALYZE_FRAME', {
         frame: frame || null,
         options: {
-          includeWeakPeaks: !!(st.analysis && st.analysis.includeWeakPeaks)
+          includeWeakPeaks: !!(st.analysis && st.analysis.includeWeakPeaks),
+          peakThresholdRel: Number(st.analysis && st.analysis.peakThresholdRel),
+          peakDistancePx: Number(st.analysis && st.analysis.peakDistancePx)
         }
       });
       inFlight = { requestId: requestId, startedAt: now };
@@ -197,12 +199,13 @@
               const t = nowMs();
               const windowMs = 8000;
               const pruneEveryMs = 1000;
-              const minCount = 3;
+              const minCount = 2;
 
               // Update rolling counts.
               for (let i = 0; i < rawHits.length; i += 1) {
                 const h = rawHits[i];
-                const key = String(h.element || h.speciesKey || h.species || '').trim();
+                const refNm = Number(h.referenceNm != null ? h.referenceNm : h.observedNm);
+                const key = String(h.element || h.speciesKey || h.species || '').trim() + '|' + (Number.isFinite(refNm) ? refNm.toFixed(1) : '?');
                 if (!key) continue;
                 const rec = stable.byKey[key] || { count: 0, lastSeen: 0, best: null };
                 rec.count += 1;
