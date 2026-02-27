@@ -908,6 +908,12 @@ This spec therefore prioritizes:
 
 ### 2026-02-27 — Phase 2 polish: modal overlay, hits visibility, layout + robustness
 - LAB query popup is now appended to `document.body` and overlays the **entire page** (no clipping inside the LAB card).
+
+### 2026-02-27 — Phase 2 polish: tab↔mode sync, overlays enabled, Top hits usability
+- PRO tab switching now synchronizes `appMode` automatically: General/CORE/OTHER → CORE, LAB → LAB, ASTRO → ASTRO.
+- Entering LAB/ASTRO enables worker mode `auto` so the user doesn't have to toggle CORE controls to get hits.
+- LAB Top hits panel now fills available height inside the LAB card, uses internal scrolling, and renders compact rows (more visible hits).
+- LAB empty-state messages now explain prerequisites (Init libraries, Analyze, calibration) to reduce “why nothing happens” confusion.
 - LAB analysis frames are now adapted through `spectrumFrameAdapter` so the **nm-axis is generated from calibration coefficients**, enabling worker matching + Top hits.
 - `graphScript.js` now guards against `getImageData()` when width/stripe is 0 (prevents `IndexSizeError` before the video/canvas is ready).
 - LAB split columns now use flex so **Top hits and QC can fill available height** and scroll inside their panes.

@@ -421,6 +421,21 @@ function maybeRunLabAnalyze(frameNormalized) {
     const state = getStoreState();
     const nextUi = Object.assign({}, state.ui || {}, { activeTab: tab });
     store.setState({ ui: nextUi }, { source: 'proBootstrap.tab' });
+
+    // Keep PRO "tab" and PRO "app mode" in sync.
+    // User tabs are General / CORE controls / LAB / ASTRO / OTHER.
+    // App mode must follow LAB/ASTRO to enable worker overlays + analysis.
+    try {
+      const t = String(tab || '').toLowerCase();
+      const nextMode = (t === 'lab') ? 'LAB' : ((t === 'astro') ? 'ASTRO' : 'CORE');
+      if (sp.appMode && typeof sp.appMode.setMode === 'function') {
+        sp.appMode.setMode(nextMode, { source: 'proBootstrap.tab' });
+      } else if (store && store.update) {
+        store.update('appMode', nextMode, { source: 'proBootstrap.tab' });
+      }
+      // Ensure worker is enabled in LAB/ASTRO so the user doesn't have to hunt in CORE controls.
+      if (nextMode !== 'CORE') setCoreWorkerMode('auto');
+    } catch (_) {}
   }
 
   function setActiveTab(tab) {
@@ -1029,6 +1044,14 @@ function ensureLabPanel() {
   enabledEl && enabledEl.addEventListener('change', function (e) {
     const on = !!e.target.checked;
     setVal('analysis.enabled', on);
+    // Make LAB usable without touching CORE controls.
+    if (on) {
+      try { setCoreWorkerMode('auto'); } catch (_) {}
+      try {
+        const client = ensureWorkerClient();
+        if (client && typeof client.start === 'function') client.start();
+      } catch (_) {}
+    }
     setFeedback(on ? 'LAB analysis enabled.' : 'LAB analysis disabled.', on ? 'ok' : 'info');
   });
 
@@ -1684,14 +1707,23 @@ function renderLabPanel() {
   const hits = (state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : [];
   const qc = (state.analysis && Array.isArray(state.analysis.qcFlags)) ? state.analysis.qcFlags : [];
   const libsLoaded = !!(state.worker && state.worker.librariesLoaded);
+  const mode = String(state.appMode || 'CORE').toUpperCase();
+  const enabled = !!(state.analysis && state.analysis.enabled);
+  const calibrated = !!(state.calibration && (state.calibration.calibrated || (state.calibration.coefficients && state.calibration.coefficients.length)));
 
-  if (!libsLoaded) {
-    hitsEl.innerHTML = '<div class="sp-empty">Libraries not initialized yet. Click Init libraries.</div>';
+  if (mode !== 'LAB') {
+    hitsEl.innerHTML = '<div class="sp-empty">LAB mode is not active. Open the LAB tab.</div>';
+  } else if (!libsLoaded) {
+    hitsEl.innerHTML = '<div class="sp-empty">Libraries not initialized yet. Click <b>Init libraries</b>.</div>';
+  } else if (!enabled) {
+    hitsEl.innerHTML = '<div class="sp-empty">Analysis is off. Tick <b>Analyze</b> to start matching.</div>';
+  } else if (!calibrated) {
+    hitsEl.innerHTML = '<div class="sp-empty">Not calibrated yet. Import calibration points (old Calibrate screen) or apply points in OTHER, then try again.</div>';
   } else if (!hits.length) {
-    hitsEl.innerHTML = '<div class="sp-empty">No hits yet. Enable Analyze and point at a source. Use Query library to browse lines.</div>';
+    hitsEl.innerHTML = '<div class="sp-empty">No hits yet. Point at a bright source (e.g. fluorescent lamp) and wait 1–2 seconds. Use <b>Query library</b> to browse lines.</div>';
   } else {
     const topHead = '<div class="sp-note sp-note--small">Top hits</div>';
-    const rows = hits.slice(0, 10).map(function (h) {
+    const rows = hits.slice(0, 40).map(function (h) {
       const name = String(h && (h.species || h.element || h.name) || 'Unknown');
       const score = (h && h.confidence != null) ? Number(h.confidence) : ((h && h.score != null) ? Number(h.score) : null);
       const nm = (h && (h.observedNm != null ? h.observedNm : (h.referenceNm != null ? h.referenceNm : h.nm))) != null ? Number(h.observedNm != null ? h.observedNm : (h.referenceNm != null ? h.referenceNm : h.nm)) : null;
