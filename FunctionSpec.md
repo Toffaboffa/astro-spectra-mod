@@ -924,4 +924,10 @@ This spec therefore prioritizes:
 - LAB layout updated to a two-pane design: controls on the left, and a **full-height** two-column table (Top Hits / QC) on the right.
 - Top Hits rows are now compact one-liners in the format: `6σ • He (Helium) • 123.2nm`, while in-graph labels show only the symbol (e.g. `He`).
 
+### 2026-02-27 — Phase 2: lamp preset + weak-peak detection + stable-hits filter + LAB 4-col grid
+- Added a LAB preset `Lamp (Hg/Ar/Ne)` that **filters/boosts** common discharge-lamp elements so Hg/Ne/Ar lines are more likely to win over random rare-earth near-matches.
+- Added `Weak peaks` toggle (sends worker option) to lower peak threshold and keep more candidates so secondary lamp lines can match.
+- Added `Stable hits` toggle (UI-side rolling window) to reduce flicker by showing hits that persist over time.
+- LAB form grid now uses a dedicated **4-column** layout so selects/inputs are readable (not squeezed by CORE’s wider grid rules).
+
 ---

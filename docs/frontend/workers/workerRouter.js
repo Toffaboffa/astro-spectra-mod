@@ -48,7 +48,11 @@
           return { type: TYPES.QUERY_LIBRARY_RESULT, requestId: requestId, payload: { ok: true, count: hits.length, shown: out.length, minNm: lo, maxNm: hi, hits: out } };
         }
         case TYPES.ANALYZE_FRAME: {
-          const out = root.SPECTRA_PRO_analysisPipeline.analyzeFrame((msg.payload && msg.payload.frame) || null, STATE);
+          const out = root.SPECTRA_PRO_analysisPipeline.analyzeFrame(
+            (msg.payload && msg.payload.frame) || null,
+            STATE,
+            (msg.payload && msg.payload.options) || null
+          );
           STATE.lastAnalysis = out;
           return { type: TYPES.ANALYZE_RESULT, requestId: requestId, payload: out };
         }

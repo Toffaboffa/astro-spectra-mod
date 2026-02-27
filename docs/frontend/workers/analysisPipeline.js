@@ -16,7 +16,7 @@
     vals.sort((a,b)=>a-b);
     return vals[Math.floor(vals.length/2)];
   }
-  function analyzeFrame(frame, state) {
+  function analyzeFrame(frame, state, options) {
     const peakDetect = root.SPECTRA_PRO_peakDetect;
     const peakScoring = root.SPECTRA_PRO_peakScoring;
     const qcRules = root.SPECTRA_PRO_qcRules;
@@ -27,22 +27,42 @@
       ? frame.processedI
       : (frame && Array.isArray(frame.I) ? frame.I : []);
 
-    // Preset plumbing (Phase 2): worker accepts simple preset ids that adjust
-    // tolerance/maxMatches without requiring external preset files yet.
+    // Preset plumbing (Phase 2): simple preset ids (plus UI options) adjust
+    // tolerance/maxMatches/element weighting without requiring external files yet.
     const presetId = (state && state.activePreset) ? String(state.activePreset) : '';
     const presetMap = {
       'general': { toleranceNm: 3.0, maxMatches: 8 },
       'general-tight': { toleranceNm: 1.5, maxMatches: 8 },
       'general-wide': { toleranceNm: 5.0, maxMatches: 10 },
-      'fast': { toleranceNm: 3.0, maxMatches: 6 }
+      'fast': { toleranceNm: 3.0, maxMatches: 6 },
+      // Fluorescent / typical discharge lamp weighting: prefer common gases/metals.
+      'lamp-hg': {
+        toleranceNm: 2.5,
+        maxMatches: 10,
+        preferredElements: ['Hg', 'Ar', 'Ne', 'Kr', 'Xe'],
+        elementBoost: { Hg: 0.08, Ar: 0.05, Ne: 0.05, Kr: 0.04, Xe: 0.04 }
+      }
     };
     const preset = presetMap[presetId] || presetMap['general'];
 
+    const opt = (options && typeof options === 'object') ? options : {};
+    const includeWeak = !!opt.includeWeakPeaks;
+
     const rawPeaks = peakDetect.detectPeaks(I);
-    const peaks = inferPeaks(frame, peakScoring.scorePeaks(rawPeaks, { maxPeaks: 32, minRelHeight: 0.05 }));
+    // Weak peaks matter for lamps (secondary Hg lines etc). When enabled, keep more peaks
+    // and lower the relative height threshold.
+    const peaks = inferPeaks(
+      frame,
+      peakScoring.scorePeaks(rawPeaks, { maxPeaks: includeWeak ? 64 : 32, minRelHeight: includeWeak ? 0.02 : 0.05 })
+    );
     const nmAvailable = !!(frame && frame.calibrated && Array.isArray(frame.nm));
     const matches = nmAvailable
-      ? lineMatcher.matchLines(peaks, state && state.atomLines || [], { toleranceNm: preset.toleranceNm, maxMatches: preset.maxMatches })
+      ? lineMatcher.matchLines(peaks, state && state.atomLines || [], {
+          toleranceNm: preset.toleranceNm,
+          maxMatches: preset.maxMatches,
+          preferredElements: preset.preferredElements || null,
+          elementBoost: preset.elementBoost || null
+        })
       : [];
     const qc = qcRules.evaluateQC({ frame: frame, state: state });
     if (!nmAvailable) qc.flags = (qc.flags || []).concat(['uncalibrated']);

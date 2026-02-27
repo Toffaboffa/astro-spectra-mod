@@ -968,6 +968,7 @@ function ensureLabPanel() {
 	    '      <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">',
 	    '        <option value="">(default)</option>',
 	    '        <option value="general">General</option>',
+	    '        <option value="lamp-hg">Lamp (Hg/Ar/Ne)</option>',
 	    '        <option value="general-tight">General (tight)</option>',
 	    '        <option value="general-wide">General (wide)</option>',
 	    '        <option value="fast">Fast</option>',
@@ -980,6 +981,8 @@ function ensureLabPanel() {
 	    '        <option value="transmittance">Transmittance %</option>',
 	    '        <option value="absorbance">Absorbance</option>',
 	    '      </select></label>',
+	    '      <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak">Weak peaks<input id="spLabWeak" type="checkbox"></label>',
+	    '      <label id="spFieldLabStable" class="sp-field sp-field--lab-stable">Stable hits<input id="spLabStable" type="checkbox"></label>',
 	    '    </div>',
 	    '    <div class="sp-actions sp-actions--lab">',
 	    '      <button type="button" id="spLabInitLibBtn">Init libraries</button>',
@@ -1028,13 +1031,19 @@ function ensureLabPanel() {
   const enabled = !!(s.analysis && s.analysis.enabled);
   const maxHz = Number(s.analysis && s.analysis.maxHz);
   const presetId = (s.analysis && s.analysis.presetId) ? String(s.analysis.presetId) : '';
+  const includeWeak = !!(s.analysis && s.analysis.includeWeakPeaks);
+  const stableHits = !!(s.analysis && s.analysis.stableHits);
   const enabledEl = $('spLabEnabled');
   const hzEl = $('spLabMaxHz');
   const presetEl = $('spLabPreset');
   const subModeEl = $('spLabSubMode');
+  const weakEl = $('spLabWeak');
+  const stableEl = $('spLabStable');
   if (enabledEl) enabledEl.checked = enabled;
   if (hzEl && Number.isFinite(maxHz) && maxHz > 0) hzEl.value = String(maxHz);
   if (presetEl) presetEl.value = presetId;
+  if (weakEl) weakEl.checked = includeWeak;
+  if (stableEl) stableEl.checked = stableHits;
   // subtraction mode
   try {
     const sm = (s.subtraction && s.subtraction.mode) ? String(s.subtraction.mode) : 'raw';
@@ -1079,6 +1088,18 @@ function ensureLabPanel() {
     const v = String(e.target.value || 'raw');
     setVal('subtraction.mode', v);
     setFeedback('Mode: ' + v, 'info');
+  });
+
+  weakEl && weakEl.addEventListener('change', function (e) {
+    const on = !!e.target.checked;
+    setVal('analysis.includeWeakPeaks', on);
+    setFeedback(on ? 'Weak peaks enabled.' : 'Weak peaks disabled.', 'info');
+  });
+
+  stableEl && stableEl.addEventListener('change', function (e) {
+    const on = !!e.target.checked;
+    setVal('analysis.stableHits', on);
+    setFeedback(on ? 'Stable hits enabled (rolling).' : 'Stable hits disabled.', 'info');
   });
 
   $('spLabInitLibBtn') && $('spLabInitLibBtn').addEventListener('click', function () {

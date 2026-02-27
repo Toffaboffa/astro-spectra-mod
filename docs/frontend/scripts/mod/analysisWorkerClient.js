@@ -23,6 +23,10 @@
     let inFlight = null;
     let stats = { lastWindowStart: nowMs(), count: 0 };
 
+    // Optional stability filter: keep a short rolling memory of hits so the UI can
+    // display "steady" identifications instead of frame-to-frame flicker.
+    let stable = { byKey: Object.create(null), lastPruneAt: nowMs() };
+
     function setWorkerState(status, extra) {
       if (!store) return;
       const current = store.getState().worker || {};
@@ -109,7 +113,13 @@
         return false;
       }
       lastAnalyzeAt = now;
-      const requestId = send(types.MSG && types.MSG.ANALYZE_FRAME || 'ANALYZE_FRAME', { frame: frame || null });
+      const st = store ? store.getState() : {};
+      const requestId = send(types.MSG && types.MSG.ANALYZE_FRAME || 'ANALYZE_FRAME', {
+        frame: frame || null,
+        options: {
+          includeWeakPeaks: !!(st.analysis && st.analysis.includeWeakPeaks)
+        }
+      });
       inFlight = { requestId: requestId, startedAt: now };
       setWorkerState('running');
       global.setTimeout(function () {
@@ -166,7 +176,7 @@
         if (msg.payload && store) {
           if (Array.isArray(msg.payload.topHits)) {
             // Normalize hits for UI + overlays.
-            const hits = msg.payload.topHits.map(function (h) {
+            const rawHits = msg.payload.topHits.map(function (h) {
               const hit = Object.assign({}, h || {});
               if (!hit.element) {
                 const raw = String(hit.species || hit.speciesKey || hit.name || '').trim();
@@ -176,7 +186,54 @@
               }
               return hit;
             });
-            store.update('analysis.topHits', hits);
+            store.update('analysis.rawTopHits', rawHits);
+
+            // Optional stability filter.
+            const st = store.getState();
+            const useStable = !!(st.analysis && st.analysis.stableHits);
+            if (!useStable) {
+              store.update('analysis.topHits', rawHits);
+            } else {
+              const t = nowMs();
+              const windowMs = 8000;
+              const pruneEveryMs = 1000;
+              const minCount = 3;
+
+              // Update rolling counts.
+              for (let i = 0; i < rawHits.length; i += 1) {
+                const h = rawHits[i];
+                const key = String(h.element || h.speciesKey || h.species || '').trim();
+                if (!key) continue;
+                const rec = stable.byKey[key] || { count: 0, lastSeen: 0, best: null };
+                rec.count += 1;
+                rec.lastSeen = t;
+                // Keep the best (highest confidence) representative.
+                if (!rec.best || (+h.confidence || 0) > (+rec.best.confidence || 0)) rec.best = h;
+                stable.byKey[key] = rec;
+              }
+
+              // Prune old entries.
+              if (t - stable.lastPruneAt > pruneEveryMs) {
+                stable.lastPruneAt = t;
+                Object.keys(stable.byKey).forEach(function (k) {
+                  const rec = stable.byKey[k];
+                  if (!rec) return;
+                  if (t - rec.lastSeen > windowMs) delete stable.byKey[k];
+                });
+              }
+
+              // Build stable list: prefer high count, then confidence.
+              const stableList = Object.keys(stable.byKey)
+                .map(function (k) {
+                  const rec = stable.byKey[k];
+                  return rec && rec.best ? Object.assign({ stableCount: rec.count }, rec.best) : null;
+                })
+                .filter(Boolean)
+                .filter(h => (h.stableCount || 0) >= minCount)
+                .sort((a, b) => ((b.stableCount || 0) * 2 + (+b.confidence || 0)) - ((a.stableCount || 0) * 2 + (+a.confidence || 0)));
+
+              store.update('analysis.topHits', stableList.slice(0, 10));
+            }
           }
           if (typeof msg.payload.offsetNm === 'number') store.update('analysis.offsetNm', msg.payload.offsetNm);
           if (Array.isArray(msg.payload.qcFlags)) store.update('analysis.qcFlags', msg.payload.qcFlags);
