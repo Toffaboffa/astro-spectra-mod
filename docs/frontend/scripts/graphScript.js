@@ -225,11 +225,26 @@ function drawGraph() {
     const startY = getElementHeight(videoElement) * getYPercentage() - stripeWidth / 2;
     let pixelWidth = getElementWidth(videoElement);
 
+    // Guard: video/canvas may not be ready (e.g. before camera stream starts)
+    // which would make pixelWidth or stripeWidth zero and crash getImageData().
+    if (!Number.isFinite(pixelWidth) || pixelWidth <= 0 || !Number.isFinite(stripeWidth) || stripeWidth <= 0) {
+        return;
+    }
+
     lineCanvas.width = pixelWidth;
     lineCanvas.height = stripeWidth;
 
-    lineCtx.drawImage(videoElement, 0, startY, pixelWidth, stripeWidth, 0, 0, pixelWidth, stripeWidth);
-    let imageData = lineCtx.getImageData(0, 0, pixelWidth, stripeWidth);
+    try {
+        lineCtx.drawImage(videoElement, 0, startY, pixelWidth, stripeWidth, 0, 0, pixelWidth, stripeWidth);
+    } catch (e) {
+        return;
+    }
+    let imageData;
+    try {
+        imageData = lineCtx.getImageData(0, 0, pixelWidth, stripeWidth);
+    } catch (e) {
+        return;
+    }
     pixels = imageData.data;
 
     if (stripeWidth > 1) {

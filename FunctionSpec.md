@@ -906,4 +906,11 @@ This spec therefore prioritizes:
 - Query results are displayed in a closable in-page popup with search.
 - Calibration shell gained "Sync from calibration" and "Import from file" convenience actions to reduce confusion between old and new workflows.
 
+### 2026-02-27 — Phase 2 polish: modal overlay, hits visibility, layout + robustness
+- LAB query popup is now appended to `document.body` and overlays the **entire page** (no clipping inside the LAB card).
+- LAB analysis frames are now adapted through `spectrumFrameAdapter` so the **nm-axis is generated from calibration coefficients**, enabling worker matching + Top hits.
+- `graphScript.js` now guards against `getImageData()` when width/stripe is 0 (prevents `IndexSizeError` before the video/canvas is ready).
+- LAB split columns now use flex so **Top hits and QC can fill available height** and scroll inside their panes.
+- Buttons/inputs were made slightly more compact across the app to reduce UI crowding.
+
 ---

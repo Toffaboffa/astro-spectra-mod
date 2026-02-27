@@ -1123,7 +1123,9 @@ function ensureLabPanel() {
         '  <div id="spLabQueryList" class="sp-modal__body sp-lab-query-list"></div>',
         '</div>'
       ].join('');
-      card.appendChild(modal);
+      // IMPORTANT: append modal to document.body so it overlays the entire page
+      // (not just the LAB card/panel), avoiding clipping/stacking-context issues.
+      (document.body || document.documentElement).appendChild(modal);
       modal.addEventListener('click', function (ev) {
         const t = ev.target;
         if (t && (t.id === 'spLabQueryClose' || t.dataset && t.dataset.close === '1')) close();
@@ -1867,9 +1869,20 @@ function autoCloseInfoPopupIfDefault() {
             const normalized = normalizeGraphFrame(pendingFrame);
             pendingFrame = null;
             if (normalized) {
-              updateStorePath('frame.latest', normalized, { source: 'proBootstrap.frameSync' });
-              updateStorePath('frame.source', normalized.source || 'unknown', { source: 'proBootstrap.frameSync' });
-              maybeRunLabAnalyze(normalized);
+              // Phase 2: ensure nm-axis exists when calibration coefficients are available.
+              // This enables worker matching and top hits.
+              let adapted = normalized;
+              try {
+                const st = getStoreState();
+                if (window.SpectraPro && window.SpectraPro.spectrumFrameAdapter && typeof window.SpectraPro.spectrumFrameAdapter.adapt === 'function') {
+                  const a = window.SpectraPro.spectrumFrameAdapter.adapt(normalized, st && st.calibration);
+                  if (a) adapted = a;
+                }
+              } catch (_) {}
+
+              updateStorePath('frame.latest', adapted, { source: 'proBootstrap.frameSync' });
+              updateStorePath('frame.source', adapted.source || 'unknown', { source: 'proBootstrap.frameSync' });
+              maybeRunLabAnalyze(adapted);
             }
             if (bus && bus.emit) bus.emit('frame:updated', { source: 'proBootstrap.frameSync' });
             queueStatusRender();
