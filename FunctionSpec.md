@@ -938,3 +938,5 @@ This spec therefore prioritizes:
 
 
 - 2026-02-27: Phase 2 matching refinement actually applied: smoothed/prominence-based peak detection, multi-line-per-peak matching, Smart preset seeds >=3 Hg signature lines then fills with others, stable hits keeps multiple lines per element via element+refNm key, LAB top-hits list expanded to 18.
+
+- 2026-02-27 — Overlay rendering fix: all listed LAB hits are now drawn on the graph, using observed peak position first (fallback: reference wavelength), with no low-confidence suppression and no 6-label cap.

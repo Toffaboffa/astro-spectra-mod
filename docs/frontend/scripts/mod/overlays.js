@@ -31,7 +31,7 @@
       const w = canvas.width;
       const h = canvas.height;
       const wCalc = widthForCalc || w;
-      const maxLabels = 6;
+      const maxLabels = Math.max(1, hits.length);
       let labels = 0;
 
       ctx.save();
@@ -48,8 +48,7 @@
       for (let i = 0; i < hits.length && labels < maxLabels; i++) {
         const hit = hits[i] || {};
         const conf = Number(hit.confidence);
-        if (Number.isFinite(conf) && conf < 0.15) continue;
-        const nm = (hit.referenceNm != null ? Number(hit.referenceNm) : (hit.observedNm != null ? Number(hit.observedNm) : null));
+        const nm = (hit.observedNm != null ? Number(hit.observedNm) : (hit.referenceNm != null ? Number(hit.referenceNm) : null));
         if (!Number.isFinite(nm)) continue;
         const px = pxFromNm(nm);
         if (!Number.isFinite(px)) continue;
@@ -61,7 +60,8 @@
         const xCanvas = (wCalc && w && wCalc !== w) ? (x * (w / wCalc)) : x;
         if (!Number.isFinite(xCanvas) || xCanvas < padding || xCanvas > (w - padding)) continue;
 
-        // Marker line
+        // Marker line for every listed hit. Use the observed position first so the
+        // marker sits on the actual detected peak, not just the reference catalog line.
         ctx.beginPath();
         ctx.moveTo(xCanvas, 0);
         ctx.lineTo(xCanvas, h);
@@ -74,15 +74,19 @@
         // In-graph label should be compact: just the element/symbol.
         const name = String(hit.element || hit.species || '').trim();
         const label = name || '';
-        const tx = Math.max(2, Math.min(w - 2, xCanvas + 4));
-        const ty = 2 + labels * 14;
+        const tx = Math.max(2, Math.min(w - 24, xCanvas + 4));
+        // Spread labels downward, but wrap after a few rows so all hits in the list can render.
+        const row = labels % 8;
+        const col = Math.floor(labels / 8);
+        const ty = 2 + row * 14;
+        const txShifted = Math.max(2, Math.min(w - 24, tx + col * 18));
         ctx.save();
         ctx.setLineDash([]);
         ctx.lineWidth = 3;
         ctx.strokeStyle = textStroke;
-        ctx.strokeText(label, tx, ty);
+        ctx.strokeText(label, txShifted, ty);
         ctx.fillStyle = 'rgba(255,255,255,0.95)';
-        ctx.fillText(label, tx, ty);
+        ctx.fillText(label, txShifted, ty);
         ctx.restore();
 
         labels += 1;
