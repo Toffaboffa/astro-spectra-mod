@@ -20,11 +20,11 @@
 
   --sp-graph-smart-bg: rgba(214,169,52,0.95);
   --sp-graph-smart-border: rgba(71,48,0,0.95);
-  --sp-graph-smart-text-color: rgba(32,24,0,0.98);
+  --sp-graph-smart-text-color: rgba(255,255,255,0.98);
   --sp-graph-smart-pad-x: 5;
   --sp-graph-smart-pad-y: 2;
-  --sp-graph-smart-height: 14;
-  --sp-graph-smart-radius: 7;
+  --sp-graph-smart-height: 18;
+  --sp-graph-smart-radius: 9;
 }
 
 #graphCanvas {
