@@ -1027,3 +1027,10 @@ Fixes a LAB-breaking runtime error introduced by the Smart Find patch.
 ### Notes
 - Smart Find is still heuristic and not a full plasma/source inversion engine.
 - Astro mode will likely need a stricter version later, especially for solar/stellar absorption work where line families, offsets, blending and instrument response matter more.
+
+
+## Patch note – CSS-driven graph styling
+- Moved key graph/overlay presentation tokens into `docs/frontend/styles/overlays.css` as CSS custom properties (`--sp-graph-*`).
+- `docs/frontend/scripts/mod/overlays.js` now reads overlay label styling from computed CSS instead of hardcoded canvas values.
+- `docs/frontend/scripts/graphScript.js` now reads axis/grid and peak-label styling from CSS variables on `#graphCanvas`.
+- This makes tweaks like Smart Find text color, background color, padding, radius, fonts and axis label colors editable in CSS without hunting through JS draw code.

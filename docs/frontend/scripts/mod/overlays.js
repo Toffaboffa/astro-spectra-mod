@@ -1,6 +1,40 @@
 (function(global){
   "use strict";
   const sp = global.SpectraPro = global.SpectraPro || {};
+  function getCanvasTheme(canvas){
+    const styles = (canvas && global.getComputedStyle) ? global.getComputedStyle(canvas) : null;
+    function read(name, fallback){
+      if (!styles) return fallback;
+      const v = String(styles.getPropertyValue(name) || '').trim();
+      return v || fallback;
+    }
+    function readNum(name, fallback){
+      const raw = read(name, '');
+      const n = Number(String(raw).replace(/[^0-9+-.]/g, ''));
+      return Number.isFinite(n) ? n : fallback;
+    }
+    function readDash(name, fallback){
+      const raw = read(name, '');
+      if (!raw) return fallback;
+      const arr = raw.split(/[ ,]+/).map(function(v){ return Number(v); }).filter(Number.isFinite);
+      return arr.length ? arr : fallback;
+    }
+    return {
+      overlayFont: read('--sp-graph-overlay-font', '12px Arial'),
+      overlayTextColor: read('--sp-graph-overlay-text-color', 'rgba(255,255,255,0.95)'),
+      overlayTextStroke: read('--sp-graph-overlay-text-stroke', 'rgba(0,0,0,0.85)'),
+      overlayLineColor: read('--sp-graph-overlay-line-color', 'rgba(0,0,0,0.35)'),
+      overlayLineWidth: readNum('--sp-graph-overlay-line-width', 1),
+      overlayLineDash: readDash('--sp-graph-overlay-line-dash', [4,4]),
+      smartBg: read('--sp-graph-smart-bg', 'rgba(214,169,52,0.95)'),
+      smartBorder: read('--sp-graph-smart-border', 'rgba(71,48,0,0.95)'),
+      smartTextColor: read('--sp-graph-smart-text-color', 'rgba(22,22,22,0.98)'),
+      smartPadX: readNum('--sp-graph-smart-pad-x', 5),
+      smartPadY: readNum('--sp-graph-smart-pad-y', 2),
+      smartHeight: readNum('--sp-graph-smart-height', 14),
+      smartRadius: readNum('--sp-graph-smart-radius', 7)
+    };
+  }
   function drawOnGraph(ctx, graphState){
     // Phase 2: draw lightweight line labels for LAB top hits.
     // Must remain CORE-safe: if anything is missing, do nothing.
@@ -34,6 +68,7 @@
 
       const w = canvas.width;
       const h = canvas.height;
+      const theme = getCanvasTheme(canvas);
       const wCalc = widthForCalc || w;
       const maxLabels = Math.max(1, hits.length);
       let labels = 0;
@@ -46,14 +81,14 @@
 
       ctx.save();
       ctx.globalAlpha = 0.9;
-      ctx.font = '12px Arial';
+      ctx.font = theme.overlayFont;
       ctx.textBaseline = 'top';
-      ctx.fillStyle = 'rgba(255,255,255,0.95)';
-      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4,4]);
-      const textStroke = 'rgba(0,0,0,0.85)';
-      const markerStroke = 'rgba(0,0,0,0.35)';
+      ctx.fillStyle = theme.overlayTextColor;
+      ctx.strokeStyle = theme.overlayLineColor;
+      ctx.lineWidth = theme.overlayLineWidth;
+      ctx.setLineDash(theme.overlayLineDash);
+      const textStroke = theme.overlayTextStroke;
+      const markerStroke = theme.overlayLineColor;
 
       for (let i = 0; i < hits.length && labels < maxLabels; i++) {
         const hit = hits[i] || {};
@@ -96,16 +131,16 @@
         if (isSmartHighlight) {
           highlightedSeen[label] = true;
           const metrics = ctx.measureText(label);
-          const padX = 5;
-          const padY = 2;
+          const padX = theme.smartPadX;
+          const padY = theme.smartPadY;
           const bw = Math.max(14, Math.ceil(metrics.width + padX * 2));
-          const bh = 14;
+          const bh = theme.smartHeight;
           const bx = Math.max(2, Math.min(w - bw - 2, txShifted - padX));
           const by = Math.max(1, ty - padY);
-          const radius = 7;
+          const radius = theme.smartRadius;
           ctx.beginPath();
-          ctx.fillStyle = 'rgba(214, 169, 52, 0.95)';
-          ctx.strokeStyle = 'rgba(71, 48, 0, 0.95)';
+          ctx.fillStyle = theme.smartBg;
+          ctx.strokeStyle = theme.smartBorder;
           ctx.lineWidth = 1.2;
           ctx.moveTo(bx + radius, by);
           ctx.lineTo(bx + bw - radius, by);
@@ -122,7 +157,7 @@
         ctx.lineWidth = 3;
         ctx.strokeStyle = textStroke;
         ctx.strokeText(label, txShifted, ty);
-        ctx.fillStyle = isSmartHighlight ? 'rgba(22,22,22,0.98)' : 'rgba(255,255,255,0.95)';
+        ctx.fillStyle = isSmartHighlight ? theme.smartTextColor : theme.overlayTextColor;
         ctx.fillText(label, txShifted, ty);
         ctx.restore();
 

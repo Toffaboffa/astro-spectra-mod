@@ -85,6 +85,24 @@ function applySpectraProDisplayMode(basePixels, pixelWidth) {
     return out;
 }
 
+
+function getGraphCanvasTheme() {
+    const canvas = graphCanvas;
+    const styles = (canvas && window.getComputedStyle) ? window.getComputedStyle(canvas) : null;
+    function read(name, fallback) {
+        if (!styles) return fallback;
+        const v = String(styles.getPropertyValue(name) || '').trim();
+        return v || fallback;
+    }
+    return {
+        axisGridColor: read('--sp-graph-axis-grid-color', '#e0e0e0'),
+        axisLabelColor: read('--sp-graph-axis-label-color', 'black'),
+        axisFont: read('--sp-graph-axis-font', '12px Arial'),
+        peakLabelColor: read('--sp-graph-peak-label-color', 'black'),
+        peakLabelFont: read('--sp-graph-peak-label-font', '16px Arial')
+    };
+}
+
 function resolveSpectraProYAxisMax(pixels, dynamicMaxValue) {
     const settings = getSpectraProDisplaySettings();
     const mode = settings.yAxisMode;
@@ -565,8 +583,9 @@ function drawPeakLabel(x, y, peakX) {
     const textWidth = graphCtx.measureText(label).width;
     const textHeight = 20;
 
-    graphCtx.fillStyle = 'black';
-    graphCtx.font = '16px Arial';
+    const theme = getGraphCanvasTheme();
+    graphCtx.fillStyle = theme.peakLabelColor;
+    graphCtx.font = theme.peakLabelFont;
     graphCtx.fillText(label, x - textWidth / 2, y - textHeight / 2);
 }
 
@@ -922,10 +941,11 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
     const yStep = niceStep(maxValue, numOfYLabels);
 
     graphCtx.beginPath();
-    graphCtx.strokeStyle = '#e0e0e0';
+    const theme = getGraphCanvasTheme();
+    graphCtx.strokeStyle = theme.axisGridColor;
     graphCtx.lineWidth = 0.5;
-    graphCtx.font = '12px Arial';
-    graphCtx.fillStyle = 'black';
+    graphCtx.font = theme.axisFont;
+    graphCtx.fillStyle = theme.axisLabelColor;
 
     for (let yValue = 0; yValue <= maxValue; yValue += yStep) {
         const y = padding + ((height - 2 * padding) * (1 - yValue / maxValue));
