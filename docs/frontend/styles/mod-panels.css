@@ -851,7 +851,7 @@ body{overflow:hidden;}
 
 
 /* === LAB panel (Phase 2) === */
-#spPanel-lab .sp-lab-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+#spPanel-lab .sp-lab-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;display: none !important;}
 #spPanel-lab .sp-lab-title{font-weight:700;letter-spacing:.02em}
 #spPanel-lab{height:100%;display:flex;flex-direction:column;min-height:0}
 #spPanel-lab #spLabCard{flex:1;display:flex;flex-direction:column;min-height:0}
@@ -1027,7 +1027,7 @@ select, input[type="number"], input[type="text"], textarea{
 }
 
 #spPanel-lab .sp-lab-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
-#spPanel-lab .sp-lab-fields-col{display:grid;gap:8px;align-content:start;margin-bottom: 10px;}
+#spPanel-lab .sp-lab-fields-col{display:grid;gap:8px;align-content:start;margin-bottom: 10px;padding-left: 10px;}
 #spPanel-lab .sp-field--checkbox-row{flex-direction:row;align-items:center;gap:10px}
 #spPanel-lab .sp-field--checkbox-row input[type="checkbox"],
 #spPanel-core .sp-field--checkbox-row input[type="checkbox"]{margin:0;inline-size:16px;block-size:16px}
