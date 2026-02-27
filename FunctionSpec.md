@@ -848,6 +848,13 @@ This spec therefore prioritizes:
 - When App mode = LAB and Analyze enabled and libraries loaded, frames are sent to worker for analysis (throttled).
 - Top hits and QC flags render from `state.analysis.topHits` / `state.analysis.qcFlags`.
 
+## LAB Phase 2 – Step 2 (Implemented)
+- Worker now supports `SET_PRESET` (stores active preset id for upcoming filtering/settings).
+- Worker now supports `QUERY_LIBRARY` (range query) and returns `QUERY_LIBRARY_RESULT`.
+- `Init libraries` loads the full atomic library from `docs/frontend/data/line_library_general_atomic.json` when available.
+- LAB Top hits rendering now matches worker payload (`species`, `referenceNm`, `observedNm`, `confidence`).
+- Graph overlays now draw lightweight vertical markers + labels for the strongest LAB hits (CORE-safe, LAB-only).
+
 ## Patch log (curated)
 
 > This log is intentionally short and accurate. Older duplicate/contradictory entries have been removed to prevent drift.
@@ -863,7 +870,7 @@ This spec therefore prioritizes:
 
 ### 2026-02-26 — Worker MVP protocol
 - Worker supports `PING/PONG`, `INIT_LIBRARIES`, and `ANALYZE_FRAME`.
-- Library loader currently uses a minimal **builtin-lite** atomic line set (placeholder for real libraries).
+- Library loader supports real atomic library loading from `docs/frontend/data/line_library_general_atomic.json` (with builtin-lite fallback).
 
 ### 2026-02-26 — CORE-safe 1.5 controls and calibration shell
 - CORE controls: Display mode, Y-axis mode/max, Peak threshold/distance/smoothing, Fill mode/opacity are wired through `sp.store` and applied in `graphScript.js` (reversible visual overrides).
@@ -873,5 +880,12 @@ This spec therefore prioritizes:
 - Other tab: **Data Quality (details)** mirrors the Status rail metrics for drill-down.
 - Camera capabilities: `probeCurrent()` now stores ranges; `applySetting()` enables optional Zoom/Exposure controls when supported.
 - Calibration shell: enable/disable points (apply uses enabled only), remove points, undo shell edits, and rollback last apply.
+
+### 2026-02-27 — Phase 2 Step 2: real libraries + query + overlays
+- `INIT_LIBRARIES` now loads the full atomic library from `docs/frontend/data/line_library_general_atomic.json` (with builtin-lite fallback and warnings).
+- Added `QUERY_LIBRARY` / `QUERY_LIBRARY_RESULT` and UI wiring for the "Query library" button (queries current calibrated range when available).
+- Added `SET_PRESET` / `SET_PRESET_RESULT` plumbing (worker stores preset for upcoming filtering).
+- LAB Top hits renderer updated to match worker payload.
+- LAB overlays: vertical markers + labels for top hits drawn on the graph (LAB-only; CORE-safe).
 
 ---

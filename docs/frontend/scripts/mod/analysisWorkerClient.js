@@ -83,6 +83,20 @@
       send(t, { manifest: manifest || null });
     }
 
+    function setPreset(preset) {
+      if (!worker) start();
+      if (!worker) return;
+      const t = types.MSG && types.MSG.SET_PRESET || 'SET_PRESET';
+      send(t, { preset: preset || null });
+    }
+
+    function queryLibrary(minNm, maxNm, query) {
+      if (!worker) start();
+      if (!worker) return;
+      const t = types.MSG && types.MSG.QUERY_LIBRARY || 'QUERY_LIBRARY';
+      send(t, { minNm: minNm, maxNm: maxNm, query: query || null });
+    }
+
     function analyzeFrame(frame) {
       if (!canUseWorker()) return false;
       if (!worker) start();
@@ -123,6 +137,20 @@
         if (bus) bus.emit('worker:libraries', msg);
         return;
       }
+      if (type === (types.MSG && types.MSG.SET_PRESET_RESULT || 'SET_PRESET_RESULT')) {
+        if (bus) bus.emit('worker:preset', msg);
+        return;
+      }
+      if (type === (types.MSG && types.MSG.QUERY_LIBRARY_RESULT || 'QUERY_LIBRARY_RESULT')) {
+        if (msg.payload && store) {
+          if (Array.isArray(msg.payload.hits)) store.update('analysis.libraryQueryHits', msg.payload.hits);
+          if (typeof msg.payload.count === 'number') store.update('analysis.libraryQueryCount', msg.payload.count);
+          if (typeof msg.payload.minNm === 'number') store.update('analysis.libraryQueryMinNm', msg.payload.minNm);
+          if (typeof msg.payload.maxNm === 'number') store.update('analysis.libraryQueryMaxNm', msg.payload.maxNm);
+        }
+        if (bus) bus.emit('worker:query', msg);
+        return;
+      }
       if (type === (types.MSG && types.MSG.ANALYZE_RESULT || 'ANALYZE_RESULT')) {
         if (inFlight && msg.requestId === inFlight.requestId) inFlight = null;
         const ws = store.getState().worker;
@@ -150,7 +178,7 @@
       }
     }
 
-    return { start, stop, ping, initLibraries, analyzeFrame };
+    return { start, stop, ping, initLibraries, setPreset, queryLibrary, analyzeFrame };
   }
 
   sp.createAnalysisWorkerClient = createAnalysisWorkerClient;

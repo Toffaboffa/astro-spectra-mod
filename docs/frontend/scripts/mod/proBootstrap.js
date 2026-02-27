@@ -995,6 +995,11 @@ function ensureLabPanel() {
   presetEl && presetEl.addEventListener('change', function (e) {
     const v = String(e.target.value || '');
     setVal('analysis.presetId', v || null);
+    // Tell worker about preset (worker may use it later for filtering/settings).
+    try {
+      const client = ensureWorkerClient();
+      if (client && typeof client.setPreset === 'function') client.setPreset(v || null);
+    } catch (_) {}
     setFeedback(v ? ('Preset: ' + v) : 'Preset cleared.', 'info');
   });
 
@@ -1017,7 +1022,31 @@ function ensureLabPanel() {
   });
 
   $('spLabQueryBtn') && $('spLabQueryBtn').addEventListener('click', function () {
-    setFeedback('Query library (coming next).', 'info');
+    const client = ensureWorkerClient();
+    if (!client || typeof client.queryLibrary !== 'function') {
+      setFeedback('Worker client unavailable.', 'warn');
+      return;
+    }
+    const state = getStoreState();
+    const frame = getLiveFrame(state);
+    let minNm = 380;
+    let maxNm = 780;
+    try {
+      if (frame && Array.isArray(frame.nm) && frame.nm.length) {
+        const nums = frame.nm.map(Number).filter(Number.isFinite);
+        if (nums.length) {
+          minNm = Math.min.apply(null, nums);
+          maxNm = Math.max.apply(null, nums);
+        }
+      }
+    } catch (_) {}
+    // Clamp to sane range to avoid extreme/noise values.
+    if (!Number.isFinite(minNm)) minNm = 380;
+    if (!Number.isFinite(maxNm)) maxNm = 780;
+    minNm = Math.max(200, Math.min(1200, minNm));
+    maxNm = Math.max(200, Math.min(1200, maxNm));
+    setFeedback('Querying library for ' + Math.round(minNm) + '–' + Math.round(maxNm) + ' nm…', 'info');
+    try { client.queryLibrary(minNm, maxNm, null); } catch (err) { setFeedback('Query failed: ' + String(err && err.message || err), 'error'); }
   });
 
   return card;
@@ -1435,23 +1464,53 @@ function renderLabPanel() {
   if (!hitsEl || !qcEl) return;
   const state = getStoreState();
   const hits = (state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : [];
+  const qHits = (state.analysis && Array.isArray(state.analysis.libraryQueryHits)) ? state.analysis.libraryQueryHits : [];
+  const qCount = (state.analysis && typeof state.analysis.libraryQueryCount === 'number') ? state.analysis.libraryQueryCount : null;
+  const qMin = (state.analysis && typeof state.analysis.libraryQueryMinNm === 'number') ? state.analysis.libraryQueryMinNm : null;
+  const qMax = (state.analysis && typeof state.analysis.libraryQueryMaxNm === 'number') ? state.analysis.libraryQueryMaxNm : null;
   const qc = (state.analysis && Array.isArray(state.analysis.qcFlags)) ? state.analysis.qcFlags : [];
   const libsLoaded = !!(state.worker && state.worker.librariesLoaded);
 
   if (!libsLoaded) {
     hitsEl.innerHTML = '<div class="sp-empty">Libraries not initialized yet. Click Init libraries.</div>';
   } else if (!hits.length) {
-    hitsEl.innerHTML = '<div class="sp-empty">No hits yet. Enable Analyze and point at a source.</div>';
+    if (qHits.length) {
+      const head = '<div class="sp-note sp-note--small">Query results ' + (qMin != null && qMax != null ? (escapeHtml(String(Math.round(qMin))) + '–' + escapeHtml(String(Math.round(qMax))) + ' nm') : '') + (qCount != null ? (' · ' + escapeHtml(String(qCount)) + ' total') : '') + '</div>';
+      const rows = qHits.slice(0, 24).map(function (h) {
+        const name = String(h && (h.species || h.speciesKey || h.element) || 'Unknown');
+        const nm = (h && h.nm) != null ? Number(h.nm) : null;
+        const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
+        return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt) + '</div></div>';
+      }).join('');
+      hitsEl.innerHTML = head + rows;
+    } else {
+      hitsEl.innerHTML = '<div class="sp-empty">No hits yet. Enable Analyze and point at a source.</div>';
+    }
   } else {
-    const rows = hits.slice(0, 8).map(function (h) {
-      const name = String(h && (h.label || h.element || h.name) || 'Unknown');
-      const score = (h && (h.confidence ?? h.score)) != null ? Number(h.confidence ?? h.score) : null;
-      const nm = (h && h.nm) != null ? Number(h.nm) : null;
-      const scoreTxt = Number.isFinite(score) ? (Math.round(score * 100) / 100).toFixed(2) : '';
+    const topHead = '<div class="sp-note sp-note--small">Top hits</div>';
+    const rows = hits.slice(0, 10).map(function (h) {
+      const name = String(h && (h.species || h.element || h.name) || 'Unknown');
+      const score = (h && h.confidence != null) ? Number(h.confidence) : ((h && h.score != null) ? Number(h.score) : null);
+      const nm = (h && (h.observedNm != null ? h.observedNm : (h.referenceNm != null ? h.referenceNm : h.nm))) != null ? Number(h.observedNm != null ? h.observedNm : (h.referenceNm != null ? h.referenceNm : h.nm)) : null;
+      const scoreTxt = Number.isFinite(score) ? (Math.round(score * 1000) / 1000).toFixed(3) : '';
       const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
       return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt) + (scoreTxt ? (' · ' + escapeHtml(scoreTxt)) : '') + '</div></div>';
     }).join('');
-    hitsEl.innerHTML = rows;
+
+    let qBlock = '';
+    if (qHits.length) {
+      const qHead = '<div class="sp-divider" style="height:1px;background:rgba(255,255,255,0.08);margin:10px 0"></div>' +
+        '<div class="sp-note sp-note--small">Query results ' + (qMin != null && qMax != null ? (escapeHtml(String(Math.round(qMin))) + '–' + escapeHtml(String(Math.round(qMax))) + ' nm') : '') + (qCount != null ? (' · ' + escapeHtml(String(qCount)) + ' total') : '') + '</div>';
+      const qRows = qHits.slice(0, 18).map(function (h) {
+        const name = String(h && (h.species || h.speciesKey || h.element) || 'Unknown');
+        const nm = (h && h.nm) != null ? Number(h.nm) : null;
+        const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
+        return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt) + '</div></div>';
+      }).join('');
+      qBlock = qHead + qRows;
+    }
+
+    hitsEl.innerHTML = topHead + rows + qBlock;
   }
 
   if (!qc.length) {
@@ -1536,10 +1595,35 @@ function autoCloseInfoPopupIfDefault() {
       bus.on('mode:changed', render);
       bus.on('frame:updated', renderStatus);
       bus.on('worker:ready', function(){ setCoreActionFeedback('Worker ready.', 'ok'); renderStatus(); });
-      bus.on('worker:libraries', function(){ setCoreActionFeedback('Worker libraries initialized.', 'ok'); renderStatus(); });
+      bus.on('worker:libraries', function(msg){
+        try {
+          const p = msg && msg.payload ? msg.payload : {};
+          const count = (p && typeof p.count === 'number') ? p.count : null;
+          const warn = Array.isArray(p.warnings) ? p.warnings : [];
+          setCoreActionFeedback('Worker libraries initialized.' + (count != null ? (' (' + count + ' lines)') : ''), 'ok');
+          if (sp && sp.consoleLog && typeof sp.consoleLog.append === 'function') {
+            sp.consoleLog.append('[LAB] Libraries ready' + (count != null ? (' · ' + count + ' lines') : '') + '.');
+            warn.slice(0, 3).forEach(function(w){ sp.consoleLog.append('[LAB] Library warning: ' + String(w)); });
+          }
+        } catch (_) { setCoreActionFeedback('Worker libraries initialized.', 'ok'); }
+        renderStatus();
+      });
       bus.on('worker:error', function(){ setCoreActionFeedback('Worker error. See STATUS.', 'error'); renderStatus(); });
       bus.on('worker:timeout', function(){ setCoreActionFeedback('Worker timeout.', 'warn'); renderStatus(); });
       bus.on('worker:result', renderStatus);
+      bus.on('worker:query', function(msg){
+        try {
+          const p = msg && msg.payload ? msg.payload : {};
+          if (sp && sp.consoleLog && typeof sp.consoleLog.append === 'function') {
+            if (p && p.ok) {
+              sp.consoleLog.append('[LAB] Query result: ' + String(p.shown || 0) + ' shown (' + String(p.count || 0) + ' total) for ' + Math.round(Number(p.minNm) || 0) + '–' + Math.round(Number(p.maxNm) || 0) + ' nm.');
+            } else {
+              sp.consoleLog.append('[LAB] Query failed: ' + String(p.message || 'unknown')); 
+            }
+          }
+        } catch (_) {}
+        render();
+      });
     }
     if (window.SpectraPro && window.SpectraPro.coreHooks && window.SpectraPro.coreHooks.on) {
       let statusRafId = 0;
