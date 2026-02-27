@@ -956,47 +956,49 @@ function ensureLabPanel() {
   card = el('div', 'sp-card sp-card--flat');
   card.id = 'spLabCard';
   card.innerHTML = [
-    '<div class="sp-lab-head">',
-    '  <div class="sp-lab-title">LAB</div>',
-    '  <div id="spLabFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
-    '</div>',
-    '<div class="sp-form-grid sp-form-grid--lab">',
-    '  <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled">Analyze<input id="spLabEnabled" type="checkbox"></label>',
-    '  <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
-    '  <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">',
-    '    <option value="">(default)</option>',
-    '    <option value="general">General</option>',
-    '    <option value="general-tight">General (tight)</option>',
-    '    <option value="general-wide">General (wide)</option>',
-    '    <option value="fast">Fast</option>',
-    '  </select></label>',
-    '  <label id="spFieldLabSubMode" class="sp-field sp-field--lab-sub">Mode<select id="spLabSubMode" class="spctl-select spctl-select--lab-sub">',
-    '    <option value="raw">Raw</option>',
-    '    <option value="raw-dark">Raw - Dark</option>',
-    '    <option value="difference">Difference (Raw - Ref)</option>',
-    '    <option value="ratio">Ratio (Raw / Ref)</option>',
-    '    <option value="transmittance">Transmittance %</option>',
-    '    <option value="absorbance">Absorbance</option>',
-    '  </select></label>',
-    '</div>',
-    '<div class="sp-actions sp-actions--lab">',
-    '  <button type="button" id="spLabInitLibBtn">Init libraries</button>',
-    '  <button type="button" id="spLabPingBtn">Ping worker</button>',
-    '  <button type="button" id="spLabQueryBtn">Query library</button>',
-    '  <button type="button" id="spLabCapRefBtn">Capture ref</button>',
-    '  <button type="button" id="spLabCapDarkBtn">Capture dark</button>',
-    '  <button type="button" id="spLabClearSubBtn">Clear</button>',
-    '</div>',
-    '<div class="sp-lab-split">',
-    '  <div class="sp-lab-col">',
-    '    <h4 class="sp-subtitle">QC</h4>',
-    '    <div id="spLabQc" class="sp-lab-qc"></div>',
-    '  </div>',
-    '  <div class="sp-lab-col">',
-    '    <h4 class="sp-subtitle">Top hits</h4>',
-    '    <div id="spLabHits" class="sp-lab-hits"></div>',
-    '  </div>',
-    '</div>'
+	    '<div class="sp-lab-layout">',
+	    '  <div class="sp-lab-left">',
+	    '    <div class="sp-lab-head">',
+	    '      <div class="sp-lab-title">LAB</div>',
+	    '      <div id="spLabFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
+	    '    </div>',
+	    '    <div class="sp-form-grid sp-form-grid--lab">',
+	    '      <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled">Analyze<input id="spLabEnabled" type="checkbox"></label>',
+	    '      <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
+	    '      <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">',
+	    '        <option value="">(default)</option>',
+	    '        <option value="general">General</option>',
+	    '        <option value="general-tight">General (tight)</option>',
+	    '        <option value="general-wide">General (wide)</option>',
+	    '        <option value="fast">Fast</option>',
+	    '      </select></label>',
+	    '      <label id="spFieldLabSubMode" class="sp-field sp-field--lab-sub">Mode<select id="spLabSubMode" class="spctl-select spctl-select--lab-sub">',
+	    '        <option value="raw">Raw</option>',
+	    '        <option value="raw-dark">Raw - Dark</option>',
+	    '        <option value="difference">Difference (Raw - Ref)</option>',
+	    '        <option value="ratio">Ratio (Raw / Ref)</option>',
+	    '        <option value="transmittance">Transmittance %</option>',
+	    '        <option value="absorbance">Absorbance</option>',
+	    '      </select></label>',
+	    '    </div>',
+	    '    <div class="sp-actions sp-actions--lab">',
+	    '      <button type="button" id="spLabInitLibBtn">Init libraries</button>',
+	    '      <button type="button" id="spLabPingBtn">Ping worker</button>',
+	    '      <button type="button" id="spLabQueryBtn">Query library</button>',
+	    '      <button type="button" id="spLabCapRefBtn">Capture ref</button>',
+	    '      <button type="button" id="spLabCapDarkBtn">Capture dark</button>',
+	    '      <button type="button" id="spLabClearSubBtn">Clear</button>',
+	    '    </div>',
+	    '  </div>',
+	    '  <div class="sp-lab-right">',
+	    '    <div class="sp-lab-table">',
+	    '      <div class="sp-lab-th">TOP HITS</div>',
+	    '      <div class="sp-lab-th">QC</div>',
+	    '      <div id="spLabHits" class="sp-lab-hits"></div>',
+	    '      <div id="spLabQc" class="sp-lab-qc"></div>',
+	    '    </div>',
+	    '  </div>',
+	    '</div>'
   ].join('');
   panel.appendChild(card);
   panel.dataset.built = '1';
@@ -1722,16 +1724,45 @@ function renderLabPanel() {
   } else if (!hits.length) {
     hitsEl.innerHTML = '<div class="sp-empty">No hits yet. Point at a bright source (e.g. fluorescent lamp) and wait 1–2 seconds. Use <b>Query library</b> to browse lines.</div>';
   } else {
-    const topHead = '<div class="sp-note sp-note--small">Top hits</div>';
-    const rows = hits.slice(0, 40).map(function (h) {
-      const name = String(h && (h.species || h.element || h.name) || 'Unknown');
-      const score = (h && h.confidence != null) ? Number(h.confidence) : ((h && h.score != null) ? Number(h.score) : null);
-      const nm = (h && (h.observedNm != null ? h.observedNm : (h.referenceNm != null ? h.referenceNm : h.nm))) != null ? Number(h.observedNm != null ? h.observedNm : (h.referenceNm != null ? h.referenceNm : h.nm)) : null;
-      const scoreTxt = Number.isFinite(score) ? (Math.round(score * 1000) / 1000).toFixed(3) : '';
-      const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
-      return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt) + (scoreTxt ? (' · ' + escapeHtml(scoreTxt)) : '') + '</div></div>';
+    // Compact one-line rows: "6σ • He (Helium) • 123.2nm"
+    const PERIODIC = {
+      H:'Hydrogen',He:'Helium',Li:'Lithium',Be:'Beryllium',B:'Boron',C:'Carbon',N:'Nitrogen',O:'Oxygen',F:'Fluorine',Ne:'Neon',
+      Na:'Sodium',Mg:'Magnesium',Al:'Aluminum',Si:'Silicon',P:'Phosphorus',S:'Sulfur',Cl:'Chlorine',Ar:'Argon',K:'Potassium',Ca:'Calcium',
+      Sc:'Scandium',Ti:'Titanium',V:'Vanadium',Cr:'Chromium',Mn:'Manganese',Fe:'Iron',Co:'Cobalt',Ni:'Nickel',Cu:'Copper',Zn:'Zinc',
+      Ga:'Gallium',Ge:'Germanium',As:'Arsenic',Se:'Selenium',Br:'Bromine',Kr:'Krypton',Rb:'Rubidium',Sr:'Strontium',Y:'Yttrium',Zr:'Zirconium',
+      Nb:'Niobium',Mo:'Molybdenum',Tc:'Technetium',Ru:'Ruthenium',Rh:'Rhodium',Pd:'Palladium',Ag:'Silver',Cd:'Cadmium',In:'Indium',Sn:'Tin',
+      Sb:'Antimony',Te:'Tellurium',I:'Iodine',Xe:'Xenon',Cs:'Cesium',Ba:'Barium',La:'Lanthanum',Ce:'Cerium',Pr:'Praseodymium',Nd:'Neodymium',
+      Pm:'Promethium',Sm:'Samarium',Eu:'Europium',Gd:'Gadolinium',Tb:'Terbium',Dy:'Dysprosium',Ho:'Holmium',Er:'Erbium',Tm:'Thulium',Yb:'Ytterbium',
+      Lu:'Lutetium',Hf:'Hafnium',Ta:'Tantalum',W:'Tungsten',Re:'Rhenium',Os:'Osmium',Ir:'Iridium',Pt:'Platinum',Au:'Gold',Hg:'Mercury',
+      Tl:'Thallium',Pb:'Lead',Bi:'Bismuth',Po:'Polonium',At:'Astatine',Rn:'Radon',Fr:'Francium',Ra:'Radium',Ac:'Actinium',Th:'Thorium',
+      Pa:'Protactinium',U:'Uranium',Np:'Neptunium',Pu:'Plutonium',Am:'Americium',Cm:'Curium',Bk:'Berkelium',Cf:'Californium',Es:'Einsteinium',Fm:'Fermium',
+      Md:'Mendelevium',No:'Nobelium',Lr:'Lawrencium',Rf:'Rutherfordium',Db:'Dubnium',Sg:'Seaborgium',Bh:'Bohrium',Hs:'Hassium',Mt:'Meitnerium',Ds:'Darmstadtium',
+      Rg:'Roentgenium',Cn:'Copernicium',Nh:'Nihonium',Fl:'Flerovium',Mc:'Moscovium',Lv:'Livermorium',Ts:'Tennessine',Og:'Oganesson'
+    };
+    function toSymbol(v){
+      const raw = String(v || '').trim();
+      if (!raw) return '';
+      const s = raw.replace(/^[0-9]+/, '');
+      const m = s.match(/^([A-Z][a-z]?)/);
+      return m ? m[1] : '';
+    }
+    function sigmaFromConfidence(c){
+      const conf = Number(c);
+      if (!Number.isFinite(conf)) return 0;
+      return Math.max(1, Math.min(6, Math.round(conf * 6)));
+    }
+    const rows = hits.slice(0, 80).map(function (h) {
+      const symbol = String((h && (h.element || '')) || '').trim() || toSymbol(h && (h.species || h.speciesKey || h.name));
+      const fullName = symbol && PERIODIC[symbol] ? PERIODIC[symbol] : '';
+      const nm = (h && (h.referenceNm != null ? h.referenceNm : (h.observedNm != null ? h.observedNm : h.nm))) != null ? Number(h.referenceNm != null ? h.referenceNm : (h.observedNm != null ? h.observedNm : h.nm)) : null;
+      const sig = sigmaFromConfidence(h && (h.confidence != null ? h.confidence : h.score));
+      const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 10) / 10).toFixed(1) + 'nm' : '';
+      const left = (sig ? (sig + 'σ') : '•');
+      const who = symbol ? (symbol + (fullName ? (' (' + fullName + ')') : '')) : 'Unknown';
+      const line = left + ' • ' + who + (nmTxt ? (' • ' + nmTxt) : '');
+      return '<div class="sp-hit sp-hit--one">' + escapeHtml(line) + '</div>';
     }).join('');
-    hitsEl.innerHTML = topHead + rows;
+    hitsEl.innerHTML = rows;
   }
 
   if (!qc.length) {

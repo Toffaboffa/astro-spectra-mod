@@ -164,7 +164,20 @@
         }
         store.update('worker', Object.assign({}, ws, { status: 'ready', lastResultAt: Date.now(), analysisHz: +hz.toFixed(2), lastError: null }));
         if (msg.payload && store) {
-          if (Array.isArray(msg.payload.topHits)) store.update('analysis.topHits', msg.payload.topHits);
+          if (Array.isArray(msg.payload.topHits)) {
+            // Normalize hits for UI + overlays.
+            const hits = msg.payload.topHits.map(function (h) {
+              const hit = Object.assign({}, h || {});
+              if (!hit.element) {
+                const raw = String(hit.species || hit.speciesKey || hit.name || '').trim();
+                const s = raw.replace(/^[0-9]+/, '');
+                const m = s.match(/^([A-Z][a-z]?)/);
+                if (m) hit.element = m[1];
+              }
+              return hit;
+            });
+            store.update('analysis.topHits', hits);
+          }
           if (typeof msg.payload.offsetNm === 'number') store.update('analysis.offsetNm', msg.payload.offsetNm);
           if (Array.isArray(msg.payload.qcFlags)) store.update('analysis.qcFlags', msg.payload.qcFlags);
         }

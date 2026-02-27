@@ -16,11 +16,15 @@
       if (!canvas) return { ok:true, labels:0, bands:0, graphState: !!graphState };
 
       // Access globals used by original SPECTRA scripts.
-      const rb = (typeof global.rangeBeginX !== 'undefined') ? Number(global.rangeBeginX) : 0;
-      const re = (typeof global.rangeEndX !== 'undefined') ? Number(global.rangeEndX) : (typeof global.width !== 'undefined' ? Number(global.width) : 0);
-      const hasRange = Number.isFinite(rb) && Number.isFinite(re) && re > rb;
+      // IMPORTANT: the graph uses padding + zoomStart/zoomEnd when rendering X labels.
+      // Use the same mapping so overlay lines actually land on the plotted area.
       const pxFromNm = (typeof global.getPxByWaveLengthBisection === 'function') ? global.getPxByWaveLengthBisection : null;
-      if (!hasRange || !pxFromNm) return { ok:true, labels:0, bands:0, graphState: !!graphState };
+      const calcX = (typeof global.calculateXPosition === 'function') ? global.calculateXPosition : null;
+      const zoomStart = (typeof global.zoomStart !== 'undefined') ? Number(global.zoomStart) : null;
+      const zoomEnd = (typeof global.zoomEnd !== 'undefined') ? Number(global.zoomEnd) : null;
+      const padding = 30; // must match graphScript.js
+      const hasZoom = Number.isFinite(zoomStart) && Number.isFinite(zoomEnd) && zoomEnd > zoomStart;
+      if (!pxFromNm || !calcX || !hasZoom) return { ok:true, labels:0, bands:0, graphState: !!graphState };
 
       const w = canvas.width;
       const h = canvas.height;
@@ -43,8 +47,9 @@
         if (!Number.isFinite(nm)) continue;
         const px = pxFromNm(nm);
         if (!Number.isFinite(px)) continue;
-        const x = ((px - rb) / (re - rb)) * w;
-        if (!Number.isFinite(x) || x < 0 || x > w) continue;
+        if (px < zoomStart || px >= zoomEnd) continue;
+        const x = calcX(px - zoomStart, zoomEnd - zoomStart, w);
+        if (!Number.isFinite(x) || x < padding || x > (w - padding)) continue;
 
         // Marker line
         ctx.beginPath();
@@ -53,8 +58,9 @@
         ctx.stroke();
 
         // Label
-        const name = String(hit.species || hit.element || '');
-        const label = name ? (name + ' ' + (Math.round(nm * 100) / 100).toFixed(2) + 'nm') : ((Math.round(nm * 100) / 100).toFixed(2) + 'nm');
+        // In-graph label should be compact: just the element/symbol.
+        const name = String(hit.element || hit.species || '').trim();
+        const label = name || '';
         const tx = Math.max(2, Math.min(w - 2, x + 4));
         const ty = 2 + labels * 14;
         ctx.fillText(label, tx, ty);

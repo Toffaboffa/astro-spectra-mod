@@ -919,4 +919,9 @@ This spec therefore prioritizes:
 - LAB split columns now use flex so **Top hits and QC can fill available height** and scroll inside their panes.
 - Buttons/inputs were made slightly more compact across the app to reduce UI crowding.
 
+### 2026-02-27 — Phase 2 polish: overlays positioning + full-height Top Hits/QC table + sigma formatting
+- LAB overlays now use the same X-axis mapping as the main graph (zoomStart/zoomEnd + padding) so line markers actually land on the plotted area.
+- LAB layout updated to a two-pane design: controls on the left, and a **full-height** two-column table (Top Hits / QC) on the right.
+- Top Hits rows are now compact one-liners in the format: `6σ • He (Helium) • 123.2nm`, while in-graph labels show only the symbol (e.g. `He`).
+
 ---

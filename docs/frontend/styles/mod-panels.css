@@ -857,17 +857,28 @@ body{overflow:hidden;}
 #spPanel-lab #spLabCard{flex:1;display:flex;flex-direction:column;min-height:0}
 #spPanel-lab .sp-form-grid--lab{grid-template-columns:repeat(3,minmax(0,1fr))}
 #spPanel-lab .sp-actions--lab{margin-top:8px}
-#spPanel-lab .sp-lab-split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;align-items:stretch;flex:1;min-height:0}
-#spPanel-lab .sp-lab-col{display:flex;flex-direction:column;min-height:0}
-#spPanel-lab .sp-subtitle{margin:0 0 6px 0;font-size:12px;opacity:.9}
-#spPanel-lab .sp-lab-hits,.sp-lab-qc{flex:1;min-height:0;overflow:auto}
 
-/* Compact Top Hits list: maximize visible rows without making the whole panel scroll */
-#spPanel-lab .sp-hit{padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.08);margin:0;background:transparent;border-radius:0}
-#spPanel-lab .sp-hit-name{font-weight:600;font-size:12px;line-height:1.15}
-#spPanel-lab .sp-hit-meta{font-size:11px;opacity:.85;line-height:1.15}
+/* Layout: controls left, full-height table right */
+#spPanel-lab .sp-lab-layout{display:grid;grid-template-columns:420px 1fr;gap:10px;flex:1;min-height:0;align-items:stretch}
+#spPanel-lab .sp-lab-left{display:flex;flex-direction:column;min-height:0}
+#spPanel-lab .sp-lab-right{min-height:0;display:flex;flex-direction:column}
+
+#spPanel-lab .sp-lab-table{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;gap:0;border:1px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden}
+#spPanel-lab .sp-lab-th{padding:6px 8px;font-weight:700;letter-spacing:.06em;font-size:12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.12)}
+#spPanel-lab .sp-lab-th:nth-child(1){border-right:1px solid rgba(255,255,255,.12)}
+#spPanel-lab .sp-lab-hits{min-height:0;overflow:auto;border-right:1px solid rgba(255,255,255,.12);padding:6px 8px}
+#spPanel-lab .sp-lab-qc{min-height:0;overflow:auto;padding:6px 8px}
+
+/* Compact hit rows: one line, ellipsis */
+#spPanel-lab .sp-hit--one{padding:2px 0;font-size:12px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #spPanel-lab .sp-qc-flag{padding:6px 8px;border:1px dashed rgba(255,255,255,.18);border-radius:8px;margin-bottom:6px;font-size:12px}
-@media (max-width: 900px){#spPanel-lab .sp-lab-split{grid-template-columns:1fr}}
+
+@media (max-width: 900px){
+  #spPanel-lab .sp-lab-layout{grid-template-columns:1fr;}
+  #spPanel-lab .sp-lab-table{grid-template-columns:1fr;grid-template-rows:auto auto 1fr 1fr}
+  #spPanel-lab .sp-lab-th:nth-child(1){border-right:none}
+  #spPanel-lab .sp-lab-hits{border-right:none;border-bottom:1px solid rgba(255,255,255,.12)}
+}
 
 /* ----------------------------------------------------- */
 /* Global UI compactness (Phase 2 polish)
