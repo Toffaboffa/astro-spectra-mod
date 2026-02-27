@@ -612,7 +612,7 @@ body{overflow:hidden;}
 #SpectraProDockHost .sp-form-grid{display:grid !important; grid-template-columns:repeat(8,minmax(0,1fr)) !important; gap:10px !important; max-width:100% !important;}
 #SpectraProDockHost .sp-actions{display:flex !important; flex-wrap:wrap !important; gap:8px !important; margin-top:8px !important;}
 #SpectraProDockHost .sp-actions button{background:#2f5f9f !important; color:#fff !important; border:1px solid #4e7fbf !important; border-radius:8px !important; padding:6px 10px !important;}
-#SpectraProDockHost .sp-empty{color:#9cb7d5 !important; padding:8px 2px !important;}
+#SpectraProDockHost .sp-empty{color:#9cb7d5 !important; padding:8px 2px !important; font-size: 12px;}
 #SpectraProDockHost .sp-note{margin:8px 0 0 !important; color:#9cb7d5 !important; font-size:12px !important;}
 
 /* Preserve original graph controls layout after moving into General panel */
@@ -718,7 +718,7 @@ body{overflow:hidden;}
 }
 #graphSettingsDrawerLeft > #spMain > #SpectraProDockHost .sp-body{
   min-height:0 !important;
-  height:auto !important;
+  height:100% !important;
   overflow:hidden !important;
   align-items:stretch !important;
 }
@@ -860,7 +860,7 @@ body{overflow:hidden;}
 #spPanel-lab .sp-actions--lab{margin-top:8px}
 
 /* Layout: controls left, full-height table right */
-#spPanel-lab .sp-lab-layout{display:grid;grid-template-columns:420px 1fr;gap:10px;flex:1;min-height:0;align-items:stretch}
+#spPanel-lab .sp-lab-layout{display:grid;grid-template-columns:550px 1fr;gap:10px;flex:1;min-height:0;align-items:stretch}
 #spPanel-lab .sp-lab-left{display:flex;flex-direction:column;min-height:0}
 #spPanel-lab .sp-lab-right{min-height:0;display:flex;flex-direction:column}
 
