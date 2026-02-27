@@ -134,6 +134,110 @@
       return true;
     }
 
+
+
+    function buildSmartFind(rawHits) {
+      const hits = Array.isArray(rawHits) ? rawHits.filter(Boolean) : [];
+      const result = { groups: [], hits: [] };
+      if (!hits.length) return result;
+
+      function num(v) {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+      }
+      function getElement(hit) {
+        const direct = String((hit && (hit.element || '')) || '').trim();
+        if (direct) return direct;
+        const raw = String((hit && (hit.species || hit.speciesKey || hit.name || '')) || '').trim();
+        const s = raw.replace(/^[0-9]+/, '');
+        const m = s.match(/^([A-Z][a-z]?)/);
+        return m ? m[1] : '';
+      }
+
+      const buckets = Object.create(null);
+      for (let i = 0; i < hits.length; i += 1) {
+        const hit = Object.assign({}, hits[i] || {});
+        const element = getElement(hit);
+        if (!element) continue;
+        const observedNm = num(hit.observedNm);
+        const referenceNm = num(hit.referenceNm);
+        const nm = observedNm != null ? observedNm : referenceNm;
+        if (nm == null) continue;
+        const bucket = buckets[element] || {
+          element: element,
+          members: [],
+          uniqueBins: Object.create(null),
+          lineKeys: Object.create(null),
+          best: null,
+          totalConfidence: 0,
+          totalRawScore: 0
+        };
+        const nearBin = Math.round(nm * 2) / 2; // 0.5 nm bins: merges near-duplicates, preserves patterns.
+        bucket.uniqueBins[nearBin.toFixed(1)] = true;
+        const refKey = referenceNm != null ? referenceNm.toFixed(1) : observedNm != null ? observedNm.toFixed(1) : '?';
+        bucket.lineKeys[refKey] = true;
+        bucket.members.push(hit);
+        bucket.totalConfidence += Math.max(0, Number(hit.confidence) || 0);
+        bucket.totalRawScore += Math.max(0, Number(hit.rawScore) || Number(hit.score) || 0);
+        if (!bucket.best || (Number(hit.confidence) || 0) > (Number(bucket.best.confidence) || 0)) bucket.best = hit;
+        buckets[element] = bucket;
+      }
+
+      const groups = Object.keys(buckets).map(function (element) {
+        const bucket = buckets[element];
+        const lineCount = Object.keys(bucket.uniqueBins).length;
+        const memberCount = bucket.members.length;
+        const avgConfidence = memberCount ? bucket.totalConfidence / memberCount : 0;
+        const avgRawScore = memberCount ? bucket.totalRawScore / memberCount : 0;
+        const bestConfidence = bucket.best ? (Number(bucket.best.confidence) || 0) : 0;
+        const score = lineCount * 3 + memberCount * 1.25 + avgConfidence * 4 + bestConfidence * 2 + avgRawScore * 0.01;
+        return {
+          element: element,
+          lineCount: lineCount,
+          memberCount: memberCount,
+          avgConfidence: +avgConfidence.toFixed(4),
+          avgRawScore: +avgRawScore.toFixed(4),
+          bestConfidence: +bestConfidence.toFixed(4),
+          score: +score.toFixed(4),
+          best: bucket.best,
+          members: bucket.members.slice()
+        };
+      }).sort(function (a, b) {
+        return (b.score - a.score) || (b.lineCount - a.lineCount) || (b.bestConfidence - a.bestConfidence) || a.element.localeCompare(b.element);
+      });
+
+      const smartHits = [];
+      groups.forEach(function (group, groupIndex) {
+        const seenBins = Object.create(null);
+        group.members
+          .slice()
+          .sort(function (a, b) {
+            return ((Number(b.confidence) || 0) - (Number(a.confidence) || 0)) || ((Number(a.observedNm) || Number(a.referenceNm) || 0) - (Number(b.observedNm) || Number(b.referenceNm) || 0));
+          })
+          .forEach(function (member) {
+            const nm = num(member.observedNm) != null ? num(member.observedNm) : num(member.referenceNm);
+            if (nm == null) return;
+            const binKey = (Math.round(nm * 2) / 2).toFixed(1);
+            if (seenBins[binKey]) return;
+            seenBins[binKey] = true;
+            smartHits.push(Object.assign({}, member, {
+              element: group.element,
+              smartFind: true,
+              smartGroupRank: groupIndex,
+              smartGroupScore: group.score,
+              smartLineCount: group.lineCount,
+              smartMemberCount: group.memberCount
+            }));
+          });
+      });
+
+      result.groups = groups;
+      result.hits = smartHits.sort(function (a, b) {
+        return ((a.smartGroupRank || 0) - (b.smartGroupRank || 0)) || ((Number(b.confidence) || 0) - (Number(a.confidence) || 0));
+      });
+      return result;
+    }
+
     function onMessage(evt) {
       const msg = evt.data || {};
       const type = msg.type;
@@ -189,7 +293,12 @@
               return hit;
             });
             store.update('analysis.rawTopHits', rawHits);
-            const smart = buildSmartFind(rawHits);
+            let smart = { groups: [], hits: [] };
+            try {
+              smart = buildSmartFind(rawHits);
+            } catch (err) {
+              smart = { groups: [], hits: [] };
+            }
             store.update('analysis.smartFindGroups', smart.groups.slice(0, 6));
             store.update('analysis.smartFindHits', smart.hits.slice(0, 18));
 

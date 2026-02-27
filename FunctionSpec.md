@@ -978,3 +978,27 @@ This patch adds a LAB-side **Smart find** toggle and fixes a stale-refresh issue
 - `docs/frontend/scripts/mod/overlays.js`
 - `docs/frontend/scripts/graphScript.js`
 - `FunctionSpec.md`
+
+## Hotfix — Smart Find runtime repair (2026-02-28)
+
+### Summary
+Fixes a LAB-breaking runtime error introduced by the Smart Find patch.
+
+### Root cause
+- `analysisWorkerClient.js` called `buildSmartFind(rawHits)` inside the worker result handler.
+- The helper function was referenced but not actually defined in that file.
+- Result: `ReferenceError: buildSmartFind is not defined`, which interrupted LAB result handling and made Top Hits / Smart Find / parts of LAB appear broken.
+
+### What changed
+- Added a local `buildSmartFind(rawHits)` helper inside `analysisWorkerClient.js`.
+- The helper now:
+  - normalizes element symbols from hits,
+  - groups nearby/repeated matches by element,
+  - estimates distinct matched lines using 0.5 nm bins,
+  - ranks grouped candidates by line count, member count, confidence, and raw score,
+  - emits representative Smart Find hits tagged with `smartFind` metadata.
+- Added a defensive `try/catch` around Smart Find construction so LAB keeps working even if Smart Find grouping ever fails again.
+
+### Behavioral contract
+- LAB must continue to render ordinary worker hits even if Smart Find grouping fails.
+- Smart Find remains a UI-side grouping/ranking heuristic, not a hard identification engine.
