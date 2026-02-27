@@ -90,5 +90,16 @@ function addReferenceLineFromExcel() {
     hasReference: function(){
       try { return Array.isArray(referenceGraph) && referenceGraph.length > 0; } catch(e) { return false; }
     }
+    ,
+    // Expose latest reference intensity array for PRO subtraction workflows.
+    // referenceGraph entries look like: [pixelsArray, pixelWidth, minValue, maxValue]
+    getLatestPixels: function(){
+      try {
+        if (!Array.isArray(referenceGraph) || !referenceGraph.length) return null;
+        const last = referenceGraph[referenceGraph.length - 1];
+        const px = last && Array.isArray(last[0]) ? last[0] : null;
+        return px ? px.slice() : null;
+      } catch(e) { return null; }
+    }
   });
 })();

@@ -253,11 +253,41 @@ function maybeRunLabAnalyze(frameNormalized) {
     const client = ensureWorkerClient();
     if (!client || typeof client.analyzeFrame !== 'function') return;
 
+    // Phase 2: run LAB processing pipeline (subtraction/ratio/absorbance + quick peaks)
+    // before sending to worker matching.
+    const sub = state.subtraction || {};
+    const subtractionMode = String(sub.mode || 'raw');
+    let referenceI = Array.isArray(sub.referenceI) ? sub.referenceI : null;
+    let darkI = Array.isArray(sub.darkI) ? sub.darkI : null;
+
+    // If no PRO-captured reference exists, fall back to the original reference graph if available.
+    try {
+      if (!referenceI && window.SpectraCore && window.SpectraCore.reference && typeof window.SpectraCore.reference.getLatestPixels === 'function') {
+        const ref = window.SpectraCore.reference.getLatestPixels();
+        if (Array.isArray(ref)) referenceI = ref;
+      }
+    } catch (_) {}
+
+    const pipe = (sp && sp.processingPipeline && typeof sp.processingPipeline.run === 'function') ? sp.processingPipeline : null;
+    const peakUi = getInitialPeakUiValues();
+    const processed = pipe
+      ? pipe.run(frameNormalized, {
+          subtractionMode,
+          referenceI,
+          darkI,
+          // use existing Peak controls to tune quick peak sensitivity
+          quickPeakThreshold: Math.max(0.01, Math.min(0.95, (Number(peakUi.threshold) || 1) / 255)),
+          quickPeakDistance: Math.max(1, Math.min(32, Number(peakUi.distance) || 4))
+        })
+      : { processedI: frameNormalized.I.slice(), normalizedI: null, quickPeaks: [] };
+
     const nmOk = Array.isArray(frameNormalized.nm) && frameNormalized.nm.length === frameNormalized.I.length;
     const payloadFrame = {
       I: frameNormalized.I,
+      processedI: Array.isArray(processed.processedI) ? processed.processedI : frameNormalized.I,
       nm: nmOk ? frameNormalized.nm : null,
       calibrated: nmOk,
+      subtractionMode,
       timestamp: frameNormalized.timestamp || Date.now()
     };
 
@@ -921,15 +951,26 @@ function ensureLabPanel() {
     '  <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">',
     '    <option value="">(default)</option>',
     '    <option value="general">General</option>',
-    '    <option value="alkali">Alkali</option>',
-    '    <option value="metal">Metals</option>',
-    '    <option value="gas">Gases</option>',
+    '    <option value="general-tight">General (tight)</option>',
+    '    <option value="general-wide">General (wide)</option>',
+    '    <option value="fast">Fast</option>',
+    '  </select></label>',
+    '  <label id="spFieldLabSubMode" class="sp-field sp-field--lab-sub">Mode<select id="spLabSubMode" class="spctl-select spctl-select--lab-sub">',
+    '    <option value="raw">Raw</option>',
+    '    <option value="raw-dark">Raw - Dark</option>',
+    '    <option value="difference">Difference (Raw - Ref)</option>',
+    '    <option value="ratio">Ratio (Raw / Ref)</option>',
+    '    <option value="transmittance">Transmittance %</option>',
+    '    <option value="absorbance">Absorbance</option>',
     '  </select></label>',
     '</div>',
     '<div class="sp-actions sp-actions--lab">',
     '  <button type="button" id="spLabInitLibBtn">Init libraries</button>',
     '  <button type="button" id="spLabPingBtn">Ping worker</button>',
     '  <button type="button" id="spLabQueryBtn">Query library</button>',
+    '  <button type="button" id="spLabCapRefBtn">Capture ref</button>',
+    '  <button type="button" id="spLabCapDarkBtn">Capture dark</button>',
+    '  <button type="button" id="spLabClearSubBtn">Clear</button>',
     '</div>',
     '<div class="sp-lab-split">',
     '  <div class="sp-lab-col">',
@@ -973,9 +1014,15 @@ function ensureLabPanel() {
   const enabledEl = $('spLabEnabled');
   const hzEl = $('spLabMaxHz');
   const presetEl = $('spLabPreset');
+  const subModeEl = $('spLabSubMode');
   if (enabledEl) enabledEl.checked = enabled;
   if (hzEl && Number.isFinite(maxHz) && maxHz > 0) hzEl.value = String(maxHz);
   if (presetEl) presetEl.value = presetId;
+  // subtraction mode
+  try {
+    const sm = (s.subtraction && s.subtraction.mode) ? String(s.subtraction.mode) : 'raw';
+    if (subModeEl) subModeEl.value = sm;
+  } catch (_) {}
 
   const setVal = (path, value) => { if (store && store.update) store.update(path, value, { source: 'proBootstrap.lab' }); };
 
@@ -1001,6 +1048,12 @@ function ensureLabPanel() {
       if (client && typeof client.setPreset === 'function') client.setPreset(v || null);
     } catch (_) {}
     setFeedback(v ? ('Preset: ' + v) : 'Preset cleared.', 'info');
+  });
+
+  subModeEl && subModeEl.addEventListener('change', function (e) {
+    const v = String(e.target.value || 'raw');
+    setVal('subtraction.mode', v);
+    setFeedback('Mode: ' + v, 'info');
   });
 
   $('spLabInitLibBtn') && $('spLabInitLibBtn').addEventListener('click', function () {
@@ -1047,6 +1100,111 @@ function ensureLabPanel() {
     maxNm = Math.max(200, Math.min(1200, maxNm));
     setFeedback('Querying library for ' + Math.round(minNm) + '–' + Math.round(maxNm) + ' nm…', 'info');
     try { client.queryLibrary(minNm, maxNm, null); } catch (err) { setFeedback('Query failed: ' + String(err && err.message || err), 'error'); }
+
+    // Open popup once results land (renderLabPanel handles actual content).
+    try { openLabQueryPopup(); } catch (_) {}
+  });
+
+  function openLabQueryPopup() {
+    let modal = $('spLabQueryModal');
+    if (!modal) {
+      modal = el('div', 'sp-modal');
+      modal.id = 'spLabQueryModal';
+      modal.innerHTML = [
+        '<div class="sp-modal__backdrop" data-close="1"></div>',
+        '<div class="sp-modal__panel">',
+        '  <div class="sp-modal__head">',
+        '    <div class="sp-modal__title">Library lines</div>',
+        '    <button type="button" class="sp-modal__close" id="spLabQueryClose">×</button>',
+        '  </div>',
+        '  <div class="sp-form-grid sp-form-grid--tight">',
+        '    <label class="sp-field sp-field--wide">Search<input id="spLabQuerySearch" class="spctl-input" type="text" placeholder="e.g. Fe, Na, 198Hg"></label>',
+        '  </div>',
+        '  <div id="spLabQueryList" class="sp-modal__body sp-lab-query-list"></div>',
+        '</div>'
+      ].join('');
+      card.appendChild(modal);
+      modal.addEventListener('click', function (ev) {
+        const t = ev.target;
+        if (t && (t.id === 'spLabQueryClose' || t.dataset && t.dataset.close === '1')) close();
+      });
+      const search = $('spLabQuerySearch');
+      search && search.addEventListener('input', function () { renderLabQueryList(); });
+    }
+    modal.classList.add('is-open');
+    renderLabQueryList();
+    function close() { modal.classList.remove('is-open'); }
+  }
+
+  function renderLabQueryList() {
+    const modal = $('spLabQueryModal');
+    if (!modal || !modal.classList.contains('is-open')) return;
+    const host = $('spLabQueryList');
+    if (!host) return;
+    const state = getStoreState();
+    const qHits = (state.analysis && Array.isArray(state.analysis.libraryQueryHits)) ? state.analysis.libraryQueryHits : [];
+    const qCount = (state.analysis && typeof state.analysis.libraryQueryCount === 'number') ? state.analysis.libraryQueryCount : null;
+    const qMin = (state.analysis && typeof state.analysis.libraryQueryMinNm === 'number') ? state.analysis.libraryQueryMinNm : null;
+    const qMax = (state.analysis && typeof state.analysis.libraryQueryMaxNm === 'number') ? state.analysis.libraryQueryMaxNm : null;
+    const search = $('spLabQuerySearch');
+    const q = search ? String(search.value || '').trim().toLowerCase() : '';
+    const list = q ? qHits.filter(function (h) {
+      const name = String(h && (h.speciesKey || h.species || h.element) || '').toLowerCase();
+      const el = String(h && (h.element || '') || '').toLowerCase();
+      return name.indexOf(q) !== -1 || el === q;
+    }) : qHits;
+    if (!qHits.length) {
+      host.innerHTML = '<div class="sp-empty">No query results yet. Click Query library.</div>';
+      return;
+    }
+    const head = '<div class="sp-note sp-note--small">' +
+      (qMin != null && qMax != null ? ('Range: ' + escapeHtml(String(Math.round(qMin))) + '–' + escapeHtml(String(Math.round(qMax))) + ' nm') : 'Range query') +
+      (qCount != null ? (' · ' + escapeHtml(String(qCount)) + ' total') : '') +
+      (q ? (' · filtered') : '') +
+      '</div>';
+    const rows = list.slice(0, 200).map(function (h) {
+      const name = String(h && (h.speciesKey || h.species || h.element) || 'Unknown');
+      const nm = (h && h.nm) != null ? Number(h.nm) : null;
+      const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
+      const elTxt = h && h.element ? (' · ' + String(h.element)) : '';
+      return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt + elTxt) + '</div></div>';
+    }).join('');
+    host.innerHTML = head + rows;
+  }
+
+  // Capture reference/dark workflows (Phase 2 subtraction MVP)
+  function capture(kind) {
+    const state = getStoreState();
+    const frame = getLiveFrame(state);
+    const f = normalizeGraphFrame(frame);
+    if (!f || !Array.isArray(f.I) || !f.I.length) {
+      setFeedback('No live frame to capture.', 'warn');
+      return;
+    }
+    const arr = f.I.slice();
+    if (kind === 'ref') {
+      setVal('subtraction.referenceI', arr);
+      setVal('subtraction.hasReference', true);
+      setVal('subtraction.referenceCapturedAt', Date.now());
+      setFeedback('Captured reference (' + arr.length + ' pts).', 'ok');
+    } else {
+      setVal('subtraction.darkI', arr);
+      setVal('subtraction.hasDark', true);
+      setVal('subtraction.darkCapturedAt', Date.now());
+      setFeedback('Captured dark (' + arr.length + ' pts).', 'ok');
+    }
+  }
+
+  $('spLabCapRefBtn') && $('spLabCapRefBtn').addEventListener('click', function () { capture('ref'); });
+  $('spLabCapDarkBtn') && $('spLabCapDarkBtn').addEventListener('click', function () { capture('dark'); });
+  $('spLabClearSubBtn') && $('spLabClearSubBtn').addEventListener('click', function () {
+    setVal('subtraction.referenceI', null);
+    setVal('subtraction.darkI', null);
+    setVal('subtraction.hasReference', false);
+    setVal('subtraction.hasDark', false);
+    setVal('subtraction.referenceCapturedAt', null);
+    setVal('subtraction.darkCapturedAt', null);
+    setFeedback('Cleared reference/dark.', 'info');
   });
 
   return card;
@@ -1068,6 +1226,8 @@ function ensureCalibrationShell() {
     '  <button type="button" id="spCalCaptureBtn">Capture current points</button>',
     '  <button type="button" id="spCalExportBtn">Export points</button>',
     '  <button type="button" id="spCalImportBtn">Import to shell</button>',
+    '  <button type="button" id="spCalSyncFromCoreBtn">Sync from calibration</button>',
+    '  <button type="button" id="spCalImportFileBtn">Import from file</button>',
     '  <button type="button" id="spCalApplyBtn">Apply shell to calibration</button>',
     '  <button type="button" id="spCalClearBtn">Clear shell points</button>',
     '</div>',
@@ -1247,6 +1407,62 @@ function ensureCalibrationShell() {
       renderShellPointsTable();
       updateShellCountsAndValidation();
       renderStatus();
+    }
+
+    // Sync shell from the active ORIGINAL calibration (px/nm arrays already solved).
+    if (t.id === 'spCalSyncFromCoreBtn') {
+      let corePts = [];
+      try {
+        if (window.SpectraCore && window.SpectraCore.calibration && typeof window.SpectraCore.calibration.getState === 'function') {
+          const cs = window.SpectraCore.calibration.getState();
+          corePts = (cs && Array.isArray(cs.points)) ? cs.points : [];
+        }
+      } catch (_) {}
+      if (!corePts.length) {
+        setCoreActionFeedback('No active calibration points found to sync.', 'warn');
+        return;
+      }
+      if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(corePts);
+      updateStorePath('calibration.shellPointCount', corePts.length, { source: 'proBootstrap.calIO' });
+      setCoreActionFeedback('Synced shell points from current calibration (' + corePts.length + ').', 'ok');
+      var pvSync = formatCalValidationPreview(previewShellCalibrationNormalization((mgr && typeof mgr.getEnabledPoints === 'function') ? mgr.getEnabledPoints() : corePts));
+      setCalIoValidationText(pvSync.text, pvSync.level);
+      renderShellPointsTable();
+      updateShellCountsAndValidation();
+      renderStatus();
+      return;
+    }
+
+    // Convenience: trigger the ORIGINAL import-from-file flow (txt px;nm) and then sync.
+    if (t.id === 'spCalImportFileBtn') {
+      try {
+        const fileEl = document.getElementById('my-file');
+        if (!fileEl) {
+          setCoreActionFeedback('Original file input not found (#my-file).', 'warn');
+          return;
+        }
+        // When the original import completes, it calls setCalibrationPoints() which emits calibrationChanged.
+        // We then sync shell from core after a short delay.
+        fileEl.click();
+        setCoreActionFeedback('Select a calibration .txt file (px;nm). After import, the shell will sync automatically.', 'info');
+        setTimeout(function () {
+          try {
+            const cs = window.SpectraCore && window.SpectraCore.calibration && window.SpectraCore.calibration.getState ? window.SpectraCore.calibration.getState() : null;
+            const pts = (cs && Array.isArray(cs.points)) ? cs.points : [];
+            if (pts.length && mgr && typeof mgr.setPoints === 'function') {
+              mgr.setPoints(pts);
+              updateStorePath('calibration.shellPointCount', pts.length, { source: 'proBootstrap.calIO' });
+              renderShellPointsTable();
+              updateShellCountsAndValidation();
+              renderStatus();
+              setShellNote('Synced ' + pts.length + ' point(s) from imported calibration.');
+            }
+          } catch (_) {}
+        }, 600);
+      } catch (err) {
+        setCoreActionFeedback('Import-from-file failed: ' + String(err && err.message || err), 'error');
+      }
+      return;
     }
 
     if (t.id === 'spCalApplyBtn') {
@@ -1464,28 +1680,13 @@ function renderLabPanel() {
   if (!hitsEl || !qcEl) return;
   const state = getStoreState();
   const hits = (state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : [];
-  const qHits = (state.analysis && Array.isArray(state.analysis.libraryQueryHits)) ? state.analysis.libraryQueryHits : [];
-  const qCount = (state.analysis && typeof state.analysis.libraryQueryCount === 'number') ? state.analysis.libraryQueryCount : null;
-  const qMin = (state.analysis && typeof state.analysis.libraryQueryMinNm === 'number') ? state.analysis.libraryQueryMinNm : null;
-  const qMax = (state.analysis && typeof state.analysis.libraryQueryMaxNm === 'number') ? state.analysis.libraryQueryMaxNm : null;
   const qc = (state.analysis && Array.isArray(state.analysis.qcFlags)) ? state.analysis.qcFlags : [];
   const libsLoaded = !!(state.worker && state.worker.librariesLoaded);
 
   if (!libsLoaded) {
     hitsEl.innerHTML = '<div class="sp-empty">Libraries not initialized yet. Click Init libraries.</div>';
   } else if (!hits.length) {
-    if (qHits.length) {
-      const head = '<div class="sp-note sp-note--small">Query results ' + (qMin != null && qMax != null ? (escapeHtml(String(Math.round(qMin))) + '–' + escapeHtml(String(Math.round(qMax))) + ' nm') : '') + (qCount != null ? (' · ' + escapeHtml(String(qCount)) + ' total') : '') + '</div>';
-      const rows = qHits.slice(0, 24).map(function (h) {
-        const name = String(h && (h.species || h.speciesKey || h.element) || 'Unknown');
-        const nm = (h && h.nm) != null ? Number(h.nm) : null;
-        const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
-        return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt) + '</div></div>';
-      }).join('');
-      hitsEl.innerHTML = head + rows;
-    } else {
-      hitsEl.innerHTML = '<div class="sp-empty">No hits yet. Enable Analyze and point at a source.</div>';
-    }
+    hitsEl.innerHTML = '<div class="sp-empty">No hits yet. Enable Analyze and point at a source. Use Query library to browse lines.</div>';
   } else {
     const topHead = '<div class="sp-note sp-note--small">Top hits</div>';
     const rows = hits.slice(0, 10).map(function (h) {
@@ -1496,21 +1697,7 @@ function renderLabPanel() {
       const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
       return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt) + (scoreTxt ? (' · ' + escapeHtml(scoreTxt)) : '') + '</div></div>';
     }).join('');
-
-    let qBlock = '';
-    if (qHits.length) {
-      const qHead = '<div class="sp-divider" style="height:1px;background:rgba(255,255,255,0.08);margin:10px 0"></div>' +
-        '<div class="sp-note sp-note--small">Query results ' + (qMin != null && qMax != null ? (escapeHtml(String(Math.round(qMin))) + '–' + escapeHtml(String(Math.round(qMax))) + ' nm') : '') + (qCount != null ? (' · ' + escapeHtml(String(qCount)) + ' total') : '') + '</div>';
-      const qRows = qHits.slice(0, 18).map(function (h) {
-        const name = String(h && (h.species || h.speciesKey || h.element) || 'Unknown');
-        const nm = (h && h.nm) != null ? Number(h.nm) : null;
-        const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
-        return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt) + '</div></div>';
-      }).join('');
-      qBlock = qHead + qRows;
-    }
-
-    hitsEl.innerHTML = topHead + rows + qBlock;
+    hitsEl.innerHTML = topHead + rows;
   }
 
   if (!qc.length) {
@@ -1520,6 +1707,42 @@ function renderLabPanel() {
       return '<div class="sp-qc-flag">' + escapeHtml(String(q)) + '</div>';
     }).join('');
   }
+
+  // If the query modal is open, refresh its list from the latest store state.
+  try {
+    const modal = $('spLabQueryModal');
+    const host = $('spLabQueryList');
+    if (modal && host && modal.classList.contains('is-open')) {
+      const qHits = (state.analysis && Array.isArray(state.analysis.libraryQueryHits)) ? state.analysis.libraryQueryHits : [];
+      const qCount = (state.analysis && typeof state.analysis.libraryQueryCount === 'number') ? state.analysis.libraryQueryCount : null;
+      const qMin = (state.analysis && typeof state.analysis.libraryQueryMinNm === 'number') ? state.analysis.libraryQueryMinNm : null;
+      const qMax = (state.analysis && typeof state.analysis.libraryQueryMaxNm === 'number') ? state.analysis.libraryQueryMaxNm : null;
+      const search = $('spLabQuerySearch');
+      const q = search ? String(search.value || '').trim().toLowerCase() : '';
+      const list = q ? qHits.filter(function (h) {
+        const name = String(h && (h.speciesKey || h.species || h.element) || '').toLowerCase();
+        const el = String(h && (h.element || '') || '').toLowerCase();
+        return name.indexOf(q) !== -1 || el === q;
+      }) : qHits;
+      if (!qHits.length) {
+        host.innerHTML = '<div class="sp-empty">No query results yet. Click Query library.</div>';
+      } else {
+        const head = '<div class="sp-note sp-note--small">' +
+          (qMin != null && qMax != null ? ('Range: ' + escapeHtml(String(Math.round(qMin))) + '–' + escapeHtml(String(Math.round(qMax))) + ' nm') : 'Range query') +
+          (qCount != null ? (' · ' + escapeHtml(String(qCount)) + ' total') : '') +
+          (q ? (' · filtered') : '') +
+          '</div>';
+        const rows = list.slice(0, 200).map(function (h) {
+          const name = String(h && (h.speciesKey || h.species || h.element) || 'Unknown');
+          const nm = (h && h.nm) != null ? Number(h.nm) : null;
+          const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
+          const elTxt = h && h.element ? (' · ' + String(h.element)) : '';
+          return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt + elTxt) + '</div></div>';
+        }).join('');
+        host.innerHTML = head + rows;
+      }
+    }
+  } catch (_) {}
 }
 
 

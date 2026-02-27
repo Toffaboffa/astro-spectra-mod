@@ -67,7 +67,13 @@
       mode: 'raw',
       hasDark: false,
       hasReference: false,
-      hasFlat: false
+      hasFlat: false,
+      // Stored intensity arrays captured from the live frame (or the core reference graph).
+      // Kept small: only combined intensity (I) is stored.
+      darkI: null,
+      referenceI: null,
+      darkCapturedAt: null,
+      referenceCapturedAt: null
     }
 ,
     ui: {

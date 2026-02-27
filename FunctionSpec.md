@@ -855,6 +855,17 @@ This spec therefore prioritizes:
 - LAB Top hits rendering now matches worker payload (`species`, `referenceNm`, `observedNm`, `confidence`).
 - Graph overlays now draw lightweight vertical markers + labels for the strongest LAB hits (CORE-safe, LAB-only).
 
+## LAB Phase 2 – Step 3 (Implemented)
+- LAB subtraction/processing pipeline now runs **before** worker matching:
+  - selectable modes: `raw`, `raw-dark`, `difference`, `ratio`, `transmittance`, `absorbance`
+  - capture workflows: `Capture ref`, `Capture dark`, `Clear`
+  - reference fallback: if no PRO-captured reference is present, the latest original **reference graph** curve is used when available.
+- Worker now prefers `frame.processedI` (when provided) and applies simple **preset plumbing** (`general`, `general-tight`, `general-wide`, `fast`) for tolerance/maxMatches.
+- `Query library` now opens an in-page **popup** (closable) for browsing/searching queried lines (instead of dumping results into the LAB panel).
+- Other → Calibration shell gained convenience actions:
+  - **Sync from calibration** (copies active original calibration points into the shell)
+  - **Import from file** (triggers original `px;nm` import flow and then syncs shell)
+
 ## Patch log (curated)
 
 > This log is intentionally short and accurate. Older duplicate/contradictory entries have been removed to prevent drift.
@@ -887,5 +898,12 @@ This spec therefore prioritizes:
 - Added `SET_PRESET` / `SET_PRESET_RESULT` plumbing (worker stores preset for upcoming filtering).
 - LAB Top hits renderer updated to match worker payload.
 - LAB overlays: vertical markers + labels for top hits drawn on the graph (LAB-only; CORE-safe).
+
+### 2026-02-27 — Phase 2 Step 3: subtraction pipeline + preset use + query popup + calibration UX
+- LAB now supports subtraction/ratio/absorbance workflows via a pre-worker processing pipeline (`subtraction.js` + `processingPipeline.js`).
+- Added capture/clear actions for reference and dark frames; worker matching uses processed intensity when available.
+- Worker preset ids now affect matching tolerance/maxMatches (no external preset file required yet).
+- Query results are displayed in a closable in-page popup with search.
+- Calibration shell gained "Sync from calibration" and "Import from file" convenience actions to reduce confusion between old and new workflows.
 
 ---

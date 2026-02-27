@@ -22,10 +22,27 @@
     const qcRules = root.SPECTRA_PRO_qcRules;
     const confidenceModel = root.SPECTRA_PRO_confidenceModel;
     const lineMatcher = root.SPECTRA_PRO_lineMatcher;
-    const I = frame && Array.isArray(frame.I) ? frame.I : [];
+    // Prefer processedI when the UI runs subtraction/ratio/absorbance pipelines.
+    const I = frame && Array.isArray(frame.processedI)
+      ? frame.processedI
+      : (frame && Array.isArray(frame.I) ? frame.I : []);
+
+    // Preset plumbing (Phase 2): worker accepts simple preset ids that adjust
+    // tolerance/maxMatches without requiring external preset files yet.
+    const presetId = (state && state.activePreset) ? String(state.activePreset) : '';
+    const presetMap = {
+      'general': { toleranceNm: 3.0, maxMatches: 8 },
+      'general-tight': { toleranceNm: 1.5, maxMatches: 8 },
+      'general-wide': { toleranceNm: 5.0, maxMatches: 10 },
+      'fast': { toleranceNm: 3.0, maxMatches: 6 }
+    };
+    const preset = presetMap[presetId] || presetMap['general'];
+
     const peaks = inferPeaks(frame, peakScoring.scorePeaks(peakDetect.detectPeaks(I)));
     const nmAvailable = !!(frame && frame.calibrated && Array.isArray(frame.nm));
-    const matches = nmAvailable ? lineMatcher.matchLines(peaks, state && state.atomLines || [], { toleranceNm: 3.0, maxMatches: 8 }) : [];
+    const matches = nmAvailable
+      ? lineMatcher.matchLines(peaks, state && state.atomLines || [], { toleranceNm: preset.toleranceNm, maxMatches: preset.maxMatches })
+      : [];
     const qc = qcRules.evaluateQC({ frame: frame, state: state });
     if (!nmAvailable) qc.flags = (qc.flags || []).concat(['uncalibrated']);
     const confidence = confidenceModel.buildConfidence(matches, qc);

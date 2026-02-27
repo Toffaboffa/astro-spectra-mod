@@ -38,6 +38,59 @@
 #spectraProPanel .sp-name{ font-weight:600; }
 #spectraProPanel .sp-nm, #spectraProPanel .sp-conf{ color:#bcd2ff; }
 
+/* ----------------------------------------------------- */
+/* Phase 2: in-page modal for LAB library queries */
+/* ----------------------------------------------------- */
+.sp-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: none;
+}
+.sp-modal.is-open { display: block; }
+.sp-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+}
+.sp-modal__panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, calc(100vw - 28px));
+  max-height: min(70vh, 640px);
+  background: rgba(20,20,24,0.98);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.45);
+  overflow: hidden;
+}
+.sp-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sp-modal__title { font-weight: 600; opacity: 0.95; }
+.sp-modal__close {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: transparent;
+  color: rgba(255,255,255,0.9);
+  cursor: pointer;
+}
+.sp-modal__body {
+  padding: 10px 12px;
+  overflow: auto;
+  max-height: calc(70vh - 120px);
+}
+.sp-lab-query-list .sp-hit { padding: 8px 6px; }
+
 
 /* Docked layout (Phase 2.1 hotfix3) */
 #spectraProDockHost{display:block; width:100%; margin:8px 0 0 0;}
