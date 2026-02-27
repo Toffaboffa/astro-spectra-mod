@@ -1000,6 +1000,7 @@ function ensureLabPanel() {
 	    '      <div class="sp-lab-fields-col">',
 	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row"><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
 	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
+	    '        <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
 	    '        <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="5"></label>',
 	    '        <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="5"></label>',
 	    '      </div>',
@@ -1053,12 +1054,14 @@ function ensureLabPanel() {
   const presetId = (s.analysis && s.analysis.presetId) ? String(s.analysis.presetId) : '';
   const includeWeak = !!(s.analysis && s.analysis.includeWeakPeaks);
   const stableHits = !!(s.analysis && s.analysis.stableHits);
+  const smartFind = !!(s.analysis && s.analysis.smartFindEnabled);
   const enabledEl = $('spLabEnabled');
   const hzEl = $('spLabMaxHz');
   const presetEl = $('spLabPreset');
   const subModeEl = $('spLabSubMode');
   const weakEl = $('spLabWeak');
   const stableEl = $('spLabStable');
+  const smartEl = $('spLabSmart');
   const peakThrEl = $('spLabPeakThr');
   const peakDistEl = $('spLabPeakDist');
   if (enabledEl) enabledEl.checked = enabled;
@@ -1066,6 +1069,7 @@ function ensureLabPanel() {
   if (presetEl) presetEl.value = presetId;
   if (weakEl) weakEl.checked = includeWeak;
   if (stableEl) stableEl.checked = stableHits;
+  if (smartEl) smartEl.checked = smartFind;
   if (peakThrEl) peakThrEl.value = String(Math.max(0.5, Math.min(50, ((Number(s.analysis && s.analysis.peakThresholdRel) || 0.05) * 100))));
   if (peakDistEl) peakDistEl.value = String(Math.max(1, Math.min(64, Math.round(Number(s.analysis && s.analysis.peakDistancePx) || 5))));
   // subtraction mode
@@ -1124,6 +1128,12 @@ function ensureLabPanel() {
     const on = !!e.target.checked;
     setVal('analysis.stableHits', on);
     setFeedback(on ? 'Stable hits enabled (rolling).' : 'Stable hits disabled.', 'info');
+  });
+
+  smartEl && smartEl.addEventListener('change', function (e) {
+    const on = !!e.target.checked;
+    setVal('analysis.smartFindEnabled', on);
+    setFeedback(on ? 'Smart find enabled.' : 'Smart find disabled.', 'info');
   });
 
   peakThrEl && peakThrEl.addEventListener('change', function (e) {
@@ -1770,7 +1780,12 @@ function renderLabPanel() {
   const qcEl = $('spLabQc');
   if (!hitsEl || !qcEl) return;
   const state = getStoreState();
-  const hits = (state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : [];
+  const smartEnabled = !!(state.analysis && state.analysis.smartFindEnabled);
+  const smartHits = (state.analysis && Array.isArray(state.analysis.smartFindHits)) ? state.analysis.smartFindHits : [];
+  const smartGroups = (state.analysis && Array.isArray(state.analysis.smartFindGroups)) ? state.analysis.smartFindGroups : [];
+  const hits = smartEnabled && smartHits.length
+    ? smartHits
+    : ((state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : []);
   const qc = (state.analysis && Array.isArray(state.analysis.qcFlags)) ? state.analysis.qcFlags : [];
   const libsLoaded = !!(state.worker && state.worker.librariesLoaded);
   const mode = String(state.appMode || 'CORE').toUpperCase();
@@ -1815,6 +1830,15 @@ function renderLabPanel() {
       if (!Number.isFinite(conf)) return 0;
       return Math.max(1, Math.min(6, Math.round(conf * 6)));
     }
+    const groupRows = smartEnabled && smartGroups.length ? smartGroups.slice(0, 6).map(function (g, idx) {
+      const symbol = String((g && g.element) || '').trim();
+      const fullName = symbol && PERIODIC[symbol] ? PERIODIC[symbol] : '';
+      const lines = Math.max(1, Number(g && g.lineCount) || 0);
+      const left = '#' + String(idx + 1);
+      const who = symbol ? (symbol + (fullName ? (' (' + fullName + ')') : '')) : 'Unknown';
+      const line = left + ' • Smart find • ' + who + ' • ' + lines + ' lines';
+      return '<div class="sp-hit sp-hit--one sp-hit--smart">' + escapeHtml(line) + '</div>';
+    }).join('') : '';
     const rows = hits.slice(0, 80).map(function (h) {
       const symbol = String((h && (h.element || '')) || '').trim() || toSymbol(h && (h.species || h.speciesKey || h.name));
       const fullName = symbol && PERIODIC[symbol] ? PERIODIC[symbol] : '';
@@ -1823,10 +1847,11 @@ function renderLabPanel() {
       const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 10) / 10).toFixed(1) + 'nm' : '';
       const left = (sig ? (sig + 'σ') : '•');
       const who = symbol ? (symbol + (fullName ? (' (' + fullName + ')') : '')) : 'Unknown';
-      const line = left + ' • ' + who + (nmTxt ? (' • ' + nmTxt) : '');
-      return '<div class="sp-hit sp-hit--one">' + escapeHtml(line) + '</div>';
+      const smartTxt = h && h.smartFind ? (' • group #' + String((h.smartGroupRank || 0) + 1)) : '';
+      const line = left + ' • ' + who + (nmTxt ? (' • ' + nmTxt) : '') + smartTxt;
+      return '<div class="sp-hit sp-hit--one' + (h && h.smartFind ? ' sp-hit--smartline' : '') + '">' + escapeHtml(line) + '</div>';
     }).join('');
-    hitsEl.innerHTML = rows;
+    hitsEl.innerHTML = groupRows + rows;
   }
 
   if (!qc.length) {

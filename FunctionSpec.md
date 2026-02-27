@@ -942,3 +942,39 @@ This spec therefore prioritizes:
 - 2026-02-27 — Overlay rendering fix: all listed LAB hits are now drawn on the graph, using observed peak position first (fallback: reference wavelength), with no low-confidence suppression and no 6-label cap.
 
 - 2026-02-27 — Styling patch: OTHER calibration shell is now a two-column layout with Shell points on the right; LAB controls are split into two columns with inline checkbox labels; legacy General controls for Color Graph/Opacity and Toggle Peaks/Lower bound are hidden; CORE tab label shortened to CORE and now exposes Toggle nm peaks.
+
+
+## Patch Update — Smart Find + imported-image refresh hotfix (2026-02-27)
+
+### Summary
+This patch adds a LAB-side **Smart find** toggle and fixes a stale-refresh issue when the source is a loaded image instead of the live camera.
+
+### What changed
+- Added `analysis.smartFindEnabled`, `analysis.smartFindGroups`, `analysis.smartFindHits`, and `analysis.rawTopHits` store nodes.
+- Added **Smart find** checkbox to the LAB controls in `proBootstrap.js` under **Stable hits**.
+- `analysisWorkerClient.js` now computes grouped element candidates from nearby/repeated hits:
+  - groups by element/symbol,
+  - estimates distinct matched lines using a small nm clustering window,
+  - ranks groups by distinct-line count first, then summed confidence,
+  - stores grouped summaries + representative hits.
+- LAB Top Hits rendering now shows Smart Find group summaries at the top when enabled.
+- Graph overlays now prefer Smart Find hits when enabled and draw a **gold-filled circular marker** behind those labels.
+- `graphScript.js` now forces a real `drawGraph()` refresh for loaded-image sources, which causes frame hooks / worker analysis / Top Hits to update without requiring an extra manual action.
+
+### Behavioral contract
+- Smart Find is **display-side ranking assistance**, not a worker-side chemical truth engine.
+- Normal `topHits` output remains available and unchanged when Smart Find is off.
+- Stable Hits and Smart Find can coexist; Stable Hits still controls rolling persistence for the normal hit list, while Smart Find builds grouped element suggestions from the current worker result set.
+- Imported-image redraw must now refresh:
+  - graph,
+  - frame hook emission,
+  - LAB worker analysis,
+  - Top Hits / overlay labels.
+
+### Files changed in this patch
+- `docs/frontend/scripts/mod/stateStore.js`
+- `docs/frontend/scripts/mod/proBootstrap.js`
+- `docs/frontend/scripts/mod/analysisWorkerClient.js`
+- `docs/frontend/scripts/mod/overlays.js`
+- `docs/frontend/scripts/graphScript.js`
+- `FunctionSpec.md`

@@ -51,6 +51,10 @@
       maxHz: 4,
       presetId: null,
       topHits: [],
+      rawTopHits: [],
+      smartFindEnabled: false,
+      smartFindHits: [],
+      smartFindGroups: [],
       offsetNm: null,
       qcFlags: []
     },

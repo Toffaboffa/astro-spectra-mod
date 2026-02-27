@@ -784,11 +784,18 @@ function redrawGraphIfLoadedImage(invalidatePeaks = false) {
         needToRecalculateMaxima = true;
     }
     if (videoElement instanceof HTMLImageElement) {
-        generateSpectrumList(getElementWidth(videoElement));
+        const width = getElementWidth(videoElement);
+        if (!Number.isFinite(width) || width <= 0) {
+            return;
+        }
+        generateSpectrumList(width);
         resizeCanvasToDisplaySize(graphCtx, graphCanvas, "Normal");
         stripeGraphCanvas.height = videoElement.naturalHeight;
         stripeGraphCanvas.width = videoElement.naturalWidth;
         drawSelectionLine();
+        if (typeof drawGraph === 'function') {
+            try { drawGraph(); } catch (_) {}
+        }
     }
 }
 

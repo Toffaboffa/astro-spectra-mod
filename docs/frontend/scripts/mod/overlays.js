@@ -9,7 +9,10 @@
       const mode = sp.appMode && typeof sp.appMode.getMode === 'function' ? sp.appMode.getMode() : 'CORE';
       if (String(mode || 'CORE').toUpperCase() !== 'LAB') return { ok:true, labels:0, bands:0, graphState: !!graphState };
       if (!state || !(state.analysis && state.analysis.enabled)) return { ok:true, labels:0, bands:0, graphState: !!graphState };
-      const hits = (state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : [];
+      const smartEnabled = !!(state.analysis && state.analysis.smartFindEnabled);
+      const hits = smartEnabled && state.analysis && Array.isArray(state.analysis.smartFindHits) && state.analysis.smartFindHits.length
+        ? state.analysis.smartFindHits
+        : ((state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : []);
       if (!hits.length) return { ok:true, labels:0, bands:0, graphState: !!graphState };
 
       const canvas = ctx && ctx.canvas;
@@ -82,6 +85,18 @@
         const txShifted = Math.max(2, Math.min(w - 24, tx + col * 18));
         ctx.save();
         ctx.setLineDash([]);
+        if (hit && hit.smartFind) {
+          const r = 6;
+          const cx = Math.max(r + 2, Math.min(w - r - 2, txShifted - 8));
+          const cy = ty + 7;
+          ctx.beginPath();
+          ctx.fillStyle = 'rgba(214, 169, 52, 0.92)';
+          ctx.strokeStyle = 'rgba(71, 48, 0, 0.95)';
+          ctx.lineWidth = 1.5;
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
         ctx.lineWidth = 3;
         ctx.strokeStyle = textStroke;
         ctx.strokeText(label, txShifted, ty);

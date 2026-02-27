@@ -189,6 +189,9 @@
               return hit;
             });
             store.update('analysis.rawTopHits', rawHits);
+            const smart = buildSmartFind(rawHits);
+            store.update('analysis.smartFindGroups', smart.groups.slice(0, 6));
+            store.update('analysis.smartFindHits', smart.hits.slice(0, 18));
 
             // Optional stability filter.
             const st = store.getState();
