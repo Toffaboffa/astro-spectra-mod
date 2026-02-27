@@ -997,7 +997,7 @@ select, input[type="number"], input[type="text"], textarea{
 .sp-cal-shell-table{ display:flex; flex-direction:column; gap:6px; }
 .sp-cal-row{
   display:grid;
-  grid-template-columns: 110px 120px 120px 1fr auto;
+  grid-template-columns: 70px 70px 70px 10px 80px;
   gap:8px;
   align-items:center;
   padding:6px 8px;
