@@ -856,7 +856,7 @@ body{overflow:hidden;}
 #spPanel-lab{height:100%;display:flex;flex-direction:column;min-height:0}
 #spPanel-lab #spLabCard{flex:1;display:flex;flex-direction:column;min-height:0}
 /* LAB has its own compact 4-column grid (CORE grid is wider/more columns). */
-#spPanel-lab .sp-form-grid--lab{grid-template-columns:repeat(4,minmax(0,1fr))}
+#spPanel-lab .sp-form-grid--lab{grid-template-columns:repeat(4,minmax(0,1fr)) !important}
 #spPanel-lab .sp-actions--lab{margin-top:8px}
 
 /* Layout: controls left, full-height table right */
@@ -864,7 +864,7 @@ body{overflow:hidden;}
 #spPanel-lab .sp-lab-left{display:flex;flex-direction:column;min-height:0}
 #spPanel-lab .sp-lab-right{min-height:0;display:flex;flex-direction:column}
 
-#spPanel-lab .sp-lab-table{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;gap:0;border:1px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden}
+#spPanel-lab .sp-lab-table{flex:1;min-height:0;display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:auto 1fr;gap:0;border:1px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden}
 #spPanel-lab .sp-lab-th{padding:6px 8px;font-weight:700;letter-spacing:.06em;font-size:12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.12)}
 #spPanel-lab .sp-lab-th:nth-child(1){border-right:1px solid rgba(255,255,255,.12)}
 #spPanel-lab .sp-lab-hits{min-height:0;overflow:auto;border-right:1px solid rgba(255,255,255,.12);padding:6px 8px}
