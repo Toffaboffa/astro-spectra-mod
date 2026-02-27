@@ -87,7 +87,7 @@ function el(tag, cls, text) {
 
     const panels = {};
     TABS.forEach((tab, idx) => {
-      const btn = el('button', 'sp-tab', tab === 'core' ? 'CORE controls' : (tab === 'general' ? 'General' : tab.toUpperCase()));
+      const btn = el('button', 'sp-tab', tab === 'core' ? 'CORE' : (tab === 'general' ? 'General' : tab.toUpperCase()));
       btn.type = 'button';
       btn.dataset.tab = tab;
       if (idx === 0) btn.classList.add('is-active');
@@ -423,7 +423,7 @@ function maybeRunLabAnalyze(frameNormalized) {
     store.setState({ ui: nextUi }, { source: 'proBootstrap.tab' });
 
     // Keep PRO "tab" and PRO "app mode" in sync.
-    // User tabs are General / CORE controls / LAB / ASTRO / OTHER.
+    // User tabs are General / CORE / LAB / ASTRO / OTHER.
     // App mode must follow LAB/ASTRO to enable worker overlays + analysis.
     try {
       const t = String(tab || '').toLowerCase();
@@ -433,7 +433,7 @@ function maybeRunLabAnalyze(frameNormalized) {
       } else if (store && store.update) {
         store.update('appMode', nextMode, { source: 'proBootstrap.tab' });
       }
-      // Ensure worker is enabled in LAB/ASTRO so the user doesn't have to hunt in CORE controls.
+      // Ensure worker is enabled in LAB/ASTRO so the user doesn't have to hunt in CORE.
       if (nextMode !== 'CORE') setCoreWorkerMode('auto');
     } catch (_) {}
   }
@@ -536,6 +536,7 @@ function ensureStatusRail() {
         '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
         '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
         '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
+        '  <label id="spFieldToggleNmPeaks" class="sp-field sp-field--toggle-nm-peaks sp-field--checkbox-row"><span>Toggle nm peaks</span><input id="spToggleNmPeaks" type="checkbox"></label>',
         '  <label id="spFieldFillMode" class="sp-field sp-field--fill-mode">Fill mode<select id="spFillMode" class="spctl-select spctl-select--fill-mode">' + fillModeOptions + '</select></label>',
         '  <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity">Fill opacity<input id="spFillOpacity" class="spctl-input spctl-input--fill-opacity spctl-range spctl-range--fill-opacity" type="range" min="0" max="1" step="0.01" value="0.70"></label>',
         '</div>',
@@ -566,6 +567,7 @@ function ensureStatusRail() {
       const peakThresholdInput = card.querySelector('#spPeakThreshold');
       const peakDistanceInput = card.querySelector('#spPeakDistance');
       const peakSmoothingInput = card.querySelector('#spPeakSmoothing');
+      const toggleNmPeaksInput = card.querySelector('#spToggleNmPeaks');
       const fillModeSel = card.querySelector('#spFillMode');
       const fillOpacityInput = card.querySelector('#spFillOpacity');
       const camCtlWrap = card.querySelector('#spCameraCtlWrap');
@@ -577,6 +579,10 @@ function ensureStatusRail() {
       if (peakThresholdInput) peakThresholdInput.value = String(peakInit.threshold);
       if (peakDistanceInput) peakDistanceInput.value = String(peakInit.distance);
       if (peakSmoothingInput) peakSmoothingInput.value = String(peakInit.smoothing);
+      const legacyTogglePeaks = $('togglePeaksCheckbox');
+      if (toggleNmPeaksInput && legacyTogglePeaks) {
+        toggleNmPeaksInput.checked = !!legacyTogglePeaks.checked;
+      }
       const displayStateInit = (getStoreState().display || {});
       if (fillModeSel) fillModeSel.value = String(displayStateInit.fillMode || 'inherit').toLowerCase();
       if (fillOpacityInput) {
@@ -608,6 +614,13 @@ function ensureStatusRail() {
         const n = Number(e.target.value);
         if (!Number.isFinite(n) || n <= 0) return;
         setVal('display.yAxisMax', Math.round(n));
+      });
+      toggleNmPeaksInput && toggleNmPeaksInput.addEventListener('change', (e) => {
+        const target = $('togglePeaksCheckbox');
+        if (!target) return;
+        target.checked = !!e.target.checked;
+        try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+        try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
       });
 
       fillModeSel && fillModeSel.addEventListener('change', (e) => {
@@ -962,30 +975,34 @@ function ensureLabPanel() {
 	    '      <div class="sp-lab-title">LAB</div>',
 	    '      <div id="spLabFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
 	    '    </div>',
-	    '    <div class="sp-form-grid sp-form-grid--lab">',
-	    '      <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled">Analyze<input id="spLabEnabled" type="checkbox"></label>',
-	    '      <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
-	    '      <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">',
-	    '        <option value="">(default)</option>',
-	    '        <option value="general">General</option>',
-	    '        <option value="lamp-hg">Lamp (Hg/Ar/Ne)</option>',
-	    '        <option value="smart">Smart</option>',
-	    '        <option value="general-tight">General (tight)</option>',
-	    '        <option value="general-wide">General (wide)</option>',
-	    '        <option value="fast">Fast</option>',
-	    '      </select></label>',
-	    '      <label id="spFieldLabSubMode" class="sp-field sp-field--lab-sub">Mode<select id="spLabSubMode" class="spctl-select spctl-select--lab-sub">',
-	    '        <option value="raw">Raw</option>',
-	    '        <option value="raw-dark">Raw - Dark</option>',
-	    '        <option value="difference">Difference (Raw - Ref)</option>',
-	    '        <option value="ratio">Ratio (Raw / Ref)</option>',
-	    '        <option value="transmittance">Transmittance %</option>',
-	    '        <option value="absorbance">Absorbance</option>',
-	    '      </select></label>',
-	    '      <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak">Weak peaks<input id="spLabWeak" type="checkbox"></label>',
-	    '      <label id="spFieldLabStable" class="sp-field sp-field--lab-stable">Stable hits<input id="spLabStable" type="checkbox"></label>',
-	    '      <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="5"></label>',
-	    '      <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="5"></label>',
+	    '    <div class="sp-lab-fields">',
+	    '      <div class="sp-lab-fields-col">',
+	    '        <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled sp-field--checkbox-row"><span>Analyze</span><input id="spLabEnabled" type="checkbox"></label>',
+	    '        <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
+	    '        <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">',
+	    '          <option value="">(default)</option>',
+	    '          <option value="general">General</option>',
+	    '          <option value="lamp-hg">Lamp (Hg/Ar/Ne)</option>',
+	    '          <option value="smart">Smart</option>',
+	    '          <option value="general-tight">General (tight)</option>',
+	    '          <option value="general-wide">General (wide)</option>',
+	    '          <option value="fast">Fast</option>',
+	    '        </select></label>',
+	    '        <label id="spFieldLabSubMode" class="sp-field sp-field--lab-sub">Mode<select id="spLabSubMode" class="spctl-select spctl-select--lab-sub">',
+	    '          <option value="raw">Raw</option>',
+	    '          <option value="raw-dark">Raw - Dark</option>',
+	    '          <option value="difference">Difference (Raw - Ref)</option>',
+	    '          <option value="ratio">Ratio (Raw / Ref)</option>',
+	    '          <option value="transmittance">Transmittance %</option>',
+	    '          <option value="absorbance">Absorbance</option>',
+	    '        </select></label>',
+	    '      </div>',
+	    '      <div class="sp-lab-fields-col">',
+	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row"><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
+	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
+	    '        <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="5"></label>',
+	    '        <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="5"></label>',
+	    '      </div>',
 	    '    </div>',
 	    '    <div class="sp-actions sp-actions--lab">',
 	    '      <button type="button" id="spLabInitLibBtn">Init libraries</button>',
@@ -1062,7 +1079,7 @@ function ensureLabPanel() {
   enabledEl && enabledEl.addEventListener('change', function (e) {
     const on = !!e.target.checked;
     setVal('analysis.enabled', on);
-    // Make LAB usable without touching CORE controls.
+    // Make LAB usable without touching CORE.
     if (on) {
       try { setCoreWorkerMode('auto'); } catch (_) {}
       try {
@@ -1289,29 +1306,32 @@ function ensureCalibrationShell() {
   const card = el('div', 'sp-card sp-card--flat');
   card.id = 'spCalShell';
   card.innerHTML = [
-    '<div class="sp-form-grid">',
-    '  <label id="spFieldCalIoFormat" class="sp-field">Cal format<select id="spCalIoFormat" class="spctl-select"><option value="json">JSON</option><option value="csv">CSV</option></select></label>',
-    '  <label id="spFieldCalIoText" class="sp-field sp-field--wide">Calibration I/O<textarea id="spCalIoText" class="spctl-input spctl-textarea" rows="5" placeholder="Paste calibration points here (JSON/CSV)"></textarea></label>',
-    '</div>',
-    '<div class="sp-actions">',
-    '  <button type="button" id="spCalCaptureBtn">Capture current points</button>',
-    '  <button type="button" id="spCalExportBtn">Export points</button>',
-    '  <button type="button" id="spCalImportBtn">Import to shell</button>',
-    '  <button type="button" id="spCalSyncFromCoreBtn">Sync from calibration</button>',
-    '  <button type="button" id="spCalImportFileBtn">Import from file</button>',
-    '  <button type="button" id="spCalApplyBtn">Apply shell to calibration</button>',
-    '  <button type="button" id="spCalClearBtn">Clear shell points</button>',
-    '</div>',
-    '<div id="spCalIoFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
-    '<div id="spCalIoValidation" class="sp-note sp-note--validation" style="display:none"></div>',
-    '<div class="sp-divider" style="height:1px;background:rgba(255,255,255,0.08);margin:10px 0"></div>',
-    '<h4 class="sp-subtitle" style="margin:0 0 8px 0">Shell points</h4>',
-    '<div id="spCalShellTable" class="sp-cal-shell-table"></div>',
-    '<div class="sp-actions" style="margin-top:8px">',
-    '  <button type="button" id="spCalUndoShellBtn">Undo shell edit</button>',
-    '  <button type="button" id="spCalRollbackBtn">Rollback last apply</button>',
-    '</div>',
-    '<div id="spCalShellNote" class="sp-note sp-note--feedback" aria-live="polite"></div>'
+    '<div class="sp-cal-layout">',
+    '  <div class="sp-cal-left">',
+    '    <div class="sp-form-grid sp-form-grid--cal-io">',
+    '      <label id="spFieldCalIoFormat" class="sp-field">Cal format<select id="spCalIoFormat" class="spctl-select"><option value="json">JSON</option><option value="csv">CSV</option></select></label>',
+    '      <label id="spFieldCalIoText" class="sp-field sp-field--wide">Calibration I/O<textarea id="spCalIoText" class="spctl-input spctl-textarea" rows="5" placeholder="Paste calibration points here (JSON/CSV)"></textarea></label>',
+    '    </div>',
+    '    <div class="sp-actions">',
+    '      <button type="button" id="spCalCaptureBtn">Capture current points</button>',
+    '      <button type="button" id="spCalExportBtn">Export points</button>',
+    '      <button type="button" id="spCalImportBtn">Import to shell</button>',
+    '      <button type="button" id="spCalSyncFromCoreBtn">Sync from calibration</button>',
+    '      <button type="button" id="spCalImportFileBtn">Import from file</button>',
+    '      <button type="button" id="spCalApplyBtn">Apply shell to calibration</button>',
+    '      <button type="button" id="spCalClearBtn">Clear shell points</button>',
+    '      <button type="button" id="spCalUndoShellBtn">Undo shell edit</button>',
+    '      <button type="button" id="spCalRollbackBtn">Rollback last apply</button>',
+    '    </div>',
+    '    <div id="spCalIoFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
+    '    <div id="spCalIoValidation" class="sp-note sp-note--validation" style="display:none"></div>',
+    '    <div id="spCalShellNote" class="sp-note sp-note--feedback" aria-live="polite"></div>',
+    '  </div>',
+    '  <div class="sp-cal-right">',
+    '    <h4 class="sp-subtitle" style="margin:0 0 8px 0">Shell points</h4>',
+    '    <div id="spCalShellTable" class="sp-cal-shell-table"></div>',
+    '  </div>',
+    '</div>'
   ].join('');
   panel.appendChild(card);
   panel.dataset.built = '1';

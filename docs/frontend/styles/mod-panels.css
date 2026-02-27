@@ -1013,3 +1013,35 @@ select, input[type="number"], input[type="text"], textarea{
   .sp-cal-row{ grid-template-columns: 110px 1fr 1fr auto; }
   .sp-cal-label{ display:none; }
 }
+
+
+/* === Styling patch 2026-02-27: OTHER / LAB / General / CORE === */
+#spPanel-other #spCalShell{height:100%;}
+#spPanel-other .sp-cal-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:12px;align-items:start;min-height:0}
+#spPanel-other .sp-cal-left,#spPanel-other .sp-cal-right{min-width:0}
+#spPanel-other .sp-cal-right{display:flex;flex-direction:column;min-height:0}
+#spPanel-other .sp-form-grid--cal-io{grid-template-columns:minmax(150px,220px) minmax(0,1fr)}
+#spPanel-other #spCalShellTable{min-height:220px;max-height:420px;overflow:auto}
+@media (max-width: 980px){
+  #spPanel-other .sp-cal-layout{grid-template-columns:1fr}
+}
+
+#spPanel-lab .sp-lab-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+#spPanel-lab .sp-lab-fields-col{display:grid;gap:8px;align-content:start}
+#spPanel-lab .sp-field--checkbox-row{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+#spPanel-lab .sp-field--checkbox-row input[type="checkbox"],
+#spPanel-core .sp-field--checkbox-row input[type="checkbox"]{margin:0;inline-size:16px;block-size:16px}
+@media (max-width: 900px){
+  #spPanel-lab .sp-lab-fields{grid-template-columns:1fr}
+}
+
+/* Hide legacy General controls that are being exposed via PRO panels instead */
+#colorGraph,
+label[for="colorGraph"],
+#gradientOpacitySliderContainer,
+#togglePeaksCheckbox,
+label[for="togglePeaksCheckbox"],
+label[for="peakSizeLower"],
+#peakSizeLower{
+  display:none !important;
+}
