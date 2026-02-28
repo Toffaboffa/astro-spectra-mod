@@ -74,6 +74,28 @@
       const h = canvas.height;
       const theme = getCanvasTheme(canvas);
       const wCalc = widthForCalc || w;
+      const latestFrame = (state && state.frame && state.frame.latest) ? state.frame.latest : null;
+      const latestI = latestFrame && Array.isArray(latestFrame.I) ? latestFrame.I : null;
+      let latestMaxValue = 0;
+      if (latestI && latestI.length) {
+        for (let ii = 0; ii < latestI.length; ii += 1) {
+          const val = Number(latestI[ii]) || 0;
+          if (val > latestMaxValue) latestMaxValue = val;
+        }
+        latestMaxValue += 15;
+      }
+      function calcPeakY(pxObserved){
+        if (!latestI || !latestI.length || !Number.isFinite(pxObserved)) return null;
+        const idx = Math.max(0, Math.min(latestI.length - 1, Math.round(pxObserved)));
+        let localMax = 0;
+        for (let jj = Math.max(0, idx - 1); jj <= Math.min(latestI.length - 1, idx + 1); jj += 1) {
+          const val = Number(latestI[jj]) || 0;
+          if (val > localMax) localMax = val;
+        }
+        if (!Number.isFinite(localMax) || localMax <= 0 || !Number.isFinite(latestMaxValue) || latestMaxValue <= 0) return null;
+        const paddingY = 30;
+        return h - paddingY - (localMax / latestMaxValue) * (h - 2 * paddingY);
+      }
       const highlightElements = Object.create(null);
       for (let gi = 0; gi < smartGroups.length && gi < 6; gi += 1) {
         const el = String((smartGroups[gi] && smartGroups[gi].element) || '').trim();
@@ -103,7 +125,8 @@
           deltaNm: deltaNm,
           observedNm: observedNm,
           referenceNm: referenceNm,
-          xCanvas: xCanvas
+          xCanvas: xCanvas,
+          peakY: calcPeakY(pxObserved)
         };
         let group = null;
         for (let ci = 0; ci < clustered.length; ci += 1) {
@@ -131,6 +154,9 @@
       const markerStroke = theme.overlayLineColor;
       const rowStep = Math.max(14, Math.round(theme.smartHeight + 2));
       const xOffset = 5;
+      const topAnchorY = 2;
+      const lowPeakThresholdY = 92;
+      const peakLabelGap = 4;
 
       for (let gi = 0; gi < clustered.length; gi += 1) {
         const group = clustered[gi];
@@ -150,11 +176,20 @@
         ctx.stroke();
         ctx.restore();
 
+        const peakY = group.items.reduce(function(best, item){
+          if (!Number.isFinite(item.peakY)) return best;
+          return !Number.isFinite(best) ? item.peakY : Math.min(best, item.peakY);
+        }, NaN);
+        const stackHeight = Math.max(theme.smartHeight, group.items.length * rowStep);
+        const startY = (Number.isFinite(peakY) && peakY > lowPeakThresholdY)
+          ? Math.max(2, Math.min(h - stackHeight - 2, Math.round(peakY - stackHeight - peakLabelGap)))
+          : topAnchorY;
+
         for (let ri = 0; ri < group.items.length; ri += 1) {
           const item = group.items[ri];
           const label = item.label;
           const tx = Math.max(2, Math.min(w - 26, xCanvas + xOffset));
-          const ty = 2 + ri * rowStep;
+          const ty = startY + ri * rowStep;
           ctx.save();
           ctx.setLineDash([]);
           const isSmartHighlight = !!(smartEnabled && item.element && Object.prototype.hasOwnProperty.call(highlightElements, item.element) && !highlightedSeen[item.element]);

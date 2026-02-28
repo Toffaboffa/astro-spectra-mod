@@ -1042,3 +1042,9 @@ Fixes a LAB-breaking runtime error introduced by the Smart Find patch.
 - Updated graph overlay layout so hits that belong to the same nearby peak are stacked vertically just to the right of the dashed line.
 - Within each local hit stack, the match with the smallest `|referenceNm - observedNm|` is placed at the top, with less exact candidates listed underneath.
 - Overlay labels now append rounded peak offset in nm, e.g. `He 0.2`, `Hg 1.3`.
+
+
+## Patch note – Peak-aware label anchor for shorter peaks
+- LAB graph overlay stacks still sort local candidates by nearest nm offset first.
+- Added a peak-aware vertical anchor so **shorter peaks place their hit labels just above the peak apex**, while very tall peaks keep the existing top-of-graph label stack.
+- This keeps weak/moderate lines easier to associate with their own peak without dragging tall-peak labels into the trace area.
