@@ -36,13 +36,12 @@
     };
   }
   function drawOnGraph(ctx, graphState){
-    // Phase 2: draw lightweight line labels for LAB top hits.
-    // Must remain CORE-safe: if anything is missing, do nothing.
     try {
       const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
       const mode = sp.appMode && typeof sp.appMode.getMode === 'function' ? sp.appMode.getMode() : 'CORE';
       if (String(mode || 'CORE').toUpperCase() !== 'LAB') return { ok:true, labels:0, bands:0, graphState: !!graphState };
       if (!state || !(state.analysis && state.analysis.enabled)) return { ok:true, labels:0, bands:0, graphState: !!graphState };
+      if (state.analysis && state.analysis.showHits === false) return { ok:true, labels:0, bands:0, graphState: !!graphState, hidden:true };
       const smartEnabled = !!(state.analysis && state.analysis.smartFindEnabled);
       const hits = (state.analysis && Array.isArray(state.analysis.rawTopHits) && state.analysis.rawTopHits.length)
         ? state.analysis.rawTopHits
@@ -53,8 +52,6 @@
       const canvas = ctx && ctx.canvas;
       if (!canvas) return { ok:true, labels:0, bands:0, graphState: !!graphState };
 
-      // Use the same mapping as graphScript.js. The legacy code keeps zoomStart/zoomEnd
-      // inside graphScript, so we rely on graphState injected by the drawGraph wrapper.
       const pxFromNm = (typeof global.getPxByWaveLengthBisection === 'function') ? global.getPxByWaveLengthBisection : null;
       const calcX = (typeof global.calculateXPosition === 'function') ? global.calculateXPosition : null;
       const zoomStart = graphState && Number.isFinite(+graphState.zoomStart) ? +graphState.zoomStart : null;
@@ -66,21 +63,64 @@
       const hasZoom = Number.isFinite(zoomStart) && Number.isFinite(zoomEnd) && zoomEnd > zoomStart;
       if (!pxFromNm || !calcX || !hasZoom) return { ok:true, labels:0, bands:0, graphState: !!graphState };
 
+      function formatDeltaNm(v){
+        const n = Math.abs(Number(v));
+        if (!Number.isFinite(n)) return '';
+        const rounded = Math.round(n * 10) / 10;
+        return String(rounded.toFixed(1)).replace(/\.0$/, '');
+      }
+
       const w = canvas.width;
       const h = canvas.height;
       const theme = getCanvasTheme(canvas);
       const wCalc = widthForCalc || w;
-      const maxLabels = Math.max(1, hits.length);
-      let labels = 0;
       const highlightElements = Object.create(null);
       for (let gi = 0; gi < smartGroups.length && gi < 6; gi += 1) {
         const el = String((smartGroups[gi] && smartGroups[gi].element) || '').trim();
         if (el) highlightElements[el] = gi;
       }
       const highlightedSeen = Object.create(null);
+      const clustered = [];
+      const clusterTolerancePx = 2.5;
+
+      for (let i = 0; i < hits.length; i += 1) {
+        const hit = hits[i] || {};
+        const observedNm = Number(hit.observedNm != null ? hit.observedNm : (hit.referenceNm != null ? hit.referenceNm : null));
+        const referenceNm = Number(hit.referenceNm != null ? hit.referenceNm : observedNm);
+        if (!Number.isFinite(observedNm)) continue;
+        const pxObserved = pxFromNm(observedNm);
+        if (!Number.isFinite(pxObserved) || pxObserved < zoomStart || pxObserved >= zoomEnd) continue;
+        const x = calcX(pxObserved - zoomStart, zoomEnd - zoomStart, wCalc);
+        const xCanvas = (wCalc && w && wCalc !== w) ? (x * (w / wCalc)) : x;
+        if (!Number.isFinite(xCanvas) || xCanvas < padding || xCanvas > (w - padding)) continue;
+        const name = String(hit.element || hit.species || '').trim();
+        if (!name) continue;
+        const deltaNm = Number.isFinite(referenceNm) ? Math.abs(referenceNm - observedNm) : NaN;
+        const item = {
+          hit: hit,
+          label: name + ' ' + formatDeltaNm(deltaNm),
+          element: name,
+          deltaNm: deltaNm,
+          observedNm: observedNm,
+          referenceNm: referenceNm,
+          xCanvas: xCanvas
+        };
+        let group = null;
+        for (let ci = 0; ci < clustered.length; ci += 1) {
+          if (Math.abs(clustered[ci].xCanvas - xCanvas) <= clusterTolerancePx) { group = clustered[ci]; break; }
+        }
+        if (!group) {
+          group = { xCanvas: xCanvas, items: [] };
+          clustered.push(group);
+        }
+        group.items.push(item);
+      }
+
+      clustered.sort(function(a, b){ return a.xCanvas - b.xCanvas; });
+      let labels = 0;
 
       ctx.save();
-      ctx.globalAlpha = 0.9;
+      ctx.globalAlpha = 0.92;
       ctx.font = theme.overlayFont;
       ctx.textBaseline = 'top';
       ctx.fillStyle = theme.overlayTextColor;
@@ -89,24 +129,19 @@
       ctx.setLineDash(theme.overlayLineDash);
       const textStroke = theme.overlayTextStroke;
       const markerStroke = theme.overlayLineColor;
+      const rowStep = Math.max(14, Math.round(theme.smartHeight + 2));
+      const xOffset = 5;
 
-      for (let i = 0; i < hits.length && labels < maxLabels; i++) {
-        const hit = hits[i] || {};
-        const conf = Number(hit.confidence);
-        const nm = (hit.observedNm != null ? Number(hit.observedNm) : (hit.referenceNm != null ? Number(hit.referenceNm) : null));
-        if (!Number.isFinite(nm)) continue;
-        const px = pxFromNm(nm);
-        if (!Number.isFinite(px)) continue;
-        if (px < zoomStart || px >= zoomEnd) continue;
-        const x = calcX(px - zoomStart, zoomEnd - zoomStart, wCalc);
-        if (!Number.isFinite(x)) continue;
+      for (let gi = 0; gi < clustered.length; gi += 1) {
+        const group = clustered[gi];
+        const xCanvas = group.xCanvas;
+        group.items.sort(function(a, b){
+          const ad = Number.isFinite(a.deltaNm) ? a.deltaNm : 1e9;
+          const bd = Number.isFinite(b.deltaNm) ? b.deltaNm : 1e9;
+          if (ad !== bd) return ad - bd;
+          return (Number(b.hit.confidence) || 0) - (Number(a.hit.confidence) || 0);
+        });
 
-        // If calculateXPosition used CSS pixels, but the canvas uses device pixels, rescale.
-        const xCanvas = (wCalc && w && wCalc !== w) ? (x * (w / wCalc)) : x;
-        if (!Number.isFinite(xCanvas) || xCanvas < padding || xCanvas > (w - padding)) continue;
-
-        // Marker line for every listed hit. Use the observed position first so the
-        // marker sits on the actual detected peak, not just the reference catalog line.
         ctx.beginPath();
         ctx.moveTo(xCanvas, 0);
         ctx.lineTo(xCanvas, h);
@@ -115,53 +150,48 @@
         ctx.stroke();
         ctx.restore();
 
-        // Label
-        // In-graph label should be compact: just the element/symbol.
-        const name = String(hit.element || hit.species || '').trim();
-        const label = name || '';
-        const tx = Math.max(2, Math.min(w - 24, xCanvas + 4));
-        // Spread labels downward, but wrap after a few rows so all hits in the list can render.
-        const row = labels % 8;
-        const col = Math.floor(labels / 8);
-        const ty = 2 + row * 14;
-        const txShifted = Math.max(2, Math.min(w - 24, tx + col * 18));
-        ctx.save();
-        ctx.setLineDash([]);
-        const isSmartHighlight = !!(smartEnabled && label && Object.prototype.hasOwnProperty.call(highlightElements, label) && !highlightedSeen[label]);
-        if (isSmartHighlight) {
-          highlightedSeen[label] = true;
-          const metrics = ctx.measureText(label);
-          const padX = theme.smartPadX;
-          const padY = theme.smartPadY;
-          const bw = Math.max(14, Math.ceil(metrics.width + padX * 2));
-          const bh = theme.smartHeight;
-          const bx = Math.max(2, Math.min(w - bw - 2, txShifted - padX));
-          const by = Math.max(1, ty - padY);
-          const radius = theme.smartRadius;
-          ctx.beginPath();
-          ctx.fillStyle = theme.smartBg;
-          ctx.strokeStyle = theme.smartBorder;
-          ctx.lineWidth = 1.2;
-          ctx.moveTo(bx + radius, by);
-          ctx.lineTo(bx + bw - radius, by);
-          ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + radius);
-          ctx.lineTo(bx + bw, by + bh - radius);
-          ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - radius, by + bh);
-          ctx.lineTo(bx + radius, by + bh);
-          ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - radius);
-          ctx.lineTo(bx, by + radius);
-          ctx.quadraticCurveTo(bx, by, bx + radius, by);
-          ctx.fill();
-          ctx.stroke();
+        for (let ri = 0; ri < group.items.length; ri += 1) {
+          const item = group.items[ri];
+          const label = item.label;
+          const tx = Math.max(2, Math.min(w - 26, xCanvas + xOffset));
+          const ty = 2 + ri * rowStep;
+          ctx.save();
+          ctx.setLineDash([]);
+          const isSmartHighlight = !!(smartEnabled && item.element && Object.prototype.hasOwnProperty.call(highlightElements, item.element) && !highlightedSeen[item.element]);
+          if (isSmartHighlight) {
+            highlightedSeen[item.element] = true;
+            const metrics = ctx.measureText(label);
+            const padX = theme.smartPadX;
+            const padY = theme.smartPadY;
+            const bw = Math.max(14, Math.ceil(metrics.width + padX * 2));
+            const bh = theme.smartHeight;
+            const bx = Math.max(2, Math.min(w - bw - 2, tx - padX));
+            const by = Math.max(1, ty - padY);
+            const radius = theme.smartRadius;
+            ctx.beginPath();
+            ctx.fillStyle = theme.smartBg;
+            ctx.strokeStyle = theme.smartBorder;
+            ctx.lineWidth = 1.2;
+            ctx.moveTo(bx + radius, by);
+            ctx.lineTo(bx + bw - radius, by);
+            ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + radius);
+            ctx.lineTo(bx + bw, by + bh - radius);
+            ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - radius, by + bh);
+            ctx.lineTo(bx + radius, by + bh);
+            ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - radius);
+            ctx.lineTo(bx, by + radius);
+            ctx.quadraticCurveTo(bx, by, bx + radius, by);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = textStroke;
+          ctx.strokeText(label, tx, ty);
+          ctx.fillStyle = isSmartHighlight ? theme.smartTextColor : theme.overlayTextColor;
+          ctx.fillText(label, tx, ty);
+          ctx.restore();
+          labels += 1;
         }
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = textStroke;
-        ctx.strokeText(label, txShifted, ty);
-        ctx.fillStyle = isSmartHighlight ? theme.smartTextColor : theme.overlayTextColor;
-        ctx.fillText(label, txShifted, ty);
-        ctx.restore();
-
-        labels += 1;
       }
 
       ctx.restore();

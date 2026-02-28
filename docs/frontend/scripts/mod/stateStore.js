@@ -53,6 +53,7 @@
       topHits: [],
       rawTopHits: [],
       smartFindEnabled: false,
+      showHits: true,
       smartFindHits: [],
       smartFindGroups: [],
       offsetNm: null,

@@ -998,6 +998,7 @@ function ensureLabPanel() {
 	    '        </select></label>',
 	    '      </div>',
 	    '      <div class="sp-lab-fields-col">',
+	    '        <label id="spFieldLabShowHits" class="sp-field sp-field--lab-showhits sp-field--checkbox-row"><span>Show hits</span><input id="spLabShowHits" type="checkbox"></label>',
 	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row"><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
 	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
 	    '        <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
@@ -1052,6 +1053,7 @@ function ensureLabPanel() {
   const enabled = !!(s.analysis && s.analysis.enabled);
   const maxHz = Number(s.analysis && s.analysis.maxHz);
   const presetId = (s.analysis && s.analysis.presetId) ? String(s.analysis.presetId) : '';
+  const showHits = !(s.analysis && s.analysis.showHits === false);
   const includeWeak = !!(s.analysis && s.analysis.includeWeakPeaks);
   const stableHits = !!(s.analysis && s.analysis.stableHits);
   const smartFind = !!(s.analysis && s.analysis.smartFindEnabled);
@@ -1059,6 +1061,7 @@ function ensureLabPanel() {
   const hzEl = $('spLabMaxHz');
   const presetEl = $('spLabPreset');
   const subModeEl = $('spLabSubMode');
+  const showHitsEl = $('spLabShowHits');
   const weakEl = $('spLabWeak');
   const stableEl = $('spLabStable');
   const smartEl = $('spLabSmart');
@@ -1067,6 +1070,7 @@ function ensureLabPanel() {
   if (enabledEl) enabledEl.checked = enabled;
   if (hzEl && Number.isFinite(maxHz) && maxHz > 0) hzEl.value = String(maxHz);
   if (presetEl) presetEl.value = presetId;
+  if (showHitsEl) showHitsEl.checked = showHits;
   if (weakEl) weakEl.checked = includeWeak;
   if (stableEl) stableEl.checked = stableHits;
   if (smartEl) smartEl.checked = smartFind;
@@ -1116,6 +1120,12 @@ function ensureLabPanel() {
     const v = String(e.target.value || 'raw');
     setVal('subtraction.mode', v);
     setFeedback('Mode: ' + v, 'info');
+  });
+
+  showHitsEl && showHitsEl.addEventListener('change', function (e) {
+    const on = !!e.target.checked;
+    setVal('analysis.showHits', on);
+    setFeedback(on ? 'Hit overlays shown.' : 'Hit overlays hidden.', 'info');
   });
 
   weakEl && weakEl.addEventListener('change', function (e) {
@@ -1781,12 +1791,15 @@ function renderLabPanel() {
   if (!hitsEl || !qcEl) return;
   const state = getStoreState();
   const smartEnabled = !!(state.analysis && state.analysis.smartFindEnabled);
+  const showHits = !(state.analysis && state.analysis.showHits === false);
   const smartHits = (state.analysis && Array.isArray(state.analysis.smartFindHits)) ? state.analysis.smartFindHits : [];
   const smartGroups = (state.analysis && Array.isArray(state.analysis.smartFindGroups)) ? state.analysis.smartFindGroups : [];
   const hits = smartEnabled && smartHits.length
     ? smartHits
     : ((state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : []);
   const qc = (state.analysis && Array.isArray(state.analysis.qcFlags)) ? state.analysis.qcFlags : [];
+  const showHitsEl = $('spLabShowHits');
+  if (showHitsEl && !shouldSkipSyncValue(showHitsEl)) showHitsEl.checked = showHits;
   const libsLoaded = !!(state.worker && state.worker.librariesLoaded);
   const mode = String(state.appMode || 'CORE').toUpperCase();
   const enabled = !!(state.analysis && state.analysis.enabled);

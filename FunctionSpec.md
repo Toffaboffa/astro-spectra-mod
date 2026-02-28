@@ -1034,3 +1034,11 @@ Fixes a LAB-breaking runtime error introduced by the Smart Find patch.
 - `docs/frontend/scripts/mod/overlays.js` now reads overlay label styling from computed CSS instead of hardcoded canvas values.
 - `docs/frontend/scripts/graphScript.js` now reads axis/grid and peak-label styling from CSS variables on `#graphCanvas`.
 - This makes tweaks like Smart Find text color, background color, padding, radius, fonts and axis label colors editable in CSS without hunting through JS draw code.
+
+
+## Patch note – Show hits + stacked label placement
+- Added a LAB toggle **Show hits** above **Weak peaks**. It defaults to checked and only affects graph overlay visibility; matches still run and Top Hits still update.
+- Added `analysis.showHits` to store state.
+- Updated graph overlay layout so hits that belong to the same nearby peak are stacked vertically just to the right of the dashed line.
+- Within each local hit stack, the match with the smallest `|referenceNm - observedNm|` is placed at the top, with less exact candidates listed underneath.
+- Overlay labels now append rounded peak offset in nm, e.g. `He 0.2`, `Hg 1.3`.
