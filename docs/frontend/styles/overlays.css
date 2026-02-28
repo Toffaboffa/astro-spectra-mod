@@ -5,47 +5,45 @@
 
 /* Graph drawing theme tokens. Edit these instead of hunting in JS. */
 :root {
-  --sp-graph-axis-grid-color: #e0e0e0;
-  --sp-graph-axis-label-color: #000000;
-  --sp-graph-axis-font: 12px Arial;
-  --sp-graph-peak-label-color: #000000;
-  --sp-graph-peak-label-font: 16px Arial;
-
-  --sp-graph-overlay-font: 12px Arial;
-  --sp-graph-overlay-text-color: rgba(255,255,255,0.95);
-  --sp-graph-overlay-text-stroke: rgba(0,0,0,0.85);
-  --sp-graph-overlay-line-color: rgba(0,0,0,0.35);
-  --sp-graph-overlay-line-width: 1;
-  --sp-graph-overlay-line-dash: 4,4;
-
-  --sp-graph-smart-bg: rgba(246, 206, 70, 0.92);
-  --sp-graph-smart-border: rgba(120, 84, 10, 0.95);
-  --sp-graph-smart-text-color: rgba(55, 38, 0, 0.98);
-  --sp-graph-smart-pad-x: 6;
-  --sp-graph-smart-pad-y: 3;
-  --sp-graph-smart-height: 16;
-  --sp-graph-smart-radius: 8;
-
-  --sp-graph-overlay-text-color: rgba(45,45,45,0.92);
+    --sp-graph-axis-grid-color: #e0e0e0;
+    --sp-graph-axis-label-color: #000000;
+    --sp-graph-axis-font: 12px Arial;
+    --sp-graph-peak-label-color: #000000;
+    --sp-graph-peak-label-font: 16px Arial;
+    --sp-graph-overlay-font: 12px Arial;
+    --sp-graph-overlay-text-color: rgba(255, 255, 255, 0.95);
+    /* --sp-graph-overlay-text-stroke: rgba(0, 0, 0, 0.85); */
+    --sp-graph-overlay-line-color: rgba(0, 0, 0, 0.35);
+    --sp-graph-overlay-line-width: 1;
+    --sp-graph-overlay-line-dash: 4, 4;
+    --sp-graph-smart-bg: rgba(246, 206, 70, 0.92);
+    --sp-graph-smart-border: rgb(255 255 255 / 95%);
+    --sp-graph-smart-text-color: rgb(255 255 255 / 98%);
+    --sp-graph-smart-pad-x: 6;
+    --sp-graph-smart-pad-y: 3;
+    --sp-graph-smart-height: 16;
+    --sp-graph-smart-radius: 8;
+    /* --sp-graph-overlay-text-color: rgba(45, 45, 45, 0.92);
 }
 
 #graphCanvas {
-  --sp-graph-axis-grid-color: var(--sp-graph-axis-grid-color);
-  --sp-graph-axis-label-color: var(--sp-graph-axis-label-color);
-  --sp-graph-axis-font: var(--sp-graph-axis-font);
-  --sp-graph-peak-label-color: var(--sp-graph-peak-label-color);
-  --sp-graph-peak-label-font: var(--sp-graph-peak-label-font);
-  --sp-graph-overlay-font: var(--sp-graph-overlay-font);
-  --sp-graph-overlay-text-color: var(--sp-graph-overlay-text-color);
-  --sp-graph-overlay-text-stroke: var(--sp-graph-overlay-text-stroke);
-  --sp-graph-overlay-line-color: var(--sp-graph-overlay-line-color);
-  --sp-graph-overlay-line-width: var(--sp-graph-overlay-line-width);
-  --sp-graph-overlay-line-dash: var(--sp-graph-overlay-line-dash);
-  --sp-graph-smart-bg: var(--sp-graph-smart-bg);
-  --sp-graph-smart-border: var(--sp-graph-smart-border);
-  --sp-graph-smart-text-color: var(--sp-graph-smart-text-color);
-  --sp-graph-smart-pad-x: var(--sp-graph-smart-pad-x);
-  --sp-graph-smart-pad-y: var(--sp-graph-smart-pad-y);
-  --sp-graph-smart-height: var(--sp-graph-smart-height);
-  --sp-graph-smart-radius: var(--sp-graph-smart-radius);
+    --sp-graph-axis-grid-color: #e0e0e0;
+    --sp-graph-axis-label-color: #000000;
+    --sp-graph-axis-font: 12px Arial;
+    --sp-graph-peak-label-color: #000000;
+    --sp-graph-peak-label-font: 16px Arial;
+    --sp-graph-overlay-font: 12px Arial;
+    --sp-graph-overlay-text-color: rgba(255, 255, 255, 0.95);
+    /* --sp-graph-overlay-text-stroke: rgba(0, 0, 0, 0.85); */
+    --sp-graph-overlay-line-color: rgba(0, 0, 0, 0.35);
+    --sp-graph-overlay-line-width: 1;
+    --sp-graph-overlay-line-dash: 4, 4;
+    --sp-graph-smart-bg: rgba(246, 206, 70, 0.92);
+    --sp-graph-smart-border: rgb(255 255 255 / 95%);
+    --sp-graph-smart-text-color: rgb(255 255 255 / 98%);
+    --sp-graph-smart-pad-x: 6;
+    --sp-graph-smart-pad-y: 3;
+    --sp-graph-smart-height: 16;
+    --sp-graph-smart-radius: 8;
+    /* --sp-graph-overlay-text-color: rgba(45, 45, 45, 0.92);
 }
