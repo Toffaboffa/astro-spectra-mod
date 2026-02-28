@@ -462,9 +462,28 @@ function maybeRunLabAnalyze(frameNormalized) {
     }
 
     // Move original graph controls (left drawer children) into General panel, but keep IDs/listeners intact.
+    let normalizeWrap = $('spNormalizeYAxisWrap');
+    if (!normalizeWrap) {
+      normalizeWrap = el('div', 'sp-card sp-card--flat');
+      normalizeWrap.id = 'spNormalizeYAxisWrap';
+      normalizeWrap.innerHTML = '<div class="sp-form-grid"><label id="spFieldNormalizeYAxis" class="sp-field sp-field--normalize-y-axis sp-field--checkbox-row"><span>Normalize</span><input id="spNormalizeYAxis" type="checkbox"></label></div>';
+      hostWrap.appendChild(normalizeWrap);
+      const normalizeInput = normalizeWrap.querySelector('#spNormalizeYAxis');
+      if (normalizeInput) {
+        const displayStateInit = (getStoreState().display || {});
+        normalizeInput.checked = !!displayStateInit.normalizeYAxis;
+        normalizeInput.addEventListener('change', (e) => {
+          if (store && store.update) store.update('display.normalizeYAxis', !!e.target.checked, { source: 'proBootstrap.general' });
+          try { redrawGraphIfLoadedImage(); } catch (_) {}
+          try { drawGraph(); } catch (_) {}
+        });
+      }
+    }
+
     const children = Array.from(left.children);
     children.forEach((node) => {
       if (node.id === 'spMain') return; // keep dock host in drawer
+      if (node.id === 'spNormalizeYAxisWrap') return;
       hostWrap.appendChild(node);
     });
   }
@@ -1740,6 +1759,11 @@ function renderConsole() {
       const v = Number((state.display && state.display.yAxisMax));
       const next = Number.isFinite(v) && v > 0 ? String(Math.round(v)) : '255';
       if (String(yAxisMaxInput.value) !== next) yAxisMaxInput.value = next;
+    }
+    const normalizeYAxisInput = $('spNormalizeYAxis');
+    if (normalizeYAxisInput && !shouldSkipSyncValue(normalizeYAxisInput)) {
+      const nextChecked = !!(state.display && state.display.normalizeYAxis);
+      if (!!normalizeYAxisInput.checked !== nextChecked) normalizeYAxisInput.checked = nextChecked;
     }
     const peakThresholdInput = $('spPeakThreshold');
     const peakDistanceInput = $('spPeakDistance');

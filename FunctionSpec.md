@@ -1048,3 +1048,14 @@ Fixes a LAB-breaking runtime error introduced by the Smart Find patch.
 - LAB graph overlay stacks still sort local candidates by nearest nm offset first.
 - Added a peak-aware vertical anchor so **shorter peaks place their hit labels just above the peak apex**, while very tall peaks keep the existing top-of-graph label stack.
 - This keeps weak/moderate lines easier to associate with their own peak without dragging tall-peak labels into the trace area.
+
+
+---
+
+## Patch 2026-02-28: General Normalize Y-axis
+
+- Added a new **Normalize** checkbox in the **General** tab.
+- When enabled, the graph Y-axis is normalized so the highest currently visible peak is shown as **1.0**.
+- Normalization overrides fixed/manual Y-axis scaling for rendering, while preserving the selected Y-axis mode in the UI.
+- Y-axis labels switch to normalized ticks (0, 0.2, 0.4, 0.6, 0.8, 1).
+- Works for camera/imported image views and respects currently visible reference/comparison graphs when computing the highest visible peak.

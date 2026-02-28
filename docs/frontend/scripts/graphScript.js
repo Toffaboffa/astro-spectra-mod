@@ -47,11 +47,51 @@ function getSpectraProDisplaySettings() {
         return {
             mode: String(d.mode || 'normal').toLowerCase(),
             yAxisMode: String(d.yAxisMode || 'auto').toLowerCase(),
-            yAxisMax: Number(d.yAxisMax)
+            yAxisMax: Number(d.yAxisMax),
+            normalizeYAxis: !!d.normalizeYAxis
         };
     } catch (_) {
-        return { mode: 'normal', yAxisMode: 'auto', yAxisMax: 255 };
+        return { mode: 'normal', yAxisMode: 'auto', yAxisMax: 255, normalizeYAxis: false };
     }
+}
+
+function isSpectraProYAxisNormalized() {
+    try {
+        const settings = getSpectraProDisplaySettings();
+        return !!settings.normalizeYAxis;
+    } catch (_) {
+        return false;
+    }
+}
+
+function calculateVisiblePeakMax(pixels) {
+    let maxValue = 0;
+    if (referenceGraph.length > 0 && showReferenceGraph) {
+        for (let i = 0; i < referenceGraph.length; i++) {
+            const ref = referenceGraph[i];
+            const tempMaxValue = Array.isArray(ref) ? Number(ref[3]) : 0;
+            if (Number.isFinite(tempMaxValue) && tempMaxValue > maxValue) {
+                maxValue = tempMaxValue;
+            }
+        }
+    }
+    if (comparisonGraph && comparisonGraph.length > 0) {
+        for (let i = 0; i < comparisonGraph.length; i++) {
+            if (comparisonGraph[i]) {
+                const tempMaxValue = Number(comparisonGraph[i][3]);
+                if (Number.isFinite(tempMaxValue) && tempMaxValue > maxValue) {
+                    maxValue = tempMaxValue;
+                }
+            }
+        }
+    }
+    for (let i = 0; i < pixels.length; i += 4) {
+        const value = Math.max(pixels[i], pixels[i + 1], pixels[i + 2]);
+        if (value > maxValue) {
+            maxValue = value;
+        }
+    }
+    return Math.max(1, maxValue);
 }
 
 function applySpectraProDisplayMode(basePixels, pixelWidth) {
@@ -105,6 +145,9 @@ function getGraphCanvasTheme() {
 
 function resolveSpectraProYAxisMax(pixels, dynamicMaxValue) {
     const settings = getSpectraProDisplaySettings();
+    if (settings.normalizeYAxis) {
+        return calculateVisiblePeakMax(pixels);
+    }
     const mode = settings.yAxisMode;
     if (mode === 'fixed_255') return 255 + MAX_Y_VALUE_PADDING;
     if (mode === 'manual') {
@@ -385,32 +428,7 @@ function drawGraph() {
  * Calculates the maximum value of the graph and adds a small padding for dynamic Y axis
  */
 function calculateMaxValue(pixels) {
-    let maxValue = 0;
-    if (referenceGraph.length > 0 && showReferenceGraph) {
-        for (let i = 0; i < referenceGraph.length; i++) {
-            const tempMaxValue = referenceGraph[i][3];
-            if (tempMaxValue > maxValue) {
-                maxValue = tempMaxValue;
-            }
-        }
-    }
-    if (comparisonGraph && comparisonGraph.length > 0) {
-        for (let i = 0; i < comparisonGraph.length; i++) {
-            if (comparisonGraph[i]) {
-                const tempMaxValue = comparisonGraph[i][3];
-                if (tempMaxValue > maxValue) {
-                    maxValue = tempMaxValue;
-                }
-            }
-        }
-    }
-    for (let i = 0; i < pixels.length; i += 4) {
-        const value = Math.max(pixels[i], pixels[i + 1], pixels[i + 2]);
-        if (value > maxValue) {
-            maxValue = value;
-        }
-    }
-    return maxValue + MAX_Y_VALUE_PADDING;
+    return calculateVisiblePeakMax(pixels) + MAX_Y_VALUE_PADDING;
 }
 
 /**
@@ -936,9 +954,10 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
     const padding = 30;
 
     let maxValue = resolveSpectraProYAxisMax(pixels, calculateMaxValue(pixels));
+    const normalizedYAxis = isSpectraProYAxisNormalized();
 
-    const numOfYLabels = Math.min(25, Math.floor(maxValue));
-    const yStep = niceStep(maxValue, numOfYLabels);
+    const numOfYLabels = normalizedYAxis ? 5 : Math.min(25, Math.floor(maxValue));
+    const yStep = normalizedYAxis ? 0.2 : niceStep(maxValue, numOfYLabels);
 
     graphCtx.beginPath();
     const theme = getGraphCanvasTheme();
@@ -947,12 +966,25 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
     graphCtx.font = theme.axisFont;
     graphCtx.fillStyle = theme.axisLabelColor;
 
-    for (let yValue = 0; yValue <= maxValue; yValue += yStep) {
-        const y = padding + ((height - 2 * padding) * (1 - yValue / maxValue));
-        const label = Math.round(yValue).toString();
-        graphCtx.moveTo(padding, y);
-        graphCtx.lineTo(width - padding, y);
-        graphCtx.fillText(label, 5, y + 3);
+    if (normalizedYAxis) {
+        for (let normValue = 0; normValue <= 1.000001; normValue += yStep) {
+            const y = padding + ((height - 2 * padding) * (1 - normValue));
+            const rounded = Math.round(normValue * 10) / 10;
+            const label = (rounded === 0 || rounded === 1)
+                ? String(Math.round(rounded))
+                : rounded.toFixed(1);
+            graphCtx.moveTo(padding, y);
+            graphCtx.lineTo(width - padding, y);
+            graphCtx.fillText(label, 5, y + 3);
+        }
+    } else {
+        for (let yValue = 0; yValue <= maxValue; yValue += yStep) {
+            const y = padding + ((height - 2 * padding) * (1 - yValue / maxValue));
+            const label = Math.round(yValue).toString();
+            graphCtx.moveTo(padding, y);
+            graphCtx.lineTo(width - padding, y);
+            graphCtx.fillText(label, 5, y + 3);
+        }
     }
 
     const toggleXLabelsPx = document.getElementById('toggleXLabelsPx');
