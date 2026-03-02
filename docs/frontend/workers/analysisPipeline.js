@@ -101,6 +101,190 @@
     vals.sort((a,b)=>a-b);
     return vals[Math.floor(vals.length/2)];
   }
+
+  function median(values) {
+    const arr = (Array.isArray(values) ? values : []).map(Number).filter(Number.isFinite).sort(function (a, b) { return a - b; });
+    if (!arr.length) return null;
+    const mid = Math.floor(arr.length / 2);
+    return arr.length % 2 ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
+  }
+
+  function buildElementScores(ctx) {
+    const matches = Array.isArray(ctx && ctx.matches) ? ctx.matches : [];
+    const peaks = Array.isArray(ctx && ctx.peaks) ? ctx.peaks : [];
+    const atomLines = Array.isArray(ctx && ctx.atomLines) ? ctx.atomLines : [];
+    const frame = ctx && ctx.frame;
+    const preferred = Array.isArray(ctx && ctx.preferredElements) ? ctx.preferredElements : [];
+    const signatureProfiles = (ctx && ctx.signatureProfiles) || {};
+    const hardMaxDistanceNm = Math.max(0.05, Number(ctx && ctx.hardMaxDistanceNm) || 5);
+    const maxPeakProm = peaks.reduce(function (m, p) { return Math.max(m, Number((p && p.prominence) || (p && p.value) || 0) || 0); }, 0) || 1;
+    const peakMap = Object.create(null);
+    const frameNm = frame && Array.isArray(frame.nm) ? frame.nm.map(Number).filter(Number.isFinite) : [];
+    const nmMin = frameNm.length ? Math.min.apply(null, frameNm) : 380;
+    const nmMax = frameNm.length ? Math.max.apply(null, frameNm) : 780;
+    const densityByElement = Object.create(null);
+    const candidateSet = Object.create(null);
+
+    for (let i = 0; i < matches.length; i += 1) {
+      const m = matches[i] || {};
+      const peakKey = Number.isFinite(Number(m.peakIndex)) ? String(Number(m.peakIndex)) : String(Number(m.obsNm).toFixed(3));
+      if (!peakMap[peakKey]) peakMap[peakKey] = [];
+      peakMap[peakKey].push(m);
+      if (m.element) candidateSet[String(m.element)] = true;
+    }
+    for (let i = 0; i < preferred.length; i += 1) candidateSet[String(preferred[i])] = true;
+    Object.keys(signatureProfiles).forEach(function (k) { candidateSet[k] = true; });
+    for (let i = 0; i < atomLines.length; i += 1) {
+      const line = atomLines[i] || {};
+      const nm = Number(line.nm);
+      const el = String(line.element || '').trim();
+      if (!el || !Number.isFinite(nm) || nm < nmMin || nm > nmMax) continue;
+      densityByElement[el] = (densityByElement[el] || 0) + 1;
+    }
+
+    const scores = Object.keys(candidateSet).map(function (element) {
+      const elementMatches = matches.filter(function (m) { return String(m.element || '') === element; });
+      const uniquePeaks = Object.create(null);
+      const deltas = [];
+      const contributions = [];
+      let explainedProm = 0;
+      let closenessSum = 0;
+      let opportunisticPenalty = 0;
+      for (let i = 0; i < elementMatches.length; i += 1) {
+        const m = elementMatches[i] || {};
+        const peakKey = Number.isFinite(Number(m.peakIndex)) ? String(Number(m.peakIndex)) : String(Number(m.obsNm).toFixed(3));
+        if (uniquePeaks[peakKey]) continue;
+        const contenders = (peakMap[peakKey] || []).slice().sort(function (a, b) {
+          return (Number(b.rawScore) || 0) - (Number(a.rawScore) || 0);
+        });
+        const bestForPeak = contenders[0] || m;
+        const ownScore = Number(m.rawScore) || 0;
+        const bestScore = Number(bestForPeak.rawScore) || ownScore || 1;
+        const share = Math.max(0.15, Math.min(1, ownScore / Math.max(0.001, bestScore)));
+        const prom = Number(m.prominence || m.peakValue || 0) || 0;
+        const promNorm = Math.max(0, Math.min(1, prom / maxPeakProm));
+        const delta = Math.abs(Number(m.deltaNm) || 0);
+        const closeNorm = Math.max(0, 1 - (delta / hardMaxDistanceNm));
+        explainedProm += promNorm * share;
+        closenessSum += closeNorm;
+        deltas.push(delta);
+        contributions.push({
+          refNm: Number(m.refNm),
+          obsNm: Number(m.obsNm),
+          deltaNm: +delta.toFixed(3),
+          prominence: prom,
+          score: +(promNorm * 0.55 + closeNorm * 0.45 + share * 0.35).toFixed(4)
+        });
+        if (bestForPeak !== m) opportunisticPenalty += Math.max(0, 1 - share) * 0.8;
+        uniquePeaks[peakKey] = true;
+      }
+      contributions.sort(function (a, b) { return (b.score - a.score) || (a.deltaNm - b.deltaNm); });
+      const matchedPeaks = Object.keys(uniquePeaks).length;
+      const totalPeaks = Math.max(1, peaks.length);
+      const coverage = matchedPeaks / totalPeaks;
+      const explainedShare = Math.max(0, Math.min(1.5, explainedProm / Math.max(1, matchedPeaks || 1)));
+      const closenessScore = matchedPeaks ? closenessSum / matchedPeaks : 0;
+      const medianDeltaNm = median(deltas);
+      const sortedRefs = contributions.map(function (c) { return Number(c.refNm); }).filter(Number.isFinite).sort(function (a, b) { return a - b; });
+      let clusterBonus = 0;
+      for (let i = 1; i < sortedRefs.length; i += 1) {
+        const gap = sortedRefs[i] - sortedRefs[i - 1];
+        if (gap <= 18) clusterBonus += 0.55;
+        else if (gap <= 35) clusterBonus += 0.22;
+      }
+      const signature = Array.isArray(signatureProfiles[element]) ? signatureProfiles[element].filter(function (nm) {
+        return Number.isFinite(Number(nm)) && Number(nm) >= nmMin && Number(nm) <= nmMax;
+      }) : [];
+      let matchedSignature = 0;
+      let missedStrong = 0;
+      for (let i = 0; i < signature.length; i += 1) {
+        const sigNm = Number(signature[i]);
+        let ok = false;
+        for (let j = 0; j < contributions.length; j += 1) {
+          if (Math.abs(Number(contributions[j].refNm) - sigNm) <= 0.45) { ok = true; break; }
+        }
+        if (ok) matchedSignature += 1;
+        else missedStrong += 1;
+      }
+      const diagnosticBonus = matchedSignature * 1.1;
+      const density = densityByElement[element] || 0;
+      const densityPenalty = Math.max(0, (Math.log(1 + density) / Math.log(2) - 2.5) * 0.33);
+      const totalScore = (
+        coverage * 8.5 +
+        explainedShare * 5.2 +
+        closenessScore * 4.4 +
+        clusterBonus +
+        diagnosticBonus -
+        missedStrong * 0.8 -
+        densityPenalty -
+        opportunisticPenalty
+      );
+      return {
+        element: element,
+        totalScore: +totalScore.toFixed(3),
+        matchedPeaks: matchedPeaks,
+        matchCount: elementMatches.length,
+        missedStrong: missedStrong,
+        matchedSignature: matchedSignature,
+        medianDeltaNm: medianDeltaNm == null ? null : +medianDeltaNm.toFixed(3),
+        meanDeltaNm: deltas.length ? +(deltas.reduce(function (a, b) { return a + b; }, 0) / deltas.length).toFixed(3) : null,
+        explainedShare: +explainedShare.toFixed(3),
+        closenessScore: +closenessScore.toFixed(3),
+        densityPenalty: +densityPenalty.toFixed(3),
+        opportunisticPenalty: +opportunisticPenalty.toFixed(3),
+        clusterBonus: +clusterBonus.toFixed(3),
+        topLines: contributions.slice(0, 4).map(function (c) {
+          return {
+            refNm: Number.isFinite(c.refNm) ? +c.refNm.toFixed(3) : null,
+            obsNm: Number.isFinite(c.obsNm) ? +c.obsNm.toFixed(3) : null,
+            deltaNm: c.deltaNm,
+            score: +c.score.toFixed(3)
+          };
+        })
+      };
+    }).filter(function (row) {
+      return row && (row.matchedPeaks > 0 || row.matchedSignature > 0);
+    }).sort(function (a, b) {
+      return (b.totalScore - a.totalScore) || (b.matchedPeaks - a.matchedPeaks) || ((a.medianDeltaNm == null ? 99 : a.medianDeltaNm) - (b.medianDeltaNm == null ? 99 : b.medianDeltaNm)) || a.element.localeCompare(b.element);
+    });
+
+    const scored = scores.map(function (row) {
+      return Object.assign({}, row, {
+        _probWeight: Math.exp(Math.max(-8, Math.min(8, Number(row.totalScore || 0) * 0.32)))
+      });
+    });
+    const totalProbWeight = scored.reduce(function (sum, row) {
+      return sum + (Number(row._probWeight) || 0);
+    }, 0) || 1;
+    return scored.map(function (row, idx) {
+      const likelyPct = Math.max(1, Math.min(99, Math.round(((Number(row._probWeight) || 0) / totalProbWeight) * 100)));
+      const out = Object.assign({}, row, {
+        rank: idx + 1,
+        likelyPct: likelyPct
+      });
+      delete out._probWeight;
+      return out;
+    });
+  }
+
+  function reorderHitsForSmartMode(topHits, elementScores) {
+    const hits = Array.isArray(topHits) ? topHits.slice() : [];
+    const scores = Array.isArray(elementScores) ? elementScores.slice() : [];
+    if (!hits.length || !scores.length) return hits;
+    const winner = scores[0];
+    const second = scores[1] || null;
+    const allowed = Object.create(null);
+    allowed[winner.element] = 0;
+    if (second && second.totalScore >= winner.totalScore * 0.8) allowed[second.element] = 1;
+    return hits
+      .filter(function (h) { return Object.prototype.hasOwnProperty.call(allowed, String(h && h.element || '')); })
+      .sort(function (a, b) {
+        const ar = allowed[String(a && a.element || '')];
+        const br = allowed[String(b && b.element || '')];
+        return (ar - br) || ((Number(b.confidence) || 0) - (Number(a.confidence) || 0)) || (Math.abs(Number(a.deltaNm) || 0) - Math.abs(Number(b.deltaNm) || 0));
+      });
+  }
+
   function analyzeFrame(frame, state, options) {
     const peakDetect = root.SPECTRA_PRO_peakDetect;
     const peakScoring = root.SPECTRA_PRO_peakScoring;
@@ -138,6 +322,7 @@
     const includeWeak = !!opt.includeWeakPeaks;
     const peakThresholdRel = Number.isFinite(Number(opt.peakThresholdRel)) ? Number(opt.peakThresholdRel) : (includeWeak ? 0.02 : 0.05);
     const peakDistancePx = Number.isFinite(Number(opt.peakDistancePx)) ? Number(opt.peakDistancePx) : (includeWeak ? 3 : 5);
+    const hardMaxDistanceNm = Math.max(0.2, Math.min(50, Number.isFinite(Number(opt.maxDistanceNm)) ? Number(opt.maxDistanceNm) : 5));
 
     const rawPeaks = peakDetect.detectPeaks(I, { prominenceWindowPx: Math.max(4, peakDistancePx * 2) });
     const peaks = inferPeaks(
@@ -195,6 +380,7 @@
     const matches = nmAvailable
       ? lineMatcher.matchLines(peaks, state && state.atomLines || [], {
           toleranceNm: preset.toleranceNm,
+          hardMaxDistanceNm: hardMaxDistanceNm,
           maxMatches: preset.maxMatches,
           preferredElements: preset.preferredElements || null,
           elementBoost: effectiveBoost || null,
@@ -213,7 +399,7 @@
     }
     if (!Number.isFinite(maxPeak) || maxPeak <= 0) maxPeak = 1;
 
-    const topHits = matches.map(function(m){
+    let topHits = matches.map(function(m){
       const closeness = Math.max(0, Math.min(1.2, +m.rawScore || 0));
       const strength = Math.max(0, Math.min(1, ((+m.prominence || +m.peakValue || 0) / maxPeak)));
       const base = (0.7 * Math.min(1, closeness)) + (0.3 * strength);
@@ -228,6 +414,31 @@
         score: +((m.rawScore || 0) * 100).toFixed(1)
       };
     });
+    const signatureProfiles = {
+      He: [447.148, 492.193, 501.568, 587.562, 667.815, 706.519],
+      Hg: [404.656, 435.833, 546.074, 576.960, 579.066],
+      Ne: [540.056, 585.249, 614.306, 640.225, 703.241],
+      H: [410.171, 434.047, 486.128, 656.281],
+      Ar: [696.543, 706.722, 738.398, 750.387, 763.511, 772.376],
+      Na: [588.995, 589.592],
+      Kr: [557.029, 587.092, 760.155],
+      Xe: [467.122, 484.433, 823.163],
+      O: [557.733, 630.030, 636.377, 777.194]
+    };
+    const elementScores = nmAvailable ? buildElementScores({
+      matches: matches,
+      peaks: peaks,
+      atomLines: state && state.atomLines || [],
+      frame: frame,
+      preferredElements: preset.preferredElements || null,
+      signatureProfiles: signatureProfiles,
+      hardMaxDistanceNm: hardMaxDistanceNm
+    }) : [];
+
+    if (presetId === 'smart' && elementScores.length) {
+      topHits = reorderHitsForSmartMode(topHits, elementScores).slice(0, 18);
+    }
+
     return {
       ok: true,
       topHits: topHits,
@@ -236,7 +447,15 @@
       qcFlags: qc.flags || [],
       confidence: confidence.overall || 0,
       librariesLoaded: !!(state && state.librariesLoaded),
-      calibrated: !!nmAvailable
+      calibrated: !!nmAvailable,
+      maxDistanceNm: hardMaxDistanceNm,
+      weakPeaksMode: {
+        enabled: includeWeak,
+        peakThresholdRel: peakThresholdRel,
+        peakDistancePx: peakDistancePx,
+        maxPeaks: includeWeak ? 96 : 56
+      },
+      elementScores: elementScores.slice(0, 8)
     };
   }
   root.SPECTRA_PRO_analysisPipeline = { analyzeFrame };

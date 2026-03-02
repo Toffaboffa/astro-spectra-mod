@@ -1018,11 +1018,12 @@ function ensureLabPanel() {
 	    '      </div>',
 	    '      <div class="sp-lab-fields-col">',
 	    '        <label id="spFieldLabShowHits" class="sp-field sp-field--lab-showhits sp-field--checkbox-row"><span>Show hits</span><input id="spLabShowHits" type="checkbox"></label>',
-	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row"><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
+	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lägre peak threshold, mindre peak-separation och fler peaks totalt. Påverkar peakdetektionen, inte någon separat smart AI-logik."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
 	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
 	    '        <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
 	    '        <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="5"></label>',
 	    '        <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="5"></label>',
+	    '        <label id="spFieldLabMaxDist" class="sp-field sp-field--lab-maxdist">Max distance (nm)<input id="spLabMaxDist" class="spctl-input spctl-input--lab-maxdist" type="number" min="0.2" max="50" step="0.1" value="5"></label>',
 	    '      </div>',
 	    '    </div>',
 	    '    <div class="sp-actions sp-actions--lab">',
@@ -1037,7 +1038,7 @@ function ensureLabPanel() {
 	    '  <div class="sp-lab-right">',
 	    '    <div class="sp-lab-table">',
 	    '      <div class="sp-lab-th">TOP HITS</div>',
-	    '      <div class="sp-lab-th">QC</div>',
+	    '      <div class="sp-lab-th">ELEMENT SCORE</div>',
 	    '      <div id="spLabHits" class="sp-lab-hits"></div>',
 	    '      <div id="spLabQc" class="sp-lab-qc"></div>',
 	    '    </div>',
@@ -1086,6 +1087,7 @@ function ensureLabPanel() {
   const smartEl = $('spLabSmart');
   const peakThrEl = $('spLabPeakThr');
   const peakDistEl = $('spLabPeakDist');
+  const maxDistEl = $('spLabMaxDist');
   if (enabledEl) enabledEl.checked = enabled;
   if (hzEl && Number.isFinite(maxHz) && maxHz > 0) hzEl.value = String(maxHz);
   if (presetEl) presetEl.value = presetId;
@@ -1095,6 +1097,7 @@ function ensureLabPanel() {
   if (smartEl) smartEl.checked = smartFind;
   if (peakThrEl) peakThrEl.value = String(Math.max(0.5, Math.min(50, ((Number(s.analysis && s.analysis.peakThresholdRel) || 0.05) * 100))));
   if (peakDistEl) peakDistEl.value = String(Math.max(1, Math.min(64, Math.round(Number(s.analysis && s.analysis.peakDistancePx) || 5))));
+  if (maxDistEl) maxDistEl.value = String(Math.max(0.2, Math.min(50, Number(s.analysis && s.analysis.maxDistanceNm) || 5)));
   // subtraction mode
   try {
     const sm = (s.subtraction && s.subtraction.mode) ? String(s.subtraction.mode) : 'raw';
@@ -1179,6 +1182,14 @@ function ensureLabPanel() {
     const dist = Math.max(1, Math.min(64, Math.round(n)));
     setVal('analysis.peakDistancePx', dist);
     setFeedback('Peak distance set to ' + dist + ' px.', 'info');
+  });
+
+  maxDistEl && maxDistEl.addEventListener('change', function (e) {
+    const n = Number(e.target.value);
+    if (!Number.isFinite(n)) return;
+    const dist = Math.max(0.2, Math.min(50, Math.round(n * 10) / 10));
+    setVal('analysis.maxDistanceNm', dist);
+    setFeedback('Max distance set to ' + dist + ' nm (hard cap).', 'info');
   });
 
   $('spLabInitLibBtn') && $('spLabInitLibBtn').addEventListener('click', function () {
@@ -1822,6 +1833,7 @@ function renderLabPanel() {
     ? smartHits
     : ((state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : []);
   const qc = (state.analysis && Array.isArray(state.analysis.qcFlags)) ? state.analysis.qcFlags : [];
+  const elementScores = (state.analysis && Array.isArray(state.analysis.elementScores)) ? state.analysis.elementScores : [];
   const showHitsEl = $('spLabShowHits');
   if (showHitsEl && !shouldSkipSyncValue(showHitsEl)) showHitsEl.checked = showHits;
   const libsLoaded = !!(state.worker && state.worker.librariesLoaded);
@@ -1891,12 +1903,58 @@ function renderLabPanel() {
     hitsEl.innerHTML = groupRows + rows;
   }
 
-  if (!qc.length) {
-    qcEl.innerHTML = '<div class="sp-empty">No QC flags.</div>';
+  if (!elementScores.length) {
+    qcEl.innerHTML = '<div class="sp-empty">No element ranking yet.</div>';
   } else {
-    qcEl.innerHTML = qc.slice(0, 8).map(function (q) {
-      return '<div class="sp-qc-flag">' + escapeHtml(String(q)) + '</div>';
+    const compactRows = elementScores.slice(0, 6).map(function (row, idx) {
+      const el = escapeHtml(String(row && row.element || '?'));
+      const pct = Number.isFinite(Number(row && row.likelyPct)) ? Math.max(1, Math.min(99, Math.round(Number(row.likelyPct)))) : 0;
+      const score = Number.isFinite(Number(row && row.totalScore)) ? Number(row.totalScore).toFixed(1) : '0.0';
+      const matched = Number.isFinite(Number(row && row.matchedPeaks)) ? String(Number(row.matchedPeaks)) : '0';
+      const missed = Number.isFinite(Number(row && row.missedStrong)) ? String(Number(row.missedStrong)) : '0';
+      const delta = Number.isFinite(Number(row && row.medianDeltaNm)) ? Number(row.medianDeltaNm).toFixed(1) : '—';
+      const topLines = Array.isArray(row && row.topLines) ? row.topLines.slice(0, 3).map(function (line) {
+        if (!line) return '';
+        const ref = Number.isFinite(Number(line.refNm)) ? Number(line.refNm).toFixed(1) : '?';
+        const d = Number.isFinite(Number(line.deltaNm)) ? Number(line.deltaNm).toFixed(1) : '?';
+        return ref + 'nm (Δ ' + d + ')';
+      }).filter(Boolean).join(', ') : '';
+      const title = [
+        '#' + String(idx + 1) + ' ' + String(row && row.element || '?'),
+        'Likely: ' + String(pct) + '%',
+        'Score: ' + String(score),
+        'Matched: ' + String(matched),
+        'Missed strong: ' + String(missed),
+        'Median Δ: ' + String(delta) + ' nm',
+        topLines ? ('Lines: ' + topLines) : ''
+      ].filter(Boolean).join(' • ');
+      return '<div class="sp-es-row' + (idx === 0 ? ' is-top' : '') + '" title="' + escapeHtml(title) + '">' +
+        '<div class="sp-es-c sp-es-c--el">' + el + '</div>' +
+        '<div class="sp-es-c sp-es-c--pct">' + String(pct) + '%</div>' +
+        '<div class="sp-es-c sp-es-c--score">' + escapeHtml(String(score)) + '</div>' +
+        '<div class="sp-es-c sp-es-c--matched">' + escapeHtml(matched) + '</div>' +
+        '<div class="sp-es-c sp-es-c--missed">' + escapeHtml(missed) + '</div>' +
+        '<div class="sp-es-c sp-es-c--delta">' + escapeHtml(String(delta)) + '</div>' +
+      '</div>';
     }).join('');
+    const winner = elementScores[0] || null;
+    const winnerText = winner
+      ? ('<div class="sp-es-summary" title="Troligaste gas just nu enligt Smart-score.">Winner: <b>' + escapeHtml(String(winner.element || '?')) + '</b> • ' + escapeHtml(String(Math.max(1, Math.min(99, Math.round(Number(winner.likelyPct || 0))))) + '%') + '</div>')
+      : '';
+    const table = '' +
+      '<div class="sp-es-wrap">' +
+        winnerText +
+        '<div class="sp-es-head">' +
+          '<div class="sp-es-c sp-es-c--el">El</div>' +
+          '<div class="sp-es-c sp-es-c--pct">%</div>' +
+          '<div class="sp-es-c sp-es-c--score">S</div>' +
+          '<div class="sp-es-c sp-es-c--matched">M</div>' +
+          '<div class="sp-es-c sp-es-c--missed">X</div>' +
+          '<div class="sp-es-c sp-es-c--delta">Δ</div>' +
+        '</div>' +
+        compactRows +
+      '</div>';
+    qcEl.innerHTML = table + (qc.length ? ('<div class="sp-hit-meta sp-hit-meta--qc" title="Kvalitetsflaggor från analysen.">QC: ' + escapeHtml(qc.slice(0, 6).join(', ')) + '</div>') : '');
   }
 
   // If the query modal is open, refresh its list from the latest store state.

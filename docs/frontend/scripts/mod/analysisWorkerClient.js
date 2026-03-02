@@ -119,7 +119,8 @@
         options: {
           includeWeakPeaks: !!(st.analysis && st.analysis.includeWeakPeaks),
           peakThresholdRel: Number(st.analysis && st.analysis.peakThresholdRel),
-          peakDistancePx: Number(st.analysis && st.analysis.peakDistancePx)
+          peakDistancePx: Number(st.analysis && st.analysis.peakDistancePx),
+          maxDistanceNm: Number(st.analysis && st.analysis.maxDistanceNm)
         }
       });
       inFlight = { requestId: requestId, startedAt: now };
@@ -296,9 +297,28 @@
               return hit;
             });
             store.update('analysis.rawTopHits', rawHits);
+            if (Array.isArray(msg.payload.elementScores)) {
+              store.update('analysis.elementScores', msg.payload.elementScores.slice(0, 8));
+            } else {
+              store.update('analysis.elementScores', []);
+            }
             let smart = { groups: [], hits: [] };
             try {
-              smart = buildSmartFind(rawHits);
+              if (Array.isArray(msg.payload.elementScores) && msg.payload.elementScores.length) {
+                smart = {
+                  groups: msg.payload.elementScores.map(function (g) {
+                    return Object.assign({}, g, {
+                      lineCount: Number(g && g.matchedPeaks) || Number(g && g.lineCount) || 0,
+                      memberCount: Number(g && g.matchCount) || Number(g && g.memberCount) || 0,
+                      bestConfidence: Number(g && g.explainedShare) || 0,
+                      avgConfidence: Number(g && g.closenessScore) || 0
+                    });
+                  }),
+                  hits: rawHits.slice()
+                };
+              } else {
+                smart = buildSmartFind(rawHits);
+              }
             } catch (err) {
               smart = { groups: [], hits: [] };
             }

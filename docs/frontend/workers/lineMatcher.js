@@ -4,6 +4,7 @@
   function matchLines(observedPeaks, atomLines, options) {
     const opts = Object.assign({
       toleranceNm: 2.5,
+      hardMaxDistanceNm: null,
       maxMatches: 12,
       preferredElements: null,
       elementBoost: null,
@@ -16,6 +17,10 @@
     const preferred = Array.isArray(opts.preferredElements) ? opts.preferredElements.map(String) : null;
     const boostMap = (opts.elementBoost && typeof opts.elementBoost === 'object') ? opts.elementBoost : null;
     const seen = Object.create(null);
+    const softTol = Math.max(0.05, Number(opts.toleranceNm) || 2.5);
+    const hardTolRaw = Number(opts.hardMaxDistanceNm);
+    const hardTol = Number.isFinite(hardTolRaw) && hardTolRaw > 0 ? hardTolRaw : softTol;
+    const effectiveTol = Math.min(softTol, hardTol);
 
     function pushMatch(m) {
       if (!m) return;
@@ -26,7 +31,11 @@
     }
 
     const seeded = Array.isArray(opts.seededMatches) ? opts.seededMatches : [];
-    for (let i = 0; i < seeded.length; i += 1) pushMatch(seeded[i]);
+    for (let i = 0; i < seeded.length; i += 1) {
+      const sm = seeded[i];
+      if (!sm || !Number.isFinite(Number(sm.deltaNm)) || Math.abs(Number(sm.deltaNm)) > hardTol) continue;
+      pushMatch(sm);
+    }
 
     for (let i = 0; i < peaks.length; i += 1) {
       const p = peaks[i]; if (!p || !Number.isFinite(p.nm)) continue;
@@ -34,7 +43,7 @@
       for (let j = 0; j < lines.length; j += 1) {
         const l = lines[j]; if (!Number.isFinite(l.nm)) continue;
         const d = Math.abs(l.nm - p.nm);
-        if (d > opts.toleranceNm) continue;
+        if (d > effectiveTol) continue;
         const el = String(l.element || '').trim();
         let bonus = boostMap && el && Number.isFinite(+boostMap[el]) ? +boostMap[el] : 0;
         if (preferred && preferred.length && el && preferred.indexOf(el) !== -1) bonus += 0.035;
@@ -48,7 +57,7 @@
           peakIndex: p.index,
           peakValue: p.value,
           prominence: prom,
-          rawScore: Math.max(0, 1 - (d / opts.toleranceNm)) + bonus + Math.min(0.08, prom / 2000),
+          rawScore: Math.max(0, 1 - (d / softTol)) + bonus + Math.min(0.08, prom / 2000),
           element: el
         });
       }

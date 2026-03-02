@@ -1045,3 +1045,20 @@ label[for="peakSizeLower"],
 #peakSizeLower{
   display:none !important;
 }
+
+
+#spPanel-lab .sp-es-wrap{display:flex;flex-direction:column;gap:4px;font-size:11px;line-height:1.15}
+#spPanel-lab .sp-es-summary{font-size:11px;line-height:1.15;padding:0 0 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#spPanel-lab .sp-es-head,
+#spPanel-lab .sp-es-row{display:grid;grid-template-columns:minmax(26px,1.05fr) minmax(26px,.8fr) minmax(24px,.8fr) minmax(20px,.62fr) minmax(20px,.62fr) minmax(24px,.75fr);gap:4px;align-items:center}
+#spPanel-lab .sp-es-head{position:sticky;top:0;z-index:1;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(18,18,18,.92);font-size:10px;font-weight:700;letter-spacing:.03em}
+#spPanel-lab .sp-es-row{padding:3px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+#spPanel-lab .sp-es-row.is-top{background:rgba(255,255,255,.03)}
+#spPanel-lab .sp-es-c{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#spPanel-lab .sp-es-c--el{font-weight:700}
+#spPanel-lab .sp-es-c--pct{font-weight:700}
+#spPanel-lab .sp-es-c--matched,
+#spPanel-lab .sp-es-c--missed,
+#spPanel-lab .sp-es-c--delta,
+#spPanel-lab .sp-es-c--score{text-align:right}
+

@@ -56,7 +56,9 @@
       showHits: true,
       smartFindHits: [],
       smartFindGroups: [],
+      elementScores: [],
       offsetNm: null,
+      maxDistanceNm: 5,
       qcFlags: []
     },
     camera: {
