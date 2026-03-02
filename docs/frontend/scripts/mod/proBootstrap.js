@@ -37,6 +37,10 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
+function escapeAttr(s) {
+  return escapeHtml(s);
+}
+
 function el(tag, cls, text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
