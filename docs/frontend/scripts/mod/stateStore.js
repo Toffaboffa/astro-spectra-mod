@@ -4,6 +4,33 @@
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
 
+  const defaultPresetCatalog = {
+    groups: [
+      {
+        id: 'base',
+        label: 'Base Presets',
+        presets: [
+          { id: 'nearest', label: 'Nearest', family: 'base', mode: 'atomic', discoveryStrategy: 'local-nearest', refineStrategy: 'none' },
+          { id: 'wide', label: 'Wide', family: 'base', mode: 'atomic', discoveryStrategy: 'local-wide', refineStrategy: 'none' },
+          { id: 'tight', label: 'Tight', family: 'base', mode: 'atomic', discoveryStrategy: 'local-tight', refineStrategy: 'none' },
+          { id: 'fast', label: 'Fast', family: 'base', mode: 'atomic', discoveryStrategy: 'local-fast', refineStrategy: 'none' },
+          { id: 'lamp-hg', label: 'Lamp (Hg/Ar/Ne)', family: 'base', mode: 'atomic', discoveryStrategy: 'local-lamp', refineStrategy: 'none' }
+        ]
+      },
+      {
+        id: 'smart',
+        label: 'Smart Presets',
+        presets: [
+          { id: 'smart-atomic', label: 'Atomic', family: 'smart', mode: 'atomic', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-atomic' },
+          { id: 'smart-molecular', label: 'Molecular', family: 'smart', mode: 'molecular', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-molecular' },
+          { id: 'smart-gastube', label: 'Gas Tube', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-gas-tube' },
+          { id: 'smart-flame', label: 'Flame', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-flame' },
+          { id: 'smart-fluorescent', label: 'Fluorescent', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-fluorescent' }
+        ]
+      }
+    ]
+  };
+
   const defaultState = {
     appMode: 'CORE',
     worker: {
@@ -50,6 +77,7 @@
       enabled: false,
       maxHz: 4,
       presetId: null,
+      presetCatalog: defaultPresetCatalog,
       topHits: [],
       rawTopHits: [],
       smartFindEnabled: false,
@@ -57,6 +85,7 @@
       smartFindHits: [],
       smartFindGroups: [],
       elementScores: [],
+      winnerBreakdown: null,
       offsetNm: null,
       maxDistanceNm: 5,
       qcFlags: []

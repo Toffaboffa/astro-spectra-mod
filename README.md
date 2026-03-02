@@ -66,6 +66,24 @@ Adds live analysis for teaching/lab experiments:
 - top hits panel + overlays + confidence/QC
 - lab presets (Hg/Ne/Ar/H/Na etc.)
 
+#### LAB preset families
+
+**Base Presets** keep the fast, local peak→line workflow for manual interpretation:
+- **Nearest** — direct nearest-line matching
+- **Wide** — broader local matching with more candidates
+- **Tight** — stricter local matching
+- **Fast** — reduced candidate count / faster local pass
+- **Lamp (Hg/Ar/Ne)** — simple lamp-oriented base preset
+
+**Smart Presets** are the staged path toward global source identification:
+- **Atomic** — global atomic source ranking
+- **Molecular** — band-oriented candidates such as N2 / O2
+- **Gas Tube** — mixed discharge-tube logic
+- **Flame** — future mixed-emitter combustion logic
+- **Fluorescent** — future Hg + helper-gas lamp logic
+
+In **Del 1**, the new Smart preset labels and grouping are in place, while the deeper two-stage Smart logic lands in later patches.
+
 ### ASTRO mode
 Adds astronomy-oriented workflows:
 - continuum normalization
@@ -148,6 +166,13 @@ A throttled worker loop receives the latest spectrum frame and performs:
 - result packaging for overlays and top-hits UI
 
 The worker must never block the render loop.
+
+### Smart 2.0 staging
+The Smart path is being split into two stages:
+1. **Discovery** — broad library search with hard `Max distance (nm)` gating.
+2. **Profile refinement** — candidate-level comparison of expected vs observed lines/bands.
+
+Del 1 adds the preset structure and documentation for this split. Del 2/3 add the scoring logic itself.
 
 ---
 
@@ -559,3 +584,60 @@ The philosophy here is simple: **protect the instrument feel first, then add the
 
 
 > **Current integration note (Phase 0 real import):** `docs/frontend/pages/recording.html` is now based on the original SPECTRA-1 recording page, with local script-path patches and a non-invasive SPECTRA-PRO bridge layer for hooks/state. Some original SPECTRA style/language assets were not present in the imported zip and may need to be added later for full parity.
+
+
+## Smart 2.0 Del 2
+
+Del 2 bygger vidare på preset-strukturen från Del 1 och uppgraderar SMART-logiken i worker-pipelinen.
+
+### Det som nu finns
+
+- **Discovery stage**: bred sökning i relevant bibliotek med hard max distance som absolut gate.
+- **Profile refinement**: toppkandidater får en dynamisk profil i aktuell våglängdsrange.
+- **Atomic Smart**: arbetar med förväntade linjer, missade linjer, uniqueness, line groups och density penalty.
+- **Molecular Smart**: arbetar med bandområden, peakkluster och bandtäthet istället för enbart enkel linjematchning.
+- **Gas Tube / Flame / Fluorescent**: använder samma tvåstegssystem men med olika kandidatfamiljer och viktningar.
+
+### Viktig avgränsning
+
+Base Presets (`Nearest`, `Wide`, `Tight`, `Fast`, `Lamp`) använder fortfarande enkel lokal peak→line-logik.
+
+Smart Presets använder från och med Del 2 global profilbedömning:
+
+- `Atomic` → atomära linjespektra
+- `Molecular` → N2/O2 och andra banddominerade spektra
+- `Gas Tube` → blandade urladdningsrör
+- `Flame` → tidig blandningslogik för förbränningskällor
+- `Fluorescent` → Hg + hjälpgaser / lampkällor
+
+### Nuvarande score-idéer i Del 2
+
+Atomic refinement väger in:
+
+- matchade förväntade linjer
+- missade förväntade linjer
+- median/medel-delta
+- line uniqueness
+- co-occurring line groups
+- density penalty för täta bibliotek
+
+Molecular refinement väger in:
+
+- matchade band
+- antal peaks i band
+- bandförklarad signal / lokal prominens
+- missade förväntade band
+
+Detta är fortfarande en mellanversion inför Del 3, men SMART är inte längre bara enkel peak→line-gruppering.
+
+
+## Smart 2.0 Del 3
+
+Del 3 avslutar Smart 2.0-planen genom att lägga till källspecifik blandningslogik ovanpå Del 2.
+
+- **Flame** använder nu mixed-emitter-sammanfattning med `primaryEmitter`, `secondaryContributors`, `possibleBands` och `backgroundComponents`.
+- **Fluorescent** prioriterar Hg + hjälpgaser och kan redovisa bakgrundskomponenter separat.
+- **Explained peaks %** och **Explained intensity %** beräknas nu per kandidat och visas i Smart-sammanfattningen.
+- Worker-resultatet innehåller nu även `winnerBreakdown`, så UI:t kan visa varför vinnaren vann och vilka sekundära komponenter som fortfarande är relevanta.
+
+Detta är fortfarande heuristisk spektraltolkning, inte absolut laboratoriecertifiering. Men logiken är nu bättre anpassad för gasrör, lysrör och kommande flamförsök.

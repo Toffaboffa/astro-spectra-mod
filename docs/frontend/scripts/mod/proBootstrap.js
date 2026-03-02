@@ -708,7 +708,8 @@ function ensureStatusRail() {
         if (t.id === 'spInitLibBtn') {
           setCoreActionFeedback('Initializing libraries…', 'info');
           const client = ensureWorkerClient();
-          setVal('analysis.presetId', 'libraries-init-requested');
+          setVal('worker.lastError', null);
+          setVal('worker.librariesLoaded', false);
           if (client && typeof client.initLibraries === 'function') {
             try {
               store.update('worker.enabled', true, { source: 'proBootstrap.core' });
@@ -987,6 +988,19 @@ function ensureLabPanel() {
   if (card) return card;
   card = el('div', 'sp-card sp-card--flat');
   card.id = 'spLabCard';
+  const presetGroups = (sp.presets && typeof sp.presets.getPresetGroups === 'function')
+    ? sp.presets.getPresetGroups()
+    : [];
+  const presetOptionsHtml = ['<option value="">(default)</option>']
+    .concat(presetGroups.map(function (group) {
+      const options = (group && Array.isArray(group.presets) ? group.presets : []).map(function (preset) {
+        const desc = preset && preset.description ? String(preset.description).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+        return '<option value="' + escapeAttr(preset && preset.id || '') + '" title="' + desc + '">' + escapeHtml(preset && preset.label || '') + '</option>';
+      }).join('');
+      return '<optgroup label="' + escapeAttr(group && group.label || '') + '">' + options + '</optgroup>';
+    }))
+    .join('');
+
   card.innerHTML = [
 	    '<div class="sp-lab-layout">',
 	    '  <div class="sp-lab-left">',
@@ -998,15 +1012,7 @@ function ensureLabPanel() {
 	    '      <div class="sp-lab-fields-col">',
 	    '        <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled sp-field--checkbox-row"><span>Analyze</span><input id="spLabEnabled" type="checkbox"></label>',
 	    '        <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
-	    '        <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">',
-	    '          <option value="">(default)</option>',
-	    '          <option value="general">General</option>',
-	    '          <option value="lamp-hg">Lamp (Hg/Ar/Ne)</option>',
-	    '          <option value="smart">Smart</option>',
-	    '          <option value="general-tight">General (tight)</option>',
-	    '          <option value="general-wide">General (wide)</option>',
-	    '          <option value="fast">Fast</option>',
-	    '        </select></label>',
+	    '        <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">' + presetOptionsHtml + '</select></label>',
 	    '        <label id="spFieldLabSubMode" class="sp-field sp-field--lab-sub">Mode<select id="spLabSubMode" class="spctl-select spctl-select--lab-sub">',
 	    '          <option value="raw">Raw</option>',
 	    '          <option value="raw-dark">Raw - Dark</option>',
@@ -1836,6 +1842,7 @@ function renderLabPanel() {
     : ((state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : []);
   const qc = (state.analysis && Array.isArray(state.analysis.qcFlags)) ? state.analysis.qcFlags : [];
   const elementScores = (state.analysis && Array.isArray(state.analysis.elementScores)) ? state.analysis.elementScores : [];
+  const winnerBreakdown = (state.analysis && state.analysis.winnerBreakdown && typeof state.analysis.winnerBreakdown === 'object') ? state.analysis.winnerBreakdown : null;
   const showHitsEl = $('spLabShowHits');
   if (showHitsEl && !shouldSkipSyncValue(showHitsEl)) showHitsEl.checked = showHits;
   const libsLoaded = !!(state.worker && state.worker.librariesLoaded);
@@ -1920,13 +1927,17 @@ function renderLabPanel() {
         const ref = Number.isFinite(Number(line.refNm)) ? Number(line.refNm).toFixed(1) : '?';
         const d = Number.isFinite(Number(line.deltaNm)) ? Number(line.deltaNm).toFixed(1) : '?';
         return ref + 'nm (Δ ' + d + ')';
-      }).filter(Boolean).join(', ') : '';
+      }).filter(Boolean).join(', ') : (Array.isArray(row && row.supportLines) ? row.supportLines.slice(0, 4).map(function (nm) {
+        return Number.isFinite(Number(nm)) ? Number(nm).toFixed(1) + 'nm' : '';
+      }).filter(Boolean).join(', ') : '');
       const title = [
         '#' + String(idx + 1) + ' ' + String(row && row.element || '?'),
         'Likely: ' + String(pct) + '%',
         'Score: ' + String(score),
         'Matched: ' + String(matched),
         'Missed strong: ' + String(missed),
+        'Explained peaks: ' + String(Number.isFinite(Number(row && row.explainedPeaksPct)) ? Number(row.explainedPeaksPct).toFixed(1) : '0.0') + '%',
+        'Explained intensity: ' + String(Number.isFinite(Number(row && row.explainedIntensityPct)) ? Number(row.explainedIntensityPct).toFixed(1) : '0.0') + '%',
         'Median Δ: ' + String(delta) + ' nm',
         topLines ? ('Lines: ' + topLines) : ''
       ].filter(Boolean).join(' • ');
@@ -1941,8 +1952,29 @@ function renderLabPanel() {
     }).join('');
     const winner = elementScores[0] || null;
     const winnerText = winner
-      ? ('<div class="sp-es-summary" title="Troligaste gas just nu enligt Smart-score.">Winner: <b>' + escapeHtml(String(winner.element || '?')) + '</b> • ' + escapeHtml(String(Math.max(1, Math.min(99, Math.round(Number(winner.likelyPct || 0))))) + '%') + '</div>')
+      ? ('<div class="sp-es-summary" title="Troligaste gas just nu enligt Smart-score.">Winner: <b>' + escapeHtml(String(winner.element || '?')) + '</b> • ' + escapeHtml(String(Math.max(1, Math.min(99, Math.round(Number(winner.likelyPct || 0))))) + '%') +
+         ' · Ep ' + escapeHtml(String(Number.isFinite(Number(winner.explainedPeaksPct)) ? Number(winner.explainedPeaksPct).toFixed(0) : '0')) + '%'
+         + ' · Ei ' + escapeHtml(String(Number.isFinite(Number(winner.explainedIntensityPct)) ? Number(winner.explainedIntensityPct).toFixed(0) : '0')) + '%'
+         + '</div>')
       : '';
+    var breakdownText = '';
+    if (winnerBreakdown) {
+      var secondary = Array.isArray(winnerBreakdown.secondaryContributors) ? winnerBreakdown.secondaryContributors.slice(0, 3).map(function (it) {
+        return String(it.element || '?') + ' ' + String(Math.round(Number(it.likelyPct || 0))) + '%';
+      }).join(', ') : '';
+      var bands = Array.isArray(winnerBreakdown.possibleBands) ? winnerBreakdown.possibleBands.slice(0, 3).map(function (it) {
+        return String(it.element || '?');
+      }).join(', ') : '';
+      var bg = Array.isArray(winnerBreakdown.backgroundComponents) ? winnerBreakdown.backgroundComponents.slice(0, 2).map(function (it) {
+        return String(it.element || '?');
+      }).join(', ') : '';
+      breakdownText = '<div class="sp-hit-meta sp-hit-meta--qc" title="Del 3 summary: primary emitter, secondary contributors, bands/background.">' +
+        'Primary: ' + escapeHtml(String(winnerBreakdown.primaryEmitter || '?')) +
+        (secondary ? (' · Secondary: ' + escapeHtml(secondary)) : '') +
+        (bands ? (' · Bands: ' + escapeHtml(bands)) : '') +
+        (bg ? (' · Bg: ' + escapeHtml(bg)) : '') +
+      '</div>';
+    }
     const table = '' +
       '<div class="sp-es-wrap">' +
         winnerText +
@@ -1956,7 +1988,7 @@ function renderLabPanel() {
         '</div>' +
         compactRows +
       '</div>';
-    qcEl.innerHTML = table + (qc.length ? ('<div class="sp-hit-meta sp-hit-meta--qc" title="Kvalitetsflaggor från analysen.">QC: ' + escapeHtml(qc.slice(0, 6).join(', ')) + '</div>') : '');
+    qcEl.innerHTML = table + breakdownText + (qc.length ? ('<div class="sp-hit-meta sp-hit-meta--qc" title="Kvalitetsflaggor från analysen.">QC: ' + escapeHtml(qc.slice(0, 6).join(', ')) + '</div>') : '');
   }
 
   // If the query modal is open, refresh its list from the latest store state.

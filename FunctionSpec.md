@@ -9,6 +9,11 @@ This document is the **single source of truth** for:
 
 It must be updated on every patch so the codebase and plan do not drift.
 
+### Latest patch snapshot
+- **Del 1 complete:** LAB preset families documented and exposed in UI.
+- Added canonical preset metadata for Base vs Smart families.
+- Added new Smart preset labels (`Atomic`, `Molecular`, `Gas Tube`, `Flame`, `Fluorescent`) as staged shells that preserve current worker behavior until Del 2/3.
+
 ---
 
 ## Project identity
@@ -34,6 +39,38 @@ Heavy analysis must run in a **Web Worker** so the UI remains responsive.
 ---
 
 ## Functional scope (what the app should support)
+
+## LAB preset architecture
+
+LAB presets are now split into two product families:
+
+### Base Presets
+Keep the simple, local peak→line workflow. They are intended for fast feedback and manual interpretation, and should remain stable while Smart evolves.
+
+- `nearest` — direct nearest-line matching
+- `wide` — broader local match window / more candidates
+- `tight` — stricter local matching
+- `fast` — reduced candidate count / faster local pass
+- `lamp-hg` — simpler lamp-oriented base preset
+
+### Smart Presets
+Represent global source-identification workflows and are the home for Smart 2.0.
+
+- `smart-atomic` — atomic source ranking
+- `smart-molecular` — molecular / band-oriented ranking
+- `smart-gastube` — mixed discharge-tube ranking
+- `smart-flame` — future combustion / mixed-emitter ranking
+- `smart-fluorescent` — future fluorescent-lamp ranking
+
+### Smart 2.0 target model
+Smart is being staged toward a two-step pipeline:
+1. **Discovery** — broad candidate search with hard `Max distance (nm)` gating.
+2. **Profile refinement** — dynamic candidate-profile comparison using expected vs observed lines/bands, uniqueness, clustering, and missed-line penalties.
+
+**Del 1 scope:** preset family split, metadata, docs, and LAB UI grouping.
+**Del 2 scope:** worker scoring changes for Smart 2.0 core logic.
+**Del 3 scope:** source-family presets such as Flame / Fluorescent and explained-signal metrics.
+
 
 This section is the product-level checklist. Phases below describe *when* each part lands.
 
@@ -207,7 +244,7 @@ These are the baseline scripts that must keep working.
 - `processingPipeline.js`
 - `subtraction.js`
 - `quickPeaks.js`
-- `presets.js`
+- `presets.js` — LAB preset catalog/metadata registry (Base vs Smart families, descriptions, canonical IDs)
 - `calibrationBridge.js`
 
 #### 4d) Phase 3+ ASTRO modules (mostly scaffold)
@@ -1059,3 +1096,60 @@ Fixes a LAB-breaking runtime error introduced by the Smart Find patch.
 - Normalization overrides fixed/manual Y-axis scaling for rendering, while preserving the selected Y-axis mode in the UI.
 - Y-axis labels switch to normalized ticks (0, 0.2, 0.4, 0.6, 0.8, 1).
 - Works for camera/imported image views and respects currently visible reference/comparison graphs when computing the highest visible peak.
+
+
+## Del 2 – Smart 2.0 kärnlogik
+
+Del 2 implementerar worker-baserad Smart 2.0-logik ovanpå presetstrukturen från Del 1.
+
+### Discovery
+
+- körs i relevant kandidatrymd beroende på preset
+- använder alltid hard `Max distance (nm)` som absolut gate
+- bygger en bred första matchlista från atomlinjer och/eller molekylband
+
+### Profile refinement
+
+Efter discovery tas toppkandidater vidare till profilbedömning. Profilerna byggs dynamiskt från biblioteket inom aktuell observerad våglängdsrange.
+
+### Atomic refinement
+
+Använder:
+
+- expected visible lines i aktuell range
+- uniqueness per linje
+- group/co-occurrence bonus för linjeset
+- penalty för missade förväntade linjer
+- density penalty för täta bibliotek
+
+### Molecular refinement
+
+Använder:
+
+- bandankare / bandområden
+- peakkluster inom band
+- lokal bandtäthet
+- explained local prominence
+- penalty för missade band
+
+### Smart presetfamiljer i Del 2
+
+- `smart-atomic`
+- `smart-molecular`
+- `smart-gastube`
+- `smart-flame`
+- `smart-fluorescent`
+
+Varje preset definierar kandidatfamiljer, typ av profilbedömning och familjeviktning. Base Presets lämnas i stort sett orörda.
+
+
+## Del 3 – Flame / Fluorescent / explained signal
+
+Del 3 avslutar Smart 2.0-planen genom att lägga till källspecifik blandningslogik ovanpå Del 2.
+
+- **Flame** använder nu mixed-emitter-sammanfattning med `primaryEmitter`, `secondaryContributors`, `possibleBands` och `backgroundComponents`.
+- **Fluorescent** prioriterar Hg + hjälpgaser och kan redovisa bakgrundskomponenter separat.
+- **Explained peaks %** och **Explained intensity %** beräknas nu per kandidat och visas i Smart-sammanfattningen.
+- Worker-resultatet innehåller nu även `winnerBreakdown`, så UI:t kan visa varför vinnaren vann och vilka sekundära komponenter som fortfarande är relevanta.
+
+Detta är fortfarande heuristisk spektraltolkning, inte absolut laboratoriecertifiering. Men logiken är nu bättre anpassad för gasrör, lysrör och kommande flamförsök.

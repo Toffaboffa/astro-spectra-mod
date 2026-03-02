@@ -117,6 +117,7 @@
       const requestId = send(types.MSG && types.MSG.ANALYZE_FRAME || 'ANALYZE_FRAME', {
         frame: frame || null,
         options: {
+          preset: (st.analysis && st.analysis.presetId) ? String(st.analysis.presetId) : null,
           includeWeakPeaks: !!(st.analysis && st.analysis.includeWeakPeaks),
           peakThresholdRel: Number(st.analysis && st.analysis.peakThresholdRel),
           peakDistancePx: Number(st.analysis && st.analysis.peakDistancePx),
@@ -307,6 +308,11 @@
             } else {
               store.update('analysis.elementScores', []);
             }
+            if (msg.payload.winnerBreakdown && typeof msg.payload.winnerBreakdown === 'object') {
+              store.update('analysis.winnerBreakdown', msg.payload.winnerBreakdown);
+            } else {
+              store.update('analysis.winnerBreakdown', null);
+            }
             let smart = { groups: [], hits: [] };
             try {
               if (Array.isArray(msg.payload.elementScores) && msg.payload.elementScores.length) {
@@ -377,6 +383,9 @@
 
               store.update('analysis.topHits', stableList.slice(0, 36));
             }
+          }
+          if (typeof msg.payload.presetId === 'string' && msg.payload.presetId.trim()) {
+            store.update('analysis.presetId', msg.payload.presetId.trim());
           }
           if (typeof msg.payload.offsetNm === 'number') store.update('analysis.offsetNm', msg.payload.offsetNm);
           if (Array.isArray(msg.payload.qcFlags)) store.update('analysis.qcFlags', msg.payload.qcFlags);
