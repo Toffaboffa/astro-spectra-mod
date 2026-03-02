@@ -5,6 +5,7 @@
     librariesLoaded: false,
     manifest: null,
     atomLines: [],
+    molecularBands: [],
     libraryIndex: null,
     activePreset: null,
     lastAnalysis: null

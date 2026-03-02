@@ -94,6 +94,60 @@
     return out;
   }
 
+
+  function buildMolecularMatches(peaks, molecularBands, hardMaxDistanceNm) {
+    const out = [];
+    const arr = Array.isArray(peaks) ? peaks : [];
+    const bands = Array.isArray(molecularBands) ? molecularBands : [];
+    const hardMax = Math.max(0.2, Number(hardMaxDistanceNm) || 5);
+    const seen = Object.create(null);
+    for (let i = 0; i < bands.length; i += 1) {
+      const band = bands[i] || {};
+      const species = String(band.species || band.element || '').trim();
+      if (!species) continue;
+      const lo = Number(band.minNm);
+      const hi = Number(band.maxNm);
+      const refNm = Number(band.refNm);
+      if (!Number.isFinite(lo) || !Number.isFinite(hi)) continue;
+      let best = null;
+      for (let j = 0; j < arr.length; j += 1) {
+        const p = arr[j] || {};
+        const nm = Number(p.nm);
+        if (!Number.isFinite(nm)) continue;
+        const inRange = nm >= lo && nm <= hi;
+        const edgeDelta = inRange ? 0 : Math.min(Math.abs(nm - lo), Math.abs(nm - hi));
+        if (!inRange && edgeDelta > hardMax) continue;
+        const prom = Number(p.prominence || p.value || 0) || 0;
+        const rangeMid = Number.isFinite(refNm) ? refNm : ((lo + hi) / 2);
+        const delta = Math.abs(nm - rangeMid);
+        const rangeSpan = Math.max(0.8, (hi - lo) / 2);
+        const closeness = Math.max(0, 1 - (delta / Math.max(rangeSpan, hardMax)));
+        const candidate = { p: p, closeness: closeness, prom: prom, delta: delta };
+        if (!best || candidate.prom > best.prom || (candidate.prom === best.prom && candidate.closeness > best.closeness)) best = candidate;
+      }
+      if (!best) continue;
+      const key = species + '|' + (Number.isFinite(refNm) ? refNm.toFixed(2) : ((lo + hi) / 2).toFixed(2)) + '|' + String(best.p.index);
+      if (seen[key]) continue;
+      seen[key] = true;
+      out.push({
+        species: species,
+        speciesKey: species,
+        refNm: Number.isFinite(refNm) ? refNm : +(((lo + hi) / 2).toFixed(3)),
+        obsNm: Number(best.p.nm),
+        deltaNm: +(Number(best.p.nm) - (Number.isFinite(refNm) ? refNm : ((lo + hi) / 2))).toFixed(3),
+        peakIndex: best.p.index,
+        peakValue: best.p.value,
+        prominence: best.prom,
+        rawScore: +(0.42 + best.closeness * 0.58).toFixed(4),
+        element: species,
+        kind: 'molecular-band',
+        bandMinNm: +lo.toFixed(3),
+        bandMaxNm: +hi.toFixed(3)
+      });
+    }
+    return out;
+  }
+
   function estimateOffset(matches){
     if (!Array.isArray(matches) || !matches.length) return null;
     const vals = matches.map(m => Number(m.deltaNm)).filter(Number.isFinite);
@@ -113,6 +167,7 @@
     const matches = Array.isArray(ctx && ctx.matches) ? ctx.matches : [];
     const peaks = Array.isArray(ctx && ctx.peaks) ? ctx.peaks : [];
     const atomLines = Array.isArray(ctx && ctx.atomLines) ? ctx.atomLines : [];
+    const preferredMolecules = Array.isArray(ctx && ctx.preferredMolecules) ? ctx.preferredMolecules : [];
     const frame = ctx && ctx.frame;
     const preferred = Array.isArray(ctx && ctx.preferredElements) ? ctx.preferredElements : [];
     const signatureProfiles = (ctx && ctx.signatureProfiles) || {};
@@ -133,6 +188,7 @@
       if (m.element) candidateSet[String(m.element)] = true;
     }
     for (let i = 0; i < preferred.length; i += 1) candidateSet[String(preferred[i])] = true;
+    for (let i = 0; i < preferredMolecules.length; i += 1) candidateSet[String(preferredMolecules[i])] = true;
     Object.keys(signatureProfiles).forEach(function (k) { candidateSet[k] = true; });
     for (let i = 0; i < atomLines.length; i += 1) {
       const line = atomLines[i] || {};
@@ -310,10 +366,11 @@
       },
       'smart': {
         toleranceNm: 2.2,
-        maxMatches: 18,
+        maxMatches: 36,
         maxPerPeak: 3,
-        preferredElements: ['He', 'Hg', 'Ne', 'Ar', 'H', 'Na', 'Kr', 'Xe', 'O'],
-        elementBoost: { He: 0.06, Hg: 0.05, Ne: 0.04, Ar: 0.04, H: 0.035, Na: 0.03, Kr: 0.025, Xe: 0.025, O: 0.02 }
+        preferredElements: ['He', 'Hg', 'Ne', 'Ar', 'H', 'Na', 'Kr', 'Xe', 'O', 'N', 'C'],
+        preferredMolecules: ['N2', 'O2'],
+        elementBoost: { He: 0.06, Hg: 0.05, Ne: 0.04, Ar: 0.04, H: 0.035, Na: 0.03, Kr: 0.025, Xe: 0.025, O: 0.02, N: 0.02, C: 0.02 }
       }
     };
     const preset = presetMap[presetId] || presetMap['general'];
@@ -377,12 +434,13 @@
         effectiveBoost = Object.assign({}, effectiveBoost || {}, { Hg: 0.18, Ar: 0.08, Ne: 0.08, Kr: 0.06, Xe: 0.06 });
       }
     }
-    const matches = nmAvailable
+    let matches = nmAvailable
       ? lineMatcher.matchLines(peaks, state && state.atomLines || [], {
           toleranceNm: preset.toleranceNm,
           hardMaxDistanceNm: hardMaxDistanceNm,
           maxMatches: preset.maxMatches,
           preferredElements: preset.preferredElements || null,
+      preferredMolecules: preset.preferredMolecules || null,
           elementBoost: effectiveBoost || null,
           maxPerPeak: preset.maxPerPeak || 2,
           seededMatches: seededMatches
@@ -409,6 +467,7 @@
         element: (m.element || (m.speciesKey || m.species || '').replace(/[^A-Za-z]/g,'').slice(0,2)),
         referenceNm: m.refNm,
         observedNm: m.obsNm,
+        peakIndex: Number.isFinite(Number(m.peakIndex)) ? Number(m.peakIndex) : null,
         deltaNm: m.deltaNm,
         confidence: +conf.toFixed(3),
         score: +((m.rawScore || 0) * 100).toFixed(1)
@@ -423,7 +482,9 @@
       Na: [588.995, 589.592],
       Kr: [557.029, 587.092, 760.155],
       Xe: [467.122, 484.433, 823.163],
-      O: [557.733, 630.030, 636.377, 777.194]
+      O: [557.733, 630.030, 636.377, 777.194],
+      N: [746.831, 821.634, 868.028],
+      C: [426.7, 493.2, 657.8]
     };
     const elementScores = nmAvailable ? buildElementScores({
       matches: matches,
@@ -431,18 +492,19 @@
       atomLines: state && state.atomLines || [],
       frame: frame,
       preferredElements: preset.preferredElements || null,
+      preferredMolecules: preset.preferredMolecules || null,
       signatureProfiles: signatureProfiles,
       hardMaxDistanceNm: hardMaxDistanceNm
     }) : [];
 
     if (presetId === 'smart' && elementScores.length) {
-      topHits = reorderHitsForSmartMode(topHits, elementScores).slice(0, 18);
+      topHits = reorderHitsForSmartMode(topHits, elementScores).slice(0, 36);
     }
 
     return {
       ok: true,
       topHits: topHits,
-      peaks: peaks.slice(0, 32),
+      peaks: peaks.slice(0, 64),
       offsetNm: estimateOffset(matches),
       qcFlags: qc.flags || [],
       confidence: confidence.overall || 0,

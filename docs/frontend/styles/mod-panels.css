@@ -1026,7 +1026,7 @@ select, input[type="number"], input[type="text"], textarea{
   #spPanel-other .sp-cal-layout{grid-template-columns:1fr}
 }
 
-#spPanel-lab .sp-lab-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+#spPanel-lab .sp-lab-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start}
 #spPanel-lab .sp-lab-fields-col{display:grid;gap:8px;align-content:start;margin-bottom: 10px;padding-left: 10px;}
 #spPanel-lab .sp-field--checkbox-row{flex-direction:row;align-items:center;gap:10px}
 #spPanel-lab .sp-field--checkbox-row input[type="checkbox"],

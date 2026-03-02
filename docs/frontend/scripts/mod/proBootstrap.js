@@ -1021,6 +1021,8 @@ function ensureLabPanel() {
 	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lägre peak threshold, mindre peak-separation och fler peaks totalt. Påverkar peakdetektionen, inte någon separat smart AI-logik."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
 	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
 	    '        <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
+	    '      </div>',
+	    '      <div class="sp-lab-fields-col">',
 	    '        <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="5"></label>',
 	    '        <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="5"></label>',
 	    '        <label id="spFieldLabMaxDist" class="sp-field sp-field--lab-maxdist">Max distance (nm)<input id="spLabMaxDist" class="spctl-input spctl-input--lab-maxdist" type="number" min="0.2" max="50" step="0.1" value="5"></label>',
@@ -1945,12 +1947,12 @@ function renderLabPanel() {
       '<div class="sp-es-wrap">' +
         winnerText +
         '<div class="sp-es-head">' +
-          '<div class="sp-es-c sp-es-c--el">El</div>' +
-          '<div class="sp-es-c sp-es-c--pct">%</div>' +
-          '<div class="sp-es-c sp-es-c--score">S</div>' +
-          '<div class="sp-es-c sp-es-c--matched">M</div>' +
-          '<div class="sp-es-c sp-es-c--missed">X</div>' +
-          '<div class="sp-es-c sp-es-c--delta">Δ</div>' +
+          '<div class="sp-es-c sp-es-c--el" title="Element / molekyl-art som Smart tycker bäst förklarar spektrumet.">El</div>' +
+          '<div class="sp-es-c sp-es-c--pct" title="Relativ sannolikhet inom aktuella kandidater. Inte absolut laboratorie-certifiering.">%</div>' +
+          '<div class="sp-es-c sp-es-c--score" title="Total Smart-score efter coverage, closeness, klusterbonus och straff.">S</div>' +
+          '<div class="sp-es-c sp-es-c--matched" title="Antal observerade peaks/bandankare som matchades för kandidaten.">M</div>' +
+          '<div class="sp-es-c sp-es-c--missed" title="Antal viktiga signaturlinjer som borde synts men saknas.">X</div>' +
+          '<div class="sp-es-c sp-es-c--delta" title="Medianavvikelse i nm mellan observation och referens. Lägre är bättre.">Δ</div>' +
         '</div>' +
         compactRows +
       '</div>';

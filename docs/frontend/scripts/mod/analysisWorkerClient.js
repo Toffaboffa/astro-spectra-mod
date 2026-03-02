@@ -323,13 +323,13 @@
               smart = { groups: [], hits: [] };
             }
             store.update('analysis.smartFindGroups', smart.groups.slice(0, 6));
-            store.update('analysis.smartFindHits', smart.hits.slice(0, 18));
+            store.update('analysis.smartFindHits', smart.hits.slice(0, 36));
 
             // Optional stability filter.
             const st = store.getState();
             const useStable = !!(st.analysis && st.analysis.stableHits);
             if (!useStable) {
-              store.update('analysis.topHits', rawHits.slice(0, 18));
+              store.update('analysis.topHits', rawHits.slice(0, 36));
             } else {
               const t = nowMs();
               const windowMs = 8000;
@@ -370,7 +370,7 @@
                 .filter(h => (h.stableCount || 0) >= minCount)
                 .sort((a, b) => ((b.stableCount || 0) * 2 + (+b.confidence || 0)) - ((a.stableCount || 0) * 2 + (+a.confidence || 0)));
 
-              store.update('analysis.topHits', stableList.slice(0, 18));
+              store.update('analysis.topHits', stableList.slice(0, 36));
             }
           }
           if (typeof msg.payload.offsetNm === 'number') store.update('analysis.offsetNm', msg.payload.offsetNm);

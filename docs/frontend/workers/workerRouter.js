@@ -17,8 +17,9 @@
           STATE.librariesLoaded = !!result.ok;
           STATE.manifest = result.manifest || null;
           STATE.atomLines = result.atomLines || [];
+          STATE.molecularBands = result.molecularBands || [];
           STATE.libraryIndex = root.SPECTRA_PRO_libraryIndex.buildIndex(STATE.atomLines);
-          return { type: TYPES.INIT_LIBRARIES_RESULT, requestId: requestId, payload: { ok: true, count: STATE.atomLines.length, manifest: STATE.manifest || null, warnings: result.warnings || [] } };
+          return { type: TYPES.INIT_LIBRARIES_RESULT, requestId: requestId, payload: { ok: true, count: STATE.atomLines.length, molecularCount: STATE.molecularBands.length, manifest: STATE.manifest || null, warnings: result.warnings || [] } };
         }
         case TYPES.SET_PRESET: {
           const preset = (msg.payload && msg.payload.preset) ? msg.payload.preset : null;

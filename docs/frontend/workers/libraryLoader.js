@@ -54,6 +54,43 @@
     return out;
   }
 
+
+  function normalizeMolecularBands(jsonObj) {
+    const out = [];
+    const entries = Array.isArray(jsonObj && jsonObj.entries) ? jsonObj.entries : [];
+    for (let i = 0; i < entries.length; i += 1) {
+      const e = entries[i] || {};
+      const species = String(e.species || e.id || '').trim();
+      if (!species) continue;
+      const refNm = Number(e.ref_nm != null ? e.ref_nm : e.refNm);
+      const range = Array.isArray(e.range_nm) ? e.range_nm.map(Number).filter(Number.isFinite) : [];
+      let lo = null, hi = null;
+      if (range.length >= 2) {
+        lo = Math.min(range[0], range[1]);
+        hi = Math.max(range[0], range[1]);
+      } else if (Number.isFinite(refNm)) {
+        lo = refNm - 1.5;
+        hi = refNm + 1.5;
+      }
+      if (!Number.isFinite(lo) || !Number.isFinite(hi)) continue;
+      out.push({
+        id: String(e.id || species + '@' + (Number.isFinite(refNm) ? refNm.toFixed(2) : ((lo + hi) / 2).toFixed(2))),
+        species: species,
+        element: species,
+        kind: 'molecular-band',
+        mode: String(e.mode || 'both'),
+        refNm: Number.isFinite(refNm) ? refNm : +(((lo + hi) / 2).toFixed(3)),
+        minNm: +lo.toFixed(3),
+        maxNm: +hi.toFixed(3),
+        domain: Array.isArray(e.domain) ? e.domain.slice() : [],
+        source_family: e.source_family || null,
+        strength_hint: e.strength_hint || null,
+        notes: e.notes || ''
+      });
+    }
+    return out;
+  }
+
   async function fetchJsonSafe(url) {
     try {
       const res = await fetch(url, { cache: 'no-store' });
@@ -69,6 +106,7 @@
 
     // Default library path (present in this repo)
     const atomicPath = (manifestIn && manifestIn.atomicPath) ? String(manifestIn.atomicPath) : '../data/line_library_general_atomic.json';
+    const molecularPath = (manifestIn && manifestIn.molecularPath) ? String(manifestIn.molecularPath) : '../data/molecular_bands_general_v2.json';
 
     // Try to load real atomic library first.
     const raw = await fetchJsonSafe(atomicPath);
@@ -85,6 +123,15 @@
       atomLines = BUILTIN_ATOM_LINES.slice();
     }
 
+    const rawMolecular = await fetchJsonSafe(molecularPath);
+    let molecularBands = [];
+    if (rawMolecular && !rawMolecular.__error) {
+      molecularBands = normalizeMolecularBands(rawMolecular);
+      if (!molecularBands.length) warnings.push('Molecular library loaded but contained 0 usable band anchors.');
+    } else {
+      warnings.push('Failed to load molecular library from ' + molecularPath + ' (' + (rawMolecular && rawMolecular.__error ? rawMolecular.__error : 'unknown error') + ').');
+    }
+
     // De-dup by speciesKey+nm (rounded to 1e-4)
     const seen = new Set();
     atomLines = atomLines.filter(function (l) {
@@ -96,8 +143,9 @@
 
     return {
       ok: true,
-      manifest: Object.assign({ source: source, version: 'phase2-mvp', atomicPath: atomicPath }, manifestIn || {}),
+      manifest: Object.assign({ source: source, version: 'phase2-mvp', atomicPath: atomicPath, molecularPath: molecularPath }, manifestIn || {}),
       atomLines: atomLines,
+      molecularBands: molecularBands,
       warnings: warnings
     };
   }

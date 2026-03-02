@@ -109,8 +109,9 @@
         const hit = hits[i] || {};
         const observedNm = Number(hit.observedNm != null ? hit.observedNm : (hit.referenceNm != null ? hit.referenceNm : null));
         const referenceNm = Number(hit.referenceNm != null ? hit.referenceNm : observedNm);
-        if (!Number.isFinite(observedNm)) continue;
-        const pxObserved = pxFromNm(observedNm);
+        const peakIndexRaw = Number(hit.peakIndex);
+        let pxObserved = Number.isFinite(peakIndexRaw) ? peakIndexRaw : NaN;
+        if (!Number.isFinite(pxObserved) && Number.isFinite(observedNm)) pxObserved = pxFromNm(observedNm);
         if (!Number.isFinite(pxObserved) || pxObserved < zoomStart || pxObserved >= zoomEnd) continue;
         const x = calcX(pxObserved - zoomStart, zoomEnd - zoomStart, wCalc);
         const xCanvas = (wCalc && w && wCalc !== w) ? (x * (w / wCalc)) : x;
