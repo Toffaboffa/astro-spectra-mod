@@ -366,7 +366,7 @@
       },
       'smart': {
         toleranceNm: 2.2,
-        maxMatches: 36,
+        maxMatches: 120,
         maxPerPeak: 3,
         preferredElements: ['He', 'Hg', 'Ne', 'Ar', 'H', 'Na', 'Kr', 'Xe', 'O', 'N', 'C'],
         preferredMolecules: ['N2', 'O2'],
@@ -440,12 +440,42 @@
           hardMaxDistanceNm: hardMaxDistanceNm,
           maxMatches: preset.maxMatches,
           preferredElements: preset.preferredElements || null,
-      preferredMolecules: preset.preferredMolecules || null,
+          preferredMolecules: preset.preferredMolecules || null,
           elementBoost: effectiveBoost || null,
           maxPerPeak: preset.maxPerPeak || 2,
           seededMatches: seededMatches
         })
       : [];
+
+    if (nmAvailable && presetId === 'smart') {
+      const allBands = Array.isArray(state && state.molecularBands) ? state.molecularBands : [];
+      const preferredMolMap = Object.create(null);
+      (preset.preferredMolecules || []).forEach(function (name) { preferredMolMap[String(name)] = true; });
+      const moleculeBands = allBands.filter(function (band) {
+        const species = String((band && band.species) || (band && band.element) || '').trim();
+        return species && preferredMolMap[species];
+      });
+      const molecularMatches = buildMolecularMatches(peaks, moleculeBands, hardMaxDistanceNm);
+      if (molecularMatches.length) {
+        matches = matches.concat(molecularMatches);
+      }
+    }
+    matches = matches
+      .filter(function (m) {
+        return m && Number.isFinite(Number(m.obsNm)) && Number.isFinite(Number(m.refNm)) && Math.abs(Number(m.deltaNm)) <= hardMaxDistanceNm;
+      })
+      .sort(function (a, b) {
+        return (Number(b.rawScore) || 0) - (Number(a.rawScore) || 0) || (Number(b.prominence) || 0) - (Number(a.prominence) || 0);
+      });
+
+    const matchSeen = Object.create(null);
+    matches = matches.filter(function (m) {
+      const key = String(m.element || m.speciesKey || m.species || '') + '|' + (Number.isFinite(Number(m.refNm)) ? Number(m.refNm).toFixed(3) : '?') + '|' + (Number.isFinite(Number(m.peakIndex)) ? Number(m.peakIndex) : '?');
+      if (matchSeen[key]) return false;
+      matchSeen[key] = true;
+      return true;
+    });
+
     const qc = qcRules.evaluateQC({ frame: frame, state: state });
     if (!nmAvailable) qc.flags = (qc.flags || []).concat(['uncalibrated']);
     const confidence = confidenceModel.buildConfidence(matches, qc);
@@ -473,6 +503,8 @@
         score: +((m.rawScore || 0) * 100).toFixed(1)
       };
     });
+    const rawLineHits = topHits.slice();
+
     const signatureProfiles = {
       He: [447.148, 492.193, 501.568, 587.562, 667.815, 706.519],
       Hg: [404.656, 435.833, 546.074, 576.960, 579.066],
@@ -480,6 +512,8 @@
       H: [410.171, 434.047, 486.128, 656.281],
       Ar: [696.543, 706.722, 738.398, 750.387, 763.511, 772.376],
       Na: [588.995, 589.592],
+      N2: [380.5, 394.3, 399.8, 404.3, 406.3, 410.1, 414.3, 417.8, 662.0, 682.0, 703.0, 724.0, 747.0, 771.0, 800.0, 820.0],
+      O2: [687.0, 760.5, 762.1, 765.0],
       Kr: [557.029, 587.092, 760.155],
       Xe: [467.122, 484.433, 823.163],
       O: [557.733, 630.030, 636.377, 777.194],
@@ -504,6 +538,7 @@
     return {
       ok: true,
       topHits: topHits,
+      overlayHits: rawLineHits.slice(0, 120),
       peaks: peaks.slice(0, 64),
       offsetNm: estimateOffset(matches),
       qcFlags: qc.flags || [],

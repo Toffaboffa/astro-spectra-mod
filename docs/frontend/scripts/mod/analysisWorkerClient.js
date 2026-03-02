@@ -285,18 +285,23 @@
         store.update('worker', Object.assign({}, ws, { status: 'ready', lastResultAt: Date.now(), analysisHz: +hz.toFixed(2), lastError: null }));
         if (msg.payload && store) {
           if (Array.isArray(msg.payload.topHits)) {
-            // Normalize hits for UI + overlays.
-            const rawHits = msg.payload.topHits.map(function (h) {
-              const hit = Object.assign({}, h || {});
-              if (!hit.element) {
-                const raw = String(hit.species || hit.speciesKey || hit.name || '').trim();
-                const s = raw.replace(/^[0-9]+/, '');
-                const m = s.match(/^([A-Z][a-z]?)/);
-                if (m) hit.element = m[1];
-              }
-              return hit;
-            });
-            store.update('analysis.rawTopHits', rawHits);
+            function normalizeHits(list) {
+              return (Array.isArray(list) ? list : []).map(function (h) {
+                const hit = Object.assign({}, h || {});
+                if (!hit.element) {
+                  const raw = String(hit.species || hit.speciesKey || hit.name || '').trim();
+                  const s = raw.replace(/^[0-9]+/, '');
+                  const m = s.match(/^([A-Z][a-z]?)/);
+                  if (m) hit.element = m[1];
+                }
+                return hit;
+              });
+            }
+            const rawHits = normalizeHits(msg.payload.topHits);
+            const overlayHits = Array.isArray(msg.payload.overlayHits) && msg.payload.overlayHits.length
+              ? normalizeHits(msg.payload.overlayHits)
+              : rawHits.slice();
+            store.update('analysis.rawTopHits', overlayHits);
             if (Array.isArray(msg.payload.elementScores)) {
               store.update('analysis.elementScores', msg.payload.elementScores.slice(0, 8));
             } else {
