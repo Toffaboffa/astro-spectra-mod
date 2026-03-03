@@ -81,6 +81,7 @@
       topHits: [],
       rawTopHits: [],
       smartFindEnabled: false,
+      useRgbScore: false,
       showHits: true,
       smartFindHits: [],
       smartFindGroups: [],

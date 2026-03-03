@@ -122,7 +122,8 @@
           peakThresholdRel: Number(st.analysis && st.analysis.peakThresholdRel),
           peakDistancePx: Number(st.analysis && st.analysis.peakDistancePx),
           maxDistanceNm: Number(st.analysis && st.analysis.maxDistanceNm),
-          strongPeakLevel: Number(st.analysis && st.analysis.strongPeakLevel)
+          strongPeakLevel: Number(st.analysis && st.analysis.strongPeakLevel),
+          useRgbScore: !!(st.analysis && st.analysis.useRgbScore)
         }
       });
       inFlight = { requestId: requestId, startedAt: now };

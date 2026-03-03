@@ -339,7 +339,108 @@
     }).slice(0, Math.max(3, Math.min(12, Number(limit) || 8)));
   }
 
-  function scoreAtomicCandidate(element, profiles, matches, peaks, hardMaxDistanceNm, familyWeights, strongPeakLevel) {
+
+  function getFrameRgb(frame) {
+    if (!frame) return null;
+    const R = Array.isArray(frame.R) ? frame.R : null;
+    const G = Array.isArray(frame.G) ? frame.G : null;
+    const B = Array.isArray(frame.B) ? frame.B : null;
+    const len = Array.isArray(frame.I) ? frame.I.length : 0;
+    if (!R || !G || !B || !len) return null;
+    if (R.length !== len || G.length !== len || B.length !== len) return null;
+    return { R: R, G: G, B: B, len: len };
+  }
+
+  function localChannelSignal(arr, idx) {
+    if (!Array.isArray(arr) || !Number.isInteger(idx) || idx < 0 || idx >= arr.length) return 0;
+    const left = Math.max(0, idx - 1);
+    const right = Math.min(arr.length - 1, idx + 1);
+    let peak = 0;
+    let peakCount = 0;
+    for (let i = left; i <= right; i += 1) {
+      peak += Math.max(0, Number(arr[i]) || 0);
+      peakCount += 1;
+    }
+    const baseLeft0 = Math.max(0, idx - 5);
+    const baseLeft1 = Math.max(0, idx - 3);
+    const baseRight0 = Math.min(arr.length - 1, idx + 3);
+    const baseRight1 = Math.min(arr.length - 1, idx + 5);
+    let base = 0;
+    let baseCount = 0;
+    for (let i = baseLeft0; i <= baseLeft1; i += 1) {
+      if (i >= left && i <= right) continue;
+      base += Math.max(0, Number(arr[i]) || 0);
+      baseCount += 1;
+    }
+    for (let i = baseRight0; i <= baseRight1; i += 1) {
+      if (i >= left && i <= right) continue;
+      base += Math.max(0, Number(arr[i]) || 0);
+      baseCount += 1;
+    }
+    const peakAvg = peakCount ? (peak / peakCount) : 0;
+    const baseAvg = baseCount ? (base / baseCount) : 0;
+    return Math.max(0, peakAvg - baseAvg);
+  }
+
+  function expectedRgbShares(nm) {
+    const wl = Number(nm);
+    if (!Number.isFinite(wl)) return { r: 1 / 3, g: 1 / 3, b: 1 / 3 };
+    const r = clamp((wl - 560) / 120, 0, 1);
+    const gRise = clamp((wl - 430) / 90, 0, 1);
+    const gFall = clamp((620 - wl) / 90, 0, 1);
+    const g = Math.min(gRise, gFall);
+    const b = clamp((540 - wl) / 120, 0, 1);
+    const sum = r + g + b;
+    if (sum <= 0) return { r: 1 / 3, g: 1 / 3, b: 1 / 3 };
+    return { r: r / sum, g: g / sum, b: b / sum };
+  }
+
+  function dominantChannelName(v) {
+    if (!v) return 'g';
+    if (v.r >= v.g && v.r >= v.b) return 'r';
+    if (v.b >= v.r && v.b >= v.g) return 'b';
+    return 'g';
+  }
+
+  function computeRgbSupport(matches, frame, hardMaxDistanceNm) {
+    const rgb = getFrameRgb(frame);
+    if (!rgb) return { score: 0, used: 0 };
+    const unique = [];
+    const seen = Object.create(null);
+    (Array.isArray(matches) ? matches : []).forEach(function (m) {
+      const idx = Number(m && m.peakIndex);
+      const refNm = Number(m && (m.refNm != null ? m.refNm : m.referenceNm));
+      if (!Number.isInteger(idx) || idx < 0 || idx >= rgb.len || !Number.isFinite(refNm)) return;
+      const key = String(idx) + '|' + refNm.toFixed(3);
+      if (seen[key]) return;
+      seen[key] = true;
+      unique.push({ idx: idx, refNm: refNm, deltaNm: Math.abs(Number(m && m.deltaNm) || 0), prominence: Math.max(0, Number(m && (m.prominence || m.peakValue || 0)) || 0) });
+    });
+    if (!unique.length) return { score: 0, used: 0 };
+    const maxProm = Math.max(1, unique.reduce(function (mx, item) { return Math.max(mx, item.prominence); }, 0));
+    let total = 0;
+    let totalWeight = 0;
+    unique.forEach(function (item) {
+      const rSig = localChannelSignal(rgb.R, item.idx);
+      const gSig = localChannelSignal(rgb.G, item.idx);
+      const bSig = localChannelSignal(rgb.B, item.idx);
+      const sigSum = rSig + gSig + bSig;
+      if (!(sigSum > 0)) return;
+      const obs = { r: rSig / sigSum, g: gSig / sigSum, b: bSig / sigSum };
+      const exp = expectedRgbShares(item.refNm);
+      const l1 = Math.abs(obs.r - exp.r) + Math.abs(obs.g - exp.g) + Math.abs(obs.b - exp.b);
+      const similarity = clamp(1 - (l1 / 2), 0, 1);
+      const domBonus = dominantChannelName(obs) === dominantChannelName(exp) ? 0.08 : 0;
+      const closeWeight = clamp(1 - (item.deltaNm / Math.max(0.5, hardMaxDistanceNm)), 0, 1);
+      const promWeight = clamp(item.prominence / maxProm, 0.15, 1);
+      const weight = 0.35 + closeWeight * 0.35 + promWeight * 0.3;
+      total += Math.min(1, similarity + domBonus) * weight;
+      totalWeight += weight;
+    });
+    return { score: totalWeight > 0 ? (total / totalWeight) : 0, used: totalWeight > 0 ? unique.length : 0 };
+  }
+
+  function scoreAtomicCandidate(element, profiles, matches, peaks, hardMaxDistanceNm, familyWeights, strongPeakLevel, frame, useRgbScore) {
     const profile = profiles[element];
     if (!profile) return null;
     const arr = matches.filter(function (m) { return String(m.element || '') === element && (!m.kind || m.kind === 'atom'); });
@@ -396,6 +497,7 @@
     const densityPenalty = Math.min(2.4, Math.max(0, (profile.density - 0.05) * 14));
     const familyWeight = Number((familyWeights || {})[profile.family] || (familyWeights || {}).generic || 1) || 1;
     const strongFactor = strongPeakFactor(strongPeakLevel);
+    const rgbSupport = useRgbScore ? computeRgbSupport(uniqueMatches, frame, hardMaxDistanceNm) : { score: 0, used: 0 };
     const score = familyWeight * (
       matchedExpected * 2.7 +
       matchedPeakCount * 0.8 +
@@ -403,7 +505,8 @@
       uniquenessScore * 3.4 +
       groupBonus * 1.8 +
       (explainedProm / maxProm) * 0.55 +
-      strongPeakSupport * 0.9 * strongFactor
+      strongPeakSupport * 0.9 * strongFactor +
+      (useRgbScore ? (rgbSupport.score * Math.min(1.25, 0.45 + rgbSupport.used * 0.12) * 1.15) : 0)
     ) - missedExpected * 0.75 - densityPenalty;
 
     return {
@@ -418,11 +521,12 @@
       explainedIntensityPct: +Math.min(100, ((explainedProm / maxProm) * 100)).toFixed(1),
       supportLines: profile.expected.filter(function (ln) { return matchMap[String(Number(ln.nm).toFixed(3))]; }).slice(0, 6).map(function (ln) { return ln.nm; }),
       family: profile.family,
-      mode: 'atomic'
+      mode: 'atomic',
+      rgbSupport: +rgbSupport.score.toFixed(3)
     };
   }
 
-  function scoreMolecularCandidate(species, profiles, matches, peaks, hardMaxDistanceNm, familyWeights, strongPeakLevel) {
+  function scoreMolecularCandidate(species, profiles, matches, peaks, hardMaxDistanceNm, familyWeights, strongPeakLevel, frame, useRgbScore) {
     const profile = profiles[species];
     if (!profile || !profile.length) return null;
     const arr = matches.filter(function (m) { return String(m.element || '') === species && String(m.kind || '') === 'molecular-band'; });
@@ -463,11 +567,13 @@
     const missed = Math.max(0, profile.length - matchedBands);
     const familyWeight = Number((familyWeights || {}).molecular || 1) || 1;
     const strongFactor = strongPeakFactor(strongPeakLevel);
+    const rgbSupport = useRgbScore ? computeRgbSupport(arr, frame, Math.max(hardMaxDistanceNm, 2.5)) : { score: 0, used: 0 };
     const score = familyWeight * (
       matchedBands * 3.2 +
       Math.min(6, coveredPeakCount) * 0.85 +
       Math.min(8, explainedProm / maxProm) * 0.55 +
-      strongPeakSupport * 0.7 * strongFactor
+      strongPeakSupport * 0.7 * strongFactor +
+      (useRgbScore ? (rgbSupport.score * Math.min(1.1, 0.35 + rgbSupport.used * 0.1) * 0.85) : 0)
     ) - missed * 0.45;
     return {
       element: species,
@@ -481,7 +587,8 @@
       explainedIntensityPct: +Math.min(100, ((explainedProm / maxProm) * 100)).toFixed(1),
       supportLines: profile.slice(0, 6).map(function (b) { return b.refNm; }),
       family: 'molecular',
-      mode: 'molecular'
+      mode: 'molecular',
+      rgbSupport: +rgbSupport.score.toFixed(3)
     };
   }
 
@@ -601,11 +708,11 @@
     discovery.forEach(function (cand) {
       const element = String(cand.element || '');
       if (atomicProfiles[element] && ctx.mode !== 'molecular') {
-        const scored = scoreAtomicCandidate(element, atomicProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel);
+        const scored = scoreAtomicCandidate(element, atomicProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel, ctx.frame, ctx.useRgbScore);
         if (scored) scores.push(scored);
       }
       if (molecularProfiles[element] && ctx.mode !== 'atomic') {
-        const scoredMol = scoreMolecularCandidate(element, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel);
+        const scoredMol = scoreMolecularCandidate(element, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel, ctx.frame, ctx.useRgbScore);
         if (scoredMol) scores.push(scoredMol);
       }
     });
@@ -613,7 +720,7 @@
     if (ctx.mode !== 'atomic') {
       Object.keys(molecularProfiles).forEach(function (species) {
         if (scores.some(function (s) { return String(s.element) === species; })) return;
-        const scoredMol = scoreMolecularCandidate(species, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel);
+        const scoredMol = scoreMolecularCandidate(species, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel, ctx.frame, ctx.useRgbScore);
         if (scoredMol && scoredMol.totalScore > 0) scores.push(scoredMol);
       });
     }
@@ -643,6 +750,7 @@
     const peakDistancePx = Number.isFinite(Number(opt.peakDistancePx)) ? Number(opt.peakDistancePx) : (includeWeak ? 3 : 5);
     const hardMaxDistanceNm = Math.max(0.2, Math.min(50, Number.isFinite(Number(opt.maxDistanceNm)) ? Number(opt.maxDistanceNm) : 5));
     const strongPeakLevel = Math.max(1, Math.min(5, Math.round(Number.isFinite(Number(opt.strongPeakLevel)) ? Number(opt.strongPeakLevel) : 3)));
+    const useRgbScore = !!opt.useRgbScore;
 
     const rawPeaks = peakDetect.detectPeaks(I, { prominenceWindowPx: Math.max(4, peakDistancePx * 2) });
     const peaks = inferPeaks(frame, peakScoring.scorePeaks(rawPeaks, {
@@ -732,7 +840,9 @@
         mode: presetCfg.mode,
         familyWeights: presetCfg.familyWeights,
         candidateLimit: presetCfg.candidateLimit,
-        strongPeakLevel: strongPeakLevel
+        strongPeakLevel: strongPeakLevel,
+        frame: frame,
+        useRgbScore: useRgbScore
       }).slice(0, 8);
       if (elementScores.length) {
         topHits = selectTopHitsForSmart(topHits, elementScores, presetCfg);

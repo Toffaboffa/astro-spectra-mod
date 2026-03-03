@@ -286,9 +286,13 @@ function maybeRunLabAnalyze(frameNormalized) {
       : { processedI: frameNormalized.I.slice(), normalizedI: null, quickPeaks: [] };
 
     const nmOk = Array.isArray(frameNormalized.nm) && frameNormalized.nm.length === frameNormalized.I.length;
+    const rgbOk = Array.isArray(frameNormalized.R) && Array.isArray(frameNormalized.G) && Array.isArray(frameNormalized.B) && frameNormalized.R.length === frameNormalized.I.length && frameNormalized.G.length === frameNormalized.I.length && frameNormalized.B.length === frameNormalized.I.length;
     const payloadFrame = {
       I: frameNormalized.I,
       processedI: Array.isArray(processed.processedI) ? processed.processedI : frameNormalized.I,
+      R: rgbOk ? frameNormalized.R : null,
+      G: rgbOk ? frameNormalized.G : null,
+      B: rgbOk ? frameNormalized.B : null,
       nm: nmOk ? frameNormalized.nm : null,
       calibrated: nmOk,
       subtractionMode,
@@ -1031,6 +1035,7 @@ function ensureLabPanel() {
 	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lägre peak threshold, mindre peak-separation och fler peaks totalt. Påverkar peakdetektionen, inte någon separat smart AI-logik."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
 	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
 	    '        <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
+	    '        <label id="spFieldLabRgb" class="sp-field sp-field--lab-rgb sp-field--checkbox-row" title="Use RGB channel support as an extra hidden Smart weighting factor."><span>RGB</span><input id="spLabRgb" type="checkbox"></label>',
 	    '        <label id="spFieldLabStrongPeak" class="sp-field sp-field--lab-strongpeak" title="Adjust how much Smart rewards matches on the strongest observed peaks.">Strong Peak<input id="spLabStrongPeak" class="spctl-input spctl-range spctl-range--lab-strongpeak" type="range" min="1" max="5" step="1" value="3"></label>',
 	    '      </div>',
 	    '      <div class="sp-lab-fields-col">',
@@ -1090,6 +1095,7 @@ function ensureLabPanel() {
   const includeWeak = !!(s.analysis && s.analysis.includeWeakPeaks);
   const stableHits = !!(s.analysis && s.analysis.stableHits);
   const smartFind = !!(s.analysis && s.analysis.smartFindEnabled);
+  const useRgbScore = !!(s.analysis && s.analysis.useRgbScore);
   const enabledEl = $('spLabEnabled');
   const hzEl = $('spLabMaxHz');
   const presetEl = $('spLabPreset');
@@ -1098,6 +1104,7 @@ function ensureLabPanel() {
   const weakEl = $('spLabWeak');
   const stableEl = $('spLabStable');
   const smartEl = $('spLabSmart');
+  const rgbEl = $('spLabRgb');
   const strongPeakEl = $('spLabStrongPeak');
   const peakThrEl = $('spLabPeakThr');
   const peakDistEl = $('spLabPeakDist');
@@ -1109,6 +1116,7 @@ function ensureLabPanel() {
   if (weakEl) weakEl.checked = includeWeak;
   if (stableEl) stableEl.checked = stableHits;
   if (smartEl) smartEl.checked = smartFind;
+  if (rgbEl) rgbEl.checked = useRgbScore;
   if (strongPeakEl) strongPeakEl.value = String(Math.max(1, Math.min(5, Math.round(Number(s.analysis && s.analysis.strongPeakLevel) || 3))));
   if (peakThrEl) peakThrEl.value = String(Math.max(0.5, Math.min(50, ((Number(s.analysis && s.analysis.peakThresholdRel) || 0.05) * 100))));
   if (peakDistEl) peakDistEl.value = String(Math.max(1, Math.min(64, Math.round(Number(s.analysis && s.analysis.peakDistancePx) || 5))));
@@ -1181,6 +1189,12 @@ function ensureLabPanel() {
     const on = !!e.target.checked;
     setVal('analysis.smartFindEnabled', on);
     setFeedback(on ? 'Smart find enabled.' : 'Smart find disabled.', 'info');
+  });
+
+  rgbEl && rgbEl.addEventListener('change', function (e) {
+    const on = !!e.target.checked;
+    setVal('analysis.useRgbScore', on);
+    setFeedback(on ? 'RGB Smart weighting enabled.' : 'RGB Smart weighting disabled.', 'info');
   });
 
   strongPeakEl && strongPeakEl.addEventListener('input', function (e) {
