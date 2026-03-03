@@ -1090,6 +1090,21 @@ label[for="peakSizeLower"],
   pointer-events:none;
   white-space:nowrap;
 }
+
+#graphHoverDot{
+  position:absolute;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#e11d48;
+  border:1px solid #fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.25);
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  z-index:1000;
+  display:none;
+}
+
 #SpectraProDockHost .sp-inline-check{display:flex; align-items:center; gap:6px; margin-top:8px;}
 #SpectraProDockHost .sp-field--channel-wrap{display:flex; flex-direction:column; align-items:flex-start; gap:6px;}
 #SpectraProDockHost .sp-field-title{font-size:12px; font-weight:700; opacity:.9; text-transform:uppercase; letter-spacing:.04em;}

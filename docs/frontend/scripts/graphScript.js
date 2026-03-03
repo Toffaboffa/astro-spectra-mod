@@ -38,6 +38,7 @@ let lineCtx;
 let gradientOpacity = 0.7;
 
 let lowerPeakBound = 1;
+let graphHoverState = { active: false, graphX: null, clientX: null, clientY: null };
 
 function getSpectraProDisplaySettings() {
     try {
@@ -62,6 +63,93 @@ function isSpectraProYAxisNormalized() {
     } catch (_) {
         return false;
     }
+}
+
+function getGraphHoverDotElement() {
+    return document.getElementById('graphHoverDot');
+}
+
+function ensureGraphHoverDot() {
+    let dot = getGraphHoverDotElement();
+    if (dot) return dot;
+    const host = document.getElementById('graphCanvasWindow');
+    if (!host) return null;
+    dot = document.createElement('div');
+    dot.id = 'graphHoverDot';
+    dot.setAttribute('aria-hidden', 'true');
+    host.appendChild(dot);
+    return dot;
+}
+
+function hideGraphHoverDot() {
+    const dot = getGraphHoverDotElement();
+    if (dot) dot.style.display = 'none';
+}
+
+function getGraphValueAtX(targetPixels, graphX, channelOffset = -1) {
+    if (!targetPixels || !Number.isFinite(graphX)) return null;
+    const maxIndex = Math.max(0, Math.floor(targetPixels.length / 4) - 1);
+    const x = Math.max(0, Math.min(maxIndex, Math.round(graphX)));
+    if (channelOffset === 0 || channelOffset === 1 || channelOffset === 2) {
+        return Number(targetPixels[x * 4 + channelOffset]) || 0;
+    }
+    return calculateMaxColor(targetPixels, x);
+}
+
+function getHoverSeriesDescriptor() {
+    const isComparisonChecked = getCheckedComparisonId() !== null;
+    if (isComparisonChecked) {
+        try {
+            const data = getCheckedComparisonImageData();
+            if (Array.isArray(data) && data[0]) return { pixels: data[0], channelOffset: -1 };
+        } catch (_) {}
+    }
+    if (toggleCombined) return { pixels: pixels, channelOffset: -1 };
+    if (toggleR) return { pixels: pixels, channelOffset: 0 };
+    if (toggleG) return { pixels: pixels, channelOffset: 1 };
+    if (toggleB) return { pixels: pixels, channelOffset: 2 };
+    return null;
+}
+
+function updateGraphHoverDotFromPosition(clientX, clientY) {
+    const rect = graphCanvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const padding = 30;
+    const width = rect.width;
+    const height = rect.height;
+    if (!(x >= padding && x <= width - padding && y >= padding && y <= height - padding)) {
+        hideGraphHoverDot();
+        return;
+    }
+    const descriptor = getHoverSeriesDescriptor();
+    if (!descriptor || !descriptor.pixels) {
+        hideGraphHoverDot();
+        return;
+    }
+    const targetPixels = descriptor.pixels;
+    const [zoomStart, zoomEnd] = getZoomRange(Math.max(1, Math.floor(targetPixels.length / 4)));
+    const pixelCount = Math.max(1, zoomEnd - zoomStart);
+    const denom = Math.max(1, pixelCount - 1);
+    const usableWidth = width - 2 * padding;
+    const pixelCanvasWidth = usableWidth / denom;
+    const relX = Math.max(0, Math.min(usableWidth, x - padding));
+    const pixelIndexFloat = relX / pixelCanvasWidth;
+    const pixelIndex = Math.floor(pixelIndexFloat);
+    const graphX = Math.min(zoomEnd - 1, Math.max(zoomStart, zoomStart + pixelIndex));
+    const value = getGraphValueAtX(targetPixels, graphX, descriptor.channelOffset);
+    const maxValue = resolveSpectraProYAxisMax(targetPixels, calculateMaxValue(targetPixels));
+    const dotY = calculateYPosition(value, height, maxValue);
+    const dotX = calculateXPosition(graphX - zoomStart, zoomEnd - zoomStart, width);
+    const dot = ensureGraphHoverDot();
+    if (!dot) return;
+    dot.style.left = dotX + 'px';
+    dot.style.top = dotY + 'px';
+    dot.style.display = 'block';
+    graphHoverState.active = true;
+    graphHoverState.graphX = graphX;
+    graphHoverState.clientX = clientX;
+    graphHoverState.clientY = clientY;
 }
 
 function calculateVisiblePeakMax(pixels) {
@@ -658,6 +746,7 @@ function setupEventListeners() {
     addEventListener(document.getElementById('resetZoomButton'), 'click', () => {
         resetZoom();
         redrawGraphIfLoadedImage()
+        hideGraphHoverDot();
     });
 
     document.getElementById('colorGraph').addEventListener('change', () => {
@@ -730,10 +819,16 @@ function setupEventListeners() {
             displayY = graphY;
         }
         document.getElementById('mouseCoordinates').textContent = `X: ${displayX}, Y: ${displayY}`;
+        updateGraphHoverDotFromPosition(event.clientX, event.clientY);
     });
 
     addEventListener(graphCanvas, 'mouseleave', function() {
         document.getElementById('mouseCoordinates').textContent = 'X: N/A px, Y: N/A';
+        graphHoverState.active = false;
+        graphHoverState.graphX = null;
+        graphHoverState.clientX = null;
+        graphHoverState.clientY = null;
+        hideGraphHoverDot();
     });
 
     addEventListener(graphCanvas, 'mouseup', () => {
@@ -828,6 +923,11 @@ function redrawGraphIfLoadedImage(invalidatePeaks = false) {
         }
         generateSpectrumList(width);
         resizeCanvasToDisplaySize(graphCtx, graphCanvas, "Normal");
+        if (graphHoverState.active && Number.isFinite(graphHoverState.clientX) && Number.isFinite(graphHoverState.clientY)) {
+            updateGraphHoverDotFromPosition(graphHoverState.clientX, graphHoverState.clientY);
+        } else {
+            hideGraphHoverDot();
+        }
         stripeGraphCanvas.height = videoElement.naturalHeight;
         stripeGraphCanvas.width = videoElement.naturalWidth;
         drawSelectionLine();
@@ -886,8 +986,10 @@ function updateArrowButtons() {
 
 function updateZoomScroller() {
     const scroller = document.getElementById('zoomScroller');
+    if (!scroller) return;
     if (zoomList.length === 0) {
         scroller.disabled = true;
+        try { scroller.dispatchEvent(new Event('sp-sync', { bubbles: true })); } catch (_) {}
         return;
     }
     const elementWidth = getElementWidth(videoElement);
@@ -895,12 +997,14 @@ function updateZoomScroller() {
     const zoomRange = zoomEnd - zoomStart;
     if (zoomRange === 0 || zoomRange === elementWidth) {
         scroller.disabled = true;
+        try { scroller.dispatchEvent(new Event('sp-sync', { bubbles: true })); } catch (_) {}
         return;
     }
     scroller.min = 0;
     scroller.max = elementWidth - zoomRange;
     scroller.value = zoomStart;
     scroller.disabled = false;
+    try { scroller.dispatchEvent(new Event('sp-sync', { bubbles: true })); } catch (_) {}
 }
 
 /**

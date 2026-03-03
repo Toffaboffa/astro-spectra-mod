@@ -754,18 +754,21 @@ function ensureStatusRail() {
         if (!target) return;
         target.value = e.target.value;
         try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+        try { syncZoomScrollerProxy(); } catch (_) {}
       });
       zoomScrollerProxy && zoomScrollerProxy.addEventListener('change', function (e) {
         const target = $('zoomScroller');
         if (!target) return;
         target.value = e.target.value;
         try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+        try { syncZoomScrollerProxy(); } catch (_) {}
       });
       ['toggleCombined','toggleR','toggleG','toggleB','toggleXLabelsPx','toggleXLabelsNm','zoomScroller'].forEach(function (id) {
         const target = $(id);
         if (!target) return;
         target.addEventListener('change', function () { syncXAxisProxy(); syncZoomScrollerProxy(); });
         target.addEventListener('input', function () { syncXAxisProxy(); syncZoomScrollerProxy(); });
+        target.addEventListener('sp-sync', function () { syncXAxisProxy(); syncZoomScrollerProxy(); });
       });
       // Camera controls (optional) — apply constraints only if supported.
       const applyCamSetting = function (key, val) {
