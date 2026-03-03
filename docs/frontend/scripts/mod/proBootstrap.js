@@ -516,22 +516,34 @@ function ensureStatusRail() {
     if (core && !core.dataset.built) {
       const card = el('div', 'sp-card sp-card--flat');
       const displayOptions = getV15DisplayModes().map(function (m) { return `<option value="${String(m).toLowerCase()}">${m}</option>`; }).join('');
-      const yAxisOptions = getV15YAxisModes().map(function (m) { return `<option value="${String(m).toLowerCase()}">${m}</option>`; }).join('');
+      const yAxisOptions = [
+        '<option value="auto">AUTO</option>',
+        '<option value="manual">MANUAL</option>',
+        '<option value="normalize">NORMALIZE</option>'
+      ].join('');
       const xAxisOptions = ['px', 'nm'].map(function (m) { return `<option value="${m}">${m}</option>`; }).join('');
+      const fillModeOptions = (((sp.v15 || {}).graphAppearance && typeof sp.v15.graphAppearance.getFillModes === 'function')
+        ? sp.v15.graphAppearance.getFillModes()
+        : ['INHERIT','OFF','SYNTHETIC','SOURCE']).map(function (m) { return `<option value="${String(m).toLowerCase()}">${m}</option>`; }).join('');
 
       card.innerHTML = [
-        '<div class="sp-form-grid">',
+        '<div class="sp-form-grid sp-form-grid--core-8">',
         '  <label id="spFieldAppMode" class="sp-field sp-field--app-mode" title="Choose the active analysis workspace. LAB and ASTRO enable analysis-specific behavior.">App mode<select id="spAppMode" class="spctl-select spctl-select--app-mode"><option value="CORE">CORE</option><option value="LAB">LAB</option><option value="ASTRO">ASTRO</option></select></label>',
         '  <label id="spFieldWorkerMode" class="sp-field sp-field--worker-mode" title="Control whether the analysis worker is used automatically, forced on, or forced off.">Worker<select id="spWorkerMode" class="spctl-select spctl-select--worker-mode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>',
         '  <label id="spFieldDisplayMode" class="sp-field sp-field--display-mode" title="Choose how the graph is computed from the current signal and reference frames.">Display mode<select id="spDisplayMode" class="spctl-select spctl-select--display-mode">' + displayOptions + '</select></label>',
-        '  <label id="spFieldYAxisMode" class="sp-field sp-field--y-axis-mode" title="Set how the vertical graph scale is handled.">Y-axis<select id="spYAxisMode" class="spctl-select spctl-select--y-axis-mode">' + yAxisOptions + '</select><span class="sp-inline-check"><input id="spNormalizeYAxis" type="checkbox"><span>Normalize</span></span></label>',
         '  <label id="spFieldXAxisMode" class="sp-field sp-field--x-axis-mode" title="Choose whether the horizontal axis uses calibrated wavelength or raw pixel position.">X-axis<select id="spXAxisMode" class="spctl-select spctl-select--x-axis-mode">' + xAxisOptions + '</select></label>',
+        '  <label id="spFieldYAxisMode" class="sp-field sp-field--y-axis-mode" title="Set how the vertical graph scale is handled. Normalize applies automatic scaling to the strongest visible peak.">Y-axis<select id="spYAxisMode" class="spctl-select spctl-select--y-axis-mode">' + yAxisOptions + '</select></label>',
         '  <label id="spYAxisMaxWrap" class="sp-field sp-field--y-axis-max" title="Manual upper limit for the Y-axis when manual scaling is active.">Y max<input id="spYAxisMax" class="spctl-input spctl-input--y-axis-max" type="number" min="1" max="4096" step="1" value="255"></label>',
-        '  <div id="spChannelWrap" class="sp-field sp-field--channel-wrap" title="Show or hide the combined and RGB traces on the graph."><span class="sp-field-title">Channels</span><label class="sp-inline-check"><input id="spToggleCombinedProxy" type="checkbox"><span>Combined</span></label><label class="sp-inline-check"><input id="spToggleRProxy" type="checkbox"><span>R</span></label><label class="sp-inline-check"><input id="spToggleGProxy" type="checkbox"><span>G</span></label><label class="sp-inline-check"><input id="spToggleBProxy" type="checkbox"><span>B</span></label></div>',
+        '  <label id="spFieldFillMode" class="sp-field sp-field--fill-mode" title="Control how the graph fill is rendered.">Fill mode<select id="spFillMode" class="spctl-select spctl-select--fill-mode">' + fillModeOptions + '</select></label>',
+        '  <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity" title="Set the graph fill opacity.">Fill opacity<input id="spFillOpacity" class="spctl-input spctl-range" type="range" min="0" max="1" step="0.05" value="0.7"></label>',
+        '  <label id="spFieldCombined" class="sp-field sp-field--checkbox-row" title="Show or hide the combined signal trace."><span>Combined</span><input id="spToggleCombinedProxy" type="checkbox"></label>',
+        '  <label id="spFieldRed" class="sp-field sp-field--checkbox-row" title="Show or hide the red channel trace."><span>Red</span><input id="spToggleRProxy" type="checkbox"></label>',
+        '  <label id="spFieldGreen" class="sp-field sp-field--checkbox-row" title="Show or hide the green channel trace."><span>Green</span><input id="spToggleGProxy" type="checkbox"></label>',
+        '  <label id="spFieldBlue" class="sp-field sp-field--checkbox-row" title="Show or hide the blue channel trace."><span>Blue</span><input id="spToggleBProxy" type="checkbox"></label>',
+        '  <label id="spFieldToggleNmPeaks" class="sp-field sp-field--checkbox-row" title="Show or hide detected nm peak markers on the graph."><span>Toggle peaks</span><input id="spToggleNmPeaks" type="checkbox"></label>',
         '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold" title="Minimum intensity used by the built-in nm peak detector.">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
         '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance" title="Minimum separation between detected nm peaks.">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
         '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing" title="Simple smoothing amount used before peak detection.">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
-        '  <label id="spFieldToggleNmPeaks" class="sp-field sp-field--toggle-nm-peaks sp-field--checkbox-row" title="Show or hide detected nm peak markers on the graph."><span>Toggle nm peaks</span><input id="spToggleNmPeaks" type="checkbox"></label>',
         '</div>',
         '<div id="spCoreZoomBox" class="sp-card-sub sp-card-sub--zoom">',
         '  <h4 class="sp-subtitle" style="margin:0 0 8px 0">Zoom</h4>',
@@ -564,9 +576,10 @@ function ensureStatusRail() {
       const workerSel = card.querySelector('#spWorkerMode');
       const displaySel = card.querySelector('#spDisplayMode');
       const yAxisSel = card.querySelector('#spYAxisMode');
-      const normalizeYAxisInput = card.querySelector('#spNormalizeYAxis');
       const xAxisSel = card.querySelector('#spXAxisMode');
       const yAxisMaxInput = card.querySelector('#spYAxisMax');
+      const fillModeSel = card.querySelector('#spFillMode');
+      const fillOpacityInput = card.querySelector('#spFillOpacity');
       const peakThresholdInput = card.querySelector('#spPeakThreshold');
       const peakDistanceInput = card.querySelector('#spPeakDistance');
       const peakSmoothingInput = card.querySelector('#spPeakSmoothing');
@@ -623,7 +636,8 @@ function ensureStatusRail() {
         toggleNmPeaksInput.checked = !!legacyTogglePeaks.checked;
       }
       const displayStateInit = (getStoreState().display || {});
-      if (normalizeYAxisInput) normalizeYAxisInput.checked = !!displayStateInit.normalizeYAxis;
+      if (fillModeSel) fillModeSel.value = String(displayStateInit.fillMode || 'inherit').toLowerCase();
+      if (fillOpacityInput) fillOpacityInput.value = String(Number.isFinite(Number(displayStateInit.fillOpacity)) ? Math.max(0, Math.min(1, Number(displayStateInit.fillOpacity))) : 0.7);
       syncCheckboxProxy(combinedProxy, 'toggleCombined');
       syncCheckboxProxy(rProxy, 'toggleR');
       syncCheckboxProxy(gProxy, 'toggleG');
@@ -648,11 +662,10 @@ function ensureStatusRail() {
       });
       yAxisSel && yAxisSel.addEventListener('change', (e) => {
         const mode = String(e.target.value || 'auto').toLowerCase();
-        setVal('display.yAxisMode', mode);
+        const normalize = (mode === 'normalize');
+        setVal('display.normalizeYAxis', normalize);
+        setVal('display.yAxisMode', normalize ? 'auto' : mode);
         if (yAxisMaxInput) yAxisMaxInput.disabled = (mode !== 'manual');
-      });
-      normalizeYAxisInput && normalizeYAxisInput.addEventListener('change', (e) => {
-        setVal('display.normalizeYAxis', !!e.target.checked);
         try { redrawGraphIfLoadedImage(); } catch (_) {}
         try { drawGraph(); } catch (_) {}
       });
@@ -673,6 +686,33 @@ function ensureStatusRail() {
         const n = Number(e.target.value);
         if (!Number.isFinite(n) || n <= 0) return;
         setVal('display.yAxisMax', Math.round(n));
+      });
+      fillModeSel && fillModeSel.addEventListener('change', (e) => {
+        const mode = String(e.target.value || 'inherit').toLowerCase();
+        setVal('display.fillMode', mode);
+        const target = $('colorGraph');
+        if (target && mode === 'off' && target.checked) {
+          target.checked = false;
+          try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+        } else if (target && mode !== 'off' && !target.checked) {
+          target.checked = true;
+          try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+        }
+        try { redrawGraphIfLoadedImage(); } catch (_) {}
+        try { drawGraph(); } catch (_) {}
+      });
+      fillOpacityInput && fillOpacityInput.addEventListener('input', (e) => {
+        const n = Number(e.target.value);
+        if (!Number.isFinite(n)) return;
+        const v = Math.max(0, Math.min(1, n));
+        setVal('display.fillOpacity', v);
+        const target = $('gradientOpacitySlider');
+        if (target) {
+          target.value = String(v);
+          try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+        }
+        try { redrawGraphIfLoadedImage(); } catch (_) {}
+        try { drawGraph(); } catch (_) {}
       });
       toggleNmPeaksInput && toggleNmPeaksInput.addEventListener('change', (e) => {
         const target = $('togglePeaksCheckbox');
@@ -1776,19 +1816,16 @@ function renderConsole() {
     const yAxisSel = $('spYAxisMode');
     const yAxisMaxInput = $('spYAxisMax');
     if (yAxisSel && !shouldSkipSyncValue(yAxisSel)) {
+      const normalized = !!(state.display && state.display.normalizeYAxis);
       const ym = String((state.display && state.display.yAxisMode) || 'auto').toLowerCase();
-      if (yAxisSel.value !== ym) yAxisSel.value = ym;
-      if (yAxisMaxInput) yAxisMaxInput.disabled = (ym !== 'manual');
+      const nextMode = normalized ? 'normalize' : ym;
+      if (yAxisSel.value !== nextMode) yAxisSel.value = nextMode;
+      if (yAxisMaxInput) yAxisMaxInput.disabled = (nextMode !== 'manual');
     }
     if (yAxisMaxInput && !shouldSkipSyncValue(yAxisMaxInput)) {
       const v = Number((state.display && state.display.yAxisMax));
       const next = Number.isFinite(v) && v > 0 ? String(Math.round(v)) : '255';
       if (String(yAxisMaxInput.value) !== next) yAxisMaxInput.value = next;
-    }
-    const normalizeYAxisInput = $('spNormalizeYAxis');
-    if (normalizeYAxisInput && !shouldSkipSyncValue(normalizeYAxisInput)) {
-      const nextChecked = !!(state.display && state.display.normalizeYAxis);
-      if (!!normalizeYAxisInput.checked !== nextChecked) normalizeYAxisInput.checked = nextChecked;
     }
     const peakThresholdInput = $('spPeakThreshold');
     const peakDistanceInput = $('spPeakDistance');

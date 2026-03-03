@@ -1097,3 +1097,52 @@ label[for="peakSizeLower"],
 #SpectraProDockHost .sp-actions--core-zoom{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;}
 #SpectraProDockHost .sp-field--zoom-scroller{display:flex; flex-direction:column; align-items:flex-start;}
 #SpectraProDockHost .sp-field--zoom-scroller input{width:100%; max-width:260px;}
+
+
+/* === CORE 8-column layout refinement === */
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8{
+  display:grid !important;
+  grid-template-columns:repeat(8,minmax(0,1fr)) !important;
+  gap:10px !important;
+  max-width:none !important;
+  align-items:end;
+}
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field{
+  min-width:0;
+}
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field select,
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field input[type=number],
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field input[type=range]{
+  width:100% !important;
+  max-width:100% !important;
+}
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--checkbox-row{
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:8px !important;
+  min-height:32px;
+  padding-top:22px;
+}
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--checkbox-row span{
+  white-space:nowrap;
+}
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 #spFieldFillOpacity{
+  align-self:stretch;
+}
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 #spFillOpacity{
+  width:100% !important;
+}
+#SpectraProDockHost .sp-card-sub--zoom{
+  margin-top:14px;
+}
+@media (max-width: 1400px){
+  #SpectraProDockHost .sp-form-grid.sp-form-grid--core-8{
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  }
+}
+@media (max-width: 900px){
+  #SpectraProDockHost .sp-form-grid.sp-form-grid--core-8{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
