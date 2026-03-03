@@ -1078,10 +1078,10 @@ label[for="peakSizeLower"],
 #graphCanvasWindow{position:relative;}
 #mouseCoordinates{
   position:absolute;
-  top:8px;
-  right:10px;
-  z-index:8;
-  font-size:13px;
+  top:52px;
+  right:14px;
+  z-index:999;
+  font-size:14px;
   font-weight:700;
   color:#000;
   background:rgba(255,255,255,.72);
@@ -1131,7 +1131,7 @@ label[for="peakSizeLower"],
   align-self:stretch;
 }
 #SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 #spFillOpacity{
-  width:100% !important;
+  width: 70% !important;
 }
 #SpectraProDockHost .sp-card-sub--zoom{
   margin-top:14px;

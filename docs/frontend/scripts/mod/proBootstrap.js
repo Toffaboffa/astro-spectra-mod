@@ -546,7 +546,7 @@ function ensureStatusRail() {
         '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing" title="Simple smoothing amount used before peak detection.">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
         '</div>',
         '<div id="spCoreZoomBox" class="sp-card-sub sp-card-sub--zoom">',
-        '  <h4 class="sp-subtitle" style="margin:0 0 8px 0">Zoom</h4>',
+        '  <h4 class="sp-subtitle" style="margin:0 0 8px 0;display: none">Zoom</h4>',
         '  <div class="sp-actions sp-actions--core-zoom">',
         '    <button type="button" id="spResetZoomBtn" title="Reset the graph to the full available X-range.">Reset zoom</button>',
         '    <button type="button" id="spStepBackZoomBtn" title="Return to the previous zoom state.">Step back</button>',
