@@ -868,7 +868,7 @@ body{overflow:hidden;}
 #spPanel-lab .sp-lab-th{padding:6px 8px;font-weight:700;letter-spacing:.06em;font-size:12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.12)}
 #spPanel-lab .sp-lab-th:nth-child(1){border-right:1px solid rgba(255,255,255,.12)}
 #spPanel-lab .sp-lab-hits{min-height:0;overflow:auto;border-right:1px solid rgba(255,255,255,.12);padding:6px 8px}
-#spPanel-lab .sp-lab-qc{min-height:0;overflow:auto;padding:6px 8px;font-size: 14px}
+#spPanel-lab .sp-lab-qc{min-height:0;overflow:auto;padding:6px 8px;font-size: 12px}
 
 /* Compact hit rows: one line, ellipsis */
 #spPanel-lab .sp-hit--one{padding:2px 0;font-size:12px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1048,7 +1048,7 @@ label[for="peakSizeLower"],
 
 
 #spPanel-lab .sp-es-wrap{display:flex;flex-direction:column;gap:4px;font-size:11px;line-height:1.15}
-#spPanel-lab .sp-es-summary{font-size:11px;line-height:1.15;padding:0 0 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#spPanel-lab .sp-es-summary{font-size:12px;line-height:1.15;padding:0 0 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #spPanel-lab .sp-es-head,
 #spPanel-lab .sp-es-row{display:grid;grid-template-columns:minmax(26px,1.05fr) minmax(26px,.8fr) minmax(24px,.8fr) minmax(20px,.62fr) minmax(20px,.62fr) minmax(24px,.75fr);gap:4px;align-items:center}
 #spPanel-lab .sp-es-head{position:sticky;top:0;z-index:1;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(18,18,18,.92);font-size:10px;font-weight:700;letter-spacing:.03em}

@@ -1,6 +1,9 @@
 (function(global){
   "use strict";
   const sp = global.SpectraPro = global.SpectraPro || {};
+  const formatChemicalLabel = (sp.utils && typeof sp.utils.formatChemicalLabel === 'function')
+    ? sp.utils.formatChemicalLabel
+    : function (label) { return String(label == null ? '' : label); };
   function getCanvasTheme(canvas){
     const styles = (canvas && global.getComputedStyle) ? global.getComputedStyle(canvas) : null;
     function read(name, fallback){
@@ -121,8 +124,8 @@
         const deltaNm = Number.isFinite(referenceNm) ? Math.abs(referenceNm - observedNm) : NaN;
         const item = {
           hit: hit,
-          label: name + ' ' + formatDeltaNm(deltaNm),
-          element: name,
+          label: formatChemicalLabel(name) + ' ' + formatDeltaNm(deltaNm),
+          element: formatChemicalLabel(name),
           deltaNm: deltaNm,
           observedNm: observedNm,
           referenceNm: referenceNm,

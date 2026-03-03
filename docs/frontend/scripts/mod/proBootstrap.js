@@ -3,6 +3,9 @@
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
   const store = sp.store;
+  const formatChemicalLabel = (sp.utils && typeof sp.utils.formatChemicalLabel === 'function')
+    ? sp.utils.formatChemicalLabel
+    : function (label) { return String(label == null ? '' : label); };
 // --- PRO Console Log (LAB Step 1 UI Hotfix) ---
 const CONSOLE_PATH = 'ui.console.lines';
 function getConsoleLines() {
@@ -1349,7 +1352,7 @@ function ensureLabPanel() {
       const nm = (h && h.nm) != null ? Number(h.nm) : null;
       const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
       const elTxt = h && h.element ? (' · ' + String(h.element)) : '';
-      return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt + elTxt) + '</div></div>';
+      return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(formatChemicalLabel(name)) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt + elTxt) + '</div></div>';
     }).join('');
     host.innerHTML = head + rows;
   }
@@ -1929,7 +1932,7 @@ function renderLabPanel() {
       const fullName = symbol && PERIODIC[symbol] ? PERIODIC[symbol] : '';
       const lines = Math.max(1, Number(g && g.lineCount) || 0);
       const left = '#' + String(idx + 1);
-      const who = symbol ? (symbol + (fullName ? (' (' + fullName + ')') : '')) : 'Unknown';
+      const who = symbol ? (formatChemicalLabel(symbol) + (fullName ? (' (' + fullName + ')') : '')) : 'Unknown';
       const line = left + ' • Smart find • ' + who + ' • ' + lines + ' lines';
       return '<div class="sp-hit sp-hit--one sp-hit--smart">' + escapeHtml(line) + '</div>';
     }).join('') : '';
@@ -1940,7 +1943,7 @@ function renderLabPanel() {
       const sig = sigmaFromConfidence(h && (h.confidence != null ? h.confidence : h.score));
       const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 10) / 10).toFixed(1) + 'nm' : '';
       const left = (sig ? (sig + 'σ') : '•');
-      const who = symbol ? (symbol + (fullName ? (' (' + fullName + ')') : '')) : 'Unknown';
+      const who = symbol ? (formatChemicalLabel(symbol) + (fullName ? (' (' + fullName + ')') : '')) : 'Unknown';
       const smartTxt = h && h.smartFind ? (' • group #' + String((h.smartGroupRank || 0) + 1)) : '';
       const line = left + ' • ' + who + (nmTxt ? (' • ' + nmTxt) : '') + smartTxt;
       return '<div class="sp-hit sp-hit--one' + (h && h.smartFind ? ' sp-hit--smartline' : '') + '">' + escapeHtml(line) + '</div>';
@@ -1952,7 +1955,7 @@ function renderLabPanel() {
     qcEl.innerHTML = '<div class="sp-empty">No element ranking yet.</div>';
   } else {
     const compactRows = elementScores.slice(0, 6).map(function (row, idx) {
-      const el = escapeHtml(String(row && row.element || '?'));
+      const el = escapeHtml(formatChemicalLabel(String(row && row.element || '?')));
       const pct = Number.isFinite(Number(row && row.likelyPct)) ? Math.max(1, Math.min(99, Math.round(Number(row.likelyPct)))) : 0;
       const score = Number.isFinite(Number(row && row.totalScore)) ? Number(row.totalScore).toFixed(1) : '0.0';
       const matched = Number.isFinite(Number(row && row.matchedPeaks)) ? String(Number(row.matchedPeaks)) : '0';
@@ -1988,7 +1991,7 @@ function renderLabPanel() {
     }).join('');
     const winner = elementScores[0] || null;
     const winnerText = winner
-      ? ('<div class="sp-es-summary" title="Most likely winner according to the current Smart score.">Winner: <b>' + escapeHtml(String(winner.element || '?')) + '</b> • ' + escapeHtml(String(Math.max(1, Math.min(99, Math.round(Number(winner.likelyPct || 0))))) + '%') +
+      ? ('<div class="sp-es-summary" title="Most likely winner according to the current Smart score.">Winner: <b>' + escapeHtml(formatChemicalLabel(String(winner.element || '?'))) + '</b> • ' + escapeHtml(String(Math.max(1, Math.min(99, Math.round(Number(winner.likelyPct || 0))))) + '%') +
          ' · Ep ' + escapeHtml(String(Number.isFinite(Number(winner.explainedPeaksPct)) ? Number(winner.explainedPeaksPct).toFixed(0) : '0')) + '%'
          + ' · Ei ' + escapeHtml(String(Number.isFinite(Number(winner.explainedIntensityPct)) ? Number(winner.explainedIntensityPct).toFixed(0) : '0')) + '%'
          + '</div>')
@@ -1996,16 +1999,16 @@ function renderLabPanel() {
     var breakdownText = '';
     if (winnerBreakdown) {
       var secondary = Array.isArray(winnerBreakdown.secondaryContributors) ? winnerBreakdown.secondaryContributors.slice(0, 3).map(function (it) {
-        return String(it.element || '?') + ' ' + String(Math.round(Number(it.likelyPct || 0))) + '%';
+        return formatChemicalLabel(String(it.element || '?')) + ' ' + String(Math.round(Number(it.likelyPct || 0))) + '%';
       }).join(', ') : '';
       var bands = Array.isArray(winnerBreakdown.possibleBands) ? winnerBreakdown.possibleBands.slice(0, 3).map(function (it) {
-        return String(it.element || '?');
+        return formatChemicalLabel(String(it.element || '?'));
       }).join(', ') : '';
       var bg = Array.isArray(winnerBreakdown.backgroundComponents) ? winnerBreakdown.backgroundComponents.slice(0, 2).map(function (it) {
-        return String(it.element || '?');
+        return formatChemicalLabel(String(it.element || '?'));
       }).join(', ') : '';
       breakdownText = '<div class="sp-hit-meta sp-hit-meta--qc" title="Smart summary: primary emitter, secondary contributors, possible bands and background.">' +
-        'Primary: ' + escapeHtml(String(winnerBreakdown.primaryEmitter || '?')) +
+        'Primary: ' + escapeHtml(formatChemicalLabel(String(winnerBreakdown.primaryEmitter || '?'))) +
         (secondary ? (' · Secondary: ' + escapeHtml(secondary)) : '') +
         (bands ? (' · Bands: ' + escapeHtml(bands)) : '') +
         (bg ? (' · Bg: ' + escapeHtml(bg)) : '') +
@@ -2056,7 +2059,7 @@ function renderLabPanel() {
           const nm = (h && h.nm) != null ? Number(h.nm) : null;
           const nmTxt = Number.isFinite(nm) ? (Math.round(nm * 100) / 100).toFixed(2) + ' nm' : '';
           const elTxt = h && h.element ? (' · ' + String(h.element)) : '';
-          return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(name) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt + elTxt) + '</div></div>';
+          return '<div class="sp-hit"><div class="sp-hit-name">' + escapeHtml(formatChemicalLabel(name)) + '</div><div class="sp-hit-meta">' + escapeHtml(nmTxt + elTxt) + '</div></div>';
         }).join('');
         host.innerHTML = head + rows;
       }
