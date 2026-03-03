@@ -24,7 +24,7 @@ function appendConsoleErr(line) { appendConsole('ERROR: ' + line); }
 sp.consoleLog = { append: appendConsole, error: appendConsoleErr };
 
   const bus = sp.eventBus;
-  const TABS = ['general', 'core', 'lab', 'astro', 'other'];
+  const TABS = ['core', 'lab', 'astro', 'other'];
 
   let ui = null;
   let booted = false;
@@ -94,8 +94,9 @@ function el(tag, cls, text) {
 
     const panels = {};
     TABS.forEach((tab, idx) => {
-      const btn = el('button', 'sp-tab', tab === 'core' ? 'CORE' : (tab === 'general' ? 'General' : tab.toUpperCase()));
+      const btn = el('button', 'sp-tab', tab.toUpperCase());
       btn.type = 'button';
+      btn.title = ({ core: 'Core graph controls, display settings and camera utilities.', lab: 'Laboratory spectrum matching, presets and hit analysis.', astro: 'Astro analysis workspace and future astronomy tools.', other: 'Calibration I/O, shell points and detailed diagnostics.' }[tab]) || tab.toUpperCase();
       btn.dataset.tab = tab;
       if (idx === 0) btn.classList.add('is-active');
       tabs.appendChild(btn);
@@ -434,7 +435,7 @@ function maybeRunLabAnalyze(frameNormalized) {
     store.setState({ ui: nextUi }, { source: 'proBootstrap.tab' });
 
     // Keep PRO "tab" and PRO "app mode" in sync.
-    // User tabs are General / CORE / LAB / ASTRO / OTHER.
+    // User tabs are CORE / LAB / ASTRO / OTHER.
     // App mode must follow LAB/ASTRO to enable worker overlays + analysis.
     try {
       const t = String(tab || '').toLowerCase();
@@ -451,7 +452,7 @@ function maybeRunLabAnalyze(frameNormalized) {
 
   function setActiveTab(tab) {
     if (!ui) return;
-    const active = TABS.includes(tab) ? tab : 'general';
+    const active = TABS.includes(tab) ? tab : 'core';
     ui.tabs.querySelectorAll('.sp-tab').forEach((b) => b.classList.toggle('is-active', b.dataset.tab === active));
     TABS.forEach((t) => {
       const panel = ui.panels[t];
@@ -459,45 +460,7 @@ function maybeRunLabAnalyze(frameNormalized) {
     });
   }
 
-  function mountGeneralOriginalControls() {
-    if (!ui || !ui.panels.general) return;
-    const left = $('graphSettingsDrawerLeft');
-    if (!left) return;
-
-    const panel = ui.panels.general;
-    let hostWrap = $('spGeneralHost');
-    if (!hostWrap) {
-      hostWrap = el('div', 'sp-general-host');
-      hostWrap.id = 'spGeneralHost';
-      panel.appendChild(hostWrap);
-    }
-
-    // Move original graph controls (left drawer children) into General panel, but keep IDs/listeners intact.
-    let normalizeWrap = $('spNormalizeYAxisWrap');
-    if (!normalizeWrap) {
-      normalizeWrap = el('div', 'sp-card sp-card--flat');
-      normalizeWrap.id = 'spNormalizeYAxisWrap';
-      normalizeWrap.innerHTML = '<div class="sp-form-grid"><label id="spFieldNormalizeYAxis" class="sp-field sp-field--normalize-y-axis sp-field--checkbox-row"><span>Normalize</span><input id="spNormalizeYAxis" type="checkbox"></label></div>';
-      hostWrap.appendChild(normalizeWrap);
-      const normalizeInput = normalizeWrap.querySelector('#spNormalizeYAxis');
-      if (normalizeInput) {
-        const displayStateInit = (getStoreState().display || {});
-        normalizeInput.checked = !!displayStateInit.normalizeYAxis;
-        normalizeInput.addEventListener('change', (e) => {
-          if (store && store.update) store.update('display.normalizeYAxis', !!e.target.checked, { source: 'proBootstrap.general' });
-          try { redrawGraphIfLoadedImage(); } catch (_) {}
-          try { drawGraph(); } catch (_) {}
-        });
-      }
-    }
-
-    const children = Array.from(left.children);
-    children.forEach((node) => {
-      if (node.id === 'spMain') return; // keep dock host in drawer
-      if (node.id === 'spNormalizeYAxisWrap') return;
-      hostWrap.appendChild(node);
-    });
-  }
+  function mountGeneralOriginalControls() { return; }
 
   
 
@@ -552,35 +515,43 @@ function ensureStatusRail() {
     const core = ui.panels.core;
     if (core && !core.dataset.built) {
       const card = el('div', 'sp-card sp-card--flat');
-      const displayOptions = getV15DisplayModes().map(function (m) { return `<option value=\"${String(m).toLowerCase()}\">${m}</option>`; }).join('');
-      const yAxisOptions = getV15YAxisModes().map(function (m) { return `<option value=\"${String(m).toLowerCase()}\">${m}</option>`; }).join('');
-      const fillModeOptions = getV15FillModes().map(function (m) { return `<option value=\"${String(m).toLowerCase()}\">${m}</option>`; }).join('');
+      const displayOptions = getV15DisplayModes().map(function (m) { return `<option value="${String(m).toLowerCase()}">${m}</option>`; }).join('');
+      const yAxisOptions = getV15YAxisModes().map(function (m) { return `<option value="${String(m).toLowerCase()}">${m}</option>`; }).join('');
+      const xAxisOptions = ['px', 'nm'].map(function (m) { return `<option value="${m}">${m}</option>`; }).join('');
 
       card.innerHTML = [
         '<div class="sp-form-grid">',
-        '  <label id="spFieldAppMode" class="sp-field sp-field--app-mode">App mode<select id="spAppMode" class="spctl-select spctl-select--app-mode"><option value="CORE">CORE</option><option value="LAB">LAB</option><option value="ASTRO">ASTRO</option></select></label>',
-        '  <label id="spFieldWorkerMode" class="sp-field sp-field--worker-mode">Worker<select id="spWorkerMode" class="spctl-select spctl-select--worker-mode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>',
-        '  <label id="spFieldDisplayMode" class="sp-field sp-field--display-mode">Display mode<select id="spDisplayMode" class="spctl-select spctl-select--display-mode">' + displayOptions + '</select></label>',
-        '  <label id="spFieldYAxisMode" class="sp-field sp-field--y-axis-mode">Y-axis<select id="spYAxisMode" class="spctl-select spctl-select--y-axis-mode">' + yAxisOptions + '</select></label>',
-        '  <label id="spYAxisMaxWrap" class="sp-field sp-field--y-axis-max">Y max<input id="spYAxisMax" class="spctl-input spctl-input--y-axis-max" type="number" min="1" max="4096" step="1" value="255"></label>',
-        '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
-        '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
-        '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
-        '  <label id="spFieldToggleNmPeaks" class="sp-field sp-field--toggle-nm-peaks sp-field--checkbox-row"><span>Toggle nm peaks</span><input id="spToggleNmPeaks" type="checkbox"></label>',
-        '  <label id="spFieldFillMode" class="sp-field sp-field--fill-mode">Fill mode<select id="spFillMode" class="spctl-select spctl-select--fill-mode">' + fillModeOptions + '</select></label>',
-        '  <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity">Fill opacity<input id="spFillOpacity" class="spctl-input spctl-input--fill-opacity spctl-range spctl-range--fill-opacity" type="range" min="0" max="1" step="0.01" value="0.70"></label>',
+        '  <label id="spFieldAppMode" class="sp-field sp-field--app-mode" title="Choose the active analysis workspace. LAB and ASTRO enable analysis-specific behavior.">App mode<select id="spAppMode" class="spctl-select spctl-select--app-mode"><option value="CORE">CORE</option><option value="LAB">LAB</option><option value="ASTRO">ASTRO</option></select></label>',
+        '  <label id="spFieldWorkerMode" class="sp-field sp-field--worker-mode" title="Control whether the analysis worker is used automatically, forced on, or forced off.">Worker<select id="spWorkerMode" class="spctl-select spctl-select--worker-mode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>',
+        '  <label id="spFieldDisplayMode" class="sp-field sp-field--display-mode" title="Choose how the graph is computed from the current signal and reference frames.">Display mode<select id="spDisplayMode" class="spctl-select spctl-select--display-mode">' + displayOptions + '</select></label>',
+        '  <label id="spFieldYAxisMode" class="sp-field sp-field--y-axis-mode" title="Set how the vertical graph scale is handled.">Y-axis<select id="spYAxisMode" class="spctl-select spctl-select--y-axis-mode">' + yAxisOptions + '</select><span class="sp-inline-check"><input id="spNormalizeYAxis" type="checkbox"><span>Normalize</span></span></label>',
+        '  <label id="spFieldXAxisMode" class="sp-field sp-field--x-axis-mode" title="Choose whether the horizontal axis uses calibrated wavelength or raw pixel position.">X-axis<select id="spXAxisMode" class="spctl-select spctl-select--x-axis-mode">' + xAxisOptions + '</select></label>',
+        '  <label id="spYAxisMaxWrap" class="sp-field sp-field--y-axis-max" title="Manual upper limit for the Y-axis when manual scaling is active.">Y max<input id="spYAxisMax" class="spctl-input spctl-input--y-axis-max" type="number" min="1" max="4096" step="1" value="255"></label>',
+        '  <div id="spChannelWrap" class="sp-field sp-field--channel-wrap" title="Show or hide the combined and RGB traces on the graph."><span class="sp-field-title">Channels</span><label class="sp-inline-check"><input id="spToggleCombinedProxy" type="checkbox"><span>Combined</span></label><label class="sp-inline-check"><input id="spToggleRProxy" type="checkbox"><span>R</span></label><label class="sp-inline-check"><input id="spToggleGProxy" type="checkbox"><span>G</span></label><label class="sp-inline-check"><input id="spToggleBProxy" type="checkbox"><span>B</span></label></div>',
+        '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold" title="Minimum intensity used by the built-in nm peak detector.">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
+        '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance" title="Minimum separation between detected nm peaks.">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
+        '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing" title="Simple smoothing amount used before peak detection.">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
+        '  <label id="spFieldToggleNmPeaks" class="sp-field sp-field--toggle-nm-peaks sp-field--checkbox-row" title="Show or hide detected nm peak markers on the graph."><span>Toggle nm peaks</span><input id="spToggleNmPeaks" type="checkbox"></label>',
+        '</div>',
+        '<div id="spCoreZoomBox" class="sp-card-sub sp-card-sub--zoom">',
+        '  <h4 class="sp-subtitle" style="margin:0 0 8px 0">Zoom</h4>',
+        '  <div class="sp-actions sp-actions--core-zoom">',
+        '    <button type="button" id="spResetZoomBtn" title="Reset the graph to the full available X-range.">Reset zoom</button>',
+        '    <button type="button" id="spStepBackZoomBtn" title="Return to the previous zoom state.">Step back</button>',
+        '    <button type="button" id="spStepLeftZoomBtn" title="Pan the current zoom window one step to the left.">←</button>',
+        '    <button type="button" id="spStepRightZoomBtn" title="Pan the current zoom window one step to the right.">→</button>',
+        '  </div>',
+        '  <label id="spFieldZoomScroller" class="sp-field sp-field--zoom-scroller" title="Drag to move within the current zoom span.">Zoom scroller<input class="form-range darker-slider w-auto" type="range" id="spZoomScrollerProxy" min="0" max="100" value="0" disabled /></label>',
         '</div>',
         '<div class="sp-actions">',
-        '  <button type="button" id="spInitLibBtn">Init libraries</button>',
-        '  <button type="button" id="spPingWorkerBtn">Ping worker</button>',
-        '  <button type="button" id="spRefreshUiBtn">Refresh UI</button>',
-        '  <button type="button" id="spProbeCameraBtn">Probe camera</button>',
+        '  <button type="button" id="spRefreshUiBtn" title="Rebuild the PRO dock and refresh visible status panels.">Refresh UI</button>',
+        '  <button type="button" id="spProbeCameraBtn" title="Probe browser camera capabilities and available manual controls.">Probe camera</button>',
         '</div>',
         '<div id="spCameraCtlWrap" class="sp-card-sub" style="margin-top:10px; display:none">',
         '  <h4 class="sp-subtitle" style="margin:0 0 8px 0">Camera controls (optional)</h4>',
         '  <div class="sp-form-grid">',
-        '    <label class="sp-field">Zoom<input id="spCamZoom" class="spctl-input" type="range" min="1" max="10" step="0.1" value="1"></label>',
-        '    <label class="sp-field">Exposure<input id="spCamExposure" class="spctl-input" type="range" min="1" max="1000" step="1" value="1"></label>',
+        '    <label class="sp-field" title="Apply browser-supported zoom to the active camera stream.">Zoom<input id="spCamZoom" class="spctl-input" type="range" min="1" max="10" step="0.1" value="1"></label>',
+        '    <label class="sp-field" title="Apply browser-supported exposure time to the active camera stream.">Exposure<input id="spCamExposure" class="spctl-input" type="range" min="1" max="1000" step="1" value="1"></label>',
         '  </div>',
         '  <div id="spCameraCtlNote" class="sp-note sp-note--feedback" aria-live="polite"></div>',
         '</div>',
@@ -593,18 +564,56 @@ function ensureStatusRail() {
       const workerSel = card.querySelector('#spWorkerMode');
       const displaySel = card.querySelector('#spDisplayMode');
       const yAxisSel = card.querySelector('#spYAxisMode');
+      const normalizeYAxisInput = card.querySelector('#spNormalizeYAxis');
+      const xAxisSel = card.querySelector('#spXAxisMode');
       const yAxisMaxInput = card.querySelector('#spYAxisMax');
       const peakThresholdInput = card.querySelector('#spPeakThreshold');
       const peakDistanceInput = card.querySelector('#spPeakDistance');
       const peakSmoothingInput = card.querySelector('#spPeakSmoothing');
       const toggleNmPeaksInput = card.querySelector('#spToggleNmPeaks');
-      const fillModeSel = card.querySelector('#spFillMode');
-      const fillOpacityInput = card.querySelector('#spFillOpacity');
+      const combinedProxy = card.querySelector('#spToggleCombinedProxy');
+      const rProxy = card.querySelector('#spToggleRProxy');
+      const gProxy = card.querySelector('#spToggleGProxy');
+      const bProxy = card.querySelector('#spToggleBProxy');
+      const resetZoomProxy = card.querySelector('#spResetZoomBtn');
+      const stepBackProxy = card.querySelector('#spStepBackZoomBtn');
+      const stepLeftProxy = card.querySelector('#spStepLeftZoomBtn');
+      const stepRightProxy = card.querySelector('#spStepRightZoomBtn');
+      const zoomScrollerProxy = card.querySelector('#spZoomScrollerProxy');
       const camCtlWrap = card.querySelector('#spCameraCtlWrap');
       const camZoomInput = card.querySelector('#spCamZoom');
       const camExposureInput = card.querySelector('#spCamExposure');
       const camCtlNote = card.querySelector('#spCameraCtlNote');
       const setVal = (path, value) => { if (store && store.update) store.update(path, value, { source: 'proBootstrap.core' }); };
+      const proxyClick = function (id) {
+        const target = $(id);
+        if (!target) return;
+        try { target.click(); } catch (_) { try { target.dispatchEvent(new Event('click', { bubbles: true })); } catch (_) {} }
+      };
+      const syncCheckboxProxy = function (proxy, targetId) {
+        const target = $(targetId);
+        if (!proxy || !target) return;
+        proxy.checked = !!target.checked;
+        proxy.addEventListener('change', function (e) {
+          target.checked = !!e.target.checked;
+          try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+          try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+        });
+      };
+      const syncXAxisProxy = function () {
+        if (!xAxisSel) return;
+        const nm = $('toggleXLabelsNm');
+        xAxisSel.value = (nm && nm.checked) ? 'nm' : 'px';
+      };
+      const syncZoomScrollerProxy = function () {
+        const target = $('zoomScroller');
+        if (!zoomScrollerProxy || !target) return;
+        zoomScrollerProxy.min = target.min;
+        zoomScrollerProxy.max = target.max;
+        zoomScrollerProxy.step = target.step || '1';
+        zoomScrollerProxy.value = target.value;
+        zoomScrollerProxy.disabled = !!target.disabled;
+      };
       const peakInit = getInitialPeakUiValues();
       if (peakThresholdInput) peakThresholdInput.value = String(peakInit.threshold);
       if (peakDistanceInput) peakDistanceInput.value = String(peakInit.distance);
@@ -614,11 +623,13 @@ function ensureStatusRail() {
         toggleNmPeaksInput.checked = !!legacyTogglePeaks.checked;
       }
       const displayStateInit = (getStoreState().display || {});
-      if (fillModeSel) fillModeSel.value = String(displayStateInit.fillMode || 'inherit').toLowerCase();
-      if (fillOpacityInput) {
-        const fo = Number(displayStateInit.fillOpacity);
-        fillOpacityInput.value = Number.isFinite(fo) ? String(Math.max(0, Math.min(1, fo))) : '0.70';
-      }
+      if (normalizeYAxisInput) normalizeYAxisInput.checked = !!displayStateInit.normalizeYAxis;
+      syncCheckboxProxy(combinedProxy, 'toggleCombined');
+      syncCheckboxProxy(rProxy, 'toggleR');
+      syncCheckboxProxy(gProxy, 'toggleG');
+      syncCheckboxProxy(bProxy, 'toggleB');
+      syncXAxisProxy();
+      syncZoomScrollerProxy();
 
       modeSel && modeSel.addEventListener('change', (e) => {
         const mode = String(e.target.value || 'CORE').toUpperCase();
@@ -640,6 +651,24 @@ function ensureStatusRail() {
         setVal('display.yAxisMode', mode);
         if (yAxisMaxInput) yAxisMaxInput.disabled = (mode !== 'manual');
       });
+      normalizeYAxisInput && normalizeYAxisInput.addEventListener('change', (e) => {
+        setVal('display.normalizeYAxis', !!e.target.checked);
+        try { redrawGraphIfLoadedImage(); } catch (_) {}
+        try { drawGraph(); } catch (_) {}
+      });
+      xAxisSel && xAxisSel.addEventListener('change', (e) => {
+        const mode = String(e.target.value || 'px').toLowerCase();
+        const pxRadio = $('toggleXLabelsPx');
+        const nmRadio = $('toggleXLabelsNm');
+        const target = mode === 'nm' ? nmRadio : pxRadio;
+        if (pxRadio) pxRadio.checked = (mode === 'px');
+        if (nmRadio) nmRadio.checked = (mode === 'nm');
+        if (target) {
+          try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+          try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+          try { target.click(); } catch (_) {}
+        }
+      });
       yAxisMaxInput && yAxisMaxInput.addEventListener('change', (e) => {
         const n = Number(e.target.value);
         if (!Number.isFinite(n) || n <= 0) return;
@@ -651,23 +680,6 @@ function ensureStatusRail() {
         target.checked = !!e.target.checked;
         try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
         try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
-      });
-
-      fillModeSel && fillModeSel.addEventListener('change', (e) => {
-        const mode = String(e.target.value || 'inherit').toLowerCase();
-        setVal('display.fillMode', mode);
-      });
-      const syncFillOpacityLabel = function (_val) { return; };
-      fillOpacityInput && fillOpacityInput.addEventListener('input', (e) => {
-        const n = Number(e.target.value);
-        if (!Number.isFinite(n)) return;
-        const v = Math.max(0, Math.min(1, n));
-        setVal('display.fillOpacity', v);
-      });
-      fillOpacityInput && fillOpacityInput.addEventListener('change', (e) => {
-        const n = Number(e.target.value);
-        const v = Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0.70;
-        e.target.value = String(v);
       });
 
       peakThresholdInput && peakThresholdInput.addEventListener('input', (e) => {
@@ -693,73 +705,28 @@ function ensureStatusRail() {
       peakDistanceInput && peakDistanceInput.addEventListener('blur', (e) => { const n = Number(e.target.value); e.target.value = String(Number.isFinite(n) ? Math.max(1, Math.min(512, Math.round(n))) : 1); });
       peakSmoothingInput && peakSmoothingInput.addEventListener('blur', (e) => { const n = Number(e.target.value); e.target.value = String(Number.isFinite(n) ? Math.max(0, Math.min(8, Math.round(n))) : 0); });
 
-      card.addEventListener('click', (e) => {
-        const t = e.target;
-        if (!(t instanceof HTMLElement)) return;
-        if (t.id === 'spPingWorkerBtn') {
-          setCoreActionFeedback('Pinging worker…', 'info');
-          const client = ensureWorkerClient();
-          if (client && typeof client.ping === 'function') {
-            try {
-              store.update('worker.enabled', true, { source: 'proBootstrap.core' });
-              client.ping();
-              setCoreActionFeedback('Worker ping sent.', 'ok');
-            } catch (err) {
-              setVal('worker.status', 'error');
-              setVal('worker.lastError', String(err && err.message || err));
-              setCoreActionFeedback('Ping worker failed: ' + String(err && err.message || err), 'error');
-            }
-          } else {
-            setVal('worker.lastPingAt', Date.now());
-            setVal('worker.lastError', 'Worker client unavailable (fallback ping marker)');
-            if (store && store.getState && store.getState().worker && store.getState().worker.enabled) setVal('worker.status', 'ready');
-            setCoreActionFeedback('Worker client unavailable; recorded fallback ping marker.', 'warn');
-          }
-        }
-        if (t.id === 'spInitLibBtn') {
-          setCoreActionFeedback('Initializing libraries…', 'info');
-          const client = ensureWorkerClient();
-          setVal('worker.lastError', null);
-          setVal('worker.librariesLoaded', false);
-          if (client && typeof client.initLibraries === 'function') {
-            try {
-              store.update('worker.enabled', true, { source: 'proBootstrap.core' });
-              client.initLibraries(null);
-              setCoreActionFeedback('Library init request sent to worker.', 'ok');
-            } catch (err) {
-              setVal('worker.status', 'error');
-              setVal('worker.lastError', String(err && err.message || err));
-              setCoreActionFeedback('Init libraries failed: ' + String(err && err.message || err), 'error');
-            }
-          } else {
-            setVal('worker.lastError', 'Worker client unavailable (cannot init libraries)');
-            setCoreActionFeedback('Worker client unavailable; cannot init libraries yet.', 'warn');
-          }
-        }
-        if (t.id === 'spRefreshUiBtn') {
-          setCoreActionFeedback('UI refreshed (dock + status rerender).', 'ok');
-          try { render();
-    clearInlineFeedbackAreas(); 
-    
-    clearInlineFeedbackAreas();
-autoCloseInfoPopupIfDefault();
-} catch (e) {}
-          try { renderStatus(); } catch (e) {}
-          try { renderConsole(); } catch (e) {}
-          return;
-        }
-        if (t.id === 'spProbeCameraBtn') {
-          setCoreActionFeedback('Probing camera capabilities…', 'info');
-          probeCameraCapabilitiesIntoStore().then(function (res) {
-            setCoreActionFeedback('Probe camera done (' + String((res && res.status) || 'unknown') + ').', 'ok');
-            try { renderStatus(); } catch (_) {}
-            try { renderConsole(); } catch (_) {}
-            try { renderCameraControlsFromStore(); } catch (_) {}
-          }).catch(function (err) { setCoreActionFeedback('Probe camera failed: ' + String(err && err.message || err), 'error'); });
-          return;
-        }
+      resetZoomProxy && resetZoomProxy.addEventListener('click', function () { proxyClick('resetZoomButton'); syncZoomScrollerProxy(); });
+      stepBackProxy && stepBackProxy.addEventListener('click', function () { proxyClick('stepBackButton'); syncZoomScrollerProxy(); });
+      stepLeftProxy && stepLeftProxy.addEventListener('click', function () { proxyClick('stepLeftButton'); syncZoomScrollerProxy(); });
+      stepRightProxy && stepRightProxy.addEventListener('click', function () { proxyClick('stepRightButton'); syncZoomScrollerProxy(); });
+      zoomScrollerProxy && zoomScrollerProxy.addEventListener('input', function (e) {
+        const target = $('zoomScroller');
+        if (!target) return;
+        target.value = e.target.value;
+        try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
       });
-
+      zoomScrollerProxy && zoomScrollerProxy.addEventListener('change', function (e) {
+        const target = $('zoomScroller');
+        if (!target) return;
+        target.value = e.target.value;
+        try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+      });
+      ['toggleCombined','toggleR','toggleG','toggleB','toggleXLabelsPx','toggleXLabelsNm','zoomScroller'].forEach(function (id) {
+        const target = $(id);
+        if (!target) return;
+        target.addEventListener('change', function () { syncXAxisProxy(); syncZoomScrollerProxy(); });
+        target.addEventListener('input', function () { syncXAxisProxy(); syncZoomScrollerProxy(); });
+      });
       // Camera controls (optional) — apply constraints only if supported.
       const applyCamSetting = function (key, val) {
         const camMod = sp.v15 && sp.v15.cameraCapabilities;
@@ -1021,10 +988,10 @@ function ensureLabPanel() {
 	    '    </div>',
 	    '    <div class="sp-lab-fields">',
 	    '      <div class="sp-lab-fields-col">',
-	    '        <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled sp-field--checkbox-row"><span>Analyze</span><input id="spLabEnabled" type="checkbox"></label>',
-	    '        <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
-	    '        <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">' + presetOptionsHtml + '</select></label>',
-	    '        <label id="spFieldLabSubMode" class="sp-field sp-field--lab-sub">Mode<select id="spLabSubMode" class="spctl-select spctl-select--lab-sub">',
+	    '        <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled sp-field--checkbox-row" title="Turn continuous LAB analysis on or off."><span>Analyze</span><input id="spLabEnabled" type="checkbox"></label>',
+	    '        <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz" title="Maximum analysis update rate per second. Lower values reduce CPU load.">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
+	    '        <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset" title="Choose a tuned library weighting preset for the current type of source.">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">' + presetOptionsHtml + '</select></label>',
+	    '        <label id="spFieldLabSubMode" class="sp-field sp-field--lab-sub" title="Choose how the incoming frame is transformed before matching.">Mode<select id="spLabSubMode" class="spctl-select spctl-select--lab-sub">',
 	    '          <option value="raw">Raw</option>',
 	    '          <option value="raw-dark">Raw - Dark</option>',
 	    '          <option value="difference">Difference (Raw - Ref)</option>',
@@ -1048,12 +1015,12 @@ function ensureLabPanel() {
 	    '      </div>',
 	    '    </div>',
 	    '    <div class="sp-actions sp-actions--lab">',
-	    '      <button type="button" id="spLabInitLibBtn">Init libraries</button>',
-	    '      <button type="button" id="spLabPingBtn">Ping worker</button>',
-	    '      <button type="button" id="spLabQueryBtn">Query library</button>',
-	    '      <button type="button" id="spLabCapRefBtn">Capture ref</button>',
-	    '      <button type="button" id="spLabCapDarkBtn">Capture dark</button>',
-	    '      <button type="button" id="spLabClearSubBtn">Clear</button>',
+	    '      <button type="button" id="spLabInitLibBtn" title="Load or reload the active spectral libraries inside the worker.">Init libraries</button>',
+	    '      <button type="button" id="spLabPingBtn" title="Check that the LAB analysis worker is alive and responding.">Ping worker</button>',
+	    '      <button type="button" id="spLabQueryBtn" title="Search the loaded library within a wavelength range or by species name.">Query library</button>',
+	    '      <button type="button" id="spLabCapRefBtn" title="Capture the current frame as the reference spectrum.">Capture ref</button>',
+	    '      <button type="button" id="spLabCapDarkBtn" title="Capture the current frame as the dark spectrum for subtraction.">Capture dark</button>',
+	    '      <button type="button" id="spLabClearSubBtn" title="Clear captured reference and dark data from the current LAB session.">Clear</button>',
 	    '    </div>',
 	    '  </div>',
 	    '  <div class="sp-lab-right">',
@@ -2078,7 +2045,7 @@ function renderLabPanel() {
     ensureStatusRail();
 
     const state = getStoreState();
-    const active = String(state.ui?.activeTab || 'general').toLowerCase();
+    const active = String(state.ui?.activeTab || 'core').toLowerCase();
     setActiveTab(active);
     renderStatus();
     renderLabPanel();

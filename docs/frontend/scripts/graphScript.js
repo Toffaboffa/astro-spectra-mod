@@ -721,10 +721,11 @@ function setupEventListeners() {
             const graphY = Math.round(maxValue * (1 - (y - padding) / (height - 2 * padding)));
 
             const toggleXLabelsNm = document.getElementById("toggleXLabelsNm");
-            if (toggleXLabelsNm.checked) {
-                displayX = getWaveLengthByPx(graphX).toFixed(1);
+            const calibrated = (typeof isCalibrated === 'function') ? !!isCalibrated() : false;
+            if (toggleXLabelsNm.checked && calibrated && typeof getWaveLengthByPx === 'function') {
+                displayX = getWaveLengthByPx(graphX).toFixed(1) + ' nm';
             } else {
-                displayX = graphX;
+                displayX = graphX + ' px';
             }
             displayY = graphY;
         }
@@ -732,7 +733,7 @@ function setupEventListeners() {
     });
 
     addEventListener(graphCanvas, 'mouseleave', function() {
-        document.getElementById('mouseCoordinates').textContent = 'X: N/A, Y: N/A';
+        document.getElementById('mouseCoordinates').textContent = 'X: N/A px, Y: N/A';
     });
 
     addEventListener(graphCanvas, 'mouseup', () => {
