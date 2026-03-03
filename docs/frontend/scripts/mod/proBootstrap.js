@@ -1178,6 +1178,8 @@ function ensureLabPanel() {
     const v = String(e.target.value || 'raw');
     setVal('subtraction.mode', v);
     setFeedback('Mode: ' + v, 'info');
+    try { redrawGraphIfLoadedImage(); } catch (_) {}
+    try { drawGraph(); } catch (_) {}
   });
 
   showHitsEl && showHitsEl.addEventListener('change', function (e) {
@@ -1377,29 +1379,42 @@ function ensureLabPanel() {
       return;
     }
     const arr = f.I.slice();
+    const rgb = {
+      R: Array.isArray(f.R) ? f.R.slice() : null,
+      G: Array.isArray(f.G) ? f.G.slice() : null,
+      B: Array.isArray(f.B) ? f.B.slice() : null
+    };
     if (kind === 'ref') {
       setVal('subtraction.referenceI', arr);
+      setVal('subtraction.referenceRGB', rgb);
       setVal('subtraction.hasReference', true);
       setVal('subtraction.referenceCapturedAt', Date.now());
       setFeedback('Captured reference (' + arr.length + ' pts).', 'ok');
     } else {
       setVal('subtraction.darkI', arr);
+      setVal('subtraction.darkRGB', rgb);
       setVal('subtraction.hasDark', true);
       setVal('subtraction.darkCapturedAt', Date.now());
       setFeedback('Captured dark (' + arr.length + ' pts).', 'ok');
     }
+    try { redrawGraphIfLoadedImage(); } catch (_) {}
+    try { drawGraph(); } catch (_) {}
   }
 
   $('spLabCapRefBtn') && $('spLabCapRefBtn').addEventListener('click', function () { capture('ref'); });
   $('spLabCapDarkBtn') && $('spLabCapDarkBtn').addEventListener('click', function () { capture('dark'); });
   $('spLabClearSubBtn') && $('spLabClearSubBtn').addEventListener('click', function () {
     setVal('subtraction.referenceI', null);
+    setVal('subtraction.referenceRGB', null);
     setVal('subtraction.darkI', null);
+    setVal('subtraction.darkRGB', null);
     setVal('subtraction.hasReference', false);
     setVal('subtraction.hasDark', false);
     setVal('subtraction.referenceCapturedAt', null);
     setVal('subtraction.darkCapturedAt', null);
     setFeedback('Cleared reference/dark.', 'info');
+    try { redrawGraphIfLoadedImage(); } catch (_) {}
+    try { drawGraph(); } catch (_) {}
   });
 
   return card;

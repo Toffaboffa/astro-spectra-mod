@@ -65,6 +65,74 @@ function isSpectraProYAxisNormalized() {
     }
 }
 
+
+function getSpectraProStoreState() {
+    try {
+        const sp = window.SpectraPro || {};
+        return (sp.store && typeof sp.store.getState === 'function') ? (sp.store.getState() || {}) : {};
+    } catch (_) {
+        return {};
+    }
+}
+
+function getEffectiveGraphProcessingMode() {
+    try {
+        const state = getSpectraProStoreState();
+        const appMode = String(state.appMode || 'CORE').toUpperCase();
+        const labMode = String((state.subtraction && state.subtraction.mode) || 'raw').toLowerCase();
+        if (appMode === 'LAB' && labMode && labMode !== 'raw') return labMode;
+        const settings = getSpectraProDisplaySettings();
+        return String(settings.mode || 'normal').toLowerCase();
+    } catch (_) {
+        const settings = getSpectraProDisplaySettings();
+        return String(settings.mode || 'normal').toLowerCase();
+    }
+}
+
+function buildPixelsFromChannels(rArr, gArr, bArr) {
+    if (!Array.isArray(rArr) || !Array.isArray(gArr) || !Array.isArray(bArr)) return null;
+    const n = Math.min(rArr.length, gArr.length, bArr.length);
+    if (!n) return null;
+    const out = new Uint8ClampedArray(n * 4);
+    for (let i = 0; i < n; i += 1) {
+        const base = i * 4;
+        out[base] = Math.max(0, Math.min(255, Math.round(Number(rArr[i]) || 0)));
+        out[base + 1] = Math.max(0, Math.min(255, Math.round(Number(gArr[i]) || 0)));
+        out[base + 2] = Math.max(0, Math.min(255, Math.round(Number(bArr[i]) || 0)));
+        out[base + 3] = 255;
+    }
+    return out;
+}
+
+function getStoredReferencePixels(basePixels) {
+    try {
+        const state = getSpectraProStoreState();
+        const sub = state.subtraction || {};
+        const rgb = sub.referenceRGB || null;
+        if (rgb && Array.isArray(rgb.R) && Array.isArray(rgb.G) && Array.isArray(rgb.B)) {
+            const built = buildPixelsFromChannels(rgb.R, rgb.G, rgb.B);
+            if (built && built.length === basePixels.length) return built;
+        }
+    } catch (_) {}
+    if (!referenceGraph || !referenceGraph.length || !referenceGraph[0] || !referenceGraph[0][0]) return null;
+    const refPixels = referenceGraph[0][0];
+    if (!refPixels || refPixels.length !== basePixels.length) return null;
+    return refPixels;
+}
+
+function getStoredDarkPixels(basePixels) {
+    try {
+        const state = getSpectraProStoreState();
+        const sub = state.subtraction || {};
+        const rgb = sub.darkRGB || null;
+        if (rgb && Array.isArray(rgb.R) && Array.isArray(rgb.G) && Array.isArray(rgb.B)) {
+            const built = buildPixelsFromChannels(rgb.R, rgb.G, rgb.B);
+            if (built && built.length === basePixels.length) return built;
+        }
+    } catch (_) {}
+    return null;
+}
+
 function getGraphHoverDotElement() {
     return document.getElementById('graphHoverDot');
 }
@@ -104,11 +172,46 @@ function getHoverSeriesDescriptor() {
             if (Array.isArray(data) && data[0]) return { pixels: data[0], channelOffset: -1 };
         } catch (_) {}
     }
-    if (toggleCombined) return { pixels: pixels, channelOffset: -1 };
-    if (toggleR) return { pixels: pixels, channelOffset: 0 };
-    if (toggleG) return { pixels: pixels, channelOffset: 1 };
-    if (toggleB) return { pixels: pixels, channelOffset: 2 };
+    let activePixels = pixels;
+    try {
+        const pixelWidth = Math.max(1, Math.floor((pixels && pixels.length ? pixels.length : 0) / 4));
+        activePixels = applySpectraProDisplayMode(pixels, pixelWidth);
+    } catch (_) {}
+    if (toggleCombined) return { pixels: activePixels, channelOffset: -1 };
+    if (toggleR) return { pixels: activePixels, channelOffset: 0 };
+    if (toggleG) return { pixels: activePixels, channelOffset: 1 };
+    if (toggleB) return { pixels: activePixels, channelOffset: 2 };
     return null;
+}
+
+function updateGraphHoverDotFromGraphX(graphX) {
+    if (!Number.isFinite(graphX)) {
+        hideGraphHoverDot();
+        return;
+    }
+    const descriptor = getHoverSeriesDescriptor();
+    if (!descriptor || !descriptor.pixels) {
+        hideGraphHoverDot();
+        return;
+    }
+    const targetPixels = descriptor.pixels;
+    const rect = graphCanvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const [zoomStart, zoomEnd] = getZoomRange(Math.max(1, Math.floor(targetPixels.length / 4)));
+    if (!(graphX >= zoomStart && graphX < zoomEnd)) {
+        hideGraphHoverDot();
+        return;
+    }
+    const value = getGraphValueAtX(targetPixels, graphX, descriptor.channelOffset);
+    const maxValue = resolveSpectraProYAxisMax(targetPixels, calculateMaxValue(targetPixels));
+    const dotY = calculateYPosition(value, height, maxValue);
+    const dotX = calculateXPosition(graphX - zoomStart, zoomEnd - zoomStart, width);
+    const dot = ensureGraphHoverDot();
+    if (!dot) return;
+    dot.style.left = (graphCanvas.offsetLeft + dotX) + 'px';
+    dot.style.top = (graphCanvas.offsetTop + dotY) + 'px';
+    dot.style.display = 'block';
 }
 
 function updateGraphHoverDotFromPosition(clientX, clientY) {
@@ -120,6 +223,8 @@ function updateGraphHoverDotFromPosition(clientX, clientY) {
     const height = rect.height;
     if (!(x >= padding && x <= width - padding && y >= padding && y <= height - padding)) {
         hideGraphHoverDot();
+        graphHoverState.active = false;
+        graphHoverState.graphX = null;
         return;
     }
     const descriptor = getHoverSeriesDescriptor();
@@ -135,21 +240,13 @@ function updateGraphHoverDotFromPosition(clientX, clientY) {
     const pixelCanvasWidth = usableWidth / denom;
     const relX = Math.max(0, Math.min(usableWidth, x - padding));
     const pixelIndexFloat = relX / pixelCanvasWidth;
-    const pixelIndex = Math.floor(pixelIndexFloat);
-    const graphX = Math.min(zoomEnd - 1, Math.max(zoomStart, zoomStart + pixelIndex));
-    const value = getGraphValueAtX(targetPixels, graphX, descriptor.channelOffset);
-    const maxValue = resolveSpectraProYAxisMax(targetPixels, calculateMaxValue(targetPixels));
-    const dotY = calculateYPosition(value, height, maxValue);
-    const dotX = calculateXPosition(graphX - zoomStart, zoomEnd - zoomStart, width);
-    const dot = ensureGraphHoverDot();
-    if (!dot) return;
-    dot.style.left = dotX + 'px';
-    dot.style.top = dotY + 'px';
-    dot.style.display = 'block';
+    const pixelIndex = Math.round(pixelIndexFloat);
+    const nextGraphX = Math.min(zoomEnd - 1, Math.max(zoomStart, zoomStart + pixelIndex));
     graphHoverState.active = true;
-    graphHoverState.graphX = graphX;
+    graphHoverState.graphX = nextGraphX;
     graphHoverState.clientX = clientX;
     graphHoverState.clientY = clientY;
+    updateGraphHoverDotFromGraphX(nextGraphX);
 }
 
 function calculateVisiblePeakMax(pixels) {
@@ -183,27 +280,36 @@ function calculateVisiblePeakMax(pixels) {
 }
 
 function applySpectraProDisplayMode(basePixels, pixelWidth) {
-    const settings = getSpectraProDisplaySettings();
-    const mode = settings.mode;
-    if (!basePixels || !basePixels.length || mode === 'normal') return basePixels;
-    if (!referenceGraph || !referenceGraph.length || !referenceGraph[0] || !referenceGraph[0][0]) return basePixels;
+    const mode = getEffectiveGraphProcessingMode();
+    if (!basePixels || !basePixels.length || mode === 'normal' || mode === 'raw') return basePixels;
 
-    const refPixels = referenceGraph[0][0];
-    if (!refPixels || refPixels.length !== basePixels.length) return basePixels;
+    const refPixels = getStoredReferencePixels(basePixels);
+    const darkPixels = getStoredDarkPixels(basePixels);
+    const needsReference = (mode === 'difference' || mode === 'ratio' || mode === 'transmittance' || mode === 'absorbance');
+    const needsDark = (mode === 'raw-dark' || mode === 'transmittance' || mode === 'absorbance');
+    if (needsReference && (!refPixels || refPixels.length !== basePixels.length)) return basePixels;
+    if (needsDark && (!darkPixels || darkPixels.length !== basePixels.length) && mode === 'raw-dark') return basePixels;
 
     const out = new Uint8ClampedArray(basePixels.length);
     const eps = 1e-6;
     for (let i = 0; i < basePixels.length; i += 4) {
         for (let c = 0; c < 3; c += 1) {
             const a = Number(basePixels[i + c]) || 0;
-            const r = Number(refPixels[i + c]) || 0;
+            const r = refPixels ? (Number(refPixels[i + c]) || 0) : 0;
+            const d = darkPixels ? (Number(darkPixels[i + c]) || 0) : 0;
+            const rawMinusDark = a - d;
+            const refMinusDark = r - d;
             let v = a;
-            if (mode === 'difference') {
-                v = Math.abs(a - r);
-            } else if (mode === 'ratio' || mode === 'transmittance') {
+            if (mode === 'raw-dark') {
+                v = rawMinusDark;
+            } else if (mode === 'difference') {
+                v = a - r;
+            } else if (mode === 'ratio') {
                 v = (a / Math.max(r, 1)) * 255;
+            } else if (mode === 'transmittance') {
+                v = 255 * (rawMinusDark / Math.max(refMinusDark, 1));
             } else if (mode === 'absorbance') {
-                const t = Math.max(a / Math.max(r, 1), eps);
+                const t = Math.max(rawMinusDark / Math.max(refMinusDark, 1), eps);
                 v = Math.min(255, Math.max(0, (-Math.log10(t)) * 128));
             }
             out[i + c] = Math.max(0, Math.min(255, Math.round(v)));
@@ -509,6 +615,9 @@ function drawGraph() {
         const rectWidth = Math.abs(dragStartX - dragEndX);
         graphCtx.fillStyle = 'rgba(0, 0, 255, 0.2)';
         graphCtx.fillRect(rectX, 30, rectWidth, graphCanvas.getBoundingClientRect().height - 60);
+    }
+    if (graphHoverState.active && Number.isFinite(graphHoverState.graphX)) {
+        updateGraphHoverDotFromGraphX(graphHoverState.graphX);
     }
 }
 
