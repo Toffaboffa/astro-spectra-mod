@@ -121,7 +121,8 @@
           includeWeakPeaks: !!(st.analysis && st.analysis.includeWeakPeaks),
           peakThresholdRel: Number(st.analysis && st.analysis.peakThresholdRel),
           peakDistancePx: Number(st.analysis && st.analysis.peakDistancePx),
-          maxDistanceNm: Number(st.analysis && st.analysis.maxDistanceNm)
+          maxDistanceNm: Number(st.analysis && st.analysis.maxDistanceNm),
+          strongPeakLevel: Number(st.analysis && st.analysis.strongPeakLevel)
         }
       });
       inFlight = { requestId: requestId, startedAt: now };
@@ -334,13 +335,13 @@
               smart = { groups: [], hits: [] };
             }
             store.update('analysis.smartFindGroups', smart.groups.slice(0, 6));
-            store.update('analysis.smartFindHits', smart.hits.slice(0, 36));
+            store.update('analysis.smartFindHits', smart.hits.slice(0, 120));
 
             // Optional stability filter.
             const st = store.getState();
             const useStable = !!(st.analysis && st.analysis.stableHits);
             if (!useStable) {
-              store.update('analysis.topHits', rawHits.slice(0, 36));
+              store.update('analysis.topHits', rawHits.slice(0, 120));
             } else {
               const t = nowMs();
               const windowMs = 8000;
@@ -381,7 +382,7 @@
                 .filter(h => (h.stableCount || 0) >= minCount)
                 .sort((a, b) => ((b.stableCount || 0) * 2 + (+b.confidence || 0)) - ((a.stableCount || 0) * 2 + (+a.confidence || 0)));
 
-              store.update('analysis.topHits', stableList.slice(0, 36));
+              store.update('analysis.topHits', stableList.slice(0, 120));
             }
           }
           if (typeof msg.payload.presetId === 'string' && msg.payload.presetId.trim()) {

@@ -88,6 +88,7 @@
       winnerBreakdown: null,
       offsetNm: null,
       maxDistanceNm: 5,
+      strongPeakLevel: 3,
       qcFlags: []
     },
     camera: {

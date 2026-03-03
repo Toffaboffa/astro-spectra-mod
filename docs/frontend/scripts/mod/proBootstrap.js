@@ -1031,6 +1031,7 @@ function ensureLabPanel() {
 	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lägre peak threshold, mindre peak-separation och fler peaks totalt. Påverkar peakdetektionen, inte någon separat smart AI-logik."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
 	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
 	    '        <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
+	    '        <label id="spFieldLabStrongPeak" class="sp-field sp-field--lab-strongpeak" title="Adjust how much Smart rewards matches on the strongest observed peaks.">Strong Peak<input id="spLabStrongPeak" class="spctl-input spctl-range spctl-range--lab-strongpeak" type="range" min="1" max="5" step="1" value="3"></label>',
 	    '      </div>',
 	    '      <div class="sp-lab-fields-col">',
 	    '        <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="5"></label>',
@@ -1097,6 +1098,7 @@ function ensureLabPanel() {
   const weakEl = $('spLabWeak');
   const stableEl = $('spLabStable');
   const smartEl = $('spLabSmart');
+  const strongPeakEl = $('spLabStrongPeak');
   const peakThrEl = $('spLabPeakThr');
   const peakDistEl = $('spLabPeakDist');
   const maxDistEl = $('spLabMaxDist');
@@ -1107,6 +1109,7 @@ function ensureLabPanel() {
   if (weakEl) weakEl.checked = includeWeak;
   if (stableEl) stableEl.checked = stableHits;
   if (smartEl) smartEl.checked = smartFind;
+  if (strongPeakEl) strongPeakEl.value = String(Math.max(1, Math.min(5, Math.round(Number(s.analysis && s.analysis.strongPeakLevel) || 3))));
   if (peakThrEl) peakThrEl.value = String(Math.max(0.5, Math.min(50, ((Number(s.analysis && s.analysis.peakThresholdRel) || 0.05) * 100))));
   if (peakDistEl) peakDistEl.value = String(Math.max(1, Math.min(64, Math.round(Number(s.analysis && s.analysis.peakDistancePx) || 5))));
   if (maxDistEl) maxDistEl.value = String(Math.max(0.2, Math.min(50, Number(s.analysis && s.analysis.maxDistanceNm) || 5)));
@@ -1178,6 +1181,21 @@ function ensureLabPanel() {
     const on = !!e.target.checked;
     setVal('analysis.smartFindEnabled', on);
     setFeedback(on ? 'Smart find enabled.' : 'Smart find disabled.', 'info');
+  });
+
+  strongPeakEl && strongPeakEl.addEventListener('input', function (e) {
+    const n = Number(e.target.value);
+    if (!Number.isFinite(n)) return;
+    const level = Math.max(1, Math.min(5, Math.round(n)));
+    setVal('analysis.strongPeakLevel', level);
+  });
+
+  strongPeakEl && strongPeakEl.addEventListener('change', function (e) {
+    const n = Number(e.target.value);
+    if (!Number.isFinite(n)) return;
+    const level = Math.max(1, Math.min(5, Math.round(n)));
+    setVal('analysis.strongPeakLevel', level);
+    setFeedback('Strong peak balance updated.', 'info');
   });
 
   peakThrEl && peakThrEl.addEventListener('change', function (e) {
@@ -1901,7 +1919,7 @@ function renderLabPanel() {
       const line = left + ' • Smart find • ' + who + ' • ' + lines + ' lines';
       return '<div class="sp-hit sp-hit--one sp-hit--smart">' + escapeHtml(line) + '</div>';
     }).join('') : '';
-    const rows = hits.slice(0, 80).map(function (h) {
+    const rows = hits.slice(0, 140).map(function (h) {
       const symbol = String((h && (h.element || '')) || '').trim() || toSymbol(h && (h.species || h.speciesKey || h.name));
       const fullName = symbol && PERIODIC[symbol] ? PERIODIC[symbol] : '';
       const nm = (h && (h.referenceNm != null ? h.referenceNm : (h.observedNm != null ? h.observedNm : h.nm))) != null ? Number(h.referenceNm != null ? h.referenceNm : (h.observedNm != null ? h.observedNm : h.nm)) : null;
@@ -1956,7 +1974,7 @@ function renderLabPanel() {
     }).join('');
     const winner = elementScores[0] || null;
     const winnerText = winner
-      ? ('<div class="sp-es-summary" title="Troligaste gas just nu enligt Smart-score.">Winner: <b>' + escapeHtml(String(winner.element || '?')) + '</b> • ' + escapeHtml(String(Math.max(1, Math.min(99, Math.round(Number(winner.likelyPct || 0))))) + '%') +
+      ? ('<div class="sp-es-summary" title="Most likely winner according to the current Smart score.">Winner: <b>' + escapeHtml(String(winner.element || '?')) + '</b> • ' + escapeHtml(String(Math.max(1, Math.min(99, Math.round(Number(winner.likelyPct || 0))))) + '%') +
          ' · Ep ' + escapeHtml(String(Number.isFinite(Number(winner.explainedPeaksPct)) ? Number(winner.explainedPeaksPct).toFixed(0) : '0')) + '%'
          + ' · Ei ' + escapeHtml(String(Number.isFinite(Number(winner.explainedIntensityPct)) ? Number(winner.explainedIntensityPct).toFixed(0) : '0')) + '%'
          + '</div>')
@@ -1972,7 +1990,7 @@ function renderLabPanel() {
       var bg = Array.isArray(winnerBreakdown.backgroundComponents) ? winnerBreakdown.backgroundComponents.slice(0, 2).map(function (it) {
         return String(it.element || '?');
       }).join(', ') : '';
-      breakdownText = '<div class="sp-hit-meta sp-hit-meta--qc" title="Del 3 summary: primary emitter, secondary contributors, bands/background.">' +
+      breakdownText = '<div class="sp-hit-meta sp-hit-meta--qc" title="Smart summary: primary emitter, secondary contributors, possible bands and background.">' +
         'Primary: ' + escapeHtml(String(winnerBreakdown.primaryEmitter || '?')) +
         (secondary ? (' · Secondary: ' + escapeHtml(secondary)) : '') +
         (bands ? (' · Bands: ' + escapeHtml(bands)) : '') +
@@ -1983,16 +2001,16 @@ function renderLabPanel() {
       '<div class="sp-es-wrap">' +
         winnerText +
         '<div class="sp-es-head">' +
-          '<div class="sp-es-c sp-es-c--el" title="Element / molekyl-art som Smart tycker bäst förklarar spektrumet.">El</div>' +
-          '<div class="sp-es-c sp-es-c--pct" title="Relativ sannolikhet inom aktuella kandidater. Inte absolut laboratorie-certifiering.">%</div>' +
-          '<div class="sp-es-c sp-es-c--score" title="Total Smart-score efter coverage, closeness, klusterbonus och straff.">S</div>' +
-          '<div class="sp-es-c sp-es-c--matched" title="Antal observerade peaks/bandankare som matchades för kandidaten.">M</div>' +
-          '<div class="sp-es-c sp-es-c--missed" title="Antal viktiga signaturlinjer som borde synts men saknas.">X</div>' +
-          '<div class="sp-es-c sp-es-c--delta" title="Medianavvikelse i nm mellan observation och referens. Lägre är bättre.">Δ</div>' +
+          '<div class="sp-es-c sp-es-c--el" title="Element or molecular species that Smart thinks best explains the spectrum.">El</div>' +
+          '<div class="sp-es-c sp-es-c--pct" title="Relative likelihood within the current candidate set. Not an absolute laboratory probability.">%</div>' +
+          '<div class="sp-es-c sp-es-c--score" title="Total Smart score after coverage, closeness, cluster bonuses and penalties.">S</div>' +
+          '<div class="sp-es-c sp-es-c--matched" title="Number of observed peaks or band anchors matched for this candidate.">M</div>' +
+          '<div class="sp-es-c sp-es-c--missed" title="Number of important signature lines that were expected but not found.">X</div>' +
+          '<div class="sp-es-c sp-es-c--delta" title="Median offset in nm between observation and reference. Lower is better.">Δ</div>' +
         '</div>' +
         compactRows +
       '</div>';
-    qcEl.innerHTML = table + breakdownText + (qc.length ? ('<div class="sp-hit-meta sp-hit-meta--qc" title="Kvalitetsflaggor från analysen.">QC: ' + escapeHtml(qc.slice(0, 6).join(', ')) + '</div>') : '');
+    qcEl.innerHTML = table + breakdownText + (qc.length ? ('<div class="sp-hit-meta sp-hit-meta--qc" title="Quality-control flags from the current analysis.">QC: ' + escapeHtml(qc.slice(0, 6).join(', ')) + '</div>') : '');
   }
 
   // If the query modal is open, refresh its list from the latest store state.

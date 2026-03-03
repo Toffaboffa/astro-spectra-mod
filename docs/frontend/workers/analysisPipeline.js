@@ -60,6 +60,12 @@
     return clamp(Number.isFinite(med) ? med : 1.2, 0.4, 6.0);
   }
 
+
+  function strongPeakFactor(level) {
+    const n = Math.max(1, Math.min(5, Math.round(Number(level) || 3)));
+    return [0.55, 0.78, 1.0, 1.35, 1.8][n - 1];
+  }
+
   function getElementFamily(element) {
     const k = String(element || '').trim();
     const noble = { He: 1, Ne: 1, Ar: 1, Kr: 1, Xe: 1 };
@@ -331,7 +337,7 @@
     }).slice(0, Math.max(3, Math.min(12, Number(limit) || 8)));
   }
 
-  function scoreAtomicCandidate(element, profiles, matches, peaks, hardMaxDistanceNm, familyWeights) {
+  function scoreAtomicCandidate(element, profiles, matches, peaks, hardMaxDistanceNm, familyWeights, strongPeakLevel) {
     const profile = profiles[element];
     if (!profile) return null;
     const arr = matches.filter(function (m) { return String(m.element || '') === element && (!m.kind || m.kind === 'atom'); });
@@ -342,6 +348,7 @@
     let closenessScore = 0;
     let uniquenessScore = 0;
     let explainedProm = 0;
+    let strongPeakSupport = 0;
     const maxProm = Math.max(1, (Array.isArray(peaks) ? peaks : []).reduce(function (m, p) { return Math.max(m, Number((p && p.prominence) || (p && p.value) || 0) || 0); }, 0));
     arr.forEach(function (m) {
       const peakKey = Number.isFinite(Number(m.peakIndex)) ? String(Number(m.peakIndex)) : String(Number(m.obsNm).toFixed(3));
@@ -365,7 +372,9 @@
         const closeNorm = Math.max(0, 1 - (best.delta / Math.max(0.4, hardMaxDistanceNm)));
         closenessScore += closeNorm;
         uniquenessScore += Number(ln.uniqueness || 0);
-        explainedProm += Number(best.match.prominence || best.match.peakValue || 0) || 0;
+        const peakProm = Number(best.match.prominence || best.match.peakValue || 0) || 0;
+        explainedProm += peakProm;
+        strongPeakSupport += closeNorm * (peakProm / maxProm);
         matchMap[String(ln.nm.toFixed(3))] = best.match;
       }
     });
@@ -384,13 +393,15 @@
     const missedExpected = Math.max(0, profile.expected.length - matchedExpected);
     const densityPenalty = Math.min(2.4, Math.max(0, (profile.density - 0.05) * 14));
     const familyWeight = Number((familyWeights || {})[profile.family] || (familyWeights || {}).generic || 1) || 1;
+    const strongFactor = strongPeakFactor(strongPeakLevel);
     const score = familyWeight * (
       matchedExpected * 2.7 +
       matchedPeakCount * 0.8 +
       closenessScore * 1.6 +
       uniquenessScore * 3.4 +
       groupBonus * 1.8 +
-      (explainedProm / maxProm) * 0.55
+      (explainedProm / maxProm) * 0.55 +
+      strongPeakSupport * 0.9 * strongFactor
     ) - missedExpected * 0.75 - densityPenalty;
 
     return {
@@ -409,7 +420,7 @@
     };
   }
 
-  function scoreMolecularCandidate(species, profiles, matches, peaks, hardMaxDistanceNm, familyWeights) {
+  function scoreMolecularCandidate(species, profiles, matches, peaks, hardMaxDistanceNm, familyWeights, strongPeakLevel) {
     const profile = profiles[species];
     if (!profile || !profile.length) return null;
     const arr = matches.filter(function (m) { return String(m.element || '') === species && String(m.kind || '') === 'molecular-band'; });
@@ -417,6 +428,7 @@
     let matchedBands = 0;
     let coveredPeakCount = 0;
     let explainedProm = 0;
+    let strongPeakSupport = 0;
     let deltaVals = [];
     profile.forEach(function (band) {
       let best = null;
@@ -442,15 +454,18 @@
         matchedBands += 1;
         coveredPeakCount += best.peaksInside;
         explainedProm += best.promInside;
+        strongPeakSupport += Math.max(0, 1 - (best.delta / Math.max(1.0, hardMaxDistanceNm * 1.2))) * Math.min(1.6, best.promInside / maxProm);
         deltaVals.push(best.delta);
       }
     });
     const missed = Math.max(0, profile.length - matchedBands);
     const familyWeight = Number((familyWeights || {}).molecular || 1) || 1;
+    const strongFactor = strongPeakFactor(strongPeakLevel);
     const score = familyWeight * (
       matchedBands * 3.2 +
       Math.min(6, coveredPeakCount) * 0.85 +
-      Math.min(8, explainedProm / maxProm) * 0.55
+      Math.min(8, explainedProm / maxProm) * 0.55 +
+      strongPeakSupport * 0.7 * strongFactor
     ) - missed * 0.45;
     return {
       element: species,
@@ -567,11 +582,11 @@
       const ib = winners.indexOf(String(b.element || ''));
       return (ia - ib) || (Number(b.confidence || 0) - Number(a.confidence || 0));
     });
-    if (presetCfg.id === 'smart-flame') return prioritized.slice(0, 36);
-    if (presetCfg.id === 'smart-fluorescent') return prioritized.slice(0, 30);
-    if (presetCfg.mode === 'molecular') return prioritized.slice(0, 18);
-    if (presetCfg.mode === 'mixture') return prioritized.slice(0, 28);
-    return prioritized.slice(0, 24);
+    if (presetCfg.id === 'smart-flame') return prioritized.slice(0, 80);
+    if (presetCfg.id === 'smart-fluorescent') return prioritized.slice(0, 72);
+    if (presetCfg.mode === 'molecular') return prioritized.slice(0, 60);
+    if (presetCfg.mode === 'mixture') return prioritized.slice(0, 72);
+    return prioritized.slice(0, 64);
   }
 
   function buildRefinedElementScores(ctx) {
@@ -584,11 +599,11 @@
     discovery.forEach(function (cand) {
       const element = String(cand.element || '');
       if (atomicProfiles[element] && ctx.mode !== 'molecular') {
-        const scored = scoreAtomicCandidate(element, atomicProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights);
+        const scored = scoreAtomicCandidate(element, atomicProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel);
         if (scored) scores.push(scored);
       }
       if (molecularProfiles[element] && ctx.mode !== 'atomic') {
-        const scoredMol = scoreMolecularCandidate(element, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights);
+        const scoredMol = scoreMolecularCandidate(element, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel);
         if (scoredMol) scores.push(scoredMol);
       }
     });
@@ -596,7 +611,7 @@
     if (ctx.mode !== 'atomic') {
       Object.keys(molecularProfiles).forEach(function (species) {
         if (scores.some(function (s) { return String(s.element) === species; })) return;
-        const scoredMol = scoreMolecularCandidate(species, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights);
+        const scoredMol = scoreMolecularCandidate(species, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel);
         if (scoredMol && scoredMol.totalScore > 0) scores.push(scoredMol);
       });
     }
@@ -625,6 +640,7 @@
     const peakThresholdRel = Number.isFinite(Number(opt.peakThresholdRel)) ? Number(opt.peakThresholdRel) : (includeWeak ? 0.02 : 0.05);
     const peakDistancePx = Number.isFinite(Number(opt.peakDistancePx)) ? Number(opt.peakDistancePx) : (includeWeak ? 3 : 5);
     const hardMaxDistanceNm = Math.max(0.2, Math.min(50, Number.isFinite(Number(opt.maxDistanceNm)) ? Number(opt.maxDistanceNm) : 5));
+    const strongPeakLevel = Math.max(1, Math.min(5, Math.round(Number.isFinite(Number(opt.strongPeakLevel)) ? Number(opt.strongPeakLevel) : 3)));
 
     const rawPeaks = peakDetect.detectPeaks(I, { prominenceWindowPx: Math.max(4, peakDistancePx * 2) });
     const peaks = inferPeaks(frame, peakScoring.scorePeaks(rawPeaks, {
@@ -713,7 +729,8 @@
         resolutionNm: resolutionNm,
         mode: presetCfg.mode,
         familyWeights: presetCfg.familyWeights,
-        candidateLimit: presetCfg.candidateLimit
+        candidateLimit: presetCfg.candidateLimit,
+        strongPeakLevel: strongPeakLevel
       }).slice(0, 8);
       if (elementScores.length) {
         topHits = selectTopHitsForSmart(topHits, elementScores, presetCfg);
