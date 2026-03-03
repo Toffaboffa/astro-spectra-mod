@@ -385,9 +385,9 @@
               store.update('analysis.topHits', stableList.slice(0, 120));
             }
           }
-          if (typeof msg.payload.presetId === 'string' && msg.payload.presetId.trim()) {
-            store.update('analysis.presetId', msg.payload.presetId.trim());
-          }
+          // Do not let asynchronous worker results overwrite the user's current preset selection.
+          // The UI/store is the source of truth for selected preset; otherwise a late result from an
+          // older request can revert the preset and make Element Score appear "stuck" in another mode.
           if (typeof msg.payload.offsetNm === 'number') store.update('analysis.offsetNm', msg.payload.offsetNm);
           if (Array.isArray(msg.payload.qcFlags)) store.update('analysis.qcFlags', msg.payload.qcFlags);
         }
