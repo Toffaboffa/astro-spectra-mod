@@ -17,7 +17,7 @@ On top of that, SPECTRA-PRO adds three working modes:
 - **LAB** — line identification, subtraction, absorbance/transmittance workflows for classroom/lab use
 - **ASTRO** — solar/stellar/planetary workflows with continuum normalization, absorption handling, molecular bands, and preliminary Doppler/offset tools
 
-This repository is currently a **scaffold** (many files are placeholders) designed so we can patch in original SPECTRA files first, then add mod features step-by-step without breaking CORE.
+This repository is now a **hybrid implementation repo**: the original SPECTRA recording workflow has been imported, CORE is functional, and SPECTRA-PRO features are partially implemented on top. Some files are still placeholders, but the app is no longer just a scaffold.
 
 ---
 
@@ -82,7 +82,7 @@ Adds live analysis for teaching/lab experiments:
 - **Flame** — future mixed-emitter combustion logic
 - **Fluorescent** — future Hg + helper-gas lamp logic
 
-In **Del 1**, the new Smart preset labels and grouping are in place, while the deeper two-stage Smart logic lands in later patches.
+In **Part 1**, the new Smart preset labels and grouping were introduced, while the deeper two-stage Smart logic landed in later patches.
 
 ### ASTRO mode
 Adds astronomy-oriented workflows:
@@ -172,14 +172,14 @@ The Smart path is being split into two stages:
 1. **Discovery** — broad library search with hard `Max distance (nm)` gating.
 2. **Profile refinement** — candidate-level comparison of expected vs observed lines/bands.
 
-Del 1 adds the preset structure and documentation for this split. Del 2/3 add the scoring logic itself.
+Part 1 added the preset structure and documentation for this split. Parts 2 and 3 added the scoring logic itself.
 
 ---
 
 ## Repository structure (mapped file-by-file)
 
-Below is the current scaffold structure and the intended responsibility of each file.
-Some files are placeholders and will be implemented incrementally.
+Below is the current repository structure and the intended responsibility of each file.
+Some files are fully implemented, some are partial, and some remain placeholders for later phases.
 
 ## Root
 
@@ -245,7 +245,7 @@ Responsibilities after patching:
 ## `docs/frontend/styles/`
 
 ### `docs/frontend/styles/styles.css`
-Base SPECTRA styles (placeholder until original styles are copied in).
+Base SPECTRA styles plus merged compatibility/override styling.
 
 ### `docs/frontend/styles/mod-panels.css`
 Styles for PRO panels (mode tabs, top hits, presets, subtraction, quality panel, status widgets).
@@ -315,7 +315,7 @@ Placeholder/local data slot for instrument response profile exports/imports.
 
 ---
 
-## `docs/frontend/scripts/` (original SPECTRA placeholders)
+## `docs/frontend/scripts/` (original SPECTRA CORE stack)
 These will later be replaced by original SPECTRA files. PRO hooks are designed to sit on top of them.
 
 ### `docs/frontend/scripts/polynomialRegressionScript.js`
@@ -561,83 +561,83 @@ Protocol test cases for UI ↔ Worker messaging and error handling.
 
 ---
 
-## What is intentionally **not** in this scaffold yet
+## What is intentionally **not** implemented yet
 - No backend/Python service
 - No production build tooling requirement (can be served statically)
-- No full implementation in placeholders (many files are interface-level shells)
+- Some modules are still interface-level shells or partial implementations
 - No template cross-correlation module yet (deferred until later phase to avoid premature complexity)
 
 ---
 
 ## Immediate next practical step
-1. Replace placeholder SPECTRA files in `docs/frontend/scripts/`, `docs/frontend/pages/recording.html`, and `docs/frontend/styles/styles.css` with original SPECTRA sources.
-2. Patch safe hooks (graph frame export, calibration bridge, overlay hook).
-3. Verify CORE behavior before enabling LAB/ASTRO analysis loops.
+1. Continue tightening documentation so it matches the current implementation status module-by-module.
+2. Expand ASTRO-specific runtime modules beyond their current scaffold state.
+3. Keep verifying CORE behavior whenever LAB/ASTRO analysis logic is patched.
 
 The philosophy here is simple: **protect the instrument feel first, then add the smart stuff.**
 
 
-## Current scaffold progress
+## Current implementation progress
 
-- Phase 2 foundation patch #1 added: event bus, state store, mode tabs, worker ping/analyze shell, and LAB pipeline stubs.
-- Original SPECTRA files are still placeholders and must be imported before CORE integration work.
+- The original SPECTRA recording workflow is already imported and running inside `docs/frontend/`.
+- CORE is functional, and several Phase 1.5 / Phase 2 features are live in the UI and worker pipeline.
+- Some ASTRO and reproducibility/export modules are still staged as partial implementations or placeholders.
+
+> **Current integration note:** `docs/frontend/pages/recording.html` is based on the original SPECTRA-1 recording page, with local script-path patches and a non-invasive SPECTRA-PRO bridge layer for hooks/state. Some original SPECTRA style/language assets were not present in the imported zip and may still need follow-up for full parity.
 
 
-> **Current integration note (Phase 0 real import):** `docs/frontend/pages/recording.html` is now based on the original SPECTRA-1 recording page, with local script-path patches and a non-invasive SPECTRA-PRO bridge layer for hooks/state. Some original SPECTRA style/language assets were not present in the imported zip and may need to be added later for full parity.
+## Smart 2.0 Part 2
 
+Part 2 builds on the preset structure from Part 1 and upgrades the SMART logic in the worker pipeline.
 
-## Smart 2.0 Del 2
+### What now exists
 
-Del 2 bygger vidare på preset-strukturen från Del 1 och uppgraderar SMART-logiken i worker-pipelinen.
+- **Discovery stage**: broad search in the relevant library with hard max distance as an absolute gate.
+- **Profile refinement**: top candidates receive a dynamic profile within the current wavelength range.
+- **Atomic Smart**: uses expected lines, missed lines, uniqueness, line groups, and density penalty.
+- **Molecular Smart**: uses band regions, peak clusters, and band density instead of only simple line matching.
+- **Gas Tube / Flame / Fluorescent**: use the same two-stage system but with different candidate families and weightings.
 
-### Det som nu finns
+### Important boundary
 
-- **Discovery stage**: bred sökning i relevant bibliotek med hard max distance som absolut gate.
-- **Profile refinement**: toppkandidater får en dynamisk profil i aktuell våglängdsrange.
-- **Atomic Smart**: arbetar med förväntade linjer, missade linjer, uniqueness, line groups och density penalty.
-- **Molecular Smart**: arbetar med bandområden, peakkluster och bandtäthet istället för enbart enkel linjematchning.
-- **Gas Tube / Flame / Fluorescent**: använder samma tvåstegssystem men med olika kandidatfamiljer och viktningar.
+Base Presets (`Nearest`, `Wide`, `Tight`, `Fast`, `Lamp`) still use simple local peak-to-line logic.
 
-### Viktig avgränsning
+From Part 2 onward, Smart Presets use global profile scoring:
 
-Base Presets (`Nearest`, `Wide`, `Tight`, `Fast`, `Lamp`) använder fortfarande enkel lokal peak→line-logik.
+- `Atomic` → atomic line spectra
+- `Molecular` → N2/O2 and other band-dominated spectra
+- `Gas Tube` → mixed discharge-tube sources
+- `Flame` → early mixed-emitter logic for combustion sources
+- `Fluorescent` → Hg + helper-gas / lamp sources
 
-Smart Presets använder från och med Del 2 global profilbedömning:
+### Current scoring ideas in Part 2
 
-- `Atomic` → atomära linjespektra
-- `Molecular` → N2/O2 och andra banddominerade spektra
-- `Gas Tube` → blandade urladdningsrör
-- `Flame` → tidig blandningslogik för förbränningskällor
-- `Fluorescent` → Hg + hjälpgaser / lampkällor
+Atomic refinement weighs:
 
-### Nuvarande score-idéer i Del 2
-
-Atomic refinement väger in:
-
-- matchade förväntade linjer
-- missade förväntade linjer
-- median/medel-delta
+- matched expected lines
+- missed expected lines
+- median/mean delta
 - line uniqueness
 - co-occurring line groups
-- density penalty för täta bibliotek
+- density penalty for dense libraries
 
-Molecular refinement väger in:
+Molecular refinement weighs:
 
-- matchade band
-- antal peaks i band
-- bandförklarad signal / lokal prominens
-- missade förväntade band
+- matched bands
+- number of peaks in the band
+- band-explained signal / local prominence
+- missed expected bands
 
-Detta är fortfarande en mellanversion inför Del 3, men SMART är inte längre bara enkel peak→line-gruppering.
+This is still an intermediate version before Part 3, but SMART is no longer just simple peak-to-line grouping.
 
 
-## Smart 2.0 Del 3
+## Smart 2.0 Part 3
 
-Del 3 avslutar Smart 2.0-planen genom att lägga till källspecifik blandningslogik ovanpå Del 2.
+Part 3 finishes the Smart 2.0 plan by adding source-specific mixture logic on top of Part 2.
 
-- **Flame** använder nu mixed-emitter-sammanfattning med `primaryEmitter`, `secondaryContributors`, `possibleBands` och `backgroundComponents`.
-- **Fluorescent** prioriterar Hg + hjälpgaser och kan redovisa bakgrundskomponenter separat.
-- **Explained peaks %** och **Explained intensity %** beräknas nu per kandidat och visas i Smart-sammanfattningen.
-- Worker-resultatet innehåller nu även `winnerBreakdown`, så UI:t kan visa varför vinnaren vann och vilka sekundära komponenter som fortfarande är relevanta.
+- **Flame** now uses a mixed-emitter summary with `primaryEmitter`, `secondaryContributors`, `possibleBands`, and `backgroundComponents`.
+- **Fluorescent** prioritizes Hg + helper gases and can report background components separately.
+- **Explained peaks %** and **Explained intensity %** are now computed per candidate and shown in the Smart summary.
+- The worker result now also includes `winnerBreakdown`, so the UI can show why the winner won and which secondary components are still relevant.
 
-Detta är fortfarande heuristisk spektraltolkning, inte absolut laboratoriecertifiering. Men logiken är nu bättre anpassad för gasrör, lysrör och kommande flamförsök.
+This is still heuristic spectral interpretation, not absolute laboratory certification. But the logic is now better adapted for gas tubes, fluorescent lamps, and upcoming flame work.

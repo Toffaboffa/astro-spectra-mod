@@ -10,9 +10,9 @@ This document is the **single source of truth** for:
 It must be updated on every patch so the codebase and plan do not drift.
 
 ### Latest patch snapshot
-- **Del 1 complete:** LAB preset families documented and exposed in UI.
+- **Part 1 complete:** LAB preset families documented and exposed in the UI.
 - Added canonical preset metadata for Base vs Smart families.
-- Added new Smart preset labels (`Atomic`, `Molecular`, `Gas Tube`, `Flame`, `Fluorescent`) as staged shells that preserve current worker behavior until Del 2/3.
+- Added Smart preset labels (`Atomic`, `Molecular`, `Gas Tube`, `Flame`, `Fluorescent`) and kept them aligned with the later Part 2/3 worker logic.
 
 ---
 
@@ -67,9 +67,9 @@ Smart is being staged toward a two-step pipeline:
 1. **Discovery** — broad candidate search with hard `Max distance (nm)` gating.
 2. **Profile refinement** — dynamic candidate-profile comparison using expected vs observed lines/bands, uniqueness, clustering, and missed-line penalties.
 
-**Del 1 scope:** preset family split, metadata, docs, and LAB UI grouping.
-**Del 2 scope:** worker scoring changes for Smart 2.0 core logic.
-**Del 3 scope:** source-family presets such as Flame / Fluorescent and explained-signal metrics.
+**Part 1 scope:** preset family split, metadata, docs, and LAB UI grouping.
+**Part 2 scope:** worker scoring changes for Smart 2.0 core logic.
+**Part 3 scope:** source-family presets such as Flame / Fluorescent and explained-signal metrics.
 
 
 This section is the product-level checklist. Phases below describe *when* each part lands.
@@ -324,10 +324,11 @@ These are the baseline scripts that must keep working.
 - `mod/cameraCapabilities.js`
 - `mod/calibrationIO.js`
 - `mod/calibrationPointManager.js`
+- `mod/presets.js`
 - `mod/proBootstrap.js`
 
 ### Activation state (important)
-Phase 1.5 modules (`displayModes.js`, `yAxisController.js`, etc.) are now **loaded as classic-script-compatible scaffold modules** and exposed under `window.SpectraPro.v15`, but are not yet functionally integrated into graph behavior.
+Phase 1.5 modules (`displayModes.js`, `yAxisController.js`, etc.) are now loaded as classic-script-compatible modules under `window.SpectraPro.v15`, and the core-safe ones are functionally integrated into graph behavior while later-phase modules remain staged.
 
 ### Compatibility trap (must remember)
 Phase 1.5 scaffold modules have been converted to **classic-script-compatible namespace modules** under `window.SpectraPro.v15` in Step 3. Future additions should follow the same browser-safe pattern unless the page is migrated to `type=module`.
@@ -445,11 +446,11 @@ Phase 1.5 scaffold modules have been converted to **classic-script-compatible na
   - Results render in **Top hits** and **QC** lists.
 
 **Current limitations / still missing**
-- Library is currently **builtin-lite** (hardcoded minimal atomic lines in worker) — no external JSON library loading yet.
-- Presets are placeholder-level (no real resolver/plumbing yet).
-- “Query library” button is placeholder.
+- Library loading supports external JSON assets through the worker loader, with `builtin-lite` retained as a fallback when fetch/loading fails.
+- Presets are active and affect worker analysis; some deeper ASTRO-specific preset plumbing is still pending.
+- `Query library` is wired and opens a browsable modal backed by worker queries.
 - Subtraction/absorbance workflows are not yet wired into the live analysis pipeline (modules exist, plumbing pending).
-- Overlay labels are not yet rendered on the graph (overlay hook exists, but labeling is not implemented).
+- Overlay infrastructure exists, but full on-graph labeling/annotation remains limited compared with the hit list and summary UI.
 
 
 ### F. Phase 3 ASTRO MVP
@@ -1098,41 +1099,41 @@ Fixes a LAB-breaking runtime error introduced by the Smart Find patch.
 - Works for camera/imported image views and respects currently visible reference/comparison graphs when computing the highest visible peak.
 
 
-## Del 2 – Smart 2.0 kärnlogik
+## Part 2 – Smart 2.0 core logic
 
-Del 2 implementerar worker-baserad Smart 2.0-logik ovanpå presetstrukturen från Del 1.
+Part 2 implements worker-based Smart 2.0 logic on top of the preset structure from Part 1.
 
 ### Discovery
 
-- körs i relevant kandidatrymd beroende på preset
-- använder alltid hard `Max distance (nm)` som absolut gate
-- bygger en bred första matchlista från atomlinjer och/eller molekylband
+- runs in the relevant candidate space depending on preset
+- always uses hard `Max distance (nm)` as an absolute gate
+- builds a broad first match list from atomic lines and/or molecular bands
 
 ### Profile refinement
 
-Efter discovery tas toppkandidater vidare till profilbedömning. Profilerna byggs dynamiskt från biblioteket inom aktuell observerad våglängdsrange.
+After discovery, top candidates move on to profile scoring. The profiles are built dynamically from the library within the current observed wavelength range.
 
 ### Atomic refinement
 
-Använder:
+Uses:
 
-- expected visible lines i aktuell range
-- uniqueness per linje
-- group/co-occurrence bonus för linjeset
-- penalty för missade förväntade linjer
-- density penalty för täta bibliotek
+- expected visible lines in the current range
+- uniqueness per line
+- group/co-occurrence bonus for line sets
+- penalty for missed expected lines
+- density penalty for dense libraries
 
 ### Molecular refinement
 
-Använder:
+Uses:
 
-- bandankare / bandområden
-- peakkluster inom band
-- lokal bandtäthet
+- band anchors / band regions
+- peak clusters within the band
+- local band density
 - explained local prominence
-- penalty för missade band
+- penalty for missed bands
 
-### Smart presetfamiljer i Del 2
+### Smart preset families in Part 2
 
 - `smart-atomic`
 - `smart-molecular`
@@ -1140,16 +1141,16 @@ Använder:
 - `smart-flame`
 - `smart-fluorescent`
 
-Varje preset definierar kandidatfamiljer, typ av profilbedömning och familjeviktning. Base Presets lämnas i stort sett orörda.
+Each preset defines candidate families, profile-scoring type, and family weighting. Base Presets remain largely untouched.
 
 
-## Del 3 – Flame / Fluorescent / explained signal
+## Part 3 – Flame / Fluorescent / explained signal
 
-Del 3 avslutar Smart 2.0-planen genom att lägga till källspecifik blandningslogik ovanpå Del 2.
+Part 3 completes the Smart 2.0 plan by adding source-specific mixture logic on top of Part 2.
 
-- **Flame** använder nu mixed-emitter-sammanfattning med `primaryEmitter`, `secondaryContributors`, `possibleBands` och `backgroundComponents`.
-- **Fluorescent** prioriterar Hg + hjälpgaser och kan redovisa bakgrundskomponenter separat.
-- **Explained peaks %** och **Explained intensity %** beräknas nu per kandidat och visas i Smart-sammanfattningen.
-- Worker-resultatet innehåller nu även `winnerBreakdown`, så UI:t kan visa varför vinnaren vann och vilka sekundära komponenter som fortfarande är relevanta.
+- **Flame** now uses a mixed-emitter summary with `primaryEmitter`, `secondaryContributors`, `possibleBands`, and `backgroundComponents`.
+- **Fluorescent** prioritizes Hg + helper gases and can report background components separately.
+- **Explained peaks %** and **Explained intensity %** are now computed per candidate and shown in the Smart summary.
+- The worker result now also includes `winnerBreakdown`, so the UI can show why the winner won and which secondary components are still relevant.
 
-Detta är fortfarande heuristisk spektraltolkning, inte absolut laboratoriecertifiering. Men logiken är nu bättre anpassad för gasrör, lysrör och kommande flamförsök.
+This is still heuristic spectral interpretation, not absolute laboratory certification. But the logic is now better adapted for gas tubes, fluorescent lamps, and upcoming flame work.

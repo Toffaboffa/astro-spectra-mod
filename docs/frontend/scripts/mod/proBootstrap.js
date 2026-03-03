@@ -1032,7 +1032,7 @@ function ensureLabPanel() {
 	    '      </div>',
 	    '      <div class="sp-lab-fields-col">',
 	    '        <label id="spFieldLabShowHits" class="sp-field sp-field--lab-showhits sp-field--checkbox-row"><span>Show hits</span><input id="spLabShowHits" type="checkbox"></label>',
-	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lägre peak threshold, mindre peak-separation och fler peaks totalt. Påverkar peakdetektionen, inte någon separat smart AI-logik."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
+	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lower peak threshold, less peak separation, and more total peaks. Affects peak detection only, not any separate smart AI logic."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
 	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
 	    '        <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
 	    '        <label id="spFieldLabRgb" class="sp-field sp-field--lab-rgb sp-field--checkbox-row" title="Use RGB channel support as an extra hidden Smart weighting factor."><span>RGB</span><input id="spLabRgb" type="checkbox"></label>',

@@ -16,7 +16,7 @@
           mode: 'atomic',
           discoveryStrategy: 'local-nearest',
           refineStrategy: 'none',
-          description: 'Direkt peak→närmaste linje. Bra för snabb, manuell tolkning.'
+          description: 'Direct peak-to-nearest-line matching. Good for quick manual interpretation.'
         },
         {
           id: 'wide',
@@ -26,7 +26,7 @@
           mode: 'atomic',
           discoveryStrategy: 'local-wide',
           refineStrategy: 'none',
-          description: 'Bredare lokal matchning med fler kandidater per peak.'
+          description: 'Broader local matching with more candidates per peak.'
         },
         {
           id: 'tight',
@@ -36,7 +36,7 @@
           mode: 'atomic',
           discoveryStrategy: 'local-tight',
           refineStrategy: 'none',
-          description: 'Snäv lokal matchning för renare peak→line-träffar.'
+          description: 'Tighter local matching for cleaner peak-to-line hits.'
         },
         {
           id: 'fast',
@@ -46,7 +46,7 @@
           mode: 'atomic',
           discoveryStrategy: 'local-fast',
           refineStrategy: 'none',
-          description: 'Färre kandidater och snabbare lokal analys.'
+          description: 'Fewer candidates and faster local analysis.'
         },
         {
           id: 'lamp-hg',
@@ -56,7 +56,7 @@
           mode: 'atomic',
           discoveryStrategy: 'local-lamp',
           refineStrategy: 'none',
-          description: 'Enklare preset för lamp-/urladdningslinjer kring Hg/Ar/Ne.'
+          description: 'Simplified preset for lamp/discharge lines around Hg/Ar/Ne.'
         }
       ]
     },
@@ -72,7 +72,7 @@
           mode: 'atomic',
           discoveryStrategy: 'global-discovery',
           refineStrategy: 'profile-refine-atomic',
-          description: 'Global ämnesbedömning för atomära spektra som H, He, Ne, Ar, Kr och Xe.'
+          description: 'Global source scoring for atomic spectra such as H, He, Ne, Ar, Kr, and Xe.'
         },
         {
           id: 'smart-molecular',
@@ -82,7 +82,7 @@
           mode: 'molecular',
           discoveryStrategy: 'global-discovery',
           refineStrategy: 'profile-refine-molecular',
-          description: 'Avsedd för banddominerade spektra som N2 och O2.'
+          description: 'Intended for band-dominated spectra such as N2 and O2.'
         },
         {
           id: 'smart-gastube',
@@ -92,7 +92,7 @@
           mode: 'mixture',
           discoveryStrategy: 'global-discovery',
           refineStrategy: 'profile-refine-gas-tube',
-          description: 'Blandad smart logik för urladdningsrör med atomära och molekylära kandidater.'
+          description: 'Mixed smart logic for discharge tubes with atomic and molecular candidates.'
         },
         {
           id: 'smart-flame',
@@ -102,7 +102,7 @@
           mode: 'mixture',
           discoveryStrategy: 'global-discovery',
           refineStrategy: 'profile-refine-flame',
-          description: 'Smart preset för flamtester och vanliga lågor där metallinjer, förbränningsband och bakgrund vägs ihop.'
+          description: 'Smart preset for flame tests and ordinary flames where metal lines, combustion bands, and background species are weighed together.'
         },
         {
           id: 'smart-fluorescent',
@@ -112,7 +112,7 @@
           mode: 'mixture',
           discoveryStrategy: 'global-discovery',
           refineStrategy: 'profile-refine-fluorescent',
-          description: 'För lysrör/lampor där Hg och hjälpgaser måste vägas ihop.'
+          description: 'For fluorescent lamps and similar sources where Hg and helper gases must be weighed together.'
         }
       ]
     }
