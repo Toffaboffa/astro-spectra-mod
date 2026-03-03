@@ -945,6 +945,28 @@ function niceStep(range, maxLabels) {
     return niceFraction * Math.pow(10, exponent);
 }
 
+
+function drawSpectraBoundaryLine(graphCtx, graphCanvas, nmValue, color, zoomStart, zoomEnd) {
+    if (!isCalibrated || typeof isCalibrated !== 'function' || !isCalibrated()) return;
+    if (typeof getPxByWaveLengthBisection !== 'function') return;
+    const px = getPxByWaveLengthBisection(nmValue);
+    if (px === null || !Number.isFinite(px) || px < zoomStart || px >= zoomEnd) return;
+    const width = graphCanvas.getBoundingClientRect().width;
+    const height = graphCanvas.getBoundingClientRect().height;
+    const padding = 30;
+    const zoomRange = zoomEnd - zoomStart;
+    if (!(zoomRange > 0)) return;
+    const x = calculateXPosition(px - zoomStart, zoomRange, width);
+    graphCtx.save();
+    graphCtx.beginPath();
+    graphCtx.strokeStyle = color;
+    graphCtx.lineWidth = 1;
+    graphCtx.moveTo(x, padding);
+    graphCtx.lineTo(x, height - padding);
+    graphCtx.stroke();
+    graphCtx.restore();
+}
+
 /**
  * Draws the grid on the graph canvas
  */
@@ -1033,6 +1055,11 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
     }
 
     graphCtx.stroke();
+
+    if (showNm && isCalibrated && typeof isCalibrated === 'function' && isCalibrated()) {
+        drawSpectraBoundaryLine(graphCtx, graphCanvas, 380, 'rgba(59, 130, 246, 0.75)', zoomStart, zoomEnd);
+        drawSpectraBoundaryLine(graphCtx, graphCanvas, 750, 'rgba(220, 38, 38, 0.75)', zoomStart, zoomEnd);
+    }
 }
 
 /**

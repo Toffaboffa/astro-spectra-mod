@@ -4,6 +4,29 @@
   const v15 = sp.v15 || (sp.v15 = {});
   const mod = v15.dataQualityPanel || (v15.dataQualityPanel = {});
 
+
+  function evalPoly(coeffs, x) {
+    if (!Array.isArray(coeffs) || !coeffs.length) return null;
+    let y = 0;
+    for (let i = 0; i < coeffs.length; i += 1) y += (Number(coeffs[i]) || 0) * Math.pow(x, i);
+    return Number.isFinite(y) ? y : null;
+  }
+
+  function estimateResolutionNmPerPx(state, latest) {
+    const st = state || {};
+    const cal = st.calibration || {};
+    const coeffs = Array.isArray(cal.coefficients) ? cal.coefficients : [];
+    const calibrated = !!(cal.isCalibrated || cal.calibrated || coeffs.length);
+    if (!calibrated || coeffs.length < 1) return null;
+    const pixelWidth = Number((latest && latest.pixelWidth) || (st.frame && st.frame.pixelWidth) || (st.camera && st.camera.values && st.camera.values.width) || 0);
+    if (!Number.isFinite(pixelWidth) || pixelWidth < 2) return null;
+    const nm0 = evalPoly(coeffs, 0);
+    const nm1 = evalPoly(coeffs, pixelWidth - 1);
+    if (!Number.isFinite(nm0) || !Number.isFinite(nm1)) return null;
+    const res = Math.abs((nm1 - nm0) / Math.max(1, pixelWidth - 1));
+    return Number.isFinite(res) ? res : null;
+  }
+
   function getSignalArray(frame) {
     if (!frame || typeof frame !== 'object') return null;
     return Array.isArray(frame.I) ? frame.I
@@ -79,12 +102,15 @@
       `v1.5 modules: ${loadedV15}/8 loaded`
     ];
 
+    const resolutionNmPerPx = estimateResolutionNmPerPx(st, latest);
+
     const dq = [
       `Signal: ${min} - ${max}`,
       `Avg: ${avg} · Dyn: ${dyn}`,
       `Saturation: ${satText}`,
       `SNR-ish: ${snrText} · Hits/QC: ${((st.analysis && st.analysis.topHits) || []).length}/${((st.analysis && st.analysis.qcFlags) || []).length}`
     ];
+    if (Number.isFinite(resolutionNmPerPx)) dq.push(`Resolution: ${resolutionNmPerPx.toFixed(2)} nm/px`);
 
     return { status, dq, metrics: { min, max, avg, dyn, saturation: satText, snr: snrText } };
   }

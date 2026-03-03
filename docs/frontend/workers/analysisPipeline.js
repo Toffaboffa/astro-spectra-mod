@@ -63,7 +63,9 @@
 
   function strongPeakFactor(level) {
     const n = Math.max(1, Math.min(5, Math.round(Number(level) || 3)));
-    return [0.55, 0.78, 1.0, 1.35, 1.8][n - 1];
+    // Level 3 is the historical baseline. Lower levels reduce strong-peak influence,
+    // higher levels amplify it much more clearly for real-time tuning in LAB.
+    return [0.2, 0.6, 1.0, 2.0, 3.5][n - 1];
   }
 
   function getElementFamily(element) {
