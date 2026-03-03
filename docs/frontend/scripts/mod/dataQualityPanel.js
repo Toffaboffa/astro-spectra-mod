@@ -17,14 +17,48 @@
     const cal = st.calibration || {};
     const coeffs = Array.isArray(cal.coefficients) ? cal.coefficients : [];
     const calibrated = !!(cal.isCalibrated || cal.calibrated || coeffs.length);
-    if (!calibrated || coeffs.length < 1) return null;
-    const pixelWidth = Number((latest && latest.pixelWidth) || (st.frame && st.frame.pixelWidth) || (st.camera && st.camera.values && st.camera.values.width) || 0);
-    if (!Number.isFinite(pixelWidth) || pixelWidth < 2) return null;
-    const nm0 = evalPoly(coeffs, 0);
-    const nm1 = evalPoly(coeffs, pixelWidth - 1);
-    if (!Number.isFinite(nm0) || !Number.isFinite(nm1)) return null;
-    const res = Math.abs((nm1 - nm0) / Math.max(1, pixelWidth - 1));
-    return Number.isFinite(res) ? res : null;
+    if (!calibrated) return null;
+
+    const signalArr = getSignalArray(latest) || getSignalArray((st.frame && st.frame.latest) || null);
+    const pxArr = (latest && Array.isArray(latest.px)) ? latest.px : (((st.frame || {}).latest && Array.isArray(st.frame.latest.px)) ? st.frame.latest.px : null);
+    const pixelWidth = Number(
+      (latest && latest.pixelWidth) ||
+      (signalArr && signalArr.length) ||
+      (pxArr && pxArr.length) ||
+      (st.frame && st.frame.pixelWidth) ||
+      (st.camera && st.camera.values && st.camera.values.width) || 0
+    );
+
+    if (coeffs.length >= 1 && Number.isFinite(pixelWidth) && pixelWidth >= 2) {
+      const nm0 = evalPoly(coeffs, 0);
+      const nm1 = evalPoly(coeffs, pixelWidth - 1);
+      if (Number.isFinite(nm0) && Number.isFinite(nm1)) {
+        const res = Math.abs((nm1 - nm0) / Math.max(1, pixelWidth - 1));
+        if (Number.isFinite(res) && res > 0) return res;
+      }
+    }
+
+    const pts = Array.isArray(cal.points) ? cal.points.filter(function (p) {
+      return p && Number.isFinite(Number(p.px)) && Number.isFinite(Number(p.nm));
+    }) : [];
+    if (pts.length >= 2) {
+      let total = 0;
+      let count = 0;
+      for (let i = 1; i < pts.length; i += 1) {
+        const dpx = Math.abs(Number(pts[i].px) - Number(pts[i - 1].px));
+        const dnm = Math.abs(Number(pts[i].nm) - Number(pts[i - 1].nm));
+        if (dpx > 0 && Number.isFinite(dnm)) {
+          total += (dnm / dpx);
+          count += 1;
+        }
+      }
+      if (count > 0) {
+        const res = total / count;
+        if (Number.isFinite(res) && res > 0) return res;
+      }
+    }
+
+    return null;
   }
 
   function getSignalArray(frame) {
