@@ -72,10 +72,12 @@
     const k = String(element || '').trim();
     const noble = { He: 1, Ne: 1, Ar: 1, Kr: 1, Xe: 1 };
     const lamp = { Hg: 1, Ar: 1, Ne: 1, Kr: 1, Xe: 1 };
-    const flame = { Na: 1, K: 1, Li: 1, Ca: 1, Sr: 1, Ba: 1, Cu: 1, B: 1, C: 1, H: 1, O: 1 };
+    const flame = { Na: 1, K: 1, Li: 1, Ca: 1, Sr: 1, Ba: 1, Cu: 1 };
+    const background = { C: 1, H: 1, O: 1 };
     if (noble[k]) return 'noble';
     if (lamp[k]) return 'lamp';
     if (flame[k]) return 'flame';
+    if (background[k]) return 'background';
     return 'generic';
   }
 
@@ -125,11 +127,15 @@
       },
       'smart-flame': {
         type: 'smart', mode: 'mixture',
-        toleranceNm: 2.8, maxMatches: 180, maxPerPeak: 5,
-        allowedElements: ['Na', 'K', 'Li', 'Ca', 'Sr', 'Ba', 'Cu', 'B', 'C', 'H', 'O'],
-        allowedMolecules: ['O2', 'OH', 'CH', 'CN', 'C2'],
-        familyWeights: { flame: 1.2, generic: 0.9, molecular: 1.12 },
-        candidateLimit: 10
+        toleranceNm: 3.0, maxMatches: 200, maxPerPeak: 5,
+        allowedElements: ['Na', 'K', 'Li', 'Ca', 'Sr', 'Ba', 'Cu', 'C', 'H', 'O'],
+        allowedMolecules: ['OH', 'CH', 'C2', 'O2', 'CN'],
+        familyWeights: { flame: 1.28, background: 0.72, generic: 0.82, molecular: 1.14 },
+        atomicSpeciesWeights: { Na: 1.2, K: 1.12, Li: 1.08, Ca: 1.08, Sr: 1.08, Ba: 1.08, Cu: 1.1, C: 0.7, H: 0.68, O: 0.68 },
+        molecularSpeciesWeights: { CH: 1.24, C2: 1.22, OH: 1.18, O2: 0.9, CN: 0.82 },
+        bandSpecies: ['OH', 'CH', 'C2'],
+        backgroundSpecies: ['C', 'H', 'O', 'O2', 'CN'],
+        candidateLimit: 12
       },
       'smart-fluorescent': {
         type: 'smart', mode: 'mixture',
@@ -440,7 +446,7 @@
     return { score: totalWeight > 0 ? (total / totalWeight) : 0, used: totalWeight > 0 ? unique.length : 0 };
   }
 
-  function scoreAtomicCandidate(element, profiles, matches, peaks, hardMaxDistanceNm, familyWeights, strongPeakLevel, frame, useRgbScore) {
+  function scoreAtomicCandidate(element, profiles, matches, peaks, hardMaxDistanceNm, familyWeights, strongPeakLevel, frame, useRgbScore, speciesWeights) {
     const profile = profiles[element];
     if (!profile) return null;
     const arr = matches.filter(function (m) { return String(m.element || '') === element && (!m.kind || m.kind === 'atom'); });
@@ -496,9 +502,10 @@
     const missedExpected = Math.max(0, profile.expected.length - matchedExpected);
     const densityPenalty = Math.min(2.4, Math.max(0, (profile.density - 0.05) * 14));
     const familyWeight = Number((familyWeights || {})[profile.family] || (familyWeights || {}).generic || 1) || 1;
+    const speciesWeight = Number((speciesWeights || {})[element] || 1) || 1;
     const strongFactor = strongPeakFactor(strongPeakLevel);
     const rgbSupport = useRgbScore ? computeRgbSupport(uniqueMatches, frame, hardMaxDistanceNm) : { score: 0, used: 0 };
-    const score = familyWeight * (
+    const score = familyWeight * speciesWeight * (
       matchedExpected * 2.7 +
       matchedPeakCount * 0.8 +
       closenessScore * 1.6 +
@@ -526,7 +533,7 @@
     };
   }
 
-  function scoreMolecularCandidate(species, profiles, matches, peaks, hardMaxDistanceNm, familyWeights, strongPeakLevel, frame, useRgbScore) {
+  function scoreMolecularCandidate(species, profiles, matches, peaks, hardMaxDistanceNm, familyWeights, strongPeakLevel, frame, useRgbScore, speciesWeights) {
     const profile = profiles[species];
     if (!profile || !profile.length) return null;
     const arr = matches.filter(function (m) { return String(m.element || '') === species && String(m.kind || '') === 'molecular-band'; });
@@ -566,9 +573,10 @@
     });
     const missed = Math.max(0, profile.length - matchedBands);
     const familyWeight = Number((familyWeights || {}).molecular || 1) || 1;
+    const speciesWeight = Number((speciesWeights || {})[species] || 1) || 1;
     const strongFactor = strongPeakFactor(strongPeakLevel);
     const rgbSupport = useRgbScore ? computeRgbSupport(arr, frame, Math.max(hardMaxDistanceNm, 2.5)) : { score: 0, used: 0 };
-    const score = familyWeight * (
+    const score = familyWeight * speciesWeight * (
       matchedBands * 3.2 +
       Math.min(6, coveredPeakCount) * 0.85 +
       Math.min(8, explainedProm / maxProm) * 0.55 +
@@ -647,7 +655,12 @@
         explainedPeaksPct: Number(row.explainedPeaksPct || 0)
       };
       if (kind === 'smart-flame') {
-        if (String(row.mode || '') === 'molecular' || /^(O2|OH|CH|CN|C2)$/i.test(String(row.element || ''))) summary.possibleBands.push(item);
+        const rowElement = String(row.element || '');
+        const bandList = Array.isArray(presetCfg && presetCfg.bandSpecies) ? presetCfg.bandSpecies.map(function (s) { return String(s).toUpperCase(); }) : ['OH', 'CH', 'C2'];
+        const backgroundList = Array.isArray(presetCfg && presetCfg.backgroundSpecies) ? presetCfg.backgroundSpecies.map(function (s) { return String(s).toUpperCase(); }) : ['C', 'H', 'O', 'O2', 'CN'];
+        if (String(row.mode || '') === 'molecular' && bandList.indexOf(rowElement.toUpperCase()) !== -1) summary.possibleBands.push(item);
+        else if (backgroundList.indexOf(rowElement.toUpperCase()) !== -1) summary.backgroundComponents.push(item);
+        else if (String(row.mode || '') === 'molecular') summary.possibleBands.push(item);
         else if (idx < 2) summary.secondaryContributors.push(item);
         else summary.backgroundComponents.push(item);
       } else if (kind === 'smart-fluorescent') {
@@ -708,11 +721,11 @@
     discovery.forEach(function (cand) {
       const element = String(cand.element || '');
       if (atomicProfiles[element] && ctx.mode !== 'molecular') {
-        const scored = scoreAtomicCandidate(element, atomicProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel, ctx.frame, ctx.useRgbScore);
+        const scored = scoreAtomicCandidate(element, atomicProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel, ctx.frame, ctx.useRgbScore, ctx.atomicSpeciesWeights);
         if (scored) scores.push(scored);
       }
       if (molecularProfiles[element] && ctx.mode !== 'atomic') {
-        const scoredMol = scoreMolecularCandidate(element, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel, ctx.frame, ctx.useRgbScore);
+        const scoredMol = scoreMolecularCandidate(element, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel, ctx.frame, ctx.useRgbScore, ctx.molecularSpeciesWeights);
         if (scoredMol) scores.push(scoredMol);
       }
     });
@@ -720,7 +733,7 @@
     if (ctx.mode !== 'atomic') {
       Object.keys(molecularProfiles).forEach(function (species) {
         if (scores.some(function (s) { return String(s.element) === species; })) return;
-        const scoredMol = scoreMolecularCandidate(species, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel, ctx.frame, ctx.useRgbScore);
+        const scoredMol = scoreMolecularCandidate(species, molecularProfiles, ctx.matches, ctx.peaks, ctx.hardMaxDistanceNm, familyWeights, ctx.strongPeakLevel, ctx.frame, ctx.useRgbScore, ctx.molecularSpeciesWeights);
         if (scoredMol && scoredMol.totalScore > 0) scores.push(scoredMol);
       });
     }
@@ -839,6 +852,8 @@
         resolutionNm: resolutionNm,
         mode: presetCfg.mode,
         familyWeights: presetCfg.familyWeights,
+        atomicSpeciesWeights: presetCfg.atomicSpeciesWeights,
+        molecularSpeciesWeights: presetCfg.molecularSpeciesWeights,
         candidateLimit: presetCfg.candidateLimit,
         strongPeakLevel: strongPeakLevel,
         frame: frame,

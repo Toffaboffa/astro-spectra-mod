@@ -102,7 +102,7 @@
           mode: 'mixture',
           discoveryStrategy: 'global-discovery',
           refineStrategy: 'profile-refine-flame',
-          description: 'För kommande flam-/förbränningsläge med flera samtidiga emitters.'
+          description: 'Smart preset för flamtester och vanliga lågor där metallinjer, förbränningsband och bakgrund vägs ihop.'
         },
         {
           id: 'smart-fluorescent',
