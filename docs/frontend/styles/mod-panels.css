@@ -961,7 +961,7 @@ select, input[type="number"], input[type="text"], textarea{
 }
 
 .sp-side-console-body{
-  height: 170px;
+  height: 310px;
   overflow:auto;
   background:#050a14;
   border:1px solid rgba(148,163,184,0.15);
