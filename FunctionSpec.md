@@ -10,6 +10,7 @@ This document is the **single source of truth** for:
 It must be updated on every patch so the codebase and plan do not drift.
 
 ### Latest patch snapshot
+- **Frontend UI patch:** added `CALIBRATE` tab after `CORE`, moved Export/Long exposure into CORE, moved reference-graph controls into CORE, and improved calibration file → shell-point sync.
 - **Part 1 complete:** LAB preset families documented and exposed in the UI.
 - Added canonical preset metadata for Base vs Smart families.
 - Added Smart preset labels (`Atomic`, `Molecular`, `Gas Tube`, `Flame`, `Fluorescent`) and kept them aligned with the later Part 2/3 worker logic.

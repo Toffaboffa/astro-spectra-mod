@@ -1016,14 +1016,14 @@ select, input[type="number"], input[type="text"], textarea{
 
 
 /* === Styling patch 2026-02-27: OTHER / LAB / General / CORE === */
-#spPanel-other #spCalShell{height:100%;}
-#spPanel-other .sp-cal-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:12px;align-items:start;min-height:0}
-#spPanel-other .sp-cal-left,#spPanel-other .sp-cal-right{min-width:0}
-#spPanel-other .sp-cal-right{display:flex;flex-direction:column;min-height:0}
-#spPanel-other .sp-form-grid--cal-io{grid-template-columns:minmax(150px,220px) minmax(0,1fr)}
-#spPanel-other #spCalShellTable{min-height:220px;max-height:420px;overflow:auto}
+#spPanel-calibrate #spCalShell{height:100%;}
+#spPanel-calibrate .sp-cal-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:12px;align-items:start;min-height:0}
+#spPanel-calibrate .sp-cal-left,#spPanel-calibrate .sp-cal-right{min-width:0}
+#spPanel-calibrate .sp-cal-right{display:flex;flex-direction:column;min-height:0}
+#spPanel-calibrate .sp-form-grid--cal-io{grid-template-columns:minmax(150px,220px) minmax(0,1fr)}
+#spPanel-calibrate #spCalShellTable{min-height:220px;max-height:420px;overflow:auto}
 @media (max-width: 980px){
-  #spPanel-other .sp-cal-layout{grid-template-columns:1fr}
+  #spPanel-calibrate .sp-cal-layout{grid-template-columns:1fr}
 }
 
 #spPanel-lab .sp-lab-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start}
@@ -1160,4 +1160,17 @@ label[for="peakSizeLower"],
   #SpectraProDockHost .sp-form-grid.sp-form-grid--core-8{
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   }
+}
+
+
+#SpectraProDockHost .sp-core-bottom-split{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:stretch;margin-top:14px;}
+#SpectraProDockHost .sp-core-bottom-card{margin-top:0;display:flex;flex-direction:column;gap:10px;min-height:100%;}
+#SpectraProDockHost .sp-actions--core-main,#SpectraProDockHost .sp-actions--reference{display:flex;flex-wrap:wrap;gap:8px;}
+#SpectraProDockHost .sp-reference-box .sp-field--checkbox-row{padding-top:0;min-height:auto;}
+#SpectraProDockHost .sp-subtitle--core{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.04em;opacity:.9;}
+.sp-modal__panel--long-exposure{width:min(560px,calc(100vw - 32px));}
+#spLongExposureModalMount #cameraExposureWindow{display:block !important;max-width:none !important;height:auto !important;}
+#spLongExposureModalMount #cameraExposureWindow .d-flex.flex-row.gap-2.w-100{display:none !important;}
+@media (max-width: 900px){
+  #SpectraProDockHost .sp-core-bottom-split{grid-template-columns:1fr;}
 }

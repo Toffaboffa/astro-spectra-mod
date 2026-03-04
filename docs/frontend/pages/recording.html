@@ -150,7 +150,7 @@
               </div>
             </div>
 
-            <div id="referenceGraph" class="p-2">
+            <div id="referenceGraph" class="p-2" style="display:none;">
               <div class="form-check mb-2">
                 <input type="checkbox" data-translate-title="reference-graph-checkbox-tooltip" class="form-check-input" id="referenceGraphCheckbox">
                 <label class="form-check-label" for="referenceGraphCheckbox" data-translate="reference-graph">
@@ -182,27 +182,7 @@
               </div>
             </div>
           </div>
-
-          <div id="cameraSettingsNavButtons"
-               class="p-2 d-flex flex-column gap-2 w-100">
-
-            <div class="d-flex flex-row gap-2 w-100">
-              <button class="btn btn-md btn-spectraGreen text-white p-1 flex-fill"
-                      data-translate="save-data"
-                      data-translate-title="save-data-tooltip"
-                      onclick="saveRecordingData()">Save data</button>
-              <button class="btn btn-md btn-spectraGreen text-white p-1 flex-fill"
-                      data-translate="calibrate-button"
-                      data-translate-title="calibrate-button-tooltip"
-                      onclick="changeSettingsScreen('Calibration')">Calibrate</button>
-            </div>
-
-            <button class="btn btn-md btn-spectraGreen text-white p-1 w-100"
-                    data-translate="FLR-button"
-                    data-translate-title="FLR-button-tooltip"
-                    onclick="changeSettingsScreen('LongExpo')">Long Exposure</button>
-
-          </div>
+          <div id="cameraSettingsNavButtons" class="p-2 d-flex flex-column gap-2 w-100" style="display:none"></div>
 
 
         </div>
@@ -317,10 +297,6 @@
                   data-translate-title="camera-button-tooltip"
                   onclick="changeSettingsScreen('Graph')">Record</button>
 
-          <button class="btn btn-md btn-spectraGreen text-white p-1 flex-fill"
-                  data-translate="calibrate-button"
-                  data-translate-title="calibrate-button-tooltip"
-                  onclick="changeSettingsScreen('Calibration')">Calibrate</button>
         </div>
       </div>
 

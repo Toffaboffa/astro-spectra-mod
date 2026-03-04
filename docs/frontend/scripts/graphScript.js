@@ -866,13 +866,7 @@ function setupEventListeners() {
 
     document.getElementById('referenceGraphCheckbox').addEventListener( 'change', () => {
         const referenceGraphCheckbox = document.getElementById('referenceGraphCheckbox');
-        if (referenceGraphCheckbox.checked) {
-            document.getElementById("referenceGraphControl").style.display = "block";
-            showReferenceGraph = true;
-        } else {
-            document.getElementById("referenceGraphControl").style.display = "none";
-            showReferenceGraph = false;
-        }
+        showReferenceGraph = !!(referenceGraphCheckbox && referenceGraphCheckbox.checked);
         redrawGraphIfLoadedImage()
     });
 

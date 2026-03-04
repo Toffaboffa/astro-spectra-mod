@@ -24,7 +24,7 @@ function appendConsoleErr(line) { appendConsole('ERROR: ' + line); }
 sp.consoleLog = { append: appendConsole, error: appendConsoleErr };
 
   const bus = sp.eventBus;
-  const TABS = ['core', 'lab', 'astro', 'other'];
+  const TABS = ['core', 'calibrate', 'lab', 'astro'];
 
   let ui = null;
   let booted = false;
@@ -94,9 +94,11 @@ function el(tag, cls, text) {
 
     const panels = {};
     TABS.forEach((tab, idx) => {
-      const btn = el('button', 'sp-tab', tab.toUpperCase());
+      const btn = el('button', 'sp-tab');
+      const tabLabels = { core: 'CORE', calibrate: 'CALIBRATE', lab: 'LAB', astro: 'ASTRO' };
+      btn.textContent = tabLabels[tab] || tab.toUpperCase();
       btn.type = 'button';
-      btn.title = ({ core: 'Core graph controls, display settings and camera utilities.', lab: 'Laboratory spectrum matching, presets and hit analysis.', astro: 'Astro analysis workspace and future astronomy tools.', other: 'Calibration I/O, shell points and detailed diagnostics.' }[tab]) || tab.toUpperCase();
+      btn.title = ({ core: 'Core graph controls, display settings and camera utilities.', calibrate: 'Calibration I/O, shell points and detailed diagnostics.', lab: 'Laboratory spectrum matching, presets and hit analysis.', astro: 'Astro analysis workspace and future astronomy tools.' }[tab]) || tab.toUpperCase();
       btn.dataset.tab = tab;
       if (idx === 0) btn.classList.add('is-active');
       tabs.appendChild(btn);
@@ -545,19 +547,32 @@ function ensureStatusRail() {
         '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance" title="Minimum separation between detected nm peaks.">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
         '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing" title="Simple smoothing amount used before peak detection.">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
         '</div>',
-        '<div id="spCoreZoomBox" class="sp-card-sub sp-card-sub--zoom">',
-        '  <h4 class="sp-subtitle" style="margin:0 0 8px 0;display: none">Zoom</h4>',
-        '  <div class="sp-actions sp-actions--core-zoom">',
-        '    <button type="button" id="spResetZoomBtn" title="Reset the graph to the full available X-range.">Reset zoom</button>',
-        '    <button type="button" id="spStepBackZoomBtn" title="Return to the previous zoom state.">Step back</button>',
-        '    <button type="button" id="spStepLeftZoomBtn" title="Pan the current zoom window one step to the left.">←</button>',
-        '    <button type="button" id="spStepRightZoomBtn" title="Pan the current zoom window one step to the right.">→</button>',
+        '<div class="sp-core-bottom-split">',
+        '  <div id="spCoreZoomBox" class="sp-card-sub sp-card-sub--zoom sp-core-bottom-card">',
+        '    <h4 class="sp-subtitle sp-subtitle--core">CORE actions</h4>',
+        '    <div class="sp-actions sp-actions--core-zoom">',
+        '      <button type="button" id="spResetZoomBtn" title="Reset the graph to the full available X-range.">Reset zoom</button>',
+        '      <button type="button" id="spStepBackZoomBtn" title="Return to the previous zoom state.">Step back</button>',
+        '      <button type="button" id="spStepLeftZoomBtn" title="Pan the current zoom window one step to the left.">←</button>',
+        '      <button type="button" id="spStepRightZoomBtn" title="Pan the current zoom window one step to the right.">→</button>',
+        '    </div>',
+        '    <label id="spFieldZoomScroller" class="sp-field sp-field--zoom-scroller" title="Drag to move within the current zoom span.">Zoom scroller<input class="form-range darker-slider w-auto" type="range" id="spZoomScrollerProxy" min="0" max="100" value="0" disabled /></label>',
+        '    <div class="sp-actions sp-actions--core-main">',
+        '      <button type="button" id="spRefreshUiBtn" title="Rebuild the PRO dock and refresh visible status panels.">Refresh UI</button>',
+        '      <button type="button" id="spProbeCameraBtn" title="Probe browser camera capabilities and available manual controls.">Probe camera</button>',
+        '      <button type="button" id="spExportBtn" title="Export graph data using the original save-data workflow.">Export</button>',
+        '      <button type="button" id="spLongExposureBtn" title="Open long-exposure capture settings in a popup dialog.">Long exposure</button>',
+        '    </div>',
         '  </div>',
-        '  <label id="spFieldZoomScroller" class="sp-field sp-field--zoom-scroller" title="Drag to move within the current zoom span.">Zoom scroller<input class="form-range darker-slider w-auto" type="range" id="spZoomScrollerProxy" min="0" max="100" value="0" disabled /></label>',
-        '</div>',
-        '<div class="sp-actions">',
-        '  <button type="button" id="spRefreshUiBtn" title="Rebuild the PRO dock and refresh visible status panels.">Refresh UI</button>',
-        '  <button type="button" id="spProbeCameraBtn" title="Probe browser camera capabilities and available manual controls.">Probe camera</button>',
+        '  <div id="spReferenceBox" class="sp-card-sub sp-core-bottom-card sp-reference-box">',
+        '    <h4 class="sp-subtitle sp-subtitle--core">Reference graph</h4>',
+        '    <label id="spFieldReferenceToggle" class="sp-field sp-field--checkbox-row" title="Show or hide the stored reference graphs in the spectrum plot."><span>Show references</span><input id="spReferenceGraphCheckboxProxy" type="checkbox"></label>',
+        '    <div class="sp-actions sp-actions--reference">',
+        '      <button type="button" id="spAddReferenceBtn" title="Capture the current graph as a new reference trace.">Add reference</button>',
+        '      <button type="button" id="spAddReferenceFromFileBtn" title="Load a reference trace from an XLSX file.">From file</button>',
+        '      <button type="button" id="spResetReferencesBtn" title="Clear all stored references and immediately capture a new one.">Reset references</button>',
+        '    </div>',
+        '  </div>',
         '</div>',
         '<div id="spCameraCtlWrap" class="sp-card-sub" style="margin-top:10px; display:none">',
         '  <h4 class="sp-subtitle" style="margin:0 0 8px 0">Camera controls (optional)</h4>',
@@ -593,6 +608,12 @@ function ensureStatusRail() {
       const stepLeftProxy = card.querySelector('#spStepLeftZoomBtn');
       const stepRightProxy = card.querySelector('#spStepRightZoomBtn');
       const zoomScrollerProxy = card.querySelector('#spZoomScrollerProxy');
+      const exportBtn = card.querySelector('#spExportBtn');
+      const longExposureBtn = card.querySelector('#spLongExposureBtn');
+      const referenceGraphProxy = card.querySelector('#spReferenceGraphCheckboxProxy');
+      const addReferenceBtn = card.querySelector('#spAddReferenceBtn');
+      const addReferenceFromFileBtn = card.querySelector('#spAddReferenceFromFileBtn');
+      const resetReferencesBtn = card.querySelector('#spResetReferencesBtn');
       const camCtlWrap = card.querySelector('#spCameraCtlWrap');
       const camZoomInput = card.querySelector('#spCamZoom');
       const camExposureInput = card.querySelector('#spCamExposure');
@@ -638,6 +659,8 @@ function ensureStatusRail() {
       const displayStateInit = (getStoreState().display || {});
       if (fillModeSel) fillModeSel.value = String(displayStateInit.fillMode || 'inherit').toLowerCase();
       if (fillOpacityInput) fillOpacityInput.value = String(Number.isFinite(Number(displayStateInit.fillOpacity)) ? Math.max(0, Math.min(1, Number(displayStateInit.fillOpacity))) : 0.7);
+      const legacyReferenceToggle = $('referenceGraphCheckbox');
+      if (referenceGraphProxy && legacyReferenceToggle) referenceGraphProxy.checked = !!legacyReferenceToggle.checked;
       syncCheckboxProxy(combinedProxy, 'toggleCombined');
       syncCheckboxProxy(rProxy, 'toggleR');
       syncCheckboxProxy(gProxy, 'toggleG');
@@ -721,6 +744,25 @@ function ensureStatusRail() {
         try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
         try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
       });
+      referenceGraphProxy && referenceGraphProxy.addEventListener('change', function (e) {
+        const target = $('referenceGraphCheckbox');
+        if (!target) return;
+        target.checked = !!e.target.checked;
+        try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+        try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+      });
+      addReferenceBtn && addReferenceBtn.addEventListener('click', function () {
+        const target = $('referenceGraphCheckbox');
+        if (target && !target.checked) {
+          target.checked = true;
+          try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+        }
+        try { window.addReferenceLine && window.addReferenceLine(); } catch (_) {}
+      });
+      addReferenceFromFileBtn && addReferenceFromFileBtn.addEventListener('click', function () { try { window.addReferenceLineFromExcel && window.addReferenceLineFromExcel(); } catch (_) {} });
+      resetReferencesBtn && resetReferencesBtn.addEventListener('click', function () { try { window.removeReferenceLinesAndAddNewReferenceLine && window.removeReferenceLinesAndAddNewReferenceLine(); } catch (_) {} });
+      exportBtn && exportBtn.addEventListener('click', function () { try { window.saveRecordingData && window.saveRecordingData(); } catch (_) {} });
+      longExposureBtn && longExposureBtn.addEventListener('click', function () { try { openLongExposureModal(); } catch (_) {} });
 
       peakThresholdInput && peakThresholdInput.addEventListener('input', (e) => {
         const n = Number(e.target.value);
@@ -763,12 +805,12 @@ function ensureStatusRail() {
         try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
         try { syncZoomScrollerProxy(); } catch (_) {}
       });
-      ['toggleCombined','toggleR','toggleG','toggleB','toggleXLabelsPx','toggleXLabelsNm','zoomScroller'].forEach(function (id) {
+      ['toggleCombined','toggleR','toggleG','toggleB','toggleXLabelsPx','toggleXLabelsNm','zoomScroller','referenceGraphCheckbox'].forEach(function (id) {
         const target = $(id);
         if (!target) return;
-        target.addEventListener('change', function () { syncXAxisProxy(); syncZoomScrollerProxy(); });
-        target.addEventListener('input', function () { syncXAxisProxy(); syncZoomScrollerProxy(); });
-        target.addEventListener('sp-sync', function () { syncXAxisProxy(); syncZoomScrollerProxy(); });
+        target.addEventListener('change', function () { syncXAxisProxy(); syncZoomScrollerProxy(); if (referenceGraphProxy && id === 'referenceGraphCheckbox') referenceGraphProxy.checked = !!target.checked; });
+        target.addEventListener('input', function () { syncXAxisProxy(); syncZoomScrollerProxy(); if (referenceGraphProxy && id === 'referenceGraphCheckbox') referenceGraphProxy.checked = !!target.checked; });
+        target.addEventListener('sp-sync', function () { syncXAxisProxy(); syncZoomScrollerProxy(); if (referenceGraphProxy && id === 'referenceGraphCheckbox') referenceGraphProxy.checked = !!target.checked; });
       });
       // Camera controls (optional) — apply constraints only if supported.
       const applyCamSetting = function (key, val) {
@@ -843,6 +885,58 @@ function ensureStatusRail() {
 
       // Initial render (in case camera already running and a probe ran).
       try { renderCameraControlsFromStore(); } catch (_) {}
+
+      function ensureLongExposureModal() {
+        let modal = $('spLongExposureModal');
+        if (modal) return modal;
+        modal = el('div', 'sp-modal');
+        modal.id = 'spLongExposureModal';
+        modal.innerHTML = [
+          '<div class="sp-modal__backdrop" data-close="1"></div>',
+          '<div class="sp-modal__panel sp-modal__panel--long-exposure">',
+          '  <div class="sp-modal__head">',
+          '    <div class="sp-modal__title">Long exposure</div>',
+          '    <button type="button" class="sp-modal__close" id="spLongExposureClose">×</button>',
+          '  </div>',
+          '  <div class="sp-modal__body">',
+          '    <div id="spLongExposureModalMount"></div>',
+          '  </div>',
+          '</div>'
+        ].join('');
+        (document.body || document.documentElement).appendChild(modal);
+        modal.addEventListener('click', function (ev) {
+          const t = ev.target;
+          if (t && (t.id === 'spLongExposureClose' || t.getAttribute('data-close') === '1')) closeLongExposureModal();
+        });
+        return modal;
+      }
+      function closeLongExposureModal() {
+        const modal = $('spLongExposureModal');
+        const mount = $('spLongExposureModalMount');
+        const source = $('cameraExposureWindow');
+        const placeholder = $('spLongExposurePlaceholder');
+        if (modal) modal.classList.remove('is-open');
+        if (mount && source) {
+          const moved = mount.querySelector('#cameraExposureWindow');
+          if (moved && placeholder && placeholder.parentNode) placeholder.parentNode.insertBefore(moved, placeholder.nextSibling);
+        }
+        if (source) source.style.display = 'none';
+      }
+      function openLongExposureModal() {
+        const modal = ensureLongExposureModal();
+        const mount = $('spLongExposureModalMount');
+        const source = $('cameraExposureWindow');
+        const placeholder = $('spLongExposurePlaceholder') || (function(){
+          const ph = document.createElement('div');
+          ph.id = 'spLongExposurePlaceholder';
+          source && source.parentNode && source.parentNode.insertBefore(ph, source);
+          return ph;
+        })();
+        if (source && mount && source.parentNode !== mount) mount.appendChild(source);
+        if (source) source.style.display = 'block';
+        if (modal) modal.classList.add('is-open');
+      }
+      window.openLongExposureModal = openLongExposureModal;
     }
 
     ensureLabPanel();
@@ -864,8 +958,8 @@ function ensureStatusRail() {
 
 
 function ensureDataQualityDetails() {
-  if (!ui || !ui.panels.other) return;
-  const panel = ui.panels.other;
+  if (!ui || !ui.panels.calibrate) return;
+  const panel = ui.panels.calibrate;
   if ($('spDQDetails')) return;
   const card = el('div', 'sp-card sp-card--flat');
   card.id = 'spDQDetails';
@@ -1421,8 +1515,8 @@ function ensureLabPanel() {
 }
 
 function ensureCalibrationShell() {
-  if (!ui || !ui.panels.other) return;
-  const panel = ui.panels.other;
+  if (!ui || !ui.panels.calibrate) return;
+  const panel = ui.panels.calibrate;
   let shell = $('spCalShell');
   if (shell) return shell;
   const card = el('div', 'sp-card sp-card--flat');
@@ -1435,15 +1529,15 @@ function ensureCalibrationShell() {
     '      <label id="spFieldCalIoText" class="sp-field sp-field--wide">Calibration I/O<textarea id="spCalIoText" class="spctl-input spctl-textarea" rows="5" placeholder="Paste calibration points here (JSON/CSV)"></textarea></label>',
     '    </div>',
     '    <div class="sp-actions">',
-    '      <button type="button" id="spCalCaptureBtn">Capture current points</button>',
-    '      <button type="button" id="spCalExportBtn">Export points</button>',
-    '      <button type="button" id="spCalImportBtn">Import to shell</button>',
-    '      <button type="button" id="spCalSyncFromCoreBtn">Sync from calibration</button>',
-    '      <button type="button" id="spCalImportFileBtn">Import from file</button>',
-    '      <button type="button" id="spCalApplyBtn">Apply shell to calibration</button>',
-    '      <button type="button" id="spCalClearBtn">Clear shell points</button>',
-    '      <button type="button" id="spCalUndoShellBtn">Undo shell edit</button>',
-    '      <button type="button" id="spCalRollbackBtn">Rollback last apply</button>',
+    '      <button type="button" id="spCalCaptureBtn" title="Copy the currently active calibration points into the shell editor.">Capture current points</button>',
+    '      <button type="button" id="spCalExportBtn" title="Serialize the shell points into the text area using the selected format.">Export points</button>',
+    '      <button type="button" id="spCalImportBtn" title="Parse the text area and load those points into the shell manager.">Import to shell</button>',
+    '      <button type="button" id="spCalSyncFromCoreBtn" title="Refresh the shell from the active calibration currently loaded in the original UI.">Sync from calibration</button>',
+    '      <button type="button" id="spCalImportFileBtn" title="Open the original calibration file importer and sync the imported points into Shell points.">Import from file</button>',
+    '      <button type="button" id="spCalApplyBtn" title="Apply the enabled shell points back into the live calibration inputs and solve the fit.">Apply shell to calibration</button>',
+    '      <button type="button" id="spCalClearBtn" title="Remove all shell points and clear the calibration I/O text area.">Clear shell points</button>',
+    '      <button type="button" id="spCalUndoShellBtn" title="Undo the most recent edit made inside the shell manager.">Undo shell edit</button>',
+    '      <button type="button" id="spCalRollbackBtn" title="Restore the calibration points that were active before the latest Apply action.">Rollback last apply</button>',
     '    </div>',
     '    <div id="spCalIoFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
     '    <div id="spCalIoValidation" class="sp-note sp-note--validation" style="display:none"></div>',
@@ -1490,7 +1584,7 @@ function ensureCalibrationShell() {
         '  <div class="sp-cal-cell">px: <span class="sp-cal-val">' + (p && Number.isFinite(Number(p.px)) ? Number(p.px).toFixed(2) : '—') + '</span></div>',
         '  <div class="sp-cal-cell">nm: <span class="sp-cal-val">' + (p && Number.isFinite(Number(p.nm)) ? Number(p.nm).toFixed(2) : '—') + '</span></div>',
         '  <div class="sp-cal-cell sp-cal-label">' + label + '</div>',
-        '  <button type="button" class="spCalRemove">Remove</button>',
+        '  <button type="button" class="spCalRemove" title="Remove this shell calibration point.">Remove</button>',
         '</div>'
       ].join('');
     }).join('');
@@ -1754,6 +1848,7 @@ function ensureCalibrationShell() {
   // Initial render
   try { renderShellPointsTable(); } catch (_) {}
   try { updateShellCountsAndValidation(); } catch (_) {}
+  try { sp.calibrationShellUI = { renderShellPointsTable: renderShellPointsTable, updateShellCountsAndValidation: updateShellCountsAndValidation }; } catch (_) {}
 
   return card;
 }
@@ -2234,6 +2329,18 @@ function autoCloseInfoPopupIfDefault() {
       window.SpectraPro.coreHooks.on('calibrationChanged', function (payload) {
         const normalized = normalizeCalibrationState(payload);
         updateStorePath('calibration', normalized, { source: 'proBootstrap.calibrationSync' });
+        try {
+          const mgr = getCalibrationShellManager();
+          const nextPts = Array.isArray(normalized.points) ? normalized.points : [];
+          const curPts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
+          const same = JSON.stringify(curPts.map(function (p) { return [Number(p.px), Number(p.nm), p.enabled === false ? 0 : 1]; })) === JSON.stringify(nextPts.map(function (p) { return [Number(p.px), Number(p.nm), 1]; }));
+          if (mgr && typeof mgr.setPoints === 'function' && nextPts.length && !same) {
+            mgr.setPoints(nextPts);
+            updateStorePath('calibration.shellPointCount', nextPts.length, { source: 'proBootstrap.calibrationSync.shell' });
+            try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.renderShellPointsTable === 'function') sp.calibrationShellUI.renderShellPointsTable(); } catch (_) {}
+            try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.updateShellCountsAndValidation === 'function') sp.calibrationShellUI.updateShellCountsAndValidation(); } catch (_) {}
+          }
+        } catch (_) {}
         queueStatusRender();
       });
       window.SpectraPro.coreHooks.on('referenceChanged', function (payload) {
