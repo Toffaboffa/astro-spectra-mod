@@ -46,6 +46,7 @@ input.darker-slider::-ms-track { background: #32455f; }
   height:auto;
   max-height:96px;
   object-fit:contain;
+  margin: 5px 0px 5px 0px;
 }
 #sidebar-left.hidden { margin-left: -22vw; }
 #sidebar-right {
