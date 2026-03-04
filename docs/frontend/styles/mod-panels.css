@@ -961,7 +961,7 @@ select, input[type="number"], input[type="text"], textarea{
 }
 
 .sp-side-console-body{
-  height: 170px;
+  height: 310px;
   overflow:auto;
   background:#050a14;
   border:1px solid rgba(148,163,184,0.15);
@@ -1164,10 +1164,10 @@ label[for="peakSizeLower"],
 
 
 #SpectraProDockHost .sp-core-bottom-split{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:stretch;margin-top:14px;}
-#SpectraProDockHost .sp-core-bottom-card{margin-top:0;display:flex;flex-direction:column;gap:10px;min-height:100%;}
+#SpectraProDockHost .sp-core-bottom-card{margin-top:0;display:flex;flex-direction:column;gap:2px;min-height:100%;}
 #SpectraProDockHost .sp-actions--core-main,#SpectraProDockHost .sp-actions--reference{display:flex;flex-wrap:wrap;gap:8px;}
 #SpectraProDockHost .sp-reference-box .sp-field--checkbox-row{padding-top:0;min-height:auto;}
-#SpectraProDockHost .sp-subtitle--core{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.04em;opacity:.9;}
+#SpectraProDockHost .sp-subtitle--core{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.04em;opacity:.9; display:none;}
 .sp-modal__panel--long-exposure{width:min(560px,calc(100vw - 32px));}
 #spLongExposureModalMount #cameraExposureWindow{display:block !important;max-width:none !important;height:auto !important;}
 #spLongExposureModalMount #cameraExposureWindow .d-flex.flex-row.gap-2.w-100{display:none !important;}

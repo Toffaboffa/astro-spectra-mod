@@ -39,6 +39,14 @@ input.darker-slider::-ms-track { background: #32455f; }
   transition: margin-left .3s ease-in-out, width .3s ease-in-out; flex-shrink:0;
   border-right:1px solid var(--border-soft);
 }
+#sidebarLogo { flex-shrink:0; width:100%; }
+#sidebarLogoImg {
+  display:block;
+  width:100%;
+  height:auto;
+  max-height:96px;
+  object-fit:contain;
+}
 #sidebar-left.hidden { margin-left: -22vw; }
 #sidebar-right {
   width:22vw; min-width:280px; transition: margin-right .3s ease-in-out, width .3s ease-in-out;
