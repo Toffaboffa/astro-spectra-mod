@@ -956,7 +956,6 @@ select, input[type="number"], input[type="text"], textarea{
 
 /* === Sidebar console === */
 #spSideConsoleWrap.sp-side-console{
-  margin-top: 10px;
   padding: 6px;
 }
 
