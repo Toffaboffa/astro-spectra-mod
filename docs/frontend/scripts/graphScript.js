@@ -1302,11 +1302,11 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
             const y = bounds.top + (bounds.height * (1 - normValue));
             const label = String(Math.round(normValue * 100));
 
-            // Grid line strength: emphasize 50% and 100% (major), 10% steps as minor
-            const isMajor = (Math.abs((normValue * 100) % 50) < 0.0001);
+            // Grid line strength: only the top line is major (100%). All other Y grid lines are medium.
+            const isMajor = (Math.abs(normValue - 1) < 0.000001);
             graphCtx.save();
-            graphCtx.strokeStyle = isMajor ? theme.gridMajorColor : theme.gridMinorColor;
-            graphCtx.lineWidth = isMajor ? theme.gridMajorWidth : theme.gridMinorWidth;
+            graphCtx.strokeStyle = isMajor ? theme.gridMajorColor : theme.gridMediumColor;
+            graphCtx.lineWidth = isMajor ? theme.gridMajorWidth : theme.gridMediumWidth;
             graphCtx.beginPath();
             graphCtx.moveTo(bounds.left, y);
             graphCtx.lineTo(bounds.right, y);
@@ -1320,8 +1320,9 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
             const y = bounds.top + (bounds.height * (1 - yValue / maxValue));
             const label = Math.round(yValue).toString();
             graphCtx.save();
-            graphCtx.strokeStyle = theme.gridMinorColor;
-            graphCtx.lineWidth = theme.gridMinorWidth;
+            const isMajor = (Math.abs(yValue - maxValue) < 0.000001);
+            graphCtx.strokeStyle = isMajor ? theme.gridMajorColor : theme.gridMediumColor;
+            graphCtx.lineWidth = isMajor ? theme.gridMajorWidth : theme.gridMediumWidth;
             graphCtx.beginPath();
             graphCtx.moveTo(bounds.left, y);
             graphCtx.lineTo(bounds.right, y);
@@ -1384,8 +1385,8 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
             graphCtx.stroke();
             graphCtx.restore();
 
-            // Label only majors (keeps it readable)
-            if (isMajor) {
+            // Label majors and mediums (e.g. 100 nm and 50 nm) for easier reading
+            if (isMajor || isMedium) {
                 graphCtx.fillText(Math.round(nm).toString(), x, bounds.bottom + 6);
             }
         }
