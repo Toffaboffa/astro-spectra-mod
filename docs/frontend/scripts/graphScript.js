@@ -379,7 +379,72 @@ function getSpectraProEffectiveGradientOpacity() {
     return Number.isFinite(Number(a.fillOpacity)) ? Math.max(0, Math.min(1, Number(a.fillOpacity))) : gradientOpacity;
 }
 
-function spectraSyntheticColorAt(xIndex, zoomRange, alpha) {
+function lerpSpectraSyntheticColorChannel(a, b, t) {
+    return Math.round(a + (b - a) * t);
+}
+
+function interpolateSpectraSyntheticRgb(rgbA, rgbB, t) {
+    return [
+        lerpSpectraSyntheticColorChannel(rgbA[0], rgbB[0], t),
+        lerpSpectraSyntheticColorChannel(rgbA[1], rgbB[1], t),
+        lerpSpectraSyntheticColorChannel(rgbA[2], rgbB[2], t)
+    ];
+}
+
+function spectraSyntheticColorFromNm(nm, alpha) {
+    if (!Number.isFinite(nm) || nm < 380 || nm > 800) {
+        return `rgba(0,0,0,${alpha})`;
+    }
+
+    const stops = [
+        { nm: 380, rgb: [20, 0, 35] },
+        { nm: 400, rgb: [80, 0, 120] },
+        { nm: 430, rgb: [60, 0, 220] },
+        { nm: 460, rgb: [0, 90, 255] },
+        { nm: 490, rgb: [0, 210, 255] },
+        { nm: 530, rgb: [0, 255, 90] },
+        { nm: 575, rgb: [235, 255, 0] },
+        { nm: 590, rgb: [255, 220, 0] },
+        { nm: 610, rgb: [255, 120, 0] },
+        { nm: 650, rgb: [255, 0, 0] },
+        { nm: 700, rgb: [170, 0, 0] },
+        { nm: 750, rgb: [90, 0, 0] },
+        { nm: 800, rgb: [0, 0, 0] }
+    ];
+
+    let rgb = stops[stops.length - 1].rgb;
+    for (let i = 0; i < stops.length - 1; i++) {
+        const left = stops[i];
+        const right = stops[i + 1];
+        if (nm >= left.nm && nm <= right.nm) {
+            const span = right.nm - left.nm || 1;
+            const t = (nm - left.nm) / span;
+            rgb = interpolateSpectraSyntheticRgb(left.rgb, right.rgb, t);
+            break;
+        }
+    }
+
+    let fade = 1;
+    if (nm >= 380 && nm < 400) {
+        fade = 0.35 + 0.65 * ((nm - 380) / 20);
+    } else if (nm > 700 && nm <= 800) {
+        fade = Math.max(0, 1 - ((nm - 700) / 100));
+    }
+
+    const r = Math.round(rgb[0] * fade);
+    const g = Math.round(rgb[1] * fade);
+    const b = Math.round(rgb[2] * fade);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function spectraSyntheticColorAt(xIndex, zoomRange, alpha, zoomStart = 0) {
+    const hasCalibration = (typeof isCalibrated === 'function' && isCalibrated()) && (typeof getWaveLengthByPx === 'function');
+    if (hasCalibration) {
+        const actualPixel = zoomStart + xIndex;
+        const nm = Number(getWaveLengthByPx(actualPixel));
+        return spectraSyntheticColorFromNm(nm, alpha);
+    }
+
     const t = zoomRange > 1 ? (xIndex / (zoomRange - 1)) : 0;
     const h = (1 - t) * 240;
     return `hsla(${h}, 95%, 55%, ${alpha})`;
@@ -1266,7 +1331,7 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
 
     if (showNm && isCalibrated && typeof isCalibrated === 'function' && isCalibrated()) {
         drawSpectraBoundaryLine(graphCtx, graphCanvas, 380, 'rgba(59, 130, 246, 0.75)', zoomStart, zoomEnd);
-        drawSpectraBoundaryLine(graphCtx, graphCanvas, 750, 'rgba(220, 38, 38, 0.75)', zoomStart, zoomEnd);
+        drawSpectraBoundaryLine(graphCtx, graphCanvas, 800, 'rgba(220, 38, 38, 0.75)', zoomStart, zoomEnd);
     }
 }
 
@@ -1344,7 +1409,7 @@ function drawGradient(graphCtx, pixels, pixelWidth, maxValue) {
             const yLower = calculateYPosition(0, height, maxValue);
             const yUpper = calculateYPosition(maxVal, height, maxValue);
 
-            graphCtx.fillStyle = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity) : `rgba(${255*r/maxValue},${255*g/maxValue},${255*b/maxValue},${effectiveGradientOpacity})`;
+            graphCtx.fillStyle = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity, zoomStart) : `rgba(${255*r/maxValue},${255*g/maxValue},${255*b/maxValue},${effectiveGradientOpacity})`;
             graphCtx.fillRect(leftX, Math.floor(yUpper), rectWidth, Math.ceil(yLower - yUpper));
         }
         return;
@@ -1359,13 +1424,13 @@ function drawGradient(graphCtx, pixels, pixelWidth, maxValue) {
         let maxVal = 0, fillColor = null;
         if (toggleR && r >= g && r >= b) {
             maxVal = r;
-            fillColor = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity) : `rgba(${255*r/maxValue},0,0,${effectiveGradientOpacity})`;
+            fillColor = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity, zoomStart) : `rgba(${255*r/maxValue},0,0,${effectiveGradientOpacity})`;
         } else if (toggleG && g >= r && g >= b) {
             maxVal = g;
-            fillColor = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity) : `rgba(0,${255*g/maxValue},0,${effectiveGradientOpacity})`;
+            fillColor = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity, zoomStart) : `rgba(0,${255*g/maxValue},0,${effectiveGradientOpacity})`;
         } else if (toggleB && b >= r && b >= g) {
             maxVal = b;
-            fillColor = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity) : `rgba(0,0,${255*b/maxValue},${effectiveGradientOpacity})`;
+            fillColor = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity, zoomStart) : `rgba(0,0,${255*b/maxValue},${effectiveGradientOpacity})`;
         }
 
         if (maxVal === 0 || !fillColor) continue;
