@@ -330,6 +330,15 @@ function getGraphCanvasTheme() {
     }
     return {
         axisGridColor: read('--sp-graph-axis-grid-color', '#e0e0e0'),
+        gridMinorColor: read('--sp-graph-grid-minor-color', 'rgba(0,0,0,0.06)'),
+        gridMediumColor: read('--sp-graph-grid-medium-color', 'rgba(0,0,0,0.10)'),
+        gridMajorColor: read('--sp-graph-grid-major-color', 'rgba(0,0,0,0.16)'),
+        gridMinorWidth: parseFloat(read('--sp-graph-grid-minor-width', '0.5')),
+        gridMediumWidth: parseFloat(read('--sp-graph-grid-medium-width', '0.8')),
+        gridMajorWidth: parseFloat(read('--sp-graph-grid-major-width', '1.1')),
+        axisLineColor: read('--sp-graph-axis-line-color', 'rgba(0,0,0,0.75)'),
+        axisLineWidth: parseFloat(read('--sp-graph-axis-line-width', '1.2')),
+
         axisLabelColor: read('--sp-graph-axis-label-color', 'black'),
         axisFont: read('--sp-graph-axis-font', '12px Arial'),
         peakLabelColor: read('--sp-graph-peak-label-color', 'black'),
@@ -1278,14 +1287,11 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
     let maxValue = resolveSpectraProYAxisMax(pixels, calculateMaxValue(pixels));
     const normalizedYAxis = isSpectraProYAxisNormalized();
 
-    const numOfYLabels = normalizedYAxis ? 5 : Math.min(25, Math.floor(maxValue));
-    const yStep = normalizedYAxis ? 0.2 : niceStep(maxValue, numOfYLabels);
+    const numOfYLabels = normalizedYAxis ? 10 : Math.min(25, Math.floor(maxValue));
+    const yStep = normalizedYAxis ? 0.1 : niceStep(maxValue, numOfYLabels);
 
     graphCtx.save();
-    graphCtx.beginPath();
     const theme = getGraphCanvasTheme();
-    graphCtx.strokeStyle = theme.axisGridColor;
-    graphCtx.lineWidth = 0.5;
     graphCtx.font = theme.axisFont;
     graphCtx.fillStyle = theme.axisLabelColor;
     graphCtx.textBaseline = 'middle';
@@ -1295,16 +1301,32 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
         for (let normValue = 0; normValue <= 1.000001; normValue += yStep) {
             const y = bounds.top + (bounds.height * (1 - normValue));
             const label = String(Math.round(normValue * 100));
+
+            // Grid line strength: emphasize 50% and 100% (major), 10% steps as minor
+            const isMajor = (Math.abs((normValue * 100) % 50) < 0.0001);
+            graphCtx.save();
+            graphCtx.strokeStyle = isMajor ? theme.gridMajorColor : theme.gridMinorColor;
+            graphCtx.lineWidth = isMajor ? theme.gridMajorWidth : theme.gridMinorWidth;
+            graphCtx.beginPath();
             graphCtx.moveTo(bounds.left, y);
             graphCtx.lineTo(bounds.right, y);
+            graphCtx.stroke();
+            graphCtx.restore();
+
             graphCtx.fillText(label, bounds.left - 8, y);
         }
     } else {
         for (let yValue = 0; yValue <= maxValue; yValue += yStep) {
             const y = bounds.top + (bounds.height * (1 - yValue / maxValue));
             const label = Math.round(yValue).toString();
+            graphCtx.save();
+            graphCtx.strokeStyle = theme.gridMinorColor;
+            graphCtx.lineWidth = theme.gridMinorWidth;
+            graphCtx.beginPath();
             graphCtx.moveTo(bounds.left, y);
             graphCtx.lineTo(bounds.right, y);
+            graphCtx.stroke();
+            graphCtx.restore();
             graphCtx.fillText(label, bounds.left - 8, y);
         }
     }
@@ -1336,32 +1358,69 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
         const minNm = Math.ceil(getWaveLengthByPx(zoomStart));
         const maxNm = Math.floor(getWaveLengthByPx(zoomEnd - 1));
         const nmRange = maxNm - minNm;
-        const maxLabels = 15;
-        const nmStep = Math.max(1, Math.round(niceStep(nmRange, maxLabels)));
 
-        for (let nm = Math.ceil(minNm / nmStep) * nmStep; nm <= maxNm; nm += nmStep) {
+        // Multi-level ticks: minor/medium/major (default 10/50/100 nm).
+        // If zoomed way out, increase spacing to avoid excessive lines.
+        let minorStep = 10, mediumStep = 50, majorStep = 100;
+        if (nmRange > 2000) { minorStep = 50; mediumStep = 100; majorStep = 200; }
+        else if (nmRange > 1200) { minorStep = 20; mediumStep = 100; majorStep = 200; }
+        else if (nmRange > 700) { minorStep = 20; mediumStep = 50; majorStep = 100; }
+
+        for (let nm = Math.ceil(minNm / minorStep) * minorStep; nm <= maxNm; nm += minorStep) {
             const px = getPxByWaveLengthBisection(nm);
-            if (px !== null && px >= zoomStart && px < zoomEnd) {
-                const x = calculateXPosition(px - zoomStart, zoomEnd - zoomStart, width);
-                graphCtx.moveTo(x, bounds.top);
-                graphCtx.lineTo(x, bounds.bottom);
+            if (px === null || px < zoomStart || px >= zoomEnd) continue;
+
+            const x = calculateXPosition(px - zoomStart, zoomEnd - zoomStart, width);
+
+            const isMajor = (nm % majorStep === 0);
+            const isMedium = (!isMajor && (nm % mediumStep === 0));
+
+            graphCtx.save();
+            graphCtx.strokeStyle = isMajor ? theme.gridMajorColor : (isMedium ? theme.gridMediumColor : theme.gridMinorColor);
+            graphCtx.lineWidth = isMajor ? theme.gridMajorWidth : (isMedium ? theme.gridMediumWidth : theme.gridMinorWidth);
+            graphCtx.beginPath();
+            graphCtx.moveTo(x, bounds.top);
+            graphCtx.lineTo(x, bounds.bottom);
+            graphCtx.stroke();
+            graphCtx.restore();
+
+            // Label only majors (keeps it readable)
+            if (isMajor) {
                 graphCtx.fillText(Math.round(nm).toString(), x, bounds.bottom + 6);
             }
         }
     } else {
-        for (let i = Math.ceil(zoomStart / xStep) * xStep; i <= zoomEnd; i += xStep) {
+        // Multi-level pixel ticks: 10/50/100 px (auto-loosens when zoomed way out)
+        let minorStep = 10, mediumStep = 50, majorStep = 100;
+        if (zoomRange > 4000) { minorStep = 50; mediumStep = 100; majorStep = 200; }
+        else if (zoomRange > 2000) { minorStep = 20; mediumStep = 100; majorStep = 200; }
+        else if (zoomRange > 1200) { minorStep = 20; mediumStep = 50; majorStep = 100; }
+
+        for (let i = Math.ceil(zoomStart / minorStep) * minorStep; i <= zoomEnd; i += minorStep) {
             const x = calculateXPosition(i - zoomStart, zoomRange, width);
+            const isMajor = (i % majorStep === 0);
+            const isMedium = (!isMajor && (i % mediumStep === 0));
+
+            graphCtx.save();
+            graphCtx.strokeStyle = isMajor ? theme.gridMajorColor : (isMedium ? theme.gridMediumColor : theme.gridMinorColor);
+            graphCtx.lineWidth = isMajor ? theme.gridMajorWidth : (isMedium ? theme.gridMediumWidth : theme.gridMinorWidth);
+            graphCtx.beginPath();
             graphCtx.moveTo(x, bounds.top);
             graphCtx.lineTo(x, bounds.bottom);
-            graphCtx.fillText(Math.round(i).toString(), x, bounds.bottom + 6);
+            graphCtx.stroke();
+            graphCtx.restore();
+
+            if (isMajor) {
+                graphCtx.fillText(Math.round(i).toString(), x, bounds.bottom + 6);
+            }
         }
     }
 
-    graphCtx.stroke();
+    // Grid lines are stroked per-line (minor/medium/major).
 
     graphCtx.beginPath();
-    graphCtx.strokeStyle = theme.axisLabelColor;
-    graphCtx.lineWidth = 1.2;
+    graphCtx.strokeStyle = theme.axisLineColor;
+    graphCtx.lineWidth = theme.axisLineWidth;
     graphCtx.moveTo(bounds.left, bounds.top);
     graphCtx.lineTo(bounds.left, bounds.bottom);
     graphCtx.lineTo(bounds.right, bounds.bottom);
