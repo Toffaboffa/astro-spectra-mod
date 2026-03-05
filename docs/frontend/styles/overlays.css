@@ -6,23 +6,22 @@
 /* Graph drawing theme tokens. Edit these instead of hunting in JS. */
 :root {
     --sp-graph-axis-grid-color: #e0e0e0;
-    --sp-graph-grid-minor-color: rgba(0,0,0,0.06);
-    --sp-graph-grid-medium-color: rgba(0,0,0,0.10);
-    --sp-graph-grid-major-color: rgba(0,0,0,0.16);
+    --sp-graph-grid-minor-color: rgba(0,0,0,0.2);
+    --sp-graph-grid-medium-color: rgba(0,0,0,0.3);
+    --sp-graph-grid-major-color: rgba(0,0,0,0.3);
     --sp-graph-grid-minor-width: 0.5;
     --sp-graph-grid-medium-width: 0.8;
     --sp-graph-grid-major-width: 1.1;
     --sp-graph-axis-line-color: rgba(0,0,0,0.75);
-    --sp-graph-axis-line-width: 1.2;
-
+    --sp-graph-axis-line-width: 2;
     --sp-graph-axis-label-color: #000000;
-    --sp-graph-axis-font: 12px Arial;
+    --sp-graph-axis-font: 12px Verdana;
     --sp-graph-peak-label-color: #000000;
-    --sp-graph-peak-label-font: 16px Arial;
-    --sp-graph-overlay-font: 14px Arial;
+    --sp-graph-peak-label-font: 11px Verdana;
+    --sp-graph-overlay-font: 12px Verdana;
     --sp-graph-overlay-text-color: rgba(255, 255, 255, 0.95);
     /* --sp-graph-overlay-text-stroke: rgba(0, 0, 0, 0.85); */
-    --sp-graph-overlay-line-color: rgba(0, 0, 0, 0.35);
+    --sp-graph-overlay-line-color: rgba(0, 0, 0, 0);
     --sp-graph-overlay-line-width: 1;
     --sp-graph-overlay-line-dash: 4, 4;
     --sp-graph-smart-bg: rgba(246, 206, 70, 0.92);
@@ -32,5 +31,4 @@
     --sp-graph-smart-pad-y: 3;
     --sp-graph-smart-height: 16;
     --sp-graph-smart-radius: 8;
-    /* --sp-graph-overlay-text-color: rgba(45, 45, 45, 0.92);
 }
