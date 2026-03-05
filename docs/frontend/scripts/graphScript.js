@@ -218,10 +218,10 @@ function updateGraphHoverDotFromPosition(clientX, clientY) {
     const rect = graphCanvas.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
-    const padding = 30;
+    const bounds = getGraphPlotBounds(graphCanvas);
     const width = rect.width;
     const height = rect.height;
-    if (!(x >= padding && x <= width - padding && y >= padding && y <= height - padding)) {
+    if (!(x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom)) {
         hideGraphHoverDot();
         graphHoverState.active = false;
         graphHoverState.graphX = null;
@@ -236,9 +236,9 @@ function updateGraphHoverDotFromPosition(clientX, clientY) {
     const [zoomStart, zoomEnd] = getZoomRange(Math.max(1, Math.floor(targetPixels.length / 4)));
     const pixelCount = Math.max(1, zoomEnd - zoomStart);
     const denom = Math.max(1, pixelCount - 1);
-    const usableWidth = width - 2 * padding;
+    const usableWidth = bounds.width;
     const pixelCanvasWidth = usableWidth / denom;
-    const relX = Math.max(0, Math.min(usableWidth, x - padding));
+    const relX = Math.max(0, Math.min(usableWidth, x - bounds.left));
     const pixelIndexFloat = relX / pixelCanvasWidth;
     const pixelIndex = Math.round(pixelIndexFloat);
     const nextGraphX = Math.min(zoomEnd - 1, Math.max(zoomStart, zoomStart + pixelIndex));
@@ -331,36 +331,10 @@ function getGraphCanvasTheme() {
     return {
         axisGridColor: read('--sp-graph-axis-grid-color', '#e0e0e0'),
         axisLabelColor: read('--sp-graph-axis-label-color', 'black'),
-        axisLineColor: read('--sp-graph-axis-line-color', read('--sp-graph-axis-label-color', 'black')),
         axisFont: read('--sp-graph-axis-font', '12px Arial'),
-        axisTitleFont: read('--sp-graph-axis-title-font', read('--sp-graph-axis-font', '12px Arial')),
         peakLabelColor: read('--sp-graph-peak-label-color', 'black'),
         peakLabelFont: read('--sp-graph-peak-label-font', '16px Arial')
     };
-}
-
-function drawAxisTitles(graphCtx, width, height, padding, xTitle, yTitle, theme) {
-    if (!xTitle && !yTitle) return;
-    graphCtx.save();
-    graphCtx.fillStyle = theme.axisLabelColor;
-    graphCtx.font = theme.axisTitleFont;
-
-    if (xTitle) {
-        graphCtx.textAlign = 'center';
-        graphCtx.textBaseline = 'middle';
-        // Place title in the bottom margin area, above tick labels.
-        graphCtx.fillText(String(xTitle), width / 2, height - Math.max(12, Math.floor(padding / 2)));
-    }
-
-    if (yTitle) {
-        graphCtx.translate(Math.max(12, Math.floor(padding / 2)), height / 2);
-        graphCtx.rotate(-Math.PI / 2);
-        graphCtx.textAlign = 'center';
-        graphCtx.textBaseline = 'middle';
-        graphCtx.fillText(String(yTitle), 0, 0);
-    }
-
-    graphCtx.restore();
 }
 
 function resolveSpectraProYAxisMax(pixels, dynamicMaxValue) {
@@ -403,6 +377,32 @@ function getSpectraProGraphAppearanceSettings() {
 function getSpectraProEffectiveGradientOpacity() {
     const a = getSpectraProGraphAppearanceSettings();
     return Number.isFinite(Number(a.fillOpacity)) ? Math.max(0, Math.min(1, Number(a.fillOpacity))) : gradientOpacity;
+}
+
+const GRAPH_AXIS_LAYOUT = Object.freeze({ left: 52, right: 18, top: 16, bottom: 38 });
+
+function getGraphPlotBounds(canvasLike = graphCanvas) {
+    const rect = canvasLike.getBoundingClientRect();
+    const left = GRAPH_AXIS_LAYOUT.left;
+    const right = Math.max(left + 10, rect.width - GRAPH_AXIS_LAYOUT.right);
+    const top = GRAPH_AXIS_LAYOUT.top;
+    const bottom = Math.max(top + 10, rect.height - GRAPH_AXIS_LAYOUT.bottom);
+    return {
+        rect,
+        left,
+        right,
+        top,
+        bottom,
+        width: Math.max(1, right - left),
+        height: Math.max(1, bottom - top)
+    };
+}
+
+function getGraphAxisTitles(showNm, normalizedYAxis) {
+    return {
+        x: showNm ? 'Wavelength (nm)' : 'Pixels',
+        y: normalizedYAxis ? 'Intensity (%)' : 'Intensity'
+    };
 }
 
 function lerpSpectraSyntheticColorChannel(a, b, t) {
@@ -862,14 +862,14 @@ function drawDottedLine(x, yStart, yEnd, color) {
  * Draws the peaks on the graph canvas
  */
 function drawPeaks(maxima, maxValue, color) {
-    const padding = 30;
+    const bounds = getGraphPlotBounds(graphCanvas);
     const height = graphCanvas.getBoundingClientRect().height;
     const [zoomStart, zoomEnd] = getZoomRange(getElementWidth(videoElement));
     maxima.forEach(max => {
         if (max.x >= zoomStart && max.x <= zoomEnd) {
             const x = calculateXPosition(max.x - zoomStart, zoomEnd - zoomStart, graphCanvas.getBoundingClientRect().width);
             const y = calculateYPosition(max.value, height, maxValue);
-            drawDottedLine(x, height - padding, y, color);
+            drawDottedLine(x, bounds.bottom, y, color);
             drawPeakLabel(x, y, max.x);
         }
     });
@@ -964,7 +964,8 @@ function setupEventListeners() {
     addEventListener(graphCanvas, 'mousedown', (event) => {
         isDragging = true;
         const rect = graphCanvas.getBoundingClientRect();
-        dragStartX = Math.max(30, Math.min(event.clientX - rect.left, graphCanvas.getBoundingClientRect().width - 30));
+        const bounds = getGraphPlotBounds(graphCanvas);
+        dragStartX = Math.max(bounds.left, Math.min(event.clientX - rect.left, bounds.right));
         dragEndX = dragStartX;
         redrawGraphIfLoadedImage()
     });
@@ -973,26 +974,26 @@ function setupEventListeners() {
         const rect = graphCanvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
-        const padding = 30;
+        const bounds = getGraphPlotBounds(graphCanvas);
         const width = rect.width;
         const height = rect.height;
 
         if (isDragging) {
-            dragEndX = Math.max(padding, Math.min(x, width - padding));
+            dragEndX = Math.max(bounds.left, Math.min(x, bounds.right));
             redrawGraphIfLoadedImage(true);
         }
 
         let displayX = 'N/A';
         let displayY = 'N/A';
-        if (x >= padding && x <= width - padding && y >= padding && y <= height - padding) {
+        if (x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom) {
             const [zoomStart, zoomEnd] = getZoomRange(getElementWidth(videoElement));
             const pixelCount = Math.max(1, zoomEnd - zoomStart);
             const denom = Math.max(1, pixelCount - 1);
-            const usableWidth = width - 2 * padding;
+            const usableWidth = bounds.width;
 
             const pixelCanvasWidth = usableWidth / denom;
 
-            const relX = Math.max(0, Math.min(usableWidth, x - padding));
+            const relX = Math.max(0, Math.min(usableWidth, x - bounds.left));
 
             const pixelIndexFloat = relX / pixelCanvasWidth;
 
@@ -1001,7 +1002,7 @@ function setupEventListeners() {
             const graphX = Math.min(zoomEnd - 1, Math.max(zoomStart, zoomStart + pixelIndex));
 
             const maxValue = calculateMaxValue(pixels);
-            const graphY = Math.round(maxValue * (1 - (y - padding) / (height - 2 * padding)));
+            const graphY = Math.round(maxValue * (1 - (y - bounds.top) / bounds.height));
 
             const toggleXLabelsNm = document.getElementById("toggleXLabelsNm");
             const calibrated = (typeof isCalibrated === 'function') ? !!isCalibrated() : false;
@@ -1250,9 +1251,9 @@ function drawSpectraBoundaryLine(graphCtx, graphCanvas, nmValue, color, zoomStar
     if (typeof getPxByWaveLengthBisection !== 'function') return;
     const px = getPxByWaveLengthBisection(nmValue);
     if (px === null || !Number.isFinite(px) || px < zoomStart || px >= zoomEnd) return;
-    const width = graphCanvas.getBoundingClientRect().width;
-    const height = graphCanvas.getBoundingClientRect().height;
-    const padding = 30;
+    const bounds = getGraphPlotBounds(graphCanvas);
+    const width = bounds.rect.width;
+    const height = bounds.rect.height;
     const zoomRange = zoomEnd - zoomStart;
     if (!(zoomRange > 0)) return;
     const x = calculateXPosition(px - zoomStart, zoomRange, width);
@@ -1260,8 +1261,8 @@ function drawSpectraBoundaryLine(graphCtx, graphCanvas, nmValue, color, zoomStar
     graphCtx.beginPath();
     graphCtx.strokeStyle = color;
     graphCtx.lineWidth = 1;
-    graphCtx.moveTo(x, padding);
-    graphCtx.lineTo(x, height - padding);
+    graphCtx.moveTo(x, bounds.top);
+    graphCtx.lineTo(x, bounds.bottom);
     graphCtx.stroke();
     graphCtx.restore();
 }
@@ -1270,9 +1271,9 @@ function drawSpectraBoundaryLine(graphCtx, graphCanvas, nmValue, color, zoomStar
  * Draws the grid on the graph canvas
  */
 function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
-    const width = graphCanvas.getBoundingClientRect().width;
-    const height = graphCanvas.getBoundingClientRect().height;
-    const padding = 30;
+    const bounds = getGraphPlotBounds(graphCanvas);
+    const width = bounds.rect.width;
+    const height = bounds.rect.height;
 
     let maxValue = resolveSpectraProYAxisMax(pixels, calculateMaxValue(pixels));
     const normalizedYAxis = isSpectraProYAxisNormalized();
@@ -1280,35 +1281,36 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
     const numOfYLabels = normalizedYAxis ? 5 : Math.min(25, Math.floor(maxValue));
     const yStep = normalizedYAxis ? 0.2 : niceStep(maxValue, numOfYLabels);
 
+    graphCtx.save();
     graphCtx.beginPath();
     const theme = getGraphCanvasTheme();
     graphCtx.strokeStyle = theme.axisGridColor;
     graphCtx.lineWidth = 0.5;
     graphCtx.font = theme.axisFont;
     graphCtx.fillStyle = theme.axisLabelColor;
+    graphCtx.textBaseline = 'middle';
+    graphCtx.textAlign = 'right';
 
     if (normalizedYAxis) {
         for (let normValue = 0; normValue <= 1.000001; normValue += yStep) {
-            const y = padding + ((height - 2 * padding) * (1 - normValue));
-            const rounded = Math.round(normValue * 10) / 10;
-            const pct = Math.round(rounded * 100);
-            const label = String(pct);
-            graphCtx.moveTo(padding, y);
-            graphCtx.lineTo(width - padding, y);
-            graphCtx.fillText(label, 5, y + 3);
+            const y = bounds.top + (bounds.height * (1 - normValue));
+            const label = String(Math.round(normValue * 100));
+            graphCtx.moveTo(bounds.left, y);
+            graphCtx.lineTo(bounds.right, y);
+            graphCtx.fillText(label, bounds.left - 8, y);
         }
     } else {
         for (let yValue = 0; yValue <= maxValue; yValue += yStep) {
-            const y = padding + ((height - 2 * padding) * (1 - yValue / maxValue));
+            const y = bounds.top + (bounds.height * (1 - yValue / maxValue));
             const label = Math.round(yValue).toString();
-            graphCtx.moveTo(padding, y);
-            graphCtx.lineTo(width - padding, y);
-            graphCtx.fillText(label, 5, y + 3);
+            graphCtx.moveTo(bounds.left, y);
+            graphCtx.lineTo(bounds.right, y);
+            graphCtx.fillText(label, bounds.left - 8, y);
         }
     }
 
     const toggleXLabelsPx = document.getElementById('toggleXLabelsPx');
-    const toggleXLabelsNm = document.getElementById("toggleXLabelsNm");
+    const toggleXLabelsNm = document.getElementById('toggleXLabelsNm');
     const zoomRange = zoomEnd - zoomStart;
     const numOfXLabels = Math.min(20, zoomRange);
     const xStep = niceStep(zoomRange, numOfXLabels);
@@ -1319,13 +1321,16 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
             showNm = false;
             toggleXLabelsPx.checked = true;
             toggleXLabelsNm.checked = false;
-            showInfoPopup("noNmNeedToCalibrate", "acknowledge");
+            showInfoPopup('noNmNeedToCalibrate', 'acknowledge');
         } else {
             showNm = true;
         }
     } else {
         showNm = false;
     }
+
+    graphCtx.textAlign = 'center';
+    graphCtx.textBaseline = 'top';
 
     if (showNm) {
         const minNm = Math.ceil(getWaveLengthByPx(zoomStart));
@@ -1338,45 +1343,50 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
             const px = getPxByWaveLengthBisection(nm);
             if (px !== null && px >= zoomStart && px < zoomEnd) {
                 const x = calculateXPosition(px - zoomStart, zoomEnd - zoomStart, width);
-                graphCtx.moveTo(x, padding);
-                graphCtx.lineTo(x, height - padding);
-                graphCtx.fillText(Math.round(nm).toString(), x - 10, height - 5);
+                graphCtx.moveTo(x, bounds.top);
+                graphCtx.lineTo(x, bounds.bottom);
+                graphCtx.fillText(Math.round(nm).toString(), x, bounds.bottom + 6);
             }
         }
     } else {
         for (let i = Math.ceil(zoomStart / xStep) * xStep; i <= zoomEnd; i += xStep) {
             const x = calculateXPosition(i - zoomStart, zoomRange, width);
-            graphCtx.moveTo(x, padding);
-            graphCtx.lineTo(x, height - padding);
-            graphCtx.fillText(Math.round(i).toString(), x - 10, height - 5);
+            graphCtx.moveTo(x, bounds.top);
+            graphCtx.lineTo(x, bounds.bottom);
+            graphCtx.fillText(Math.round(i).toString(), x, bounds.bottom + 6);
         }
     }
 
     graphCtx.stroke();
 
+    graphCtx.beginPath();
+    graphCtx.strokeStyle = theme.axisLabelColor;
+    graphCtx.lineWidth = 1.2;
+    graphCtx.moveTo(bounds.left, bounds.top);
+    graphCtx.lineTo(bounds.left, bounds.bottom);
+    graphCtx.lineTo(bounds.right, bounds.bottom);
+    graphCtx.stroke();
+
+    const axisTitles = getGraphAxisTitles(showNm, normalizedYAxis);
+    graphCtx.fillStyle = theme.axisLabelColor;
+    graphCtx.font = '12px Arial';
+    graphCtx.textAlign = 'center';
+    graphCtx.textBaseline = 'alphabetic';
+    graphCtx.fillText(axisTitles.x, bounds.left + bounds.width / 2, height - 8);
+
+    graphCtx.save();
+    graphCtx.translate(14, bounds.top + bounds.height / 2);
+    graphCtx.rotate(-Math.PI / 2);
+    graphCtx.textAlign = 'center';
+    graphCtx.textBaseline = 'alphabetic';
+    graphCtx.fillText(axisTitles.y, 0, 0);
+    graphCtx.restore();
+    graphCtx.restore();
+
     if (showNm && isCalibrated && typeof isCalibrated === 'function' && isCalibrated()) {
         drawSpectraBoundaryLine(graphCtx, graphCanvas, 380, 'rgba(59, 130, 246, 0.75)', zoomStart, zoomEnd);
         drawSpectraBoundaryLine(graphCtx, graphCanvas, 800, 'rgba(220, 38, 38, 0.75)', zoomStart, zoomEnd);
     }
-
-    // Draw explicit axes (stronger than the grid) and axis titles.
-    const xTitle = showNm ? 'Wavelength (nm)' : 'Pixels';
-    const yTitle = normalizedYAxis ? 'Intensity (%)' : 'Intensity';
-
-    graphCtx.save();
-    graphCtx.strokeStyle = theme.axisLineColor;
-    graphCtx.lineWidth = 1.5;
-    graphCtx.beginPath();
-    // Y axis
-    graphCtx.moveTo(padding, padding);
-    graphCtx.lineTo(padding, height - padding);
-    // X axis
-    graphCtx.moveTo(padding, height - padding);
-    graphCtx.lineTo(width - padding, height - padding);
-    graphCtx.stroke();
-    graphCtx.restore();
-
-    drawAxisTitles(graphCtx, width, height, padding, xTitle, yTitle, theme);
 }
 
 /**
@@ -1506,16 +1516,17 @@ function calculateMaxColor(pixels, x) {
  * Calculates the Y position of a value on the canvas
  */
 function calculateYPosition(value, canvasHeight, maxValue) {
-    const padding = 30;
-    return canvasHeight - padding - (value / maxValue) * (canvasHeight - 2 * padding);
+    const bounds = getGraphPlotBounds(graphCanvas);
+    return bounds.bottom - (value / maxValue) * bounds.height;
 }
 
 /**
  * Calculates the X position of a value on the canvas
  */
 function calculateXPosition(x, pixelWidth, canvasWidth) {
-    const padding = 30;
-    return padding + (x / (pixelWidth - 1)) * (canvasWidth - 2 * padding);
+    const bounds = getGraphPlotBounds(graphCanvas);
+    if (pixelWidth <= 1) return bounds.left;
+    return bounds.left + (x / (pixelWidth - 1)) * bounds.width;
 }
 
 function initializeZoomList() {
@@ -1527,14 +1538,15 @@ function initializeZoomList() {
  */
 function addZoomRange(startX, endX) {
     const rect = graphCanvas.getBoundingClientRect();
-    const canvasWidth = rect.width - 60;
+    const bounds = getGraphPlotBounds(graphCanvas);
+    const canvasWidth = bounds.width;
 
     let zoomStart;
     let zoomEnd;
     [zoomStart, zoomEnd] = zoomList[zoomList.length - 1];
 
-    const startIndex = Math.floor(zoomStart + (startX - 30) / canvasWidth * (zoomEnd - zoomStart));
-    const endIndex = Math.floor(zoomStart + (endX - 30) / canvasWidth * (zoomEnd - zoomStart));
+    const startIndex = Math.floor(zoomStart + (startX - bounds.left) / canvasWidth * (zoomEnd - zoomStart));
+    const endIndex = Math.floor(zoomStart + (endX - bounds.left) / canvasWidth * (zoomEnd - zoomStart));
 
     if (Math.abs(startIndex - endIndex) < 2) {
         console.log('Zoom range too small, zoom not applied.');
