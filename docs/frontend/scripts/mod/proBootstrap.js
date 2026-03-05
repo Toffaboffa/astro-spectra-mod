@@ -1524,20 +1524,16 @@ function ensureCalibrationShell() {
   card.innerHTML = [
     '<div class="sp-cal-layout">',
     '  <div class="sp-cal-left">',
-    '    <div class="sp-form-grid sp-form-grid--cal-io">',
-    '      <label id="spFieldCalIoFormat" class="sp-field">Cal format<select id="spCalIoFormat" class="spctl-select"><option value="json">JSON</option><option value="csv">CSV</option></select></label>',
-    '      <label id="spFieldCalIoText" class="sp-field sp-field--wide">Calibration I/O<textarea id="spCalIoText" class="spctl-input spctl-textarea" rows="5" placeholder="Paste calibration points here (JSON/CSV)"></textarea></label>',
+    '    <div class="sp-cal-mini">',
+    '      <h4 class="sp-subtitle" style="margin:0 0 8px 0">Calibration fit</h4>',
+    '      <canvas id="spCalMiniGraph" class="sp-cal-mini-graph" width="520" height="240" aria-label="Calibration points and fitted curve"></canvas>',
+    '      <div id="spCalFormula" class="sp-note sp-note--formula"></div>',
     '    </div>',
-    '    <div class="sp-actions">',
-    '      <button type="button" id="spCalCaptureBtn" title="Copy the currently active calibration points into the shell editor.">Capture current points</button>',
-    '      <button type="button" id="spCalExportBtn" title="Serialize the shell points into the text area using the selected format.">Export points</button>',
-    '      <button type="button" id="spCalImportBtn" title="Parse the text area and load those points into the shell manager.">Import to shell</button>',
-    '      <button type="button" id="spCalSyncFromCoreBtn" title="Refresh the shell from the active calibration currently loaded in the original UI.">Sync from calibration</button>',
-    '      <button type="button" id="spCalImportFileBtn" title="Open the original calibration file importer and sync the imported points into Shell points.">Import from file</button>',
-    '      <button type="button" id="spCalApplyBtn" title="Apply the enabled shell points back into the live calibration inputs and solve the fit.">Apply shell to calibration</button>',
-    '      <button type="button" id="spCalClearBtn" title="Remove all shell points and clear the calibration I/O text area.">Clear shell points</button>',
-    '      <button type="button" id="spCalUndoShellBtn" title="Undo the most recent edit made inside the shell manager.">Undo shell edit</button>',
-    '      <button type="button" id="spCalRollbackBtn" title="Restore the calibration points that were active before the latest Apply action.">Rollback last apply</button>',
+    '    <div class="sp-actions sp-actions--cal-slim">',
+    '      <button type="button" id="spCalApplyBtn" title="Apply the enabled shell points to the live calibration and solve the fit.">Apply points</button>',
+    '      <button type="button" id="spCalSaveFileBtn" title="Save the enabled shell points to a px;nm text file.">Save to file</button>',
+    '      <button type="button" id="spCalLoadFileBtn" title="Load a px;nm text file and apply it immediately.">Load from file</button>',
+    '      <input type="file" id="spCalLoadFileInput" accept=".txt,.csv,text/plain" style="display:none" />',
     '    </div>',
     '    <div id="spCalIoFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
     '    <div id="spCalIoValidation" class="sp-note sp-note--validation" style="display:none"></div>',
@@ -1546,6 +1542,11 @@ function ensureCalibrationShell() {
     '  <div class="sp-cal-right">',
     '    <h4 class="sp-subtitle" style="margin:0 0 8px 0">Shell points</h4>',
     '    <div id="spCalShellTable" class="sp-cal-shell-table"></div>',
+    '    <div class="sp-cal-add">',
+    '      <label class="sp-cal-add-field">px:<input id="spCalAddPx" class="spctl-input" type="number" step="any" placeholder="px"></label>',
+    '      <label class="sp-cal-add-field">nm:<input id="spCalAddNm" class="spctl-input" type="number" step="any" placeholder="nm"></label>',
+    '      <button type="button" id="spCalAddBtn" class="sp-cal-add-btn" title="Add this point and apply immediately.">add</button>',
+    '    </div>',
     '  </div>',
     '</div>'
   ].join('');
@@ -1560,6 +1561,150 @@ function ensureCalibrationShell() {
     return sp.calibrationPointManager || (mgrMod && typeof mgrMod.create === 'function' ? (sp.calibrationPointManager = mgrMod.create()) : null);
   };
   const ioMod = sp.v15 && sp.v15.calibrationIO;
+
+  function formatNumberSig(x, sig) {
+    const n = Number(x);
+    if (!Number.isFinite(n)) return '—';
+    const s = Math.max(2, Number(sig) || 6);
+    const abs = Math.abs(n);
+    if (abs !== 0 && (abs >= 1e6 || abs < 1e-4)) return n.toExponential(Math.min(4, s - 1));
+    return Number(n.toPrecision(s)).toString();
+  }
+
+  function polyEval(coeffs, x) {
+    const c = Array.isArray(coeffs) ? coeffs : [];
+    let y = 0;
+    for (let i = 0; i < c.length; i += 1) {
+      const a = Number(c[i]);
+      if (!Number.isFinite(a)) continue;
+      y += a * Math.pow(x, i);
+    }
+    return y;
+  }
+
+  function formatPolynomial(coeffs) {
+    const c = Array.isArray(coeffs) ? coeffs.map(Number) : [];
+    const clean = c.filter(function (v) { return Number.isFinite(v); });
+    if (!clean.length) return '';
+    const terms = clean.map(function (a, i) {
+      const sign = a < 0 ? '−' : (i === 0 ? '' : '+');
+      const mag = formatNumberSig(Math.abs(a), 6);
+      if (i === 0) return (a < 0 ? '−' : '') + mag;
+      if (i === 1) return sign + ' ' + mag + '·px';
+      return sign + ' ' + mag + '·px^' + i;
+    });
+    return 'nm = ' + terms.join(' ');
+  }
+
+  function renderMiniGraph() {
+    const canvas = $('spCalMiniGraph');
+    const formulaEl = $('spCalFormula');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth || 520;
+    const cssH = canvas.clientHeight || 240;
+    const w = Math.max(200, Math.floor(cssW * dpr));
+    const h = Math.max(120, Math.floor(cssH * dpr));
+    if (canvas.width !== w) canvas.width = w;
+    if (canvas.height !== h) canvas.height = h;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    const st = getStoreState();
+    const cal = st && st.calibration ? st.calibration : {};
+    const coeffs = Array.isArray(cal.coefficients) ? cal.coefficients : [];
+    const pts = Array.isArray(cal.points) ? cal.points : [];
+    const validPts = pts.filter(function (p) {
+      return p && Number.isFinite(Number(p.px)) && Number.isFinite(Number(p.nm));
+    }).map(function (p) { return { px: Number(p.px), nm: Number(p.nm) }; });
+
+    if (formulaEl) {
+      const f = formatPolynomial(coeffs);
+      formulaEl.textContent = f ? ('Fit: ' + f) : 'Fit: — (apply at least 2 points)';
+    }
+
+    const pad = Math.round(24 * dpr);
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.fillRect(0, 0, w, h);
+
+    if (validPts.length < 2 && coeffs.length < 2) {
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = `${Math.round(12 * dpr)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+      ctx.fillText('Add 2+ points to see fit', pad, Math.round(h / 2));
+      return;
+    }
+
+    const xs = validPts.map(p => p.px);
+    const ys = validPts.map(p => p.nm);
+    let xMin = xs.length ? Math.min.apply(null, xs) : 0;
+    let xMax = xs.length ? Math.max.apply(null, xs) : 1000;
+    if (xMax === xMin) { xMin -= 1; xMax += 1; }
+    let yMin = ys.length ? Math.min.apply(null, ys) : 0;
+    let yMax = ys.length ? Math.max.apply(null, ys) : 1000;
+    if (yMax === yMin) { yMin -= 1; yMax += 1; }
+    const xPad = (xMax - xMin) * 0.05;
+    const yPad = (yMax - yMin) * 0.08;
+    xMin -= xPad; xMax += xPad;
+    yMin -= yPad; yMax += yPad;
+
+    function xToPx(x) {
+      return pad + ((x - xMin) / (xMax - xMin)) * (w - 2 * pad);
+    }
+    function yToPx(y) {
+      return h - pad - ((y - yMin) / (yMax - yMin)) * (h - 2 * pad);
+    }
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.lineWidth = 1;
+    const gridN = 4;
+    for (let i = 0; i <= gridN; i += 1) {
+      const gx = pad + (i / gridN) * (w - 2 * pad);
+      const gy = pad + (i / gridN) * (h - 2 * pad);
+      ctx.beginPath(); ctx.moveTo(gx, pad); ctx.lineTo(gx, h - pad); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad, gy); ctx.lineTo(w - pad, gy); ctx.stroke();
+    }
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, h - pad); ctx.lineTo(w - pad, h - pad); ctx.stroke();
+
+    if (coeffs.length >= 2) {
+      ctx.strokeStyle = 'rgba(46, 190, 240, 0.95)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const steps = 140;
+      for (let i = 0; i <= steps; i += 1) {
+        const x = xMin + (i / steps) * (xMax - xMin);
+        const y = polyEval(coeffs, x);
+        const xp = xToPx(x);
+        const yp = yToPx(y);
+        if (i === 0) ctx.moveTo(xp, yp);
+        else ctx.lineTo(xp, yp);
+      }
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    const r = Math.max(2, Math.round(3 * dpr));
+    validPts.forEach(function (p) {
+      const xp = xToPx(p.px);
+      const yp = yToPx(p.nm);
+      ctx.beginPath();
+      ctx.arc(xp, yp, r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = `${Math.round(11 * dpr)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    ctx.fillText('px', w - pad - Math.round(16 * dpr), h - Math.round(8 * dpr));
+    ctx.save();
+    ctx.translate(Math.round(10 * dpr), pad);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('nm', 0, 0);
+    ctx.restore();
+  }
 
   function setShellNote(text) {
     const n = $('spCalShellNote');
@@ -1642,133 +1787,63 @@ function ensureCalibrationShell() {
       return;
     }
 
-    if (t.id === 'spCalUndoShellBtn') {
-      const mgrU = getMgr();
-      if (mgrU && typeof mgrU.undo === 'function') {
-        mgrU.undo();
-        renderShellPointsTable();
-        updateShellCountsAndValidation();
-        setShellNote('Undo applied.');
-      }
-      return;
-    }
-
-    if (t.id === 'spCalRollbackBtn') {
-      const resRb = rollbackLastApply();
-      if (!resRb || !resRb.ok) {
-        setShellNote('Rollback failed: ' + String((resRb && resRb.reason) || 'unknown'));
-      } else {
-        setShellNote('Rollback applied (' + String(resRb.count || 0) + ' point(s)).');
-      }
-      renderShellPointsTable();
-      updateShellCountsAndValidation();
-      renderStatus();
-      return;
-    }
-
-    const txt = $('spCalIoText');
-    const fmtSel = $('spCalIoFormat');
-    const fmt = String((fmtSel && fmtSel.value) || 'json').toLowerCase();
     const mgr = getMgr();
 
-    if (t.id === 'spCalCaptureBtn') {
-      const st = getStoreState();
-      const pts = (st.calibration && Array.isArray(st.calibration.points)) ? st.calibration.points : [];
-      if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(pts);
-      if (txt) txt.value = '';
-      updateStorePath('calibration.shellPointCount', Array.isArray(pts) ? pts.length : 0, { source: 'proBootstrap.calIO' });
-      setCoreActionFeedback('Captured calibration points from current state into shell.', 'ok');
-      var pvCapture = formatCalValidationPreview(previewShellCalibrationNormalization(pts));
-      setCalIoValidationText(pvCapture.text, pvCapture.level);
-      renderShellPointsTable();
-      updateShellCountsAndValidation();
-      renderStatus();
-    }
-    if (t.id === 'spCalExportBtn') {
-      const pts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
-      let out = '';
-      if (ioMod && typeof ioMod.serializeCalibrationPoints === 'function') {
-        out = ioMod.serializeCalibrationPoints(pts, { format: fmt });
-      } else {
-        out = JSON.stringify(pts, null, 2);
-      }
-      if (txt) txt.value = out || '';
-      updateStorePath('calibration.shellPointCount', Array.isArray(pts) ? pts.length : 0, { source: 'proBootstrap.calIO' });
-      setCoreActionFeedback('Exported shell points to text area (' + fmt.toUpperCase() + ').', 'ok');
-      var pvExport = formatCalValidationPreview(previewShellCalibrationNormalization((mgr && typeof mgr.getEnabledPoints === 'function') ? mgr.getEnabledPoints() : pts));
-      setCalIoValidationText(pvExport.text, pvExport.level);
-      renderShellPointsTable();
-      updateShellCountsAndValidation();
-    }
-    if (t.id === 'spCalImportBtn') {
-      const raw = String((txt && txt.value) || '');
-      if (!raw.trim()) { setCoreActionFeedback('Nothing to import. Paste JSON/CSV calibration points first.', 'warn'); return; }
-      let pts = [];
-      if (ioMod && typeof ioMod.parseCalibrationFile === 'function') pts = ioMod.parseCalibrationFile(raw, { formatHint: fmt });
-      if (!Array.isArray(pts)) pts = [];
-      if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(pts);
-      updateStorePath('calibration.shellPointCount', pts.length, { source: 'proBootstrap.calIO' });
-      var pvImport = formatCalValidationPreview(previewShellCalibrationNormalization((mgr && typeof mgr.getEnabledPoints === 'function') ? mgr.getEnabledPoints() : pts));
-      setCalIoValidationText(pvImport.text, pvImport.level);
-      setCoreActionFeedback('Imported ' + pts.length + ' calibration point(s) into shell manager.', pts.length ? 'ok' : 'warn');
-      renderShellPointsTable();
-      updateShellCountsAndValidation();
-      renderStatus();
-    }
-
-    // Sync shell from the active ORIGINAL calibration (px/nm arrays already solved).
-    if (t.id === 'spCalSyncFromCoreBtn') {
-      let corePts = [];
-      try {
-        if (window.SpectraCore && window.SpectraCore.calibration && typeof window.SpectraCore.calibration.getState === 'function') {
-          const cs = window.SpectraCore.calibration.getState();
-          corePts = (cs && Array.isArray(cs.points)) ? cs.points : [];
-        }
-      } catch (_) {}
-      if (!corePts.length) {
-        setCoreActionFeedback('No active calibration points found to sync.', 'warn');
-        return;
-      }
-      if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(corePts);
-      updateStorePath('calibration.shellPointCount', corePts.length, { source: 'proBootstrap.calIO' });
-      setCoreActionFeedback('Synced shell points from current calibration (' + corePts.length + ').', 'ok');
-      var pvSync = formatCalValidationPreview(previewShellCalibrationNormalization((mgr && typeof mgr.getEnabledPoints === 'function') ? mgr.getEnabledPoints() : corePts));
-      setCalIoValidationText(pvSync.text, pvSync.level);
-      renderShellPointsTable();
-      updateShellCountsAndValidation();
-      renderStatus();
+    if (t.id === 'spCalLoadFileBtn') {
+      const fileInput = $('spCalLoadFileInput');
+      if (fileInput) fileInput.click();
       return;
     }
 
-    // Convenience: trigger the ORIGINAL import-from-file flow (txt px;nm) and then sync.
-    if (t.id === 'spCalImportFileBtn') {
+    if (t.id === 'spCalSaveFileBtn') {
       try {
-        const fileEl = document.getElementById('my-file');
-        if (!fileEl) {
-          setCoreActionFeedback('Original file input not found (#my-file).', 'warn');
-          return;
-        }
-        // When the original import completes, it calls setCalibrationPoints() which emits calibrationChanged.
-        // We then sync shell from core after a short delay.
-        fileEl.click();
-        setCoreActionFeedback('Select a calibration .txt file (px;nm). After import, the shell will sync automatically.', 'info');
-        setTimeout(function () {
-          try {
-            const cs = window.SpectraCore && window.SpectraCore.calibration && window.SpectraCore.calibration.getState ? window.SpectraCore.calibration.getState() : null;
-            const pts = (cs && Array.isArray(cs.points)) ? cs.points : [];
-            if (pts.length && mgr && typeof mgr.setPoints === 'function') {
-              mgr.setPoints(pts);
-              updateStorePath('calibration.shellPointCount', pts.length, { source: 'proBootstrap.calIO' });
-              renderShellPointsTable();
-              updateShellCountsAndValidation();
-              renderStatus();
-              setShellNote('Synced ' + pts.length + ' point(s) from imported calibration.');
-            }
-          } catch (_) {}
-        }, 600);
+        const pts = (mgr && typeof mgr.getEnabledPoints === 'function') ? mgr.getEnabledPoints() : ((mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : []);
+        if (!pts || !pts.length) { setCoreActionFeedback('No calibration points to save.', 'warn'); return; }
+        const lines = pts
+          .filter(function (p) { return p && Number.isFinite(Number(p.px)) && Number.isFinite(Number(p.nm)); })
+          .map(function (p) { return String(Number(p.px)) + ';' + String(Number(p.nm)); })
+          .join('\n');
+        const blob = new Blob([lines + '\n'], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'calibration_points_' + String(Date.now()) + '.txt';
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setCoreActionFeedback('Saved ' + pts.length + ' point(s) to file.', 'ok');
       } catch (err) {
-        setCoreActionFeedback('Import-from-file failed: ' + String(err && err.message || err), 'error');
+        setCoreActionFeedback('Save failed: ' + String(err && err.message || err), 'error');
       }
+      return;
+    }
+
+    if (t.id === 'spCalAddBtn') {
+      const pxEl = $('spCalAddPx');
+      const nmEl = $('spCalAddNm');
+      const px = pxEl ? Number(pxEl.value) : NaN;
+      const nm = nmEl ? Number(nmEl.value) : NaN;
+      if (!Number.isFinite(px) || !Number.isFinite(nm)) {
+        setShellNote('Add failed: enter valid numbers for px and nm.');
+        return;
+      }
+      if (mgr && typeof mgr.addPoint === 'function') {
+        mgr.addPoint({ px: px, nm: nm, enabled: true });
+      }
+      if (pxEl) pxEl.value = '';
+      if (nmEl) nmEl.value = '';
+      renderShellPointsTable();
+      updateShellCountsAndValidation();
+
+      const resApply = applyShellCalibrationPointsToOriginal();
+      if (!resApply || !resApply.ok) {
+        setShellNote('Added point, but apply failed: ' + String((resApply && resApply.reason) || 'unknown'));
+      } else {
+        setShellNote('Added point and applied (' + String(resApply.count || 0) + ').');
+      }
+      renderMiniGraph();
+      renderStatus();
       return;
     }
 
@@ -1787,34 +1862,10 @@ function ensureCalibrationShell() {
       setCoreActionFeedback('Applied ' + result.count + ' shell point(s) to original calibration' + (result.truncated ? ' (truncated to max).' : '.') + warnTag, 'ok');
       renderShellPointsTable();
       updateShellCountsAndValidation();
+      renderMiniGraph();
       renderStatus();
       return;
     }
-
-    if (t.id === 'spCalClearBtn') {
-      if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints([]);
-      if (txt) txt.value = '';
-      updateStorePath('calibration.shellPointCount', 0, { source: 'proBootstrap.calIO' });
-      setCoreActionFeedback('Cleared shell calibration points.', 'ok');
-      setCalIoValidationText('', '');
-      renderShellPointsTable();
-      updateShellCountsAndValidation();
-      renderStatus();
-    }
-  });
-
-  panel.addEventListener('input', function (e) {
-    var t = e.target;
-    if (!t || t.id !== 'spCalIoText') return;
-    var raw = String(t.value || '');
-    if (!raw.trim()) { setCalIoValidationText('', ''); return; }
-    var fmtSel2 = $('spCalIoFormat');
-    var fmt2 = String((fmtSel2 && fmtSel2.value) || 'json').toLowerCase();
-    var ioMod2 = sp.v15 && sp.v15.calibrationIO;
-    var pts2 = [];
-    try { if (ioMod2 && typeof ioMod2.parseCalibrationFile === 'function') pts2 = ioMod2.parseCalibrationFile(raw, { formatHint: fmt2 }); } catch (_) {}
-    var pvText = formatCalValidationPreview(previewShellCalibrationNormalization(pts2));
-    setCalIoValidationText(pvText.text, pvText.level);
   });
 
   panel.addEventListener('change', function (e) {
@@ -1833,22 +1884,57 @@ function ensureCalibrationShell() {
       }
       return;
     }
+  });
 
-    if (t.id !== 'spCalIoFormat') return;
-    var txt2 = $('spCalIoText');
-    var raw2 = String((txt2 && txt2.value) || '');
-    if (!raw2.trim()) { setCalIoValidationText('', ''); return; }
-    var ioMod3 = sp.v15 && sp.v15.calibrationIO;
-    var pts3 = [];
-    try { if (ioMod3 && typeof ioMod3.parseCalibrationFile === 'function') pts3 = ioMod3.parseCalibrationFile(raw2, { formatHint: String(t.value || 'json').toLowerCase() }); } catch (_) {}
-    var pvFmt2 = formatCalValidationPreview(previewShellCalibrationNormalization(pts3));
-    setCalIoValidationText(pvFmt2.text, pvFmt2.level);
+  // Load-from-file input
+  panel.addEventListener('change', function (e) {
+    const t = e.target;
+    if (!t || t.id !== 'spCalLoadFileInput') return;
+    const file = t.files && t.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (evt) {
+      try {
+        const raw = String((evt && evt.target && evt.target.result) || '');
+        const lines = raw.split(/\r?\n/).map(function (l) { return String(l || '').trim(); }).filter(Boolean);
+        const pts = [];
+        for (let i = 0; i < lines.length; i += 1) {
+          const parts = lines[i].split(/[;,\t]/).map(function (x) { return String(x || '').trim(); });
+          if (parts.length < 2) continue;
+          const px = Number(String(parts[0]).replace(',', '.'));
+          const nm = Number(String(parts[1]).replace(',', '.'));
+          if (Number.isFinite(px) && Number.isFinite(nm)) pts.push({ px: px, nm: nm, enabled: true });
+        }
+        if (!pts.length) {
+          setShellNote('Load failed: no valid lines found (expected px;nm).');
+          return;
+        }
+        const mgr = getMgr();
+        if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(pts);
+        renderShellPointsTable();
+        updateShellCountsAndValidation();
+
+        const result = applyShellCalibrationPointsToOriginal();
+        if (!result || !result.ok) {
+          setShellNote('Loaded ' + pts.length + ' point(s), but apply failed: ' + String((result && result.reason) || 'unknown'));
+        } else {
+          setShellNote('Loaded and applied ' + String(result.count || 0) + ' point(s).');
+        }
+        renderMiniGraph();
+        renderStatus();
+      } catch (err) {
+        setShellNote('Load failed: ' + String(err && err.message || err));
+      }
+    };
+    reader.readAsText(file);
+    try { t.value = ''; } catch (_) {}
   });
 
   // Initial render
   try { renderShellPointsTable(); } catch (_) {}
   try { updateShellCountsAndValidation(); } catch (_) {}
-  try { sp.calibrationShellUI = { renderShellPointsTable: renderShellPointsTable, updateShellCountsAndValidation: updateShellCountsAndValidation }; } catch (_) {}
+  try { renderMiniGraph(); } catch (_) {}
+  try { sp.calibrationShellUI = { renderShellPointsTable: renderShellPointsTable, updateShellCountsAndValidation: updateShellCountsAndValidation, renderMiniGraph: renderMiniGraph }; } catch (_) {}
 
   return card;
 }
@@ -2339,6 +2425,7 @@ function autoCloseInfoPopupIfDefault() {
             updateStorePath('calibration.shellPointCount', nextPts.length, { source: 'proBootstrap.calibrationSync.shell' });
             try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.renderShellPointsTable === 'function') sp.calibrationShellUI.renderShellPointsTable(); } catch (_) {}
             try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.updateShellCountsAndValidation === 'function') sp.calibrationShellUI.updateShellCountsAndValidation(); } catch (_) {}
+            try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.renderMiniGraph === 'function') sp.calibrationShellUI.renderMiniGraph(); } catch (_) {}
           }
         } catch (_) {}
         queueStatusRender();

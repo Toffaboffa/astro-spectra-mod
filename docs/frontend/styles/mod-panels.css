@@ -1021,6 +1021,16 @@ select, input[type="number"], input[type="text"], textarea{
 #spPanel-calibrate .sp-cal-right{display:flex;flex-direction:column;min-height:0}
 #spPanel-calibrate .sp-form-grid--cal-io{grid-template-columns:minmax(150px,220px) minmax(0,1fr)}
 #spPanel-calibrate #spCalShellTable{min-height:220px;max-height:420px;overflow:auto}
+
+/* === CALIBRATE simplification (2026-03-05) === */
+#spPanel-calibrate .sp-actions--cal-slim{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#spPanel-calibrate .sp-cal-mini{display:flex;flex-direction:column;gap:8px}
+#spPanel-calibrate .sp-cal-mini-graph{width:100%;max-width:100%;height:240px;border-radius:10px;background:rgba(255,255,255,0.03)}
+#spPanel-calibrate .sp-note--formula{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; opacity:0.9}
+#spPanel-calibrate .sp-cal-add{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08)}
+#spPanel-calibrate .sp-cal-add-field{display:flex;flex-direction:column;gap:4px;font-size:12px;opacity:0.9}
+#spPanel-calibrate .sp-cal-add .spctl-input{width:100%}
+#spPanel-calibrate .sp-cal-add-btn{white-space:nowrap}
 @media (max-width: 980px){
   #spPanel-calibrate .sp-cal-layout{grid-template-columns:1fr}
 }
