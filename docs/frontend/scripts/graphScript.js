@@ -331,10 +331,36 @@ function getGraphCanvasTheme() {
     return {
         axisGridColor: read('--sp-graph-axis-grid-color', '#e0e0e0'),
         axisLabelColor: read('--sp-graph-axis-label-color', 'black'),
+        axisLineColor: read('--sp-graph-axis-line-color', read('--sp-graph-axis-label-color', 'black')),
         axisFont: read('--sp-graph-axis-font', '12px Arial'),
+        axisTitleFont: read('--sp-graph-axis-title-font', read('--sp-graph-axis-font', '12px Arial')),
         peakLabelColor: read('--sp-graph-peak-label-color', 'black'),
         peakLabelFont: read('--sp-graph-peak-label-font', '16px Arial')
     };
+}
+
+function drawAxisTitles(graphCtx, width, height, padding, xTitle, yTitle, theme) {
+    if (!xTitle && !yTitle) return;
+    graphCtx.save();
+    graphCtx.fillStyle = theme.axisLabelColor;
+    graphCtx.font = theme.axisTitleFont;
+
+    if (xTitle) {
+        graphCtx.textAlign = 'center';
+        graphCtx.textBaseline = 'middle';
+        // Place title in the bottom margin area, above tick labels.
+        graphCtx.fillText(String(xTitle), width / 2, height - Math.max(12, Math.floor(padding / 2)));
+    }
+
+    if (yTitle) {
+        graphCtx.translate(Math.max(12, Math.floor(padding / 2)), height / 2);
+        graphCtx.rotate(-Math.PI / 2);
+        graphCtx.textAlign = 'center';
+        graphCtx.textBaseline = 'middle';
+        graphCtx.fillText(String(yTitle), 0, 0);
+    }
+
+    graphCtx.restore();
 }
 
 function resolveSpectraProYAxisMax(pixels, dynamicMaxValue) {
@@ -1265,9 +1291,8 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
         for (let normValue = 0; normValue <= 1.000001; normValue += yStep) {
             const y = padding + ((height - 2 * padding) * (1 - normValue));
             const rounded = Math.round(normValue * 10) / 10;
-            const label = (rounded === 0 || rounded === 1)
-                ? String(Math.round(rounded))
-                : rounded.toFixed(1);
+            const pct = Math.round(rounded * 100);
+            const label = String(pct);
             graphCtx.moveTo(padding, y);
             graphCtx.lineTo(width - padding, y);
             graphCtx.fillText(label, 5, y + 3);
@@ -1333,6 +1358,25 @@ function drawGrid(graphCtx, graphCanvas, zoomStart, zoomEnd, pixels) {
         drawSpectraBoundaryLine(graphCtx, graphCanvas, 380, 'rgba(59, 130, 246, 0.75)', zoomStart, zoomEnd);
         drawSpectraBoundaryLine(graphCtx, graphCanvas, 800, 'rgba(220, 38, 38, 0.75)', zoomStart, zoomEnd);
     }
+
+    // Draw explicit axes (stronger than the grid) and axis titles.
+    const xTitle = showNm ? 'Wavelength (nm)' : 'Pixels';
+    const yTitle = normalizedYAxis ? 'Intensity (%)' : 'Intensity';
+
+    graphCtx.save();
+    graphCtx.strokeStyle = theme.axisLineColor;
+    graphCtx.lineWidth = 1.5;
+    graphCtx.beginPath();
+    // Y axis
+    graphCtx.moveTo(padding, padding);
+    graphCtx.lineTo(padding, height - padding);
+    // X axis
+    graphCtx.moveTo(padding, height - padding);
+    graphCtx.lineTo(width - padding, height - padding);
+    graphCtx.stroke();
+    graphCtx.restore();
+
+    drawAxisTitles(graphCtx, width, height, padding, xTitle, yTitle, theme);
 }
 
 /**
