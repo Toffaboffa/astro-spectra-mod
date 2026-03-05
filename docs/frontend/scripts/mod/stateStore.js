@@ -62,15 +62,19 @@
     },
     display: {
       mode: 'normal',
-      yAxisMode: 'auto',
+      // Default menu state (requested): Manual Y-axis at 255.
+      yAxisMode: 'manual',
       yAxisMax: 255,
-      fillMode: 'inherit',
-      fillOpacity: null,
+      // Default menu state (requested): Fill Mode OFF with ~80% opacity preselected.
+      // Opacity is kept even when fill is OFF so switching to SOURCE/SYNTHETIC keeps the desired level.
+      fillMode: 'off',
+      fillOpacity: 0.8,
       overlaysEnabled: true
     },
     peaks: {
-      threshold: null,
-      distance: null,
+      // Default menu state (requested)
+      threshold: 20,
+      distance: 7,
       smoothing: null
     },
     analysis: {

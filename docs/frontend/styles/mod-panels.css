@@ -869,7 +869,7 @@ body{overflow:hidden;}
 #spPanel-lab .sp-lab-th{padding:6px 8px;font-weight:700;letter-spacing:.06em;font-size:12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.12)}
 #spPanel-lab .sp-lab-th:nth-child(1){border-right:1px solid rgba(255,255,255,.12)}
 #spPanel-lab .sp-lab-hits{min-height:0;overflow:auto;border-right:1px solid rgba(255,255,255,.12);padding:6px 8px}
-#spPanel-lab .sp-lab-qc{min-height:0;overflow:auto;padding:6px 8px;font-size: 11px}
+#spPanel-lab .sp-lab-qc{min-height:0;overflow:auto;padding:6px 8px;font-size: 14px}
 
 /* Compact hit rows: one line, ellipsis */
 #spPanel-lab .sp-hit--one{padding:2px 0;font-size:12px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
