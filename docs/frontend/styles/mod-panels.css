@@ -1183,3 +1183,8 @@ label[for="peakSizeLower"],
 @media (max-width: 900px){
   #SpectraProDockHost .sp-core-bottom-split{grid-template-columns:1fr;}
 }
+
+#spPanel-calibrate h4.sp-subtitle{
+  font-size: 15px;
+  line-height: 1.15;
+}
