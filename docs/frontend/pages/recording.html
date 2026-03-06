@@ -42,7 +42,22 @@
           <video id="videoMain" class="w-100 h-auto" autoplay playsinline></video>
           <img id="cameraImage" class="w-100 h-auto" style="display: none">
 
+          <canvas id="spFramePreviewCanvas" class="position-absolute top-0 start-0 w-100 h-auto" style="display:none"></canvas>
+
           <canvas data-translate="canvas-warning" id="cameraWindowCanvasRecording" class="position-absolute top-0 start-0 w-100 h-auto">Your browser does not support the HTML canvas tag.</canvas>
+        </div>
+
+        <div id="spCameraViewToggle" class="d-flex justify-content-center gap-1 p-1" style="user-select:none;">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Frame view">
+            <input type="radio" class="btn-check" name="spFrameView" id="spFrameViewSource" autocomplete="off" checked>
+            <label class="btn btn-secondary" for="spFrameViewSource">Source</label>
+
+            <input type="radio" class="btn-check" name="spFrameView" id="spFrameViewDark" autocomplete="off" disabled>
+            <label class="btn btn-secondary" for="spFrameViewDark">Dark</label>
+
+            <input type="radio" class="btn-check" name="spFrameView" id="spFrameViewRef" autocomplete="off" disabled>
+            <label class="btn btn-secondary" for="spFrameViewRef">Ref</label>
+          </div>
         </div>
 
       </div>
@@ -402,6 +417,14 @@
                        data-translate-title="Blue-graph-tooltip">
                 <label class="form-check-label" for="toggleB">B</label>
               </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggleDark" disabled>
+                <label class="form-check-label" for="toggleDark">Dark</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggleRef" disabled>
+                <label class="form-check-label" for="toggleRef">Ref</label>
+              </div>
             </div>
 
             <!-- Color Graph + Opacity (hidden by PRO styling patch) -->
@@ -514,6 +537,7 @@
   <!-- SPECTRA-PRO Phase 0 bridge (non-invasive) -->
   <script src="../scripts/mod/eventBus.js"></script>
   <script src="../scripts/mod/stateStore.js"></script>
+  <script src="../scripts/mod/framePreview.js"></script>
   <script src="../scripts/mod/appMode.js"></script>
   <script src="../scripts/mod/uiPanels.js"></script>
   <script src="../scripts/mod/spectrumFrameAdapter.js"></script>

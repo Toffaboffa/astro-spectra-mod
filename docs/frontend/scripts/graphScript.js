@@ -22,6 +22,8 @@ let maximaB = [];
 let eventListeners = [];
 let toggleCombined = false;
 let toggleR = false;
+let toggleDark = false;
+let toggleRef = false;
 let toggleG = false;
 let toggleB = false;
 let fillArea = false;
@@ -560,6 +562,49 @@ function draw() {
     }
 }
 
+
+
+function getSubtractionRgb(kind) {
+    try {
+        const sp = window.SpectraPro || {};
+        const store = sp.store;
+        const st = store && typeof store.getState === 'function' ? store.getState() : null;
+        const sub = st && st.subtraction ? st.subtraction : null;
+        if (!sub) return null;
+        if (kind === 'dark') return sub.darkRGB || null;
+        if (kind === 'ref') return sub.referenceRGB || null;
+        return null;
+    } catch (e) { return null; }
+}
+
+function buildPixelsFromRGBArrays(rgb, pixelWidth) {
+    const R = rgb && Array.isArray(rgb.R) ? rgb.R : null;
+    const G = rgb && Array.isArray(rgb.G) ? rgb.G : null;
+    const B = rgb && Array.isArray(rgb.B) ? rgb.B : null;
+    if (!R && !G && !B) return null;
+    const n = Math.min(pixelWidth, (R ? R.length : pixelWidth), (G ? G.length : pixelWidth), (B ? B.length : pixelWidth));
+    if (!n || n < 2) return null;
+    let maxv = 0;
+    for (let i = 0; i < n; i += 1) {
+        const rv = R ? Number(R[i]) : 0;
+        const gv = G ? Number(G[i]) : 0;
+        const bv = B ? Number(B[i]) : 0;
+        if (rv > maxv) maxv = rv;
+        if (gv > maxv) maxv = gv;
+        if (bv > maxv) maxv = bv;
+    }
+    const scale = (maxv <= 1.5) ? 255 : 1;
+    const out = new Uint8ClampedArray(pixelWidth * 4);
+    for (let x = 0; x < pixelWidth; x += 1) {
+        const i = Math.min(n - 1, x);
+        out[x * 4] = Math.max(0, Math.min(255, Math.round((R ? Number(R[i]) : 0) * scale)));
+        out[x * 4 + 1] = Math.max(0, Math.min(255, Math.round((G ? Number(G[i]) : 0) * scale)));
+        out[x * 4 + 2] = Math.max(0, Math.min(255, Math.round((B ? Number(B[i]) : 0) * scale)));
+        out[x * 4 + 3] = 255;
+    }
+    return out;
+}
+
 /**
  * Draws the graph line, graph grid and labels, deals with peaks, zooming and reference graph
  */
@@ -571,6 +616,8 @@ function drawGraph() {
     toggleR = toggleStates.toggleR;
     toggleG = toggleStates.toggleG;
     toggleB = toggleStates.toggleB;
+    toggleDark = !!toggleStates.toggleDark;
+    toggleRef = !!toggleStates.toggleRef;
 
     fillArea = document.getElementById("colorGraph").checked;
     const spAppearance = getSpectraProGraphAppearanceSettings();
@@ -703,10 +750,19 @@ function drawGraph() {
             drawPeaks(maximaG, maxValue, 'green');
         }
     }
-    if (toggleB) {
-        drawLine(graphCtx, displayPixels, pixelWidth, 'blue', 2, maxValue, shouldHighlightCameraLine, zoomStart, zoomEnd);
-        if (peaksToggled && maximaB.length > 0 && (shouldHighlightCameraLine || !isComparisonChecked)) {
-            drawPeaks(maximaB, maxValue, 'blue');
+    // Optional subtraction frame overlays (Dark/Ref)
+    const subDarkRgb = toggleDark ? getSubtractionRgb('dark') : null;
+    if (toggleDark && subDarkRgb) {
+        const darkPixels = buildPixelsFromRGBArrays(subDarkRgb, pixelWidth);
+        if (darkPixels) {
+            drawLine(graphCtx, darkPixels, pixelWidth, 'rgba(80,80,80,0.9)', -1, maxValue, false, zoomStart, zoomEnd);
+        }
+    }
+    const subRefRgb = toggleRef ? getSubtractionRgb('ref') : null;
+    if (toggleRef && subRefRgb) {
+        const refPixels = buildPixelsFromRGBArrays(subRefRgb, pixelWidth);
+        if (refPixels) {
+            drawLine(graphCtx, refPixels, pixelWidth, 'rgba(140,140,140,0.9)', -1, maxValue, false, zoomStart, zoomEnd);
         }
     }
 
@@ -1097,10 +1153,12 @@ function setupEventListeners() {
  */
 function getToggleStates() {
     return {
-        toggleCombined: document.getElementById('toggleCombined').checked,
-        toggleR: document.getElementById('toggleR').checked,
-        toggleG: document.getElementById('toggleG').checked,
-        toggleB: document.getElementById('toggleB').checked
+        toggleCombined: (document.getElementById('toggleCombined')||{}).checked,
+        toggleR: (document.getElementById('toggleR')||{}).checked,
+        toggleG: (document.getElementById('toggleG')||{}).checked,
+        toggleB: (document.getElementById('toggleB')||{}).checked,
+        toggleDark: (document.getElementById('toggleDark')||{}).checked,
+        toggleRef: (document.getElementById('toggleRef')||{}).checked
     };
 }
 

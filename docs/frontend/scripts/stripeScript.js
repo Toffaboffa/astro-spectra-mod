@@ -201,6 +201,17 @@ function syncCanvasToVideo() {
     stripeGraphCanvas.style.width = width + "px";
     stripeGraphCanvas.style.height = height + "px";
 
+    // Keep optional frame preview canvas in sync (Dark/Ref view)
+    try {
+        const pv = document.getElementById('spFramePreviewCanvas');
+        if (pv) {
+            pv.width = width;
+            pv.height = height;
+            pv.style.width = width + 'px';
+            pv.style.height = height + 'px';
+        }
+    } catch (e) {}
+
     drawSelectionLine();
 }
 
