@@ -377,3 +377,9 @@ button.btn-success:hover, .btn.btn-success:hover {
 #spectraProPanel .sp-statusdock { width: 100%; }
 
 
+
+
+/* Disable press-scale / pop effect on button press */
+button:active, .btn:active {
+  transform: none !important;
+}

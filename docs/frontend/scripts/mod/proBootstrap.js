@@ -490,7 +490,41 @@ function ensureStatusRail() {
   if (document.getElementById('spSideConsolePre')) return;
 
   // Subtraction controls (Dark/Ref) live in the left menu above the console.
-  if (!document.getElementById('spSubtractionControls')) {
+  
+  // Bind dark/ref controls even when panel is not yet attached to document.
+  function bindSubtractionControls(scope) {
+    if (!scope) return;
+    const q = (sel) => scope.querySelector(sel);
+    const capDark = q('#spSubCapDarkBtn');
+    const capRef  = q('#spSubCapRefBtn');
+    const clrDark = q('#spSubClearDarkBtn');
+    const clrRef  = q('#spSubClearRefBtn');
+    const loadDarkBtn = q('#spSubLoadDarkBtn');
+    const loadRefBtn  = q('#spSubLoadRefBtn');
+    const loadDarkInp = q('#spSubLoadDarkInput');
+    const loadRefInp  = q('#spSubLoadRefInput');
+
+    capDark && capDark.addEventListener('click', function(){ try { capture('dark'); } catch(e) { try { console.warn(e); } catch(_){} } });
+    capRef  && capRef.addEventListener('click', function(){ try { capture('ref'); } catch(e) { try { console.warn(e); } catch(_){} } });
+    clrDark && clrDark.addEventListener('click', function(){ try { clearSub('dark'); } catch(e) { try { console.warn(e); } catch(_){} } });
+    clrRef  && clrRef.addEventListener('click', function(){ try { clearSub('ref'); } catch(e) { try { console.warn(e); } catch(_){} } });
+
+    loadRefBtn && loadRefBtn.addEventListener('click', function(){ if (loadRefInp) loadRefInp.click(); });
+    loadDarkBtn && loadDarkBtn.addEventListener('click', function(){ if (loadDarkInp) loadDarkInp.click(); });
+
+    loadRefInp && loadRefInp.addEventListener('change', function(ev){
+      const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
+      try { ev.target.value = ''; } catch(_) {}
+      if (file) { try { loadSubImage('ref', file); } catch(e) { try { console.warn(e); } catch(_){} } }
+    });
+    loadDarkInp && loadDarkInp.addEventListener('change', function(ev){
+      const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
+      try { ev.target.value = ''; } catch(_) {}
+      if (file) { try { loadSubImage('dark', file); } catch(e) { try { console.warn(e); } catch(_){} } }
+    });
+  }
+
+if (!document.getElementById('spSubtractionControls')) {
     const ctl = document.createElement('div');
     ctl.id = 'spSubtractionControls';
     ctl.className = 'sp-subtraction-controls';
@@ -511,6 +545,7 @@ function ensureStatusRail() {
       '</div>'
     ].join('');
     host.appendChild(ctl);
+    bindSubtractionControls(ctl);
   }
 
   const wrap = document.createElement('div');
