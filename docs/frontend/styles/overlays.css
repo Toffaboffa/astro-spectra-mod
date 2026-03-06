@@ -21,7 +21,7 @@
     --sp-graph-overlay-font: 10px Verdana;
     --sp-graph-overlay-text-color: rgb(0 0 0 / 1);
     --sp-graph-overlay-text-stroke: rgba(0, 0, 0, 0);
-    --sp-graph-overlay-line-color: rgba(0, 0, 0, 0);
+    --sp-graph-overlay-line-color: rgba(0, 0, 0, 0.5);
     --sp-graph-overlay-line-width: 1;
     --sp-graph-overlay-line-dash: 4, 4;
     --sp-graph-smart-bg: rgba(246, 206, 70, 0.42);
