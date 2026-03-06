@@ -181,7 +181,7 @@ function changeStripeLabels(value) {
 function drawSelectionLine() {
     stripeGraphCtx.clearRect(0, 0, stripeGraphCanvas.width, stripeGraphCanvas.height);
     stripeGraphCtx.beginPath();
-    stripeGraphCtx.strokeStyle = "rgba(255, 255, 0, 0.5)";
+    stripeGraphCtx.strokeStyle = "rgba(255, 255, 0, 0.8)";
     stripeGraphCtx.lineWidth = getStripeWidth();
     var y = yPercentage * stripeGraphCanvas.height;
     stripeGraphCtx.moveTo(0, y);
