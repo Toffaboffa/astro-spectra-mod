@@ -671,7 +671,7 @@ if (!document.getElementById('spSubtractionControls')) {
         '<div class="sp-form-grid sp-form-grid--core-8">',
         '  <label id="spFieldAppMode" class="sp-field sp-field--app-mode" title="Choose the active analysis workspace. LAB and ASTRO enable analysis-specific behavior.">App mode<select id="spAppMode" class="spctl-select spctl-select--app-mode"><option value="CORE">CORE</option><option value="LAB">LAB</option><option value="ASTRO">ASTRO</option></select></label>',
         '  <label id="spFieldWorkerMode" class="sp-field sp-field--worker-mode" title="Control whether the analysis worker is used automatically, forced on, or forced off.">Worker<select id="spWorkerMode" class="spctl-select spctl-select--worker-mode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>',
-        '  <label id="spFieldDisplayMode" class="sp-field sp-field--display-mode" title="Choose how the graph is computed from the current signal and reference frames.">Display mode<select id="spDisplayMode" class="spctl-select spctl-select--display-mode">' + displayOptions + '</select></label>',
+        '',
         '  <label id="spFieldXAxisMode" class="sp-field sp-field--x-axis-mode" title="Choose whether the horizontal axis uses calibrated wavelength or raw pixel position.">X-axis<select id="spXAxisMode" class="spctl-select spctl-select--x-axis-mode">' + xAxisOptions + '</select></label>',
         '  <label id="spFieldYAxisMode" class="sp-field sp-field--y-axis-mode" title="Set how the vertical graph scale is handled. Normalize applies automatic scaling to the strongest visible peak.">Y-axis<select id="spYAxisMode" class="spctl-select spctl-select--y-axis-mode">' + yAxisOptions + '</select></label>',
         '  <label id="spYAxisMaxWrap" class="sp-field sp-field--y-axis-max" title="Manual upper limit for the Y-axis when manual scaling is active.">Y max<input id="spYAxisMax" class="spctl-input spctl-input--y-axis-max" type="number" min="1" max="4096" step="1" value="255"></label>',
@@ -708,12 +708,15 @@ if (!document.getElementById('spSubtractionControls')) {
         '    </div>',
         '  </div>',
         '  <div id="spReferenceBox" class="sp-card-sub sp-core-bottom-card sp-reference-box">',
-        '    <h4 class="sp-subtitle sp-subtitle--core">Reference graph</h4>',
-        '    <label id="spFieldReferenceToggle" class="sp-field sp-field--checkbox-row" title="Show or hide the stored reference graphs in the spectrum plot."><span>Show references</span><input id="spReferenceGraphCheckboxProxy" type="checkbox"></label>',
+        '    <h4 class="sp-subtitle sp-subtitle--core">Reference lines</h4>',
+        '    <div class="sp-reference-toprow">',
+        '      <label id="spFieldReferenceToggle" class="sp-field sp-field--checkbox-row" title="Show or hide the stored reference graphs in the spectrum plot."><span>Show Reference Lines</span><input id="spReferenceGraphCheckboxProxy" type="checkbox"></label>',
+        '      <label id="spFieldDisplayMode" class="sp-field sp-field--display-mode" title="Choose how the current graph is compared against stored reference lines."><span>Compare Reference Lines</span><select id="spDisplayMode" class="spctl-select spctl-select--display-mode">' + displayOptions + '</select></label>',
+        '    </div>',
         '    <div class="sp-actions sp-actions--reference">',
-        '      <button type="button" id="spAddReferenceBtn" title="Capture the current graph as a new reference trace.">Add reference</button>',
+        '      <button type="button" id="spAddReferenceBtn" title="Adds current graph as a reference graph">Add Reference Line</button>',
         '      <button type="button" id="spAddReferenceFromFileBtn" title="Load a reference trace from an XLSX file.">From file</button>',
-        '      <button type="button" id="spResetReferencesBtn" title="Clear all stored references and immediately capture a new one.">Reset references</button>',
+        '      <button type="button" id="spResetReferencesBtn" title="Clear all stored reference lines.">Clear Lines</button>',
         '    </div>',
         '  </div>',
         '</div>',
@@ -908,7 +911,22 @@ if (!document.getElementById('spSubtractionControls')) {
         try { window.addReferenceLine && window.addReferenceLine(); } catch (_) {}
       });
       addReferenceFromFileBtn && addReferenceFromFileBtn.addEventListener('click', function () { try { window.addReferenceLineFromExcel && window.addReferenceLineFromExcel(); } catch (_) {} });
-      resetReferencesBtn && resetReferencesBtn.addEventListener('click', function () { try { window.removeReferenceLinesAndAddNewReferenceLine && window.removeReferenceLinesAndAddNewReferenceLine(); } catch (_) {} });
+      resetReferencesBtn && resetReferencesBtn.addEventListener('click', function () {
+        try {
+          if (typeof referenceGraph !== 'undefined' && Array.isArray(referenceGraph)) referenceGraph = [];
+          const target = $('referenceGraphCheckbox');
+          if (target) {
+            target.checked = false;
+            try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+            try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+          }
+          if (window.SpectraCore && window.SpectraCore.reference && typeof window.SpectraCore.reference.emitReferenceState === 'function') {
+            window.SpectraCore.reference.emitReferenceState();
+          }
+          try { redrawGraphIfLoadedImage(); } catch (_) {}
+          try { drawGraph(); } catch (_) {}
+        } catch (_) {}
+      });
       exportBtn && exportBtn.addEventListener('click', function () { try { window.saveRecordingData && window.saveRecordingData(); } catch (_) {} });
       longExposureBtn && longExposureBtn.addEventListener('click', function () { try { openLongExposureModal(); } catch (_) {} });
 
@@ -2305,6 +2323,7 @@ function renderConsole() {
       const m = String((state.display && state.display.mode) || 'normal').toLowerCase();
       if (displaySel.value !== m) displaySel.value = m;
     }
+    syncReferenceLineControls(state);
     const yAxisSel = $('spYAxisMode');
     const yAxisMaxInput = $('spYAxisMax');
     if (yAxisSel && !shouldSkipSyncValue(yAxisSel)) {
@@ -2374,6 +2393,32 @@ function renderConsole() {
     const vRef = $('spFrameViewRef');
     if (vDark) vDark.disabled = !hasDark;
     if (vRef) vRef.disabled = !hasRef;
+  }
+
+
+  function syncReferenceLineControls(state) {
+    const st = state || getStoreState();
+    const refState = (st && st.reference) || {};
+    const hasLines = !!(refState.hasReference || Number(refState.count || 0) > 0);
+    const displaySel = $('spDisplayMode');
+    const showProxy = $('spReferenceGraphCheckboxProxy');
+    const legacyToggle = $('referenceGraphCheckbox');
+    if (!hasLines) {
+      try { setVal('display.mode', 'normal'); } catch (_) {}
+      if (displaySel) displaySel.disabled = true;
+      if (showProxy) {
+        showProxy.disabled = true;
+        showProxy.checked = false;
+      }
+      if (legacyToggle) {
+        legacyToggle.checked = false;
+        legacyToggle.disabled = true;
+      }
+    } else {
+      if (displaySel) displaySel.disabled = false;
+      if (showProxy) showProxy.disabled = false;
+      if (legacyToggle) legacyToggle.disabled = false;
+    }
   }
 
   
@@ -2756,6 +2801,7 @@ function autoCloseInfoPopupIfDefault() {
       window.SpectraPro.coreHooks.on('referenceChanged', function (payload) {
         const normalized = normalizeReferenceState(payload);
         updateStorePath('reference', normalized, { source: 'proBootstrap.referenceSync' });
+        try { syncReferenceLineControls(getStoreState()); } catch (_) {}
         queueStatusRender();
       });
     }

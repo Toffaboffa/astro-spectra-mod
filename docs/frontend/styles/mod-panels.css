@@ -1228,3 +1228,14 @@ label[for="peakSizeLower"],
   font-size: 12px;
   line-height: 1.1;
 }
+
+
+#SpectraProDockHost .sp-reference-toprow{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,1fr);gap:10px;align-items:end;margin-bottom:8px;}
+#SpectraProDockHost .sp-reference-box #spFieldReferenceToggle{margin:0;padding-top:0;min-height:auto;}
+#SpectraProDockHost .sp-reference-box #spFieldDisplayMode{margin:0;padding-top:0;min-height:auto;display:flex;flex-direction:column;gap:6px;}
+#SpectraProDockHost .sp-reference-box #spFieldDisplayMode span{font-size:12px;line-height:1.1;white-space:nowrap;}
+#SpectraProDockHost .sp-reference-box #spDisplayMode:disabled{opacity:.55;cursor:not-allowed;}
+#SpectraProDockHost .sp-reference-box #spReferenceGraphCheckboxProxy:disabled{opacity:.55;cursor:not-allowed;}
+@media (max-width: 900px){
+  #SpectraProDockHost .sp-reference-toprow{grid-template-columns:1fr;}
+}
