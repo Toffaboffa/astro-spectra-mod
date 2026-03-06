@@ -205,7 +205,15 @@
   function refreshVisuals(){
     try { refreshMetrics(); } catch(_) {}
     try { if (typeof window.initializeZoomList === 'function') window.initializeZoomList(); } catch(_) {}
-    try { if (typeof window.redrawGraphIfLoadedImage === 'function') window.redrawGraphIfLoadedImage(true); } catch(_) {}
+    try {
+      const current = getVideoElement();
+      const isImg = !!(current && current instanceof HTMLImageElement);
+      if (!isImg && typeof window.plotRGBLineFromCamera === 'function') {
+        window.plotRGBLineFromCamera();
+      } else if (isImg && typeof window.redrawGraphIfLoadedImage === 'function') {
+        window.redrawGraphIfLoadedImage(true);
+      }
+    } catch(_) {}
     try { if (typeof window.drawSelectionLine === 'function') window.drawSelectionLine(); } catch(_) {}
     try { if (typeof window.showSelectedStripe === 'function') window.showSelectedStripe(); } catch(_) {}
     try { if (typeof window.drawGraph === 'function') window.drawGraph(); } catch(_) {}

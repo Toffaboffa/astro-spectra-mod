@@ -1416,8 +1416,17 @@ function ensureLabPanel() {
     const v = String(e.target.value || 'raw');
     setVal('subtraction.mode', v);
     setFeedback('Mode: ' + v, 'info');
-    try { redrawGraphIfLoadedImage(); } catch (_) {}
-    try { drawGraph(); } catch (_) {}
+    try {
+      const rt = sp.runtime || {};
+      const fp = sp.framePreview || {};
+      const previewMode = (typeof fp.getMode === 'function') ? String(fp.getMode() || 'source').toLowerCase() : 'source';
+      if (previewMode === 'source' && rt && typeof rt.isSourceLive === 'function' && rt.isSourceLive() && typeof window.plotRGBLineFromCamera === 'function') {
+        window.plotRGBLineFromCamera();
+      } else if (typeof redrawGraphIfLoadedImage === 'function') {
+        redrawGraphIfLoadedImage(true);
+      }
+    } catch (_) {}
+    try { if (typeof drawGraph === 'function') drawGraph(); } catch (_) {}
   });
 
   showHitsEl && showHitsEl.addEventListener('change', function (e) {
