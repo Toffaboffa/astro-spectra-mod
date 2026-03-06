@@ -1239,3 +1239,14 @@ label[for="peakSizeLower"],
 @media (max-width: 900px){
   #SpectraProDockHost .sp-reference-toprow{grid-template-columns:1fr;}
 }
+
+
+.sp-field--placeholder {
+  visibility: hidden;
+  pointer-events: none;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
