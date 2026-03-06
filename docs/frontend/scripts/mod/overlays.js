@@ -77,6 +77,12 @@
       const h = canvas.height;
       const theme = getCanvasTheme(canvas);
       const wCalc = widthForCalc || w;
+      const plotBounds = (typeof global.getGraphPlotBounds === 'function') ? global.getGraphPlotBounds(canvas) : null;
+      const plotLeft = plotBounds && Number.isFinite(+plotBounds.left) ? +plotBounds.left : padding;
+      const plotRight = plotBounds && Number.isFinite(+plotBounds.right) ? +plotBounds.right : (w - padding);
+      const plotTop = plotBounds && Number.isFinite(+plotBounds.top) ? +plotBounds.top : 30;
+      const plotBottom = plotBounds && Number.isFinite(+plotBounds.bottom) ? +plotBounds.bottom : (h - 30);
+      const plotHeight = Math.max(1, plotBottom - plotTop);
       const latestFrame = (state && state.frame && state.frame.latest) ? state.frame.latest : null;
       const latestI = latestFrame && Array.isArray(latestFrame.I) ? latestFrame.I : null;
       let latestMaxValue = 0;
@@ -96,8 +102,7 @@
           if (val > localMax) localMax = val;
         }
         if (!Number.isFinite(localMax) || localMax <= 0 || !Number.isFinite(latestMaxValue) || latestMaxValue <= 0) return null;
-        const paddingY = 30;
-        return h - paddingY - (localMax / latestMaxValue) * (h - 2 * paddingY);
+        return plotBottom - (localMax / latestMaxValue) * plotHeight;
       }
       const highlightElements = Object.create(null);
       for (let gi = 0; gi < smartGroups.length && gi < 6; gi += 1) {
@@ -118,7 +123,7 @@
         if (!Number.isFinite(pxObserved) || pxObserved < zoomStart || pxObserved >= zoomEnd) continue;
         const x = calcX(pxObserved - zoomStart, zoomEnd - zoomStart, wCalc);
         const xCanvas = (wCalc && w && wCalc !== w) ? (x * (w / wCalc)) : x;
-        if (!Number.isFinite(xCanvas) || xCanvas < padding || xCanvas > (w - padding)) continue;
+        if (!Number.isFinite(xCanvas) || xCanvas < plotLeft || xCanvas > plotRight) continue;
         const name = String(hit.element || hit.species || '').trim();
         if (!name) continue;
         const deltaNm = Number.isFinite(referenceNm) ? Math.abs(referenceNm - observedNm) : NaN;
@@ -158,7 +163,7 @@
       const markerStroke = theme.overlayLineColor;
       const rowStep = Math.max(14, Math.round(theme.smartHeight + 2));
       const xOffset = 5;
-      const topAnchorY = 2;
+      const topAnchorY = Math.max(1, Math.round(plotTop + 2));
       const lowPeakThresholdY = 92;
       const peakLabelGap = 4;
 
@@ -172,22 +177,23 @@
           return (Number(b.hit.confidence) || 0) - (Number(a.hit.confidence) || 0);
         });
 
-        ctx.beginPath();
-        ctx.moveTo(xCanvas, 0);
-        ctx.lineTo(xCanvas, h);
-        ctx.save();
-        ctx.strokeStyle = markerStroke;
-        ctx.stroke();
-        ctx.restore();
-
         const peakY = group.items.reduce(function(best, item){
           if (!Number.isFinite(item.peakY)) return best;
           return !Number.isFinite(best) ? item.peakY : Math.min(best, item.peakY);
         }, NaN);
         const stackHeight = Math.max(theme.smartHeight, group.items.length * rowStep);
         const startY = (Number.isFinite(peakY) && peakY > lowPeakThresholdY)
-          ? Math.max(2, Math.min(h - stackHeight - 2, Math.round(peakY - stackHeight - peakLabelGap)))
+          ? Math.max(Math.round(plotTop + 2), Math.min(Math.round(plotBottom - stackHeight - 2), Math.round(peakY - stackHeight - peakLabelGap)))
           : topAnchorY;
+        const lineTopY = Math.max(plotTop, Math.min(plotBottom, startY + Math.round(theme.smartHeight * 0.5)));
+
+        ctx.beginPath();
+        ctx.moveTo(xCanvas, plotBottom);
+        ctx.lineTo(xCanvas, lineTopY);
+        ctx.save();
+        ctx.strokeStyle = markerStroke;
+        ctx.stroke();
+        ctx.restore();
 
         for (let ri = 0; ri < group.items.length; ri += 1) {
           const item = group.items[ri];
