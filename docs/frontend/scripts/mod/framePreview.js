@@ -22,8 +22,19 @@
   function saveCurrentSourceState(){
     const img = $('cameraImage');
     const current = getVideoElement();
-    sourceState.wasImage = !!(current && current.id === 'cameraImage');
+    const video = $('videoMain');
+    const live = !!(video && video.srcObject);
+    sourceState.wasImage = !!(current && current.id === 'cameraImage' && img && (img.getAttribute('src') || img.src));
     sourceState.imageSrc = img ? (img.getAttribute('src') || img.src || '') : '';
+    sourceState.wasLive = live;
+  }
+
+  function isSourceCameraView(){
+    try {
+      const video = $('videoMain');
+      const current = getVideoElement();
+      return !!((current && current.id === 'videoMain') || (video && video.srcObject));
+    } catch(_) { return true; }
   }
 
   function getSubState(){
@@ -109,22 +120,24 @@
 
   function setUiEnabled(){
     const sub = getSubState();
-    const hasDark = !!sub.hasDark && !!sub.darkImageSrc;
-    const hasRef = !!sub.hasReference && !!sub.referenceImageSrc;
+    const hasDarkData = !!sub.hasDark && !!(sub.darkI && sub.darkI.length);
+    const hasRefData = !!sub.hasReference && !!(sub.referenceI && sub.referenceI.length);
+    const hasDarkView = hasDarkData && !!sub.darkImageSrc;
+    const hasRefView = hasRefData && !!sub.referenceImageSrc;
     const darkRadio = $('spFrameViewDark');
     const refRadio = $('spFrameViewRef');
-    if (darkRadio) darkRadio.disabled = !hasDark;
-    if (refRadio) refRadio.disabled = !hasRef;
+    if (darkRadio) darkRadio.disabled = !hasDarkView;
+    if (refRadio) refRadio.disabled = !hasRefView;
     const tDark = $('toggleDark');
     const tRef = $('toggleRef');
-    if (tDark) tDark.disabled = !hasDark;
-    if (tRef) tRef.disabled = !hasRef;
+    if (tDark) tDark.disabled = !hasDarkData;
+    if (tRef) tRef.disabled = !hasRefData;
     const pDark = $('spToggleDarkProxy');
     const pRef = $('spToggleRefProxy');
-    if (pDark) pDark.disabled = !hasDark;
-    if (pRef) pRef.disabled = !hasRef;
-    if (mode === 'dark' && !hasDark) setMode('source');
-    if (mode === 'ref' && !hasRef) setMode('source');
+    if (pDark) pDark.disabled = !hasDarkData;
+    if (pRef) pRef.disabled = !hasRefData;
+    if (mode === 'dark' && !hasDarkView) setMode('source');
+    if (mode === 'ref' && !hasRefView) setMode('source');
   }
 
   function syncToggleUi(){
@@ -167,7 +180,7 @@
     if (lbl) {
       if (mode === 'dark') lbl.textContent = 'DARK';
       else if (mode === 'ref') lbl.textContent = 'REF';
-      else lbl.textContent = (runtime().isSourceLive && runtime().isSourceLive()) ? 'SOURCE Cam' : 'SOURCE: Image';
+      else lbl.textContent = isSourceCameraView() ? 'SOURCE Cam' : 'SOURCE: Image';
     }
     const badge = ensureGraphBadge();
     if (badge) {

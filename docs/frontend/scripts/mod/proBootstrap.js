@@ -57,14 +57,17 @@ function captureCurrentDisplayDataUrl(){
   try {
     const img = document.getElementById('cameraImage');
     if (img && img.style && img.style.display !== 'none' && img.src) return img.src;
-    const vid = document.getElementById('videoMain');
+    const rt = (window.SpectraPro && window.SpectraPro.runtime) || {};
+    const current = (typeof rt.getVideoElement === 'function') ? rt.getVideoElement() : null;
+    const vid = (current && current.id === 'videoMain') ? current : document.getElementById('videoMain');
     if (!vid) return '';
-    const vw = vid.videoWidth || 0;
-    const vh = vid.videoHeight || 0;
+    const vw = Number(vid.videoWidth || vid.clientWidth || 0);
+    const vh = Number(vid.videoHeight || vid.clientHeight || 0);
     if (!vw || !vh) return '';
     const c = document.createElement('canvas');
     c.width = vw; c.height = vh;
     const ctx = c.getContext('2d');
+    if (!ctx) return '';
     ctx.drawImage(vid, 0, 0, vw, vh);
     return c.toDataURL('image/png');
   } catch (e) { return ''; }
@@ -1628,6 +1631,7 @@ function ensureLabPanel() {
       setVal('subtraction.hasReference', true);
       setVal('subtraction.referenceCapturedAt', Date.now());
       if (snap) { try { setVal('subtraction.referenceImageSrc', snap); } catch(e){} }
+      else { try { setVal('subtraction.referenceImageSrc', null); } catch(e){} }
       setFeedback('Captured reference (' + arr.length + ' pts).', 'ok');
     } else {
       setVal('subtraction.darkI', arr);
@@ -1635,6 +1639,7 @@ function ensureLabPanel() {
       setVal('subtraction.hasDark', true);
       setVal('subtraction.darkCapturedAt', Date.now());
       if (snap) { try { setVal('subtraction.darkImageSrc', snap); } catch(e){} }
+      else { try { setVal('subtraction.darkImageSrc', null); } catch(e){} }
       setFeedback('Captured dark (' + arr.length + ' pts).', 'ok');
     }
     try { syncDarkRefAvailability(getStoreState()); } catch (_) {}
