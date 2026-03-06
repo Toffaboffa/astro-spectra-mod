@@ -51,7 +51,26 @@ function el(tag, cls, text) {
   return n;
 }
 
-  function ensureHost() {
+  
+
+function captureCurrentDisplayDataUrl(){
+  try {
+    const img = document.getElementById('cameraImage');
+    if (img && img.style && img.style.display !== 'none' && img.src) return img.src;
+    const vid = document.getElementById('videoMain');
+    if (!vid) return '';
+    const vw = vid.videoWidth || 0;
+    const vh = vid.videoHeight || 0;
+    if (!vw || !vh) return '';
+    const c = document.createElement('canvas');
+    c.width = vw; c.height = vh;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(vid, 0, 0, vw, vh);
+    return c.toDataURL('image/png');
+  } catch (e) { return ''; }
+}
+
+function ensureHost() {
     const left = $('graphSettingsDrawerLeft');
     if (!left) return null;
 
@@ -1558,17 +1577,21 @@ function ensureLabPanel() {
       G: Array.isArray(f.G) ? f.G.slice() : null,
       B: Array.isArray(f.B) ? f.B.slice() : null
     };
+
+    const snap = captureCurrentDisplayDataUrl();
     if (kind === 'ref') {
       setVal('subtraction.referenceI', arr);
       setVal('subtraction.referenceRGB', rgb);
       setVal('subtraction.hasReference', true);
       setVal('subtraction.referenceCapturedAt', Date.now());
+      if (snap) { try { setVal('subtraction.referenceImageSrc', snap); } catch(e){} }
       setFeedback('Captured reference (' + arr.length + ' pts).', 'ok');
     } else {
       setVal('subtraction.darkI', arr);
       setVal('subtraction.darkRGB', rgb);
       setVal('subtraction.hasDark', true);
       setVal('subtraction.darkCapturedAt', Date.now());
+      if (snap) { try { setVal('subtraction.darkImageSrc', snap); } catch(e){} }
       setFeedback('Captured dark (' + arr.length + ' pts).', 'ok');
     }
     try { syncDarkRefAvailability(getStoreState()); } catch (_) {}
@@ -1659,6 +1682,12 @@ function ensureLabPanel() {
     if (!f) return;
     const reader = new FileReader();
     reader.onload = function (e) {
+      const dataUrl = (e && e.target && e.target.result) ? e.target.result : '';
+      if (kind === 'ref') {
+        try { setVal('subtraction.referenceImageSrc', dataUrl); } catch(e) {}
+      } else {
+        try { setVal('subtraction.darkImageSrc', dataUrl); } catch(e) {}
+      }
       const img = new Image();
       img.onload = function () {
         const built = buildFrameFromImageElement(img);

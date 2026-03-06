@@ -26,8 +26,9 @@
 
   function setUiEnabled(){
     const sub = getSubState();
-    const hasDark = !!sub.hasDark && sub.darkRGB && (Array.isArray(sub.darkRGB.R) || Array.isArray(sub.darkRGB.G) || Array.isArray(sub.darkRGB.B));
-    const hasRef = !!sub.hasReference && sub.referenceRGB && (Array.isArray(sub.referenceRGB.R) || Array.isArray(sub.referenceRGB.G) || Array.isArray(sub.referenceRGB.B));
+        const sub = getSubState();
+    const hasDark = !!sub.hasDark && !!sub.darkImageSrc;
+    const hasRef  = !!sub.hasReference && !!sub.referenceImageSrc;
 
     const darkRadio = $('spFrameViewDark');
     const refRadio = $('spFrameViewRef');
@@ -59,7 +60,40 @@
     if (r) r.checked = (mode === 'ref');
   }
 
-  function hide(el){ if(el) el.style.display='none'; }
+  
+
+function applyDisplayMode(){
+  const video = document.getElementById('videoMain');
+  const imgEl = document.getElementById('cameraImage');
+  const previewCanvas = document.getElementById('spFramePreviewCanvas');
+  // We no longer use the preview canvas overlay; keep it hidden.
+  if (previewCanvas) previewCanvas.style.display = 'none';
+
+  if (!video || !imgEl) return;
+
+  if (mode === 'source') {
+    imgEl.style.display = 'none';
+    // Do not clear src; just hide.
+    video.style.display = '';
+    return;
+  }
+
+  const sub = getSubState();
+  const src = (mode === 'dark') ? (sub.darkImageSrc || '') : (sub.referenceImageSrc || '');
+  if (!src) {
+    // Fallback to source if nothing to show
+    mode = 'source';
+    syncToggleUi();
+    imgEl.style.display = 'none';
+    video.style.display = '';
+    return;
+  }
+  imgEl.src = src;
+  imgEl.style.display = '';
+  video.style.display = 'none';
+}
+
+function hide(el){ if(el) el.style.display='none'; }
   function show(el){ if(el) el.style.display=''; }
 
   function renderRgbStrip(rgb){
@@ -123,23 +157,8 @@
   }
 
   function applyView(){
-    const video = $('videoMain');
-    const img = $('cameraImage');
-    const preview = $('spFramePreviewCanvas');
-
-    if (mode === 'source'){
-      hide(preview);
-      // Let existing logic decide whether video or image is visible
-      return;
-    }
-
-    // Force preview canvas and hide video/image to avoid confusion
-    if (video) hide(video);
-    if (img) hide(img);
-    if (preview) show(preview);
-
-    const rgb = getRgb(mode === 'dark' ? 'dark' : 'ref');
-    renderRgbStrip(rgb || {});
+    // Swap the visible source under the selection-line canvas.
+    applyDisplayMode();
   }
 
   function setMode(next){
