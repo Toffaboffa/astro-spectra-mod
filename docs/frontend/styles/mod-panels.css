@@ -1121,7 +1121,7 @@ label[for="peakSizeLower"],
 #SpectraProDockHost .sp-actions--core-zoom{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; align-items:center;}
 #SpectraProDockHost .sp-field--zoom-scroller{display:flex; flex-direction:column; align-items:flex-start;}
 #SpectraProDockHost .sp-field--zoom-scroller input{width:100%; max-width:260px;}
-#SpectraProDockHost .sp-field--zoom-scroller-inline{margin-left:10px; padding-top:0; min-height:auto; min-width:220px; flex:1 1 240px;}
+#SpectraProDockHost .sp-field--zoom-scroller-inline{margin-left:10px; padding-top:0; min-height:auto; min-width:120px;}
 #SpectraProDockHost .sp-field--zoom-scroller-inline span{font-size:12px; line-height:1.1; margin-bottom:4px; white-space:nowrap;}
 #SpectraProDockHost .sp-field--zoom-scroller-inline input{max-width:none; width:100% !important;}
 
@@ -1262,18 +1262,26 @@ label[for="peakSizeLower"],
   gap:0;
   padding:6px 10px;
 }
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--stackgroup #spFieldCombined,
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--stackgroup #spFieldRgbStack,
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--stackgroup #spFieldSubGraphs{
+  width:max-content;
+  max-width:100%;
+  margin-left:auto;
+}
 #SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--stackgroup #spFieldCombined{
   padding-top:0;
   min-height:auto;
 }
 #SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--stackgroup .sp-mini-row{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 16px;
+  grid-template-columns:max-content 16px;
   align-items:center;
+  justify-content:end;
   margin:0;
   padding:0;
-  line-height:1.05;
-  gap:6px;
+  line-height:1.0;
+  gap:4px;
 }
 #SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--stackgroup .sp-mini-row span{
   font-size:12px;
@@ -1282,9 +1290,12 @@ label[for="peakSizeLower"],
   white-space:nowrap;
   text-align:right;
 }
-#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--stackgroup .sp-mini-row input{
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-form-grid--core-8 .sp-field--stackgroup .sp-mini-row input{
   margin:0;
   justify-self:end;
+}
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 #spFieldSubGraphs .sp-mini-row span{
+  font-size:11px;
 }
 #SpectraProDockHost .sp-reference-toprow #spFieldReferenceToggle{
   display:inline-flex;
@@ -1297,3 +1308,5 @@ label[for="peakSizeLower"],
 #SpectraProDockHost .sp-reference-toprow #spFieldReferenceToggle span{
   white-space:nowrap;
 }
+
+#SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--stackgroup .sp-mini-row input{margin:0;justify-self:end;}
