@@ -317,6 +317,14 @@
 
   api.setMode = setMode;
   api.getMode = function(){ return mode; };
+  api.onStripeChanged = function(){
+    saveCurrentSlotStripe();
+    if (mode !== 'source') {
+      rebuildActivePreviewData();
+      updateLabels();
+      refreshVisuals();
+    }
+  };
   api.init = attach;
   window.addEventListener('load', attach);
 })();

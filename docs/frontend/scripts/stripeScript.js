@@ -90,6 +90,11 @@ function updateStripeWidth() {
     if (videoElement) {
         redrawGraphIfLoadedImage(true);
     }
+    try {
+        if (window.SpectraPro && window.SpectraPro.framePreview && typeof window.SpectraPro.framePreview.onStripeChanged === 'function') {
+            window.SpectraPro.framePreview.onStripeChanged();
+        }
+    } catch (e) {}
 }
 
 /**
@@ -249,6 +254,11 @@ stripeGraphCanvas.addEventListener("click", function (event) {
     if (videoElement) {
         redrawGraphIfLoadedImage(true);
     }
+    try {
+        if (window.SpectraPro && window.SpectraPro.framePreview && typeof window.SpectraPro.framePreview.onStripeChanged === 'function') {
+            window.SpectraPro.framePreview.onStripeChanged();
+        }
+    } catch (e) {}
 });
 
 window.addEventListener("load", syncCanvasToVideo);
