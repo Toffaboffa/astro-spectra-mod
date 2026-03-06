@@ -70,6 +70,24 @@ function captureCurrentDisplayDataUrl(){
   } catch (e) { return ''; }
 }
 
+function canCaptureSubFrame(){
+  try {
+    const mode = (sp.framePreview && typeof sp.framePreview.getMode === 'function') ? String(sp.framePreview.getMode() || 'source').toLowerCase() : 'source';
+    const rt = sp.runtime || {};
+    return mode === 'source' && !!(rt.isSourceLive && rt.isSourceLive());
+  } catch (_) { return false; }
+}
+
+function syncCaptureAvailability(){
+  const ok = canCaptureSubFrame();
+  ['spSubCapDarkBtn','spSubCapRefBtn'].forEach(function(id){
+    const btn = $(id);
+    if (!btn) return;
+    btn.disabled = !ok;
+    btn.title = ok ? '' : 'Capture works only when SOURCE is selected and a live camera stream is active.';
+  });
+}
+
 function ensureHost() {
     const left = $('graphSettingsDrawerLeft');
     if (!left) return null;
@@ -1584,6 +1602,11 @@ function ensureLabPanel() {
 
   // Capture reference/dark workflows (Phase 2 subtraction MVP)
   function capture(kind) {
+    if (!canCaptureSubFrame()) {
+      setFeedback('Capture works only when SOURCE is selected and camera live is active.', 'warn');
+      try { syncCaptureAvailability(); } catch (_) {}
+      return;
+    }
     const state = getStoreState();
     const frame = getLiveFrame(state);
     const f = normalizeGraphFrame(frame);
@@ -1615,6 +1638,7 @@ function ensureLabPanel() {
       setFeedback('Captured dark (' + arr.length + ' pts).', 'ok');
     }
     try { syncDarkRefAvailability(getStoreState()); } catch (_) {}
+    try { syncCaptureAvailability(); } catch (_) {}
     try { renderStatus(); } catch (_) {}
     try { redrawGraphIfLoadedImage(); } catch (_) {}
     try { drawGraph(); } catch (_) {}
@@ -1647,6 +1671,7 @@ function ensureLabPanel() {
       setFeedback('Cleared dark.', 'info');
     }
     try { syncDarkRefAvailability(getStoreState()); } catch (_) {}
+    try { syncCaptureAvailability(); } catch (_) {}
     try { renderStatus(); } catch (_) {}
     try { redrawGraphIfLoadedImage(); } catch (_) {}
     try { drawGraph(); } catch (_) {}
@@ -2251,6 +2276,7 @@ function renderConsole() {
     if (!sEl || !qEl) return;
     const state = getStoreState();
     try { syncDarkRefAvailability(state); } catch (_) {}
+    try { syncCaptureAvailability(); } catch (_) {}
     const lines = computeDataQualityLines(state);
     sEl.innerHTML = lines.status.join('<br>');
     qEl.innerHTML = lines.dq.join('<br>');

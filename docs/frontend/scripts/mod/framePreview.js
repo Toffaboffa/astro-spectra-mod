@@ -175,6 +175,18 @@
       else if (mode === 'ref') { badge.textContent = 'REF PREVIEW'; badge.style.display = 'block'; }
       else { badge.textContent = ''; badge.style.display = 'none'; }
     }
+    syncCaptureButtons();
+  }
+
+  function syncCaptureButtons(){
+    const canCapture = (mode === 'source') && !!(runtime().isSourceLive && runtime().isSourceLive());
+    const ids = ['spSubCapDarkBtn','spSubCapRefBtn'];
+    ids.forEach(function(id){
+      const btn = $(id);
+      if (!btn) return;
+      btn.disabled = !canCapture;
+      btn.title = canCapture ? '' : 'Capture works only for SOURCE when camera live is active.';
+    });
   }
 
   function refreshVisuals(){
@@ -269,6 +281,7 @@
           if (String(path||'').indexOf('subtraction.') === 0) {
             setUiEnabled();
             updateLabels();
+            syncCaptureButtons();
           }
         });
       }
@@ -277,6 +290,7 @@
     saveCurrentSourceState();
     saveCurrentSlotStripe();
     setUiEnabled();
+    syncCaptureButtons();
     setMode('source');
   }
 

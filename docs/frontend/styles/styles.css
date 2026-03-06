@@ -426,3 +426,48 @@ button:active, .btn:active {
   border-radius: 0 0 3px 0;
   pointer-events: none;
 }
+
+
+/* Camera view toggle styling (Source / Dark / Ref) */
+#spCameraViewToggle {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+#spCameraViewToggle .btn-group {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+#spCameraViewToggle .btn-group > .btn {
+  width: 100%;
+}
+#spCameraViewToggle .btn {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(28, 34, 44, 0.92);
+  color: #d7dce2;
+  font: 700 12px Verdana, Arial, sans-serif;
+  padding: 4px 6px;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+#spCameraViewToggle .btn:hover {
+  background: rgba(42, 50, 64, 0.96);
+  color: #ffffff;
+}
+#spCameraViewToggle .btn-check:checked + .btn {
+  background: linear-gradient(180deg, rgba(95,130,190,0.95), rgba(56,87,143,0.98));
+  border-color: rgba(150,190,255,0.7);
+  color: #ffffff;
+}
+#spCameraViewToggle .btn-check:disabled + .btn,
+#spCameraViewToggle .btn.disabled {
+  background: rgba(18, 20, 24, 0.85);
+  border-color: rgba(255,255,255,0.06);
+  color: rgba(180,186,194,0.42);
+  opacity: 1;
+}
+#spSubtractionControls .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
