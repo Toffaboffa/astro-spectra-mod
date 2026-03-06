@@ -55,21 +55,25 @@ function el(tag, cls, text) {
 
 function captureCurrentDisplayDataUrl(){
   try {
-    const img = document.getElementById('cameraImage');
-    if (img && img.style && img.style.display !== 'none' && img.src) return img.src;
     const rt = (window.SpectraPro && window.SpectraPro.runtime) || {};
-    const current = (typeof rt.getVideoElement === 'function') ? rt.getVideoElement() : null;
-    const vid = (current && current.id === 'videoMain') ? current : document.getElementById('videoMain');
-    if (!vid) return '';
-    const vw = Number(vid.videoWidth || vid.clientWidth || 0);
-    const vh = Number(vid.videoHeight || vid.clientHeight || 0);
-    if (!vw || !vh) return '';
-    const c = document.createElement('canvas');
-    c.width = vw; c.height = vh;
-    const ctx = c.getContext('2d');
-    if (!ctx) return '';
-    ctx.drawImage(vid, 0, 0, vw, vh);
-    return c.toDataURL('image/png');
+    const sourceIsLive = !!(rt.isSourceLive && rt.isSourceLive());
+    if (sourceIsLive) {
+      const current = (typeof rt.getVideoElement === 'function') ? rt.getVideoElement() : null;
+      const vid = (current && current.id === 'videoMain') ? current : document.getElementById('videoMain');
+      if (!vid) return '';
+      const vw = Number(vid.videoWidth || vid.clientWidth || 0);
+      const vh = Number(vid.videoHeight || vid.clientHeight || 0);
+      if (!vw || !vh) return '';
+      const c = document.createElement('canvas');
+      c.width = vw; c.height = vh;
+      const ctx = c.getContext('2d');
+      if (!ctx) return '';
+      ctx.drawImage(vid, 0, 0, vw, vh);
+      return c.toDataURL('image/png');
+    }
+    const img = document.getElementById('cameraImage');
+    if (img && img.src) return img.src;
+    return '';
   } catch (e) { return ''; }
 }
 
@@ -1610,43 +1614,13 @@ function ensureLabPanel() {
       try { syncCaptureAvailability(); } catch (_) {}
       return;
     }
-    const state = getStoreState();
-    const frame = getLiveFrame(state);
-    const f = normalizeGraphFrame(frame);
-    if (!f || !Array.isArray(f.I) || !f.I.length) {
-      setFeedback('No live frame to capture.', 'warn');
+    const snap = captureCurrentDisplayDataUrl();
+    if (!snap) {
+      setFeedback('No live camera snapshot available.', 'warn');
+      try { syncCaptureAvailability(); } catch (_) {}
       return;
     }
-    const arr = f.I.slice();
-    const rgb = {
-      R: Array.isArray(f.R) ? f.R.slice() : null,
-      G: Array.isArray(f.G) ? f.G.slice() : null,
-      B: Array.isArray(f.B) ? f.B.slice() : null
-    };
-
-    const snap = captureCurrentDisplayDataUrl();
-    if (kind === 'ref') {
-      setVal('subtraction.referenceI', arr);
-      setVal('subtraction.referenceRGB', rgb);
-      setVal('subtraction.hasReference', true);
-      setVal('subtraction.referenceCapturedAt', Date.now());
-      if (snap) { try { setVal('subtraction.referenceImageSrc', snap); } catch(e){} }
-      else { try { setVal('subtraction.referenceImageSrc', null); } catch(e){} }
-      setFeedback('Captured reference (' + arr.length + ' pts).', 'ok');
-    } else {
-      setVal('subtraction.darkI', arr);
-      setVal('subtraction.darkRGB', rgb);
-      setVal('subtraction.hasDark', true);
-      setVal('subtraction.darkCapturedAt', Date.now());
-      if (snap) { try { setVal('subtraction.darkImageSrc', snap); } catch(e){} }
-      else { try { setVal('subtraction.darkImageSrc', null); } catch(e){} }
-      setFeedback('Captured dark (' + arr.length + ' pts).', 'ok');
-    }
-    try { syncDarkRefAvailability(getStoreState()); } catch (_) {}
-    try { syncCaptureAvailability(); } catch (_) {}
-    try { renderStatus(); } catch (_) {}
-    try { redrawGraphIfLoadedImage(); } catch (_) {}
-    try { drawGraph(); } catch (_) {}
+    applySubImageData(kind, snap, kind + '-capture.png', 'captured');
   }
 
   // Subtraction UI (left menu controls)
@@ -1732,46 +1706,57 @@ function ensureLabPanel() {
     } catch (e) { return null; }
   }
 
+  function applySubImageData(kind, dataUrl, filename, sourceKind) {
+    if (!dataUrl) {
+      setFeedback('No image data to load.', 'warn');
+      return;
+    }
+    if (kind === 'ref') {
+      try { setVal('subtraction.referenceImageSrc', dataUrl); } catch(e) {}
+    } else {
+      try { setVal('subtraction.darkImageSrc', dataUrl); } catch(e) {}
+    }
+    const img = new Image();
+    img.onload = function () {
+      const built = buildFrameFromImageElement(img);
+      if (!built || !Array.isArray(built.I) || !built.I.length) {
+        setFeedback('Failed to read image as spectrum.', 'warn');
+        return;
+      }
+      if (kind === 'ref') {
+        setVal('subtraction.referenceI', built.I.slice());
+        setVal('subtraction.referenceRGB', { R: built.RGB.R.slice(), G: built.RGB.G.slice(), B: built.RGB.B.slice() });
+        setVal('subtraction.hasReference', true);
+        setVal('subtraction.referenceFilename', String(filename || 'ref'));
+        setVal('subtraction.referenceLoadedAt', sourceKind === 'loaded' ? Date.now() : null);
+        setVal('subtraction.referenceCapturedAt', sourceKind === 'captured' ? Date.now() : null);
+        setFeedback((sourceKind === 'captured' ? 'Captured ref (' : 'Loaded ref (') + built.I.length + ' pts).', 'ok');
+      } else {
+        setVal('subtraction.darkI', built.I.slice());
+        setVal('subtraction.darkRGB', { R: built.RGB.R.slice(), G: built.RGB.G.slice(), B: built.RGB.B.slice() });
+        setVal('subtraction.hasDark', true);
+        setVal('subtraction.darkFilename', String(filename || 'dark'));
+        setVal('subtraction.darkLoadedAt', sourceKind === 'loaded' ? Date.now() : null);
+        setVal('subtraction.darkCapturedAt', sourceKind === 'captured' ? Date.now() : null);
+        setFeedback((sourceKind === 'captured' ? 'Captured dark (' : 'Loaded dark (') + built.I.length + ' pts).', 'ok');
+      }
+      try { syncDarkRefAvailability(getStoreState()); } catch (_) {}
+      try { syncCaptureAvailability(); } catch (_) {}
+      try { renderStatus(); } catch (_) {}
+      try { redrawGraphIfLoadedImage(); } catch (_) {}
+      try { drawGraph(); } catch (_) {}
+    };
+    img.onerror = function () { setFeedback('Failed to load image.', 'warn'); };
+    img.src = dataUrl;
+  }
+
   function loadSubImage(kind, file) {
     const f = file;
     if (!f) return;
     const reader = new FileReader();
     reader.onload = function (e) {
       const dataUrl = (e && e.target && e.target.result) ? e.target.result : '';
-      if (kind === 'ref') {
-        try { setVal('subtraction.referenceImageSrc', dataUrl); } catch(e) {}
-      } else {
-        try { setVal('subtraction.darkImageSrc', dataUrl); } catch(e) {}
-      }
-      const img = new Image();
-      img.onload = function () {
-        const built = buildFrameFromImageElement(img);
-        if (!built || !Array.isArray(built.I) || !built.I.length) {
-          setFeedback('Failed to read image as spectrum.', 'warn');
-          return;
-        }
-        if (kind === 'ref') {
-          setVal('subtraction.referenceI', built.I.slice());
-          setVal('subtraction.referenceRGB', { R: built.RGB.R.slice(), G: built.RGB.G.slice(), B: built.RGB.B.slice() });
-          setVal('subtraction.hasReference', true);
-          setVal('subtraction.referenceLoadedAt', Date.now());
-          setVal('subtraction.referenceFilename', String(f.name || 'ref'));
-          setFeedback('Loaded ref (' + built.I.length + ' pts).', 'ok');
-        } else {
-          setVal('subtraction.darkI', built.I.slice());
-          setVal('subtraction.darkRGB', { R: built.RGB.R.slice(), G: built.RGB.G.slice(), B: built.RGB.B.slice() });
-          setVal('subtraction.hasDark', true);
-          setVal('subtraction.darkLoadedAt', Date.now());
-          setVal('subtraction.darkFilename', String(f.name || 'dark'));
-          setFeedback('Loaded dark (' + built.I.length + ' pts).', 'ok');
-        }
-        try { syncDarkRefAvailability(getStoreState()); } catch (_) {}
-        try { renderStatus(); } catch (_) {}
-        try { redrawGraphIfLoadedImage(); } catch (_) {}
-        try { drawGraph(); } catch (_) {}
-      };
-      img.onerror = function () { setFeedback('Failed to load image.', 'warn'); };
-      img.src = e && e.target ? e.target.result : '';
+      applySubImageData(kind, dataUrl, String(f.name || kind), 'loaded');
     };
     reader.readAsDataURL(f);
   }
