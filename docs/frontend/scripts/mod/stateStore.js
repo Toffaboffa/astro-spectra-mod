@@ -84,7 +84,7 @@
       presetCatalog: defaultPresetCatalog,
       topHits: [],
       rawTopHits: [],
-      smartFindEnabled: false,
+      smartFindEnabled: true,
       useRgbScore: false,
       showHits: true,
       smartFindHits: [],
@@ -92,8 +92,12 @@
       elementScores: [],
       winnerBreakdown: null,
       offsetNm: null,
-      maxDistanceNm: 5,
+      includeWeakPeaks: false,
+      useRgbScore: true,
+      maxDistanceNm: 1,
       strongPeakLevel: 3,
+      peakThresholdRel: 0.05,
+      peakDistancePx: 2,
       qcFlags: []
     },
     camera: {
