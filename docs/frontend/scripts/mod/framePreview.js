@@ -26,7 +26,6 @@
 
   function setUiEnabled(){
     const sub = getSubState();
-        const sub = getSubState();
     const hasDark = !!sub.hasDark && !!sub.darkImageSrc;
     const hasRef  = !!sub.hasReference && !!sub.referenceImageSrc;
 
@@ -60,38 +59,100 @@
     if (r) r.checked = (mode === 'ref');
   }
 
-  
 
-function applyDisplayMode(){
-  const video = document.getElementById('videoMain');
-  const imgEl = document.getElementById('cameraImage');
-  const previewCanvas = document.getElementById('spFramePreviewCanvas');
-  // We no longer use the preview canvas overlay; keep it hidden.
-  if (previewCanvas) previewCanvas.style.display = 'none';
-
-  if (!video || !imgEl) return;
-
-  if (mode === 'source') {
-    imgEl.style.display = 'none';
-    // Do not clear src; just hide.
-    video.style.display = '';
-    return;
+  // We want View(Source/Dark/Ref) to control BOTH what is visible in the camera window
+  // and what the stripe/graph pipeline samples from. The legacy code samples from the global
+  // `videoElement` (cameraScript.js). So we temporarily swap that reference when viewing Dark/Ref.
+  let saved = null;
+  function getGlobalVideoElement(){
+    try { return window.videoElement || null; } catch(_) { return null; }
+  }
+  function setGlobalVideoElement(el){
+    try { window.videoElement = el; } catch(_) {}
   }
 
-  const sub = getSubState();
-  const src = (mode === 'dark') ? (sub.darkImageSrc || '') : (sub.referenceImageSrc || '');
-  if (!src) {
-    // Fallback to source if nothing to show
-    mode = 'source';
-    syncToggleUi();
-    imgEl.style.display = 'none';
-    video.style.display = '';
-    return;
+  function ensureLabel(){
+    const host = document.getElementById('cameraMainWindow') || document.body;
+    if (!host) return null;
+    let lbl = document.getElementById('spFrameModeLabel');
+    if (lbl) return lbl;
+    lbl = document.createElement('div');
+    lbl.id = 'spFrameModeLabel';
+    lbl.className = 'sp-frame-mode-label';
+    try {
+      const st = window.getComputedStyle(host);
+      if (st && st.position === 'static') host.style.position = 'relative';
+    } catch(_) {}
+    host.appendChild(lbl);
+    return lbl;
   }
-  imgEl.src = src;
-  imgEl.style.display = '';
-  video.style.display = 'none';
-}
+
+  function setLabelText(){
+    const lbl = ensureLabel();
+    if (!lbl) return;
+    if (mode === 'dark') { lbl.textContent = 'DARK'; return; }
+    if (mode === 'ref') { lbl.textContent = 'REF'; return; }
+    const ve = getGlobalVideoElement();
+    const live = !!(ve && ve.id === 'videoMain' && ve.srcObject);
+    lbl.textContent = live ? 'SOURCE: Live' : 'SOURCE: Image';
+  }
+
+  function applyDisplayMode(){
+    const video = document.getElementById('videoMain');
+    const imgEl = document.getElementById('cameraImage');
+    const previewCanvas = document.getElementById('spFramePreviewCanvas');
+    if (previewCanvas) previewCanvas.style.display = 'none';
+    if (!video || !imgEl) return;
+
+    const currentGlobal = getGlobalVideoElement();
+    if (!saved) {
+      saved = {
+        globalEl: currentGlobal,
+        sourceWasImage: !!(currentGlobal && currentGlobal.id === 'cameraImage'),
+        sourceImgSrc: imgEl.getAttribute('src') || imgEl.src || '',
+        videoDisplay: video.style.display,
+        imgDisplay: imgEl.style.display
+      };
+    }
+
+    if (mode === 'source') {
+      if (saved && saved.sourceWasImage) {
+        if (saved.sourceImgSrc) imgEl.src = saved.sourceImgSrc;
+        imgEl.style.display = saved.imgDisplay || 'block';
+        video.style.display = 'none';
+        setGlobalVideoElement(imgEl);
+      } else {
+        imgEl.style.display = 'none';
+        video.style.display = saved ? (saved.videoDisplay || '') : '';
+        setGlobalVideoElement(video);
+      }
+      setLabelText();
+      return;
+    }
+
+    const sub = getSubState();
+    const src = (mode === 'dark') ? (sub.darkImageSrc || '') : (sub.referenceImageSrc || '');
+    if (!src) {
+      mode = 'source';
+      syncToggleUi();
+      applyDisplayMode();
+      return;
+    }
+
+    imgEl.src = src;
+    imgEl.style.display = 'block';
+    video.style.display = 'none';
+    setGlobalVideoElement(imgEl);
+
+    try {
+      imgEl.onload = function(){
+        try { if (typeof window.initializeZoomList === 'function') window.initializeZoomList(); } catch(_) {}
+        try { if (typeof window.redrawGraphIfLoadedImage === 'function') window.redrawGraphIfLoadedImage(true); } catch(_) {}
+        try { if (typeof window.drawGraph === 'function') window.drawGraph(); } catch(_) {}
+      };
+    } catch(_) {}
+    setLabelText();
+  }
 
 function hide(el){ if(el) el.style.display='none'; }
   function show(el){ if(el) el.style.display=''; }

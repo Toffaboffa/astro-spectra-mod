@@ -525,8 +525,24 @@ function ensureStatusRail() {
 
     capDark && capDark.addEventListener('click', function(){ try { capture('dark'); } catch(e) { try { console.warn(e); } catch(_){} } });
     capRef  && capRef.addEventListener('click', function(){ try { capture('ref'); } catch(e) { try { console.warn(e); } catch(_){} } });
-    clrDark && clrDark.addEventListener('click', function(){ try { clearSub('dark'); } catch(e) { try { console.warn(e); } catch(_){} } });
-    clrRef  && clrRef.addEventListener('click', function(){ try { clearSub('ref'); } catch(e) { try { console.warn(e); } catch(_){} } });
+    clrDark && clrDark.addEventListener('click', function(){
+      try {
+        const fn = (sp && typeof sp.clearSub === 'function') ? sp.clearSub
+                 : (typeof clearSub === 'function') ? clearSub
+                 : null;
+        if (fn) fn('dark');
+        else console.warn('clearSub missing');
+      } catch(e) { try { console.warn(e); } catch(_){} }
+    });
+    clrRef  && clrRef.addEventListener('click', function(){
+      try {
+        const fn = (sp && typeof sp.clearSub === 'function') ? sp.clearSub
+                 : (typeof clearSub === 'function') ? clearSub
+                 : null;
+        if (fn) fn('ref');
+        else console.warn('clearSub missing');
+      } catch(e) { try { console.warn(e); } catch(_){} }
+    });
 
     loadRefBtn && loadRefBtn.addEventListener('click', function(){ if (loadRefInp) loadRefInp.click(); });
     loadDarkBtn && loadDarkBtn.addEventListener('click', function(){ if (loadDarkInp) loadDarkInp.click(); });
@@ -1610,6 +1626,7 @@ function ensureLabPanel() {
     if (kind === 'ref') {
       setVal('subtraction.referenceI', null);
       setVal('subtraction.referenceRGB', null);
+      setVal('subtraction.referenceImageSrc', null);
       setVal('subtraction.hasReference', false);
       setVal('subtraction.referenceCapturedAt', null);
       setVal('subtraction.referenceLoadedAt', null);
@@ -1618,6 +1635,7 @@ function ensureLabPanel() {
     } else {
       setVal('subtraction.darkI', null);
       setVal('subtraction.darkRGB', null);
+      setVal('subtraction.darkImageSrc', null);
       setVal('subtraction.hasDark', false);
       setVal('subtraction.darkCapturedAt', null);
       setVal('subtraction.darkLoadedAt', null);
@@ -1629,6 +1647,9 @@ function ensureLabPanel() {
     try { redrawGraphIfLoadedImage(); } catch (_) {}
     try { drawGraph(); } catch (_) {}
   }
+
+  // Expose for UI bindings created in other modules.
+  try { sp.clearSub = clearSub; } catch (_) {}
 
   function labelSubMode(mode) {
     const m = String(mode || 'raw').toLowerCase();

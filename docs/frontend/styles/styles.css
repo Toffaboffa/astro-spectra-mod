@@ -383,3 +383,18 @@ button.btn-success:hover, .btn.btn-success:hover {
 button:active, .btn:active {
   transform: none !important;
 }
+
+/* Frame view label (SOURCE/DARK/REF) shown in the camera window */
+.sp-frame-mode-label{
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 30;
+  padding: 2px 6px;
+  font: 12px Verdana, Arial, sans-serif;
+  color: rgba(255,255,255,0.95);
+  background: rgba(0,0,0,0.55);
+  border-radius: 3px;
+  pointer-events: none;
+  user-select: none;
+}
