@@ -1698,7 +1698,32 @@ function ensureLabPanel() {
     } catch (e) { return null; }
   }
 
-  function loadSubImage(kind, file) {
+  
+// [Dark/Ref] Rebuild subtraction data from an existing dataUrl using current stripe settings (per active view)
+function rebuildSubFromSrc(kind, dataUrl) {
+  const k = (kind === 'ref') ? 'ref' : 'dark';
+  const src = String(dataUrl || '');
+  if (!src) return;
+  const img = new Image();
+  img.onload = function(){
+    const built = buildFrameFromImageElement(img);
+    if (!built || !Array.isArray(built.I) || !built.I.length) return;
+    if (k === 'ref') {
+      setVal('subtraction.referenceI', built.I.slice());
+      setVal('subtraction.referenceRGB', { R: built.RGB.R.slice(), G: built.RGB.G.slice(), B: built.RGB.B.slice() });
+      setVal('subtraction.hasReference', true);
+    } else {
+      setVal('subtraction.darkI', built.I.slice());
+      setVal('subtraction.darkRGB', { R: built.RGB.R.slice(), G: built.RGB.G.slice(), B: built.RGB.B.slice() });
+      setVal('subtraction.hasDark', true);
+    }
+    try { if (typeof renderStatus === 'function') renderStatus(); } catch(e) {}
+    try { if (typeof syncDarkRefAvailability === 'function') syncDarkRefAvailability(sp.store && sp.store.getState ? sp.store.getState() : null); } catch(e) {}
+  };
+  img.src = src;
+}
+
+function loadSubImage(kind, file) {
     const f = file;
     if (!f) return;
     const reader = new FileReader();

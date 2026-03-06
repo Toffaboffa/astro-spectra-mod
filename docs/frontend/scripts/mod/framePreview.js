@@ -4,6 +4,8 @@
 
   const api = sp.framePreview || (sp.framePreview = {});
 
+  const slots = api.slots || (api.slots = { source:{}, dark:{}, ref:{} });
+
   let mode = 'source'; // source|dark|ref
   let initialized = false;
 
@@ -97,6 +99,45 @@
     lbl.textContent = live ? 'SOURCE: Live' : 'SOURCE: Image';
   }
 
+
+  function saveStripeFor(which){
+    const k = (which === 'dark' || which === 'ref') ? which : 'source';
+    const wEl = document.getElementById('stripeWidthRange');
+    const pEl = document.getElementById('stripePlacementRange');
+    if (!wEl || !pEl) return;
+    slots[k] = slots[k] || {};
+    slots[k].stripeWidth = Number(wEl.value);
+    slots[k].stripePlace = Number(pEl.value);
+  }
+
+  function restoreStripeFor(which){
+    const k = (which === 'dark' || which === 'ref') ? which : 'source';
+    const wEl = document.getElementById('stripeWidthRange');
+    const pEl = document.getElementById('stripePlacementRange');
+    const wTxt = document.getElementById('stripeWidthValue');
+    const pTxt = document.getElementById('stripePlacementValue');
+    if (!wEl || !pEl) return;
+    const slot = slots[k] || {};
+    if (Number.isFinite(slot.stripeWidth)) wEl.value = String(slot.stripeWidth);
+    if (Number.isFinite(slot.stripePlace)) pEl.value = String(slot.stripePlace);
+    if (wTxt) wTxt.textContent = String(wEl.value);
+    if (pTxt && typeof window.getStripePositionRangeText === 'function') pTxt.textContent = window.getStripePositionRangeText();
+    // Apply into globals + redraw
+    try { if (typeof window.changeStripeWidth === 'function') window.changeStripeWidth(0); } catch(e) {}
+    try { if (typeof window.changeStripePlacement === 'function') window.changeStripePlacement(0); } catch(e) {}
+  }
+
+  function maybeRebuildActiveSub(){
+    if (mode !== 'dark' && mode !== 'ref') return;
+    const sub = getSubState();
+    const src = (mode === 'dark') ? (sub.darkImageSrc || '') : (sub.referenceImageSrc || '');
+    if (!src) return;
+    const fn = sp.rebuildSubFromSrc;
+    if (typeof fn === 'function') {
+      try { fn(mode, src); } catch(e) {}
+    }
+  }
+
   function applyDisplayMode(){
     const video = document.getElementById('videoMain');
     const imgEl = document.getElementById('cameraImage');
@@ -105,15 +146,15 @@
     if (!video || !imgEl) return;
 
     const currentGlobal = getGlobalVideoElement();
-    if (!saved) {
-      saved = {
+    // Refresh saved source state each time before switching away
+    saved = {
         globalEl: currentGlobal,
         sourceWasImage: !!(currentGlobal && currentGlobal.id === 'cameraImage'),
         sourceImgSrc: imgEl.getAttribute('src') || imgEl.src || '',
         videoDisplay: video.style.display,
         imgDisplay: imgEl.style.display
       };
-    }
+
 
     if (mode === 'source') {
       if (saved && saved.sourceWasImage) {
@@ -223,8 +264,11 @@ function hide(el){ if(el) el.style.display='none'; }
   }
 
   function setMode(next){
+    const prev = mode;
     const m = String(next || 'source').toLowerCase();
     mode = (m === 'dark' || m === 'ref') ? m : 'source';
+    try { saveStripeFor(prev); } catch(e) {}
+    try { restoreStripeFor(mode); } catch(e) {}
     syncToggleUi();
     setUiEnabled();
     applyView();
@@ -253,6 +297,13 @@ function hide(el){ if(el) el.style.display='none'; }
         });
       }
     } catch(e){}
+
+    // Track per-slot stripe settings
+    const sw = document.getElementById('stripeWidthRange');
+    const spc = document.getElementById('stripePlacementRange');
+    const onStripe = function(){ try { saveStripeFor(mode); } catch(e) {} try { maybeRebuildActiveSub(); } catch(e) {} };
+    if (sw) { sw.addEventListener('input', onStripe); sw.addEventListener('change', onStripe); }
+    if (spc) { spc.addEventListener('input', onStripe); spc.addEventListener('change', onStripe); }
 
     // Resize hook: redraw strip when canvas size changes
     window.addEventListener('resize', function(){ if (mode !== 'source') applyView(); });
