@@ -515,12 +515,28 @@ function ensureStatusRail() {
     loadRefInp && loadRefInp.addEventListener('change', function(ev){
       const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
       try { ev.target.value = ''; } catch(_) {}
-      if (file) { try { loadSubImage('ref', file); } catch(e) { try { console.warn(e); } catch(_){} } }
+      if (file) {
+        try {
+          const fn = (sp && typeof sp.loadSubImage === 'function') ? sp.loadSubImage
+                   : (typeof loadSubImage === 'function') ? loadSubImage
+                   : null;
+          if (fn) fn('ref', file);
+          else console.warn('loadSubImage missing');
+        } catch(e) { try { console.warn(e); } catch(_){} }
+      }
     });
     loadDarkInp && loadDarkInp.addEventListener('change', function(ev){
       const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
       try { ev.target.value = ''; } catch(_) {}
-      if (file) { try { loadSubImage('dark', file); } catch(e) { try { console.warn(e); } catch(_){} } }
+      if (file) {
+        try {
+          const fn = (sp && typeof sp.loadSubImage === 'function') ? sp.loadSubImage
+                   : (typeof loadSubImage === 'function') ? loadSubImage
+                   : null;
+          if (fn) fn('dark', file);
+          else console.warn('loadSubImage missing');
+        } catch(e) { try { console.warn(e); } catch(_){} }
+      }
     });
   }
 
@@ -1555,6 +1571,8 @@ function ensureLabPanel() {
       setVal('subtraction.darkCapturedAt', Date.now());
       setFeedback('Captured dark (' + arr.length + ' pts).', 'ok');
     }
+    try { syncDarkRefAvailability(getStoreState()); } catch (_) {}
+    try { renderStatus(); } catch (_) {}
     try { redrawGraphIfLoadedImage(); } catch (_) {}
     try { drawGraph(); } catch (_) {}
   }
@@ -1583,6 +1601,8 @@ function ensureLabPanel() {
       setVal('subtraction.darkFilename', null);
       setFeedback('Cleared dark.', 'info');
     }
+    try { syncDarkRefAvailability(getStoreState()); } catch (_) {}
+    try { renderStatus(); } catch (_) {}
     try { redrawGraphIfLoadedImage(); } catch (_) {}
     try { drawGraph(); } catch (_) {}
   }
@@ -1661,6 +1681,8 @@ function ensureLabPanel() {
           setVal('subtraction.darkFilename', String(f.name || 'dark'));
           setFeedback('Loaded dark (' + built.I.length + ' pts).', 'ok');
         }
+        try { syncDarkRefAvailability(getStoreState()); } catch (_) {}
+        try { renderStatus(); } catch (_) {}
         try { redrawGraphIfLoadedImage(); } catch (_) {}
         try { drawGraph(); } catch (_) {}
       };
@@ -1669,6 +1691,9 @@ function ensureLabPanel() {
     };
     reader.readAsDataURL(f);
   }
+
+  // Expose for UI bindings that may be created before this declaration is parsed in some bundling contexts.
+  try { sp.loadSubImage = loadSubImage; } catch (_) {}
 
   // Hook up both legacy LAB buttons (if present) and the left-menu subtraction buttons.
   $('spLabCapRefBtn') && $('spLabCapRefBtn').addEventListener('click', function () { capture('ref'); });
@@ -2171,6 +2196,7 @@ function renderConsole() {
     const qEl = $('spDataQualityText');
     if (!sEl || !qEl) return;
     const state = getStoreState();
+    try { syncDarkRefAvailability(state); } catch (_) {}
     const lines = computeDataQualityLines(state);
     sEl.innerHTML = lines.status.join('<br>');
     qEl.innerHTML = lines.dq.join('<br>');
@@ -2243,6 +2269,31 @@ function renderConsole() {
       const next = String(Math.max(0, Math.min(8, Math.round(Number(peaks.smoothing)))));
       if (String(peakSmoothingInput.value) !== next) peakSmoothingInput.value = next;
     }
+  }
+
+  function syncDarkRefAvailability(state) {
+    const st = state || getStoreState();
+    const sub = (st && st.subtraction) || {};
+    const hasDark = !!sub.hasDark;
+    const hasRef = !!sub.hasReference;
+
+    // Legacy graph toggles (used by CORE proxies)
+    const tDark = $('toggleDark');
+    const tRef = $('toggleRef');
+    if (tDark) tDark.disabled = !hasDark;
+    if (tRef) tRef.disabled = !hasRef;
+
+    // CORE proxy checkboxes (if panel built)
+    const pDark = $('spToggleDarkProxy');
+    const pRef = $('spToggleRefProxy');
+    if (pDark) pDark.disabled = !hasDark;
+    if (pRef) pRef.disabled = !hasRef;
+
+    // Live view radios under camera image
+    const vDark = $('spFrameViewDark');
+    const vRef = $('spFrameViewRef');
+    if (vDark) vDark.disabled = !hasDark;
+    if (vRef) vRef.disabled = !hasRef;
   }
 
   
