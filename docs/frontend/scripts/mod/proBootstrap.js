@@ -261,6 +261,10 @@ function shouldRunLabAnalysis(state) {
   if (!state) return false;
   if (String(state.appMode || 'CORE').toUpperCase() !== 'LAB') return false;
   if (!(state.analysis && state.analysis.enabled)) return false;
+  try {
+    const fp = window.SpectraPro && window.SpectraPro.framePreview;
+    if (fp && typeof fp.getMode === 'function' && String(fp.getMode() || 'source').toLowerCase() !== 'source') return false;
+  } catch (_) {}
   const wm = (state.worker && state.worker.mode) ? String(state.worker.mode).toLowerCase() : 'auto';
   if (wm === 'off') return false;
   return true;
@@ -1698,32 +1702,7 @@ function ensureLabPanel() {
     } catch (e) { return null; }
   }
 
-  
-// [Dark/Ref] Rebuild subtraction data from an existing dataUrl using current stripe settings (per active view)
-function rebuildSubFromSrc(kind, dataUrl) {
-  const k = (kind === 'ref') ? 'ref' : 'dark';
-  const src = String(dataUrl || '');
-  if (!src) return;
-  const img = new Image();
-  img.onload = function(){
-    const built = buildFrameFromImageElement(img);
-    if (!built || !Array.isArray(built.I) || !built.I.length) return;
-    if (k === 'ref') {
-      setVal('subtraction.referenceI', built.I.slice());
-      setVal('subtraction.referenceRGB', { R: built.RGB.R.slice(), G: built.RGB.G.slice(), B: built.RGB.B.slice() });
-      setVal('subtraction.hasReference', true);
-    } else {
-      setVal('subtraction.darkI', built.I.slice());
-      setVal('subtraction.darkRGB', { R: built.RGB.R.slice(), G: built.RGB.G.slice(), B: built.RGB.B.slice() });
-      setVal('subtraction.hasDark', true);
-    }
-    try { if (typeof renderStatus === 'function') renderStatus(); } catch(e) {}
-    try { if (typeof syncDarkRefAvailability === 'function') syncDarkRefAvailability(sp.store && sp.store.getState ? sp.store.getState() : null); } catch(e) {}
-  };
-  img.src = src;
-}
-
-function loadSubImage(kind, file) {
+  function loadSubImage(kind, file) {
     const f = file;
     if (!f) return;
     const reader = new FileReader();
@@ -2405,8 +2384,13 @@ function renderLabPanel() {
   const enabled = !!(state.analysis && state.analysis.enabled);
   const calibrated = !!(state.calibration && (state.calibration.calibrated || (state.calibration.coefficients && state.calibration.coefficients.length)));
 
+  const previewMode = (window.SpectraPro && window.SpectraPro.framePreview && typeof window.SpectraPro.framePreview.getMode === 'function') ? String(window.SpectraPro.framePreview.getMode() || 'source').toLowerCase() : 'source';
+
   if (mode !== 'LAB') {
     hitsEl.innerHTML = '<div class="sp-empty">LAB mode is not active. Open the LAB tab.</div>';
+  } else if (previewMode !== 'source') {
+    const which = previewMode === 'dark' ? 'DARK PREVIEW' : 'REF PREVIEW';
+    hitsEl.innerHTML = '<div class="sp-empty"><b>' + which + '</b><br>Preview mode is active. LAB analysis only runs on Source.</div>';
   } else if (!libsLoaded) {
     hitsEl.innerHTML = '<div class="sp-empty">Libraries not initialized yet. Click <b>Init libraries</b>.</div>';
   } else if (!enabled) {

@@ -15,6 +15,38 @@ let exposureValues = [];
 let cameraOutputHeight;
 let cameraOutputWidth;
 
+function refreshActiveSourceMetrics() {
+    try {
+        if (!videoElement) return;
+        const isImg = videoElement instanceof HTMLImageElement;
+        const w = isImg ? Number(videoElement.naturalWidth || videoElement.width || 0) : Number(videoElement.videoWidth || videoElement.clientWidth || 0);
+        const h = isImg ? Number(videoElement.naturalHeight || videoElement.height || 0) : Number(videoElement.videoHeight || videoElement.clientHeight || 0);
+        if (Number.isFinite(w) && w > 0) cameraOutputWidth = w;
+        if (Number.isFinite(h) && h > 0) cameraOutputHeight = h;
+        const widthRange = document.getElementById("stripeWidthRange");
+        const placeRange = document.getElementById("stripePlacementRange");
+        if (widthRange && cameraOutputHeight) widthRange.max = cameraOutputHeight;
+        if (placeRange && cameraOutputHeight) placeRange.max = cameraOutputHeight;
+    } catch (_) {}
+}
+
+(function exposeSpectraRuntime(){
+    const sp = window.SpectraPro || (window.SpectraPro = {});
+    sp.runtime = sp.runtime || {};
+    sp.runtime.getVideoElement = function(){ return videoElement; };
+    sp.runtime.setVideoElement = function(el){
+        if (!el) return videoElement;
+        videoElement = el;
+        refreshActiveSourceMetrics();
+        return videoElement;
+    };
+    sp.runtime.refreshActiveSourceMetrics = refreshActiveSourceMetrics;
+    sp.runtime.isSourceLive = function(){
+        try { return !!(videoElement && videoElement.id === 'videoMain' && videoElement.srcObject); } catch(_) { return false; }
+    };
+})();
+
+
 /**
  * Start streaming video from the specified deviceId
  * @param deviceId

@@ -398,3 +398,31 @@ button:active, .btn:active {
   pointer-events: none;
   user-select: none;
 }
+
+
+.sp-graph-preview-badge {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  z-index: 20;
+  display: none;
+  padding: 2px 8px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font: 700 12px Verdana, Arial, sans-serif;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  pointer-events: none;
+}
+.sp-frame-mode-label {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 20;
+  padding: 2px 8px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font: 700 12px Verdana, Arial, sans-serif;
+  border-radius: 0 0 3px 0;
+  pointer-events: none;
+}
