@@ -40,6 +40,11 @@
     if (tDark) tDark.disabled = !hasDark;
     if (tRef) tRef.disabled = !hasRef;
 
+    const pDark = $('spToggleDarkProxy');
+    const pRef = $('spToggleRefProxy');
+    if (pDark) pDark.disabled = !hasDark;
+    if (pRef) pRef.disabled = !hasRef;
+
     // If current view is unavailable, fall back to source
     if (mode === 'dark' && !hasDark) setMode('source');
     if (mode === 'ref' && !hasRef) setMode('source');

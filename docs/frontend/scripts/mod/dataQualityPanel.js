@@ -61,6 +61,17 @@
     return null;
   }
 
+  function formatSubMode(mode){
+    const m = String(mode || 'raw').toLowerCase();
+    if (m === 'raw') return 'Raw';
+    if (m === 'raw-dark') return 'Raw - Dark';
+    if (m === 'difference') return 'Difference';
+    if (m === 'ratio') return 'Ratio';
+    if (m === 'transmittance') return 'Transmittance %';
+    if (m === 'absorbance') return 'Absorbance';
+    return m;
+  }
+
   function getSignalArray(frame) {
     if (!frame || typeof frame !== 'object') return null;
     return Array.isArray(frame.I) ? frame.I
@@ -132,7 +143,9 @@
       `Frame source: ${(latest && latest.source) || (st.frame && st.frame.source) || 'none'}${(latest && latest.pixelWidth) ? ` · ${latest.pixelWidth} px` : ''}`,
       `Calibration: ${(st.calibration && st.calibration.isCalibrated) ? 'calibrated' : 'uncalibrated'} · pts ${(st.calibration && (st.calibration.points || []).length) || (st.calibration && st.calibration.pointCount) || 0} · shell ${(st.calibration && st.calibration.shellPointCount) || 0}`,
       `Reference: ${(st.reference && st.reference.hasReference) ? 'yes' : 'no'} · count ${(st.reference && st.reference.count) || 0}`,
-      `Subtraction: dark ${(st.subtraction && st.subtraction.hasDark) ? 'yes' : 'no'} · ref ${(st.subtraction && st.subtraction.hasReference) ? 'yes' : 'no'} · mode ${((st.subtraction && st.subtraction.mode) || 'raw')}`,
+      `Dark: ${(st.subtraction && st.subtraction.hasDark) ? 'Yes' : 'No'}`,
+      `Ref: ${(st.subtraction && st.subtraction.hasReference) ? 'Yes' : 'No'}`,
+      `Mode: ${formatSubMode((st.subtraction && st.subtraction.mode) || 'raw')}`,
       `Camera: ${camStatus} · ${camRes} · ${camExposure} ${camZoom}`,
       `v1.5 modules: ${loadedV15}/8 loaded`
     ];

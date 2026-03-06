@@ -961,7 +961,7 @@ select, input[type="number"], input[type="text"], textarea{
 }
 
 .sp-side-console-body{
-  height: 250px;
+  height: 150px;
   overflow:auto;
   background:#050a14;
   border:1px solid rgba(148,163,184,0.15);
@@ -1187,4 +1187,44 @@ label[for="peakSizeLower"],
 #spPanel-calibrate h4.sp-subtitle{
   font-size: 15px;
   line-height: 1.15;
+}
+
+/* === CORE: compact RGB stack + Dark/Ref toggles === */
+#SpectraProDockHost .sp-field--rgb-stack{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:0;
+  padding:6px 10px;
+}
+#SpectraProDockHost .sp-field--rgb-stack .sp-mini-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin:0;
+  padding:0;
+  line-height:1.05;
+}
+#SpectraProDockHost .sp-field--rgb-stack .sp-mini-row span{
+  font-size:12px;
+  margin:0;
+  padding:0;
+}
+#SpectraProDockHost .sp-field--rgb-stack .sp-mini-row input{
+  margin:0;
+}
+
+/* === Left menu subtraction controls (above console) === */
+#cameraSettingsWindow .sp-subtraction-controls{
+  padding: 6px 8px 0 8px;
+}
+#cameraSettingsWindow .sp-subtraction-controls .sp-sub-row{
+  display:flex;
+  justify-content:center;
+  gap:4px;
+  margin-bottom:4px;
+}
+#cameraSettingsWindow .sp-subtraction-controls .btn{
+  font-size: 12px;
+  line-height: 1.1;
 }

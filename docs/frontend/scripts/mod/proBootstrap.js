@@ -489,6 +489,30 @@ function ensureStatusRail() {
   if (!host) return;
   if (document.getElementById('spSideConsolePre')) return;
 
+  // Subtraction controls (Dark/Ref) live in the left menu above the console.
+  if (!document.getElementById('spSubtractionControls')) {
+    const ctl = document.createElement('div');
+    ctl.id = 'spSubtractionControls';
+    ctl.className = 'sp-subtraction-controls';
+    ctl.innerHTML = [
+      '<div class="sp-sub-rows">',
+      '  <div class="sp-sub-row">',
+      '    <button type="button" id="spSubCapDarkBtn" class="btn btn-sm btn-secondary p-1">Capture Dark</button>',
+      '    <button type="button" id="spSubLoadDarkBtn" class="btn btn-sm btn-secondary p-1">Load Dark</button>',
+      '    <button type="button" id="spSubClearDarkBtn" class="btn btn-sm btn-secondary p-1">Clear Dark</button>',
+      '    <input type="file" id="spSubLoadDarkInput" accept="image/*" style="display:none" />',
+      '  </div>',
+      '  <div class="sp-sub-row">',
+      '    <button type="button" id="spSubCapRefBtn" class="btn btn-sm btn-secondary p-1">Capture Ref</button>',
+      '    <button type="button" id="spSubLoadRefBtn" class="btn btn-sm btn-secondary p-1">Load Ref</button>',
+      '    <button type="button" id="spSubClearRefBtn" class="btn btn-sm btn-secondary p-1">Clear Ref</button>',
+      '    <input type="file" id="spSubLoadRefInput" accept="image/*" style="display:none" />',
+      '  </div>',
+      '</div>'
+    ].join('');
+    host.appendChild(ctl);
+  }
+
   const wrap = document.createElement('div');
   wrap.id = 'spSideConsoleWrap';
   wrap.className = 'sp-side-console';
@@ -539,9 +563,13 @@ function ensureStatusRail() {
         '  <label id="spFieldFillMode" class="sp-field sp-field--fill-mode" title="Control how the graph fill is rendered.">Fill mode<select id="spFillMode" class="spctl-select spctl-select--fill-mode">' + fillModeOptions + '</select></label>',
         '  <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity" title="Set the graph fill opacity.">Fill opacity<input id="spFillOpacity" class="spctl-input spctl-range" type="range" min="0" max="1" step="0.05" value="0.7"></label>',
         '  <label id="spFieldCombined" class="sp-field sp-field--checkbox-row" title="Show or hide the combined signal trace."><span>Combined</span><input id="spToggleCombinedProxy" type="checkbox"></label>',
-        '  <label id="spFieldRed" class="sp-field sp-field--checkbox-row" title="Show or hide the red channel trace."><span>Red</span><input id="spToggleRProxy" type="checkbox"></label>',
-        '  <label id="spFieldGreen" class="sp-field sp-field--checkbox-row" title="Show or hide the green channel trace."><span>Green</span><input id="spToggleGProxy" type="checkbox"></label>',
-        '  <label id="spFieldBlue" class="sp-field sp-field--checkbox-row" title="Show or hide the blue channel trace."><span>Blue</span><input id="spToggleBProxy" type="checkbox"></label>',
+        '  <div id="spFieldRgbStack" class="sp-field sp-field--rgb-stack" title="Show or hide the per-channel traces.">',
+        '    <div class="sp-mini-row"><span>Red</span><input id="spToggleRProxy" type="checkbox"></div>',
+        '    <div class="sp-mini-row"><span>Green</span><input id="spToggleGProxy" type="checkbox"></div>',
+        '    <div class="sp-mini-row"><span>Blue</span><input id="spToggleBProxy" type="checkbox"></div>',
+        '  </div>',
+        '  <label id="spFieldDark" class="sp-field sp-field--checkbox-row" title="Show or hide the dark frame trace."><span>Dark</span><input id="spToggleDarkProxy" type="checkbox" disabled></label>',
+        '  <label id="spFieldRef" class="sp-field sp-field--checkbox-row" title="Show or hide the reference frame trace."><span>Ref</span><input id="spToggleRefProxy" type="checkbox" disabled></label>',
         '  <label id="spFieldToggleNmPeaks" class="sp-field sp-field--checkbox-row" title="Show or hide detected nm peak markers on the graph."><span>Toggle peaks</span><input id="spToggleNmPeaks" type="checkbox"></label>',
         '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold" title="Minimum intensity used by the built-in nm peak detector.">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
         '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance" title="Minimum separation between detected nm peaks.">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
@@ -603,6 +631,8 @@ function ensureStatusRail() {
       const rProxy = card.querySelector('#spToggleRProxy');
       const gProxy = card.querySelector('#spToggleGProxy');
       const bProxy = card.querySelector('#spToggleBProxy');
+      const darkProxy = card.querySelector('#spToggleDarkProxy');
+      const refProxy = card.querySelector('#spToggleRefProxy');
       const resetZoomProxy = card.querySelector('#spResetZoomBtn');
       const stepBackProxy = card.querySelector('#spStepBackZoomBtn');
       const stepLeftProxy = card.querySelector('#spStepLeftZoomBtn');
@@ -628,6 +658,7 @@ function ensureStatusRail() {
         const target = $(targetId);
         if (!proxy || !target) return;
         proxy.checked = !!target.checked;
+        proxy.disabled = !!target.disabled;
         proxy.addEventListener('change', function (e) {
           target.checked = !!e.target.checked;
           try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
@@ -665,6 +696,8 @@ function ensureStatusRail() {
       syncCheckboxProxy(rProxy, 'toggleR');
       syncCheckboxProxy(gProxy, 'toggleG');
       syncCheckboxProxy(bProxy, 'toggleB');
+      syncCheckboxProxy(darkProxy, 'toggleDark');
+      syncCheckboxProxy(refProxy, 'toggleRef');
       syncXAxisProxy();
       syncZoomScrollerProxy();
 
@@ -1154,11 +1187,7 @@ function ensureLabPanel() {
 	    '    <div class="sp-actions sp-actions--lab">',
 	    '      <button type="button" id="spLabInitLibBtn" title="Load or reload the active spectral libraries inside the worker.">Init libraries</button>',
 	    '      <button type="button" id="spLabPingBtn" title="Check that the LAB analysis worker is alive and responding.">Ping worker</button>',
-	    '      <button type="button" id="spLabQueryBtn" title="Search the loaded library within a wavelength range or by species name.">Query library</button>',
-	    '      <button type="button" id="spLabCapRefBtn" title="Capture the current frame as the reference spectrum.">Capture ref</button>',
-	    '      <button type="button" id="spLabCapDarkBtn" title="Capture the current frame as the dark spectrum for subtraction.">Capture dark</button>',
-	    '      <button type="button" id="spLabClearSubBtn" title="Clear captured reference and dark data from the current LAB session.">Clear</button>',
-	    '    </div>',
+	    '      <button type="button" id="spLabQueryBtn" title="Search the loaded library within a wavelength range or by species name.">Query library</button>',	    '    </div>',
 	    '  </div>',
 	    '  <div class="sp-lab-right">',
 	    '    <div class="sp-lab-table">',
@@ -1495,21 +1524,144 @@ function ensureLabPanel() {
     try { drawGraph(); } catch (_) {}
   }
 
-  $('spLabCapRefBtn') && $('spLabCapRefBtn').addEventListener('click', function () { capture('ref'); });
-  $('spLabCapDarkBtn') && $('spLabCapDarkBtn').addEventListener('click', function () { capture('dark'); });
-  $('spLabClearSubBtn') && $('spLabClearSubBtn').addEventListener('click', function () {
-    setVal('subtraction.referenceI', null);
-    setVal('subtraction.referenceRGB', null);
-    setVal('subtraction.darkI', null);
-    setVal('subtraction.darkRGB', null);
-    setVal('subtraction.hasReference', false);
-    setVal('subtraction.hasDark', false);
-    setVal('subtraction.referenceCapturedAt', null);
-    setVal('subtraction.darkCapturedAt', null);
-    setFeedback('Cleared reference/dark.', 'info');
+  // Subtraction UI (left menu controls)
+  function clearSub(kind) {
+    if (kind === 'all') {
+      clearSub('dark');
+      clearSub('ref');
+      return;
+    }
+    if (kind === 'ref') {
+      setVal('subtraction.referenceI', null);
+      setVal('subtraction.referenceRGB', null);
+      setVal('subtraction.hasReference', false);
+      setVal('subtraction.referenceCapturedAt', null);
+      setVal('subtraction.referenceLoadedAt', null);
+      setVal('subtraction.referenceFilename', null);
+      setFeedback('Cleared ref.', 'info');
+    } else {
+      setVal('subtraction.darkI', null);
+      setVal('subtraction.darkRGB', null);
+      setVal('subtraction.hasDark', false);
+      setVal('subtraction.darkCapturedAt', null);
+      setVal('subtraction.darkLoadedAt', null);
+      setVal('subtraction.darkFilename', null);
+      setFeedback('Cleared dark.', 'info');
+    }
     try { redrawGraphIfLoadedImage(); } catch (_) {}
     try { drawGraph(); } catch (_) {}
+  }
+
+  function labelSubMode(mode) {
+    const m = String(mode || 'raw').toLowerCase();
+    if (m === 'raw') return 'Raw';
+    if (m === 'raw-dark') return 'Raw - Dark';
+    if (m === 'difference') return 'Difference (Raw - Ref)';
+    if (m === 'ratio') return 'Ratio (Raw / Ref)';
+    if (m === 'transmittance') return 'Transmittance %';
+    if (m === 'absorbance') return 'Absorbance';
+    return m;
+  }
+
+  function buildFrameFromImageElement(imgEl) {
+    try {
+      const stripeWidth = (typeof getStripeWidth === 'function') ? Number(getStripeWidth()) : 1;
+      const yPct = (typeof getYPercentage === 'function') ? Number(getYPercentage()) : 0.5;
+      const w = Number(imgEl && (imgEl.naturalWidth || imgEl.width) || 0);
+      const h = Number(imgEl && (imgEl.naturalHeight || imgEl.height) || 0);
+      if (!w || !h || !Number.isFinite(stripeWidth) || stripeWidth <= 0) return null;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = Math.max(1, Math.round(stripeWidth));
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return null;
+
+      let startY = (h * yPct) - (stripeWidth / 2);
+      if (!Number.isFinite(startY)) startY = 0;
+      startY = Math.max(0, Math.min(h - stripeWidth, startY));
+
+      ctx.drawImage(imgEl, 0, startY, w, stripeWidth, 0, 0, w, stripeWidth);
+      const imageData = ctx.getImageData(0, 0, w, stripeWidth);
+      let px = imageData.data;
+      if (stripeWidth > 1 && typeof averagePixels === 'function') {
+        px = averagePixels(px, w);
+      }
+      const R = new Array(w), G = new Array(w), B = new Array(w), I = new Array(w);
+      for (let i = 0; i < w; i += 1) {
+        const base = i * 4;
+        const r = Number(px[base] || 0);
+        const g = Number(px[base + 1] || 0);
+        const b = Number(px[base + 2] || 0);
+        R[i] = r; G[i] = g; B[i] = b; I[i] = Math.max(r, g, b);
+      }
+      return { I, RGB: { R, G, B }, width: w };
+    } catch (e) { return null; }
+  }
+
+  function loadSubImage(kind, file) {
+    const f = file;
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const img = new Image();
+      img.onload = function () {
+        const built = buildFrameFromImageElement(img);
+        if (!built || !Array.isArray(built.I) || !built.I.length) {
+          setFeedback('Failed to read image as spectrum.', 'warn');
+          return;
+        }
+        if (kind === 'ref') {
+          setVal('subtraction.referenceI', built.I.slice());
+          setVal('subtraction.referenceRGB', { R: built.RGB.R.slice(), G: built.RGB.G.slice(), B: built.RGB.B.slice() });
+          setVal('subtraction.hasReference', true);
+          setVal('subtraction.referenceLoadedAt', Date.now());
+          setVal('subtraction.referenceFilename', String(f.name || 'ref'));
+          setFeedback('Loaded ref (' + built.I.length + ' pts).', 'ok');
+        } else {
+          setVal('subtraction.darkI', built.I.slice());
+          setVal('subtraction.darkRGB', { R: built.RGB.R.slice(), G: built.RGB.G.slice(), B: built.RGB.B.slice() });
+          setVal('subtraction.hasDark', true);
+          setVal('subtraction.darkLoadedAt', Date.now());
+          setVal('subtraction.darkFilename', String(f.name || 'dark'));
+          setFeedback('Loaded dark (' + built.I.length + ' pts).', 'ok');
+        }
+        try { redrawGraphIfLoadedImage(); } catch (_) {}
+        try { drawGraph(); } catch (_) {}
+      };
+      img.onerror = function () { setFeedback('Failed to load image.', 'warn'); };
+      img.src = e && e.target ? e.target.result : '';
+    };
+    reader.readAsDataURL(f);
+  }
+
+  // Hook up both legacy LAB buttons (if present) and the left-menu subtraction buttons.
+  $('spLabCapRefBtn') && $('spLabCapRefBtn').addEventListener('click', function () { capture('ref'); });
+  $('spLabCapDarkBtn') && $('spLabCapDarkBtn').addEventListener('click', function () { capture('dark'); });
+  $('spLabClearSubBtn') && $('spLabClearSubBtn').addEventListener('click', function () { clearSub('all'); });
+
+  $('spSubCapRefBtn') && $('spSubCapRefBtn').addEventListener('click', function () { capture('ref'); });
+  $('spSubCapDarkBtn') && $('spSubCapDarkBtn').addEventListener('click', function () { capture('dark'); });
+  $('spSubClearRefBtn') && $('spSubClearRefBtn').addEventListener('click', function () { clearSub('ref'); });
+  $('spSubClearDarkBtn') && $('spSubClearDarkBtn').addEventListener('click', function () { clearSub('dark'); });
+
+  $('spSubLoadRefBtn') && $('spSubLoadRefBtn').addEventListener('click', function () {
+    const inp = $('spSubLoadRefInput'); if (inp) inp.click();
   });
+  $('spSubLoadDarkBtn') && $('spSubLoadDarkBtn').addEventListener('click', function () {
+    const inp = $('spSubLoadDarkInput'); if (inp) inp.click();
+  });
+  $('spSubLoadRefInput') && $('spSubLoadRefInput').addEventListener('change', function (ev) {
+    const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
+    ev.target.value = '';
+    if (file) loadSubImage('ref', file);
+  });
+  $('spSubLoadDarkInput') && $('spSubLoadDarkInput').addEventListener('change', function (ev) {
+    const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
+    ev.target.value = '';
+    if (file) loadSubImage('dark', file);
+  });
+
 
   return card;
 }
