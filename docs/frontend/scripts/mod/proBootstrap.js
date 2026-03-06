@@ -552,8 +552,8 @@ function ensureStatusRail() {
     const loadDarkInp = q('#spSubLoadDarkInput');
     const loadRefInp  = q('#spSubLoadRefInput');
 
-    capDark && capDark.addEventListener('click', function(){ try { capture('dark'); } catch(e) { try { console.warn(e); } catch(_){} } });
-    capRef  && capRef.addEventListener('click', function(){ try { capture('ref'); } catch(e) { try { console.warn(e); } catch(_){} } });
+    capDark && capDark.addEventListener('click', function(){ try { const fn = (sp && typeof sp.capture === 'function') ? sp.capture : (typeof capture === 'function' ? capture : null); if (fn) fn('dark'); else console.warn('capture missing'); } catch(e) { try { console.warn(e); } catch(_){} } });
+    capRef  && capRef.addEventListener('click', function(){ try { const fn = (sp && typeof sp.capture === 'function') ? sp.capture : (typeof capture === 'function' ? capture : null); if (fn) fn('ref'); else console.warn('capture missing'); } catch(e) { try { console.warn(e); } catch(_){} } });
     clrDark && clrDark.addEventListener('click', function(){
       try {
         const fn = (sp && typeof sp.clearSub === 'function') ? sp.clearSub
@@ -1657,6 +1657,7 @@ function ensureLabPanel() {
   }
 
   // Expose for UI bindings created in other modules.
+  try { sp.capture = capture; } catch (_) {}
   try { sp.clearSub = clearSub; } catch (_) {}
 
   function labelSubMode(mode) {
