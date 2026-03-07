@@ -103,7 +103,7 @@
       winnerBreakdown: null,
       offsetNm: null,
       includeWeakPeaks: false,
-      useRgbScore: true,
+      useRgbScore: false,
       maxDistanceNm: 1,
       strongPeakLevel: 3,
       peakThresholdRel: 0.05,
