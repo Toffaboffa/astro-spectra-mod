@@ -24,7 +24,7 @@ function appendConsoleErr(line) { appendConsole('ERROR: ' + line); }
 sp.consoleLog = { append: appendConsole, error: appendConsoleErr };
 
   const bus = sp.eventBus;
-  const TABS = ['core', 'calibrate', 'lab', 'astro'];
+  const TABS = ['core', 'hardware', 'calibrate', 'lab', 'astro'];
 
   let ui = null;
   let booted = false;
@@ -139,10 +139,10 @@ function ensureHost() {
     const panels = {};
     TABS.forEach((tab, idx) => {
       const btn = el('button', 'sp-tab');
-      const tabLabels = { core: 'CORE', calibrate: 'CALIBRATE', lab: 'LAB', astro: 'ASTRO' };
+      const tabLabels = { core: 'CORE', hardware: 'HARDWARE', calibrate: 'CALIBRATE', lab: 'LAB', astro: 'ASTRO' };
       btn.textContent = tabLabels[tab] || tab.toUpperCase();
       btn.type = 'button';
-      btn.title = ({ core: 'Core graph controls, display settings and camera utilities.', calibrate: 'Calibration I/O, shell points and detailed diagnostics.', lab: 'Laboratory spectrum matching, presets and hit analysis.', astro: 'Astro analysis workspace and future astronomy tools.' }[tab]) || tab.toUpperCase();
+      btn.title = ({ core: 'Core graph controls, display settings and camera utilities.', hardware: 'Spectrometer hardware profile and manual instrument specifications.', calibrate: 'Calibration I/O, shell points and detailed diagnostics.', lab: 'Laboratory spectrum matching, presets and hit analysis.', astro: 'Astro analysis workspace and future astronomy tools.' }[tab]) || tab.toUpperCase();
       btn.dataset.tab = tab;
       if (idx === 0) btn.classList.add('is-active');
       tabs.appendChild(btn);
@@ -1111,6 +1111,7 @@ if (!document.getElementById('spSubtractionControls')) {
       window.openLongExposureModal = openLongExposureModal;
     }
 
+    ensureHardwarePanel();
     ensureLabPanel();
 
     ['astro'].forEach((tab) => {
@@ -1826,6 +1827,143 @@ function ensureLabPanel() {
   });
 
 
+  return card;
+}
+
+
+function ensureHardwarePanel() {
+  if (!ui || !ui.panels.hardware) return;
+  const panel = ui.panels.hardware;
+  let card = $('spHardwareCard');
+  if (card) return card;
+  card = el('div', 'sp-card sp-card--flat');
+  card.id = 'spHardwareCard';
+  card.innerHTML = [
+    '<div class="sp-hw-layout">',
+    '  <div class="sp-hw-head">',
+    '    <div class="sp-lab-title">HARDWARE</div>',
+    '    <div id="spHardwareFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
+    '  </div>',
+    '  <div class="sp-form-grid sp-form-grid--hardware">',
+    '    <label class="sp-field" title="Choose a known spectrometer profile. Selecting one applies the values immediately.">Spectrometer<select id="spHardwarePreset" class="spctl-select"><option value="">Custom / manual</option><option value="spectra-1">SPECTRA-1</option></select></label>',
+    '    <div class="sp-field sp-field--placeholder" aria-hidden="true"></div>',
+    '    <label class="sp-field" title="Spectral start wavelength.">Spectral range min (nm)<input id="spHardwareRangeMin" class="spctl-input" type="number" step="any" placeholder="360"></label>',
+    '    <label class="sp-field" title="Spectral end wavelength.">Spectral range max (nm)<input id="spHardwareRangeMax" class="spctl-input" type="number" step="any" placeholder="930"></label>',
+    '    <label class="sp-field" title="Manufacturer spectrometer resolution (FWHM).">Spectrometer resolution <input id="spHardwareFwhm" class="spctl-input" type="number" step="any" placeholder="1.8"></label>',
+    '    <label class="sp-field" title="Manufacturer pixel sampling / pixel resolution.">Pixel resolution <input id="spHardwarePixelRes" class="spctl-input" type="number" step="any" placeholder="0.5"></label>',
+    '    <label class="sp-field" title="Grating density in lines per mm.">Grating density <input id="spHardwareGrating" class="spctl-input" type="number" step="any" placeholder="500"></label>',
+    '    <div class="sp-actions sp-actions--lab"><button type="button" id="spHardwareApplyBtn">Apply</button><button type="button" id="spHardwareClearBtn">Clear</button></div>',
+    '  </div>',
+    '  <div id="spHardwareSummary" class="sp-note" style="margin-top:10px"></div>',
+    '</div>'
+  ].join('');
+  panel.appendChild(card);
+  panel.dataset.built = '1';
+
+  const profiles = {
+    'spectra-1': {
+      profileId: 'spectra-1',
+      profileName: 'SPECTRA-1',
+      spectralRangeMinNm: 360,
+      spectralRangeMaxNm: 930,
+      spectrometerResolutionFwhmNm: 1.8,
+      pixelResolutionNm: 0.5,
+      gratingLinesPerMm: 500
+    }
+  };
+  const ids = {
+    preset: $('spHardwarePreset'),
+    rangeMin: $('spHardwareRangeMin'),
+    rangeMax: $('spHardwareRangeMax'),
+    fwhm: $('spHardwareFwhm'),
+    pixelRes: $('spHardwarePixelRes'),
+    grating: $('spHardwareGrating'),
+    summary: $('spHardwareSummary'),
+    feedback: $('spHardwareFeedback')
+  };
+
+  function setFeedback(msg) {
+    if (ids.feedback) ids.feedback.textContent = String(msg || '');
+  }
+
+  function readForm() {
+    return {
+      profileId: ids.preset && ids.preset.value ? String(ids.preset.value) : '',
+      profileName: ids.preset && ids.preset.value && profiles[ids.preset.value] ? profiles[ids.preset.value].profileName : '',
+      spectralRangeMinNm: Number(ids.rangeMin && ids.rangeMin.value),
+      spectralRangeMaxNm: Number(ids.rangeMax && ids.rangeMax.value),
+      spectrometerResolutionFwhmNm: Number(ids.fwhm && ids.fwhm.value),
+      pixelResolutionNm: Number(ids.pixelRes && ids.pixelRes.value),
+      gratingLinesPerMm: Number(ids.grating && ids.grating.value)
+    };
+  }
+
+  function normalizeHardware(raw) {
+    const next = Object.assign({ profileId: '', profileName: '', appliedAt: Date.now() }, raw || {});
+    ['spectralRangeMinNm','spectralRangeMaxNm','spectrometerResolutionFwhmNm','pixelResolutionNm','gratingLinesPerMm'].forEach(function (k) {
+      const v = Number(next[k]);
+      next[k] = Number.isFinite(v) ? v : null;
+    });
+    return next;
+  }
+
+  function fillFormFromState() {
+    const st = getStoreState();
+    const hw = (st && st.hardware) ? st.hardware : {};
+    if (ids.preset) ids.preset.value = hw.profileId || '';
+    if (ids.rangeMin) ids.rangeMin.value = Number.isFinite(Number(hw.spectralRangeMinNm)) ? String(hw.spectralRangeMinNm) : '';
+    if (ids.rangeMax) ids.rangeMax.value = Number.isFinite(Number(hw.spectralRangeMaxNm)) ? String(hw.spectralRangeMaxNm) : '';
+    if (ids.fwhm) ids.fwhm.value = Number.isFinite(Number(hw.spectrometerResolutionFwhmNm)) ? String(hw.spectrometerResolutionFwhmNm) : '';
+    if (ids.pixelRes) ids.pixelRes.value = Number.isFinite(Number(hw.pixelResolutionNm)) ? String(hw.pixelResolutionNm) : '';
+    if (ids.grating) ids.grating.value = Number.isFinite(Number(hw.gratingLinesPerMm)) ? String(hw.gratingLinesPerMm) : '';
+    renderSummary();
+  }
+
+  function applyHardware(payload, source) {
+    const next = normalizeHardware(payload);
+    if (store && store.update) store.update('hardware', next, { source: source || 'proBootstrap.hardware' });
+    renderSummary();
+    try { renderStatus(); } catch (_) {}
+    return next;
+  }
+
+  function renderSummary() {
+    if (!ids.summary) return;
+    const st = getStoreState();
+    const hw = (st && st.hardware) ? st.hardware : {};
+    const parts = [];
+    if (hw.profileName) parts.push('Profile: ' + hw.profileName);
+    if (Number.isFinite(Number(hw.spectralRangeMinNm)) && Number.isFinite(Number(hw.spectralRangeMaxNm))) parts.push('Range: ' + hw.spectralRangeMinNm + '–' + hw.spectralRangeMaxNm + ' nm');
+    if (Number.isFinite(Number(hw.spectrometerResolutionFwhmNm))) parts.push('FWHM: <' + hw.spectrometerResolutionFwhmNm + ' nm');
+    if (Number.isFinite(Number(hw.pixelResolutionNm))) parts.push('Pixel res: <' + hw.pixelResolutionNm + ' nm');
+    if (Number.isFinite(Number(hw.gratingLinesPerMm))) parts.push('Grating: ' + hw.gratingLinesPerMm + ' lines/mm');
+    ids.summary.textContent = parts.length ? parts.join(' · ') : 'No hardware profile applied yet.';
+  }
+
+  $('spHardwareApplyBtn') && $('spHardwareApplyBtn').addEventListener('click', function () {
+    const next = applyHardware(readForm(), 'proBootstrap.hardware.apply');
+    setFeedback(next.profileName ? ('Applied ' + next.profileName + '.') : 'Applied custom hardware values.');
+  });
+  $('spHardwareClearBtn') && $('spHardwareClearBtn').addEventListener('click', function () {
+    if (ids.preset) ids.preset.value = '';
+    [ids.rangeMin, ids.rangeMax, ids.fwhm, ids.pixelRes, ids.grating].forEach(function (el) { if (el) el.value = ''; });
+    applyHardware({}, 'proBootstrap.hardware.clear');
+    setFeedback('Cleared hardware values.');
+  });
+  ids.preset && ids.preset.addEventListener('change', function (e) {
+    const key = String(e.target.value || '');
+    if (!key || !profiles[key]) return;
+    const profile = profiles[key];
+    if (ids.rangeMin) ids.rangeMin.value = String(profile.spectralRangeMinNm);
+    if (ids.rangeMax) ids.rangeMax.value = String(profile.spectralRangeMaxNm);
+    if (ids.fwhm) ids.fwhm.value = String(profile.spectrometerResolutionFwhmNm);
+    if (ids.pixelRes) ids.pixelRes.value = String(profile.pixelResolutionNm);
+    if (ids.grating) ids.grating.value = String(profile.gratingLinesPerMm);
+    applyHardware(profile, 'proBootstrap.hardware.profile');
+    setFeedback('Applied ' + profile.profileName + '.');
+  });
+
+  fillFormFromState();
   return card;
 }
 

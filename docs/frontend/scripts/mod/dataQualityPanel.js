@@ -72,6 +72,77 @@
     return m;
   }
 
+
+  function median(values) {
+    const arr = (Array.isArray(values) ? values : []).filter(function (v) { return Number.isFinite(Number(v)); }).map(Number).sort(function (a, b) { return a - b; });
+    if (!arr.length) return null;
+    const mid = Math.floor(arr.length / 2);
+    return (arr.length % 2) ? arr[mid] : ((arr[mid - 1] + arr[mid]) / 2);
+  }
+
+  function estimateNoiseMetrics(arr) {
+    const out = { sigma: null, signal: null, sn: null };
+    if (!Array.isArray(arr) || arr.length < 9) return out;
+    const vals = arr.map(Number).filter(Number.isFinite);
+    if (vals.length < 9) return out;
+    const smooth = [];
+    for (let i = 0; i < vals.length; i += 1) {
+      let sum = 0;
+      let count = 0;
+      for (let k = -2; k <= 2; k += 1) {
+        const j = i + k;
+        if (j < 0 || j >= vals.length) continue;
+        sum += vals[j];
+        count += 1;
+      }
+      smooth.push(count ? (sum / count) : vals[i]);
+    }
+    const residuals = vals.map(function (v, i) { return v - smooth[i]; });
+    const absResiduals = residuals.map(function (v) { return Math.abs(v); });
+    const mad = median(absResiduals);
+    const sigma = Number.isFinite(mad) ? (mad * 1.4826) : null;
+    const signal = median(smooth);
+    const sn = (Number.isFinite(signal) && Number.isFinite(sigma) && sigma > 0) ? (signal / sigma) : null;
+    out.sigma = sigma;
+    out.signal = signal;
+    out.sn = sn;
+    return out;
+  }
+
+  function estimatePeakMatchResidualNm(state) {
+    const hits = (((state || {}).analysis || {}).topHits) || [];
+    if (!Array.isArray(hits) || !hits.length) return null;
+    const deltas = hits.map(function (h) { return Math.abs(Number(h && h.deltaNm)); }).filter(Number.isFinite);
+    if (!deltas.length) return null;
+    const mean = deltas.reduce(function (a, b) { return a + b; }, 0) / deltas.length;
+    return mean;
+  }
+
+  function getHardware(state) {
+    return ((state || {}).hardware) || {};
+  }
+
+  function computeResolvingPower(state, resolutionNmPerPx) {
+    const hw = getHardware(state);
+    const fwhm = Number(hw.spectrometerResolutionFwhmNm);
+    const rangeMin = Number(hw.spectralRangeMinNm);
+    const rangeMax = Number(hw.spectralRangeMaxNm);
+    const lambdaMid = (Number.isFinite(rangeMin) && Number.isFinite(rangeMax)) ? ((rangeMin + rangeMax) / 2) : 550;
+    if (Number.isFinite(fwhm) && fwhm > 0) return lambdaMid / fwhm;
+    if (Number.isFinite(resolutionNmPerPx) && resolutionNmPerPx > 0) return lambdaMid / resolutionNmPerPx;
+    return null;
+  }
+
+  function formatMaybe(value, digits) {
+    return Number.isFinite(value) ? Number(value).toFixed(Number.isFinite(digits) ? digits : 2) : '—';
+  }
+
+  function hasLabAnalysis(state) {
+    const st = state || {};
+    const hits = (((st.analysis || {}).topHits) || []);
+    return String(st.appMode || '').toUpperCase() === 'LAB' && Array.isArray(hits) && hits.length > 0;
+  }
+
   function getSignalArray(frame) {
     if (!frame || typeof frame !== 'object') return null;
     return Array.isArray(frame.I) ? frame.I
@@ -123,8 +194,8 @@
         const pctBase = Math.max(1, validCount);
         const pct = ((sat / pctBase) * 100).toFixed(1);
         satText = `${sat}/${validCount} (${pct}%)`;
-        const noiseFloor = Math.max(1, mn);
-        snrText = (dynamicRange / noiseFloor).toFixed(2);
+        const noiseMetrics = estimateNoiseMetrics(arr);
+        if (Number.isFinite(noiseMetrics.sn)) snrText = noiseMetrics.sn.toFixed(2);
       }
     }
 
@@ -151,16 +222,26 @@
     ];
 
     const resolutionNmPerPx = estimateResolutionNmPerPx(st, latest);
+    const noiseMetrics = estimateNoiseMetrics(arr || []);
+    const peakResidualNm = hasLabAnalysis(st) ? estimatePeakMatchResidualNm(st) : null;
+    const hw = getHardware(st);
+    const hwFwhmNm = Number(hw.spectrometerResolutionFwhmNm);
+    const resolvingPower = computeResolvingPower(st, resolutionNmPerPx);
 
     const dq = [
       `Signal: ${min} - ${max}`,
       `Avg: ${avg} · Dyn: ${dyn}`,
       `Saturation: ${satText}`,
-      `SNR-ish: ${snrText} · Hits/QC: ${((st.analysis && st.analysis.topHits) || []).length}/${((st.analysis && st.analysis.qcFlags) || []).length}`
+      `Hits/QC: ${((st.analysis && st.analysis.topHits) || []).length}/${((st.analysis && st.analysis.qcFlags) || []).length}`,
+      `Calibration resolution: ${Number.isFinite(resolutionNmPerPx) ? resolutionNmPerPx.toFixed(2) + ' nm/px' : '—'}`,
+      `Peak match residual: ${hasLabAnalysis(st) ? (formatMaybe(peakResidualNm, 2) + ' nm') : '—'}`,
+      `Real noise estimate: ${hasLabAnalysis(st) ? formatMaybe(noiseMetrics.sigma, 2) : '—'}`,
+      `S/N: ${hasLabAnalysis(st) ? formatMaybe(noiseMetrics.sn, 2) : '—'}`,
+      `Estimated FWHM: ${Number.isFinite(hwFwhmNm) ? (formatMaybe(hwFwhmNm, 2) + ' nm') : '—'}`,
+      `Effective resolving power: ${Number.isFinite(resolvingPower) ? ('R≈' + Math.round(resolvingPower)) : '—'}`
     ];
-    if (Number.isFinite(resolutionNmPerPx)) dq.push(`Resolution: ${resolutionNmPerPx.toFixed(2)} nm/px`);
 
-    return { status, dq, metrics: { min, max, avg, dyn, saturation: satText, snr: snrText } };
+    return { status, dq, metrics: { min, max, avg, dyn, saturation: satText, snr: snrText, peakResidualNm: peakResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.sn, resolutionNmPerPx: resolutionNmPerPx, hardwareFwhmNm: hwFwhmNm, resolvingPower: resolvingPower } };
   }
 
   mod.compute = compute;

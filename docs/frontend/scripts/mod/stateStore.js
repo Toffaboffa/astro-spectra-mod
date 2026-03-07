@@ -55,6 +55,16 @@
       residualStatus: 'unknown',
       shellPointCount: 0
     },
+    hardware: {
+      profileId: '',
+      profileName: '',
+      appliedAt: null,
+      spectralRangeMinNm: null,
+      spectralRangeMaxNm: null,
+      spectrometerResolutionFwhmNm: null,
+      pixelResolutionNm: null,
+      gratingLinesPerMm: null
+    },
     reference: {
       count: 0,
       hasReference: false,
