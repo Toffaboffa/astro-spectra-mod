@@ -44,6 +44,18 @@ function escapeAttr(s) {
   return escapeHtml(s);
 }
 
+function renderInfoLines(lines) {
+  const items = Array.isArray(lines) ? lines : [];
+  return items.map(function (item) {
+    if (item && typeof item === 'object') {
+      const text = escapeHtml(item.text == null ? '' : item.text);
+      const title = item.title ? ` title="${escapeAttr(item.title)}"` : '';
+      return `<div class="sp-info-line"${title}>${text}</div>`;
+    }
+    return `<div class="sp-info-line">${escapeHtml(item == null ? '' : item)}</div>`;
+  }).join('');
+}
+
 function el(tag, cls, text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
