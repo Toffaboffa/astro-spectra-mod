@@ -274,6 +274,65 @@
     return hasCustom ? 'CUSTOM' : '—';
   }
 
+  function line(label, value, title, group) {
+    return { label: label, value: value, title: title, group: group };
+  }
+
+  function percentile(arr, q) {
+    const vals = (Array.isArray(arr) ? arr : []).map(Number).filter(Number.isFinite).sort(function (a, b) { return a - b; });
+    if (!vals.length) return null;
+    const qq = Math.max(0, Math.min(1, Number(q) || 0));
+    const pos = (vals.length - 1) * qq;
+    const lo = Math.floor(pos), hi = Math.ceil(pos);
+    if (lo === hi) return vals[lo];
+    const t = pos - lo;
+    return vals[lo] * (1 - t) + vals[hi] * t;
+  }
+
+  function fallbackPeakDetect(vals, threshold, distance) {
+    const out = [];
+    if (!Array.isArray(vals) || vals.length < 3) return out;
+    const minHeight = Math.max(0, threshold || 0);
+    for (let i = 1; i < vals.length - 1; i += 1) {
+      const cur = Number(vals[i]);
+      if (!Number.isFinite(cur) || cur < minHeight) continue;
+      if (cur > Number(vals[i - 1]) && cur >= Number(vals[i + 1])) {
+        if (out.length && i - out[out.length - 1].index < distance) {
+          if (cur > out[out.length - 1].value) out[out.length - 1] = { index: i, value: cur };
+        } else out.push({ index: i, value: cur });
+      }
+    }
+    return out;
+  }
+
+  function computeSignalMetrics(arr) {
+    const vals = Array.isArray(arr) ? arr.map(Number).filter(Number.isFinite) : [];
+    if (!vals.length) return { baseline: null, headroom: null, clipMax: null };
+    const max = Math.max.apply(null, vals);
+    const baseline = percentile(vals, 0.05);
+    const clipMax = max <= 1.01 ? 1 : 255;
+    const headroom = Number.isFinite(max) ? Math.max(0, clipMax - max) : null;
+    return { baseline: baseline, headroom: headroom, clipMax: clipMax };
+  }
+
+  function computePeakMetrics(state, arr) {
+    const vals = Array.isArray(arr) ? arr.map(Number).filter(Number.isFinite) : [];
+    if (vals.length < 3) return { peaks: [], strongCount: 0 };
+    const normalized = normalizeArray01(vals);
+    const st = state || {};
+    const rel = Number(st.analysis && st.analysis.peakThresholdRel);
+    const legacyThr = Number(st.peaks && st.peaks.threshold);
+    const threshold = Number.isFinite(rel) && rel > 0 ? Math.max(0.003, Math.min(0.95, rel)) : Math.max(0.003, Math.min(0.95, (Number.isFinite(legacyThr) ? legacyThr : 20) / 255));
+    const dist = Math.max(1, Math.min(64, Math.round(Number(st.analysis && st.analysis.peakDistancePx) || Number(st.peaks && st.peaks.distance) || 3)));
+    let peaks = [];
+    try {
+      const detect = sp.quickPeaks && typeof sp.quickPeaks.detectQuickPeaks === 'function' ? sp.quickPeaks.detectQuickPeaks : null;
+      peaks = detect ? detect(normalized, { threshold: threshold, distance: dist }) : [];
+    } catch (_) { peaks = []; }
+    if (!Array.isArray(peaks) || !peaks.length) peaks = fallbackPeakDetect(normalized, threshold, dist);
+    return { peaks: peaks, strongCount: computeStrongPeakCount(state, peaks) };
+  }
+
   function compute(state, opts) {
     const st = state || {};
     const latest = (opts && opts.latestFrame) || (st.frame && st.frame.latest) || null;
@@ -308,23 +367,23 @@
     const stripe = getStripeStatus();
 
     const status = [
-      { text: `App: ${st.appMode || 'CORE'}`, title: 'Current app mode/section.' },
-      { text: `Worker: ${(st.worker && st.worker.status) || 'idle'}${(st.worker && st.worker.analysisHz) ? ` · ${st.worker.analysisHz} Hz` : ''}`, title: 'Worker state and analysis refresh rate.' },
-      { text: `Src: ${(latest && latest.source) || (st.frame && st.frame.source) || 'none'}${(latest && latest.pixelWidth) ? ` · ${latest.pixelWidth} px` : ''}`, title: 'Current frame source and active signal width in pixels.' },
-      { text: `Cal: ${(st.calibration && st.calibration.isCalibrated) ? 'yes' : 'no'} · pts ${(st.calibration && (st.calibration.points || []).length) || (st.calibration && st.calibration.pointCount) || 0} · sh ${(st.calibration && st.calibration.shellPointCount) || 0}`, title: 'Calibration state. pts = calibration points. sh = shell points.' },
-      { text: `RefG: ${(st.reference && st.reference.hasReference) ? 'yes' : 'no'} · n ${(st.reference && st.reference.count) || 0}`, title: 'Reference graph overlay state. n = number of loaded reference graphs.' },
-      { text: `Dark: ${(st.subtraction && st.subtraction.hasDark) ? 'yes' : 'no'}`, title: 'Whether a dark frame/reference image is loaded for subtraction.' },
-      { text: `Ref: ${(st.subtraction && st.subtraction.hasReference) ? 'yes' : 'no'}`, title: 'Whether an imported reference image is loaded for processing.' },
-      { text: `Proc: ${formatSubMode((st.subtraction && st.subtraction.mode) || 'raw')}`, title: 'Active processing/subtraction mode for the plotted spectrum.' },
-      { text: `Cam: ${camStatus} · ${camRes} · ${camExposure} ${camZoom}`, title: 'Camera status, resolution, exposure control support and zoom support.' },
-      { text: `Mods: ${loadedV15}/8`, title: 'Loaded v1.5 frontend modules.' },
-      { text: `Preset: ${getPresetLabel(st)}`, title: 'Selected LAB/analysis preset.' },
-      { text: `Axis: ${getAxisMode()}`, title: 'Current horizontal axis mode: raw pixels or calibrated wavelength.' },
-      { text: `Analyze: ${st.analysis && st.analysis.enabled ? 'on' : 'off'}`, title: 'Whether worker-based LAB analysis is enabled.' },
-      { text: `Stripe: y${Number.isFinite(stripe.y) ? stripe.y : '—'} · h${Number.isFinite(stripe.h) ? stripe.h : '—'}`, title: 'Stripe placement and stripe height used for the extracted spectrum.' },
-      { text: `Norm: ${st.display && st.display.normalizeYAxis ? 'on' : 'off'}`, title: 'Whether the graph Y-axis is normalized to the strongest peak.' },
-      { text: `HW: ${getHardwareLabel(st)}`, title: 'Active hardware profile, or CUSTOM when manual hardware values are applied.' },
-      { text: `Range: ${formatRange(coverage.min, coverage.max, 0)}${Number.isFinite(coverage.min) && Number.isFinite(coverage.max) ? ' nm' : ''}`, title: 'Current calibrated wavelength span for the active spectrum, or hardware range when available.' }
+      line('App:', `${st.appMode || 'CORE'}`, 'Current app mode/section.', 'system'),
+      line('Worker:', `${(st.worker && st.worker.status) || 'idle'}${(st.worker && st.worker.analysisHz) ? ` · ${st.worker.analysisHz} Hz` : ''}`, 'Worker state and analysis refresh rate.', 'system'),
+      line('Src:', `${(latest && latest.source) || (st.frame && st.frame.source) || 'none'}${(latest && latest.pixelWidth) ? ` · ${latest.pixelWidth} px` : ''}`, 'Current frame source and active signal width in pixels.', 'system'),
+      line('Cam:', `${camStatus} · ${camRes} · ${camExposure} ${camZoom}`, 'Camera status, resolution, exposure control support and zoom support.', 'system'),
+      line('Mods:', `${loadedV15}/8`, 'Loaded v1.5 frontend modules.', 'system'),
+      line('Preset:', `${getPresetLabel(st)}`, 'Selected LAB/analysis preset.', 'analysis'),
+      line('Analyze:', `${st.analysis && st.analysis.enabled ? 'on' : 'off'}`, 'Whether worker-based LAB analysis is enabled.', 'analysis'),
+      line('Axis:', `${getAxisMode()}`, 'Current horizontal axis mode: raw pixels or calibrated wavelength.', 'analysis'),
+      line('Norm:', `${st.display && st.display.normalizeYAxis ? 'on' : 'off'}`, 'Whether the graph Y-axis is normalized to the strongest peak.', 'analysis'),
+      line('Stripe:', `y${Number.isFinite(stripe.y) ? stripe.y : '—'} · h${Number.isFinite(stripe.h) ? stripe.h : '—'}`, 'Stripe placement and stripe height used for the extracted spectrum.', 'analysis'),
+      line('Cal:', `${(st.calibration && st.calibration.isCalibrated) ? 'yes' : 'no'} · pts ${(st.calibration && (st.calibration.points || []).length) || (st.calibration && st.calibration.pointCount) || 0} · sh ${(st.calibration && st.calibration.shellPointCount) || 0}`, 'Calibration state. pts = calibration points. sh = shell points.', 'calibration'),
+      line('Range:', `${formatRange(coverage.min, coverage.max, 0)}${Number.isFinite(coverage.min) && Number.isFinite(coverage.max) ? ' nm' : ''}`, 'Current calibrated wavelength span for the active spectrum, or hardware range when available.', 'calibration'),
+      line('Dark:', `${(st.subtraction && st.subtraction.hasDark) ? 'yes' : 'no'}`, 'Whether a dark frame/reference image is loaded for subtraction.', 'processing'),
+      line('Ref:', `${(st.subtraction && st.subtraction.hasReference) ? 'yes' : 'no'}`, 'Whether an imported reference image is loaded for processing.', 'processing'),
+      line('RefG:', `${(st.reference && st.reference.hasReference) ? 'yes' : 'no'} · n ${(st.reference && st.reference.count) || 0}`, 'Reference graph overlay state. n = number of loaded reference graphs.', 'processing'),
+      line('Proc:', `${formatSubMode((st.subtraction && st.subtraction.mode) || 'raw')}`, 'Active processing/subtraction mode for the plotted spectrum.', 'processing'),
+      line('HW:', `${getHardwareLabel(st)}`, 'Active hardware profile, or CUSTOM when manual hardware values are applied.', 'hardware')
     ];
 
     const resolutionNmPerPx = estimateResolutionNmPerPx(st, latest);
@@ -332,33 +391,36 @@
     const peakResidualNm = hasLabAnalysis(st) ? estimatePeakMatchResidualNm(st) : null;
     const hw = getHardware(st), hwFwhmNm = Number(hw.spectrometerResolutionFwhmNm);
     const resolvingPower = computeResolvingPower(st, resolutionNmPerPx);
-    const quickPeaks = detectQuickPeaksForMetrics(st, arr || []);
-    const strongPeaks = computeStrongPeakCount(st, quickPeaks);
-    const headroom = Number.isFinite(max) ? ((max <= 1.01) ? (1 - max) : (255 - max)) : null;
+    const peakMetrics = computePeakMetrics(st, arr || []);
+    const signalMetrics = computeSignalMetrics(arr || []);
+    const quickPeaks = peakMetrics.peaks;
+    const strongPeaks = peakMetrics.strongCount;
+    const headroom = signalMetrics.headroom;
+    const baseline = signalMetrics.baseline;
     const calRmsNm = computeCalibrationRmsNm(st);
     const conf = hasLabAnalysis(st) ? bestAnalysisConfidence(st) : null;
 
     const dq = [
-      { text: `Signal: ${formatMaybe(min, 1)}–${formatMaybe(max, 1)}`, title: 'Minimum and maximum signal intensity in the active stripe.' },
-      { text: `Avg/Dyn: ${formatMaybe(avg, 1)} / ${formatMaybe(dyn, 1)}`, title: 'Average intensity and dynamic range (max - min).' },
-      { text: `Sat: ${satText}`, title: 'Clipped or near-clipped samples in the active signal.' },
-      { text: `Hits/QC: ${((st.analysis && st.analysis.topHits) || []).length}/${((st.analysis && st.analysis.qcFlags) || []).length}`, title: 'Top hits / QC flags from the current LAB analysis.' },
-      { text: `Res: ${Number.isFinite(resolutionNmPerPx) ? resolutionNmPerPx.toFixed(2) + ' nm/px' : '—'}`, title: 'Estimated calibration resolution in nm per pixel.' },
-      { text: `Peak Δ: ${hasLabAnalysis(st) ? (formatMaybe(peakResidualNm, 2) + ' nm') : '—'}`, title: 'Mean wavelength offset between matched peaks and library lines.' },
-      { text: `Noise σ: ${hasLabAnalysis(st) ? formatMaybe(noiseMetrics.sigma, 2) : '—'}`, title: 'Estimated noise sigma from residual signal fluctuations.' },
-      { text: `SNR: ${hasLabAnalysis(st) ? formatMaybe(noiseMetrics.sn, 2) : '—'}`, title: 'Estimated signal-to-noise ratio.' },
-      { text: `FWHM: ${Number.isFinite(hwFwhmNm) ? (formatMaybe(hwFwhmNm, 2) + ' nm') : '—'}`, title: 'Instrument full width at half maximum, if known from hardware data.' },
-      { text: `Eff. R: ${Number.isFinite(resolvingPower) ? ('R≈' + Math.round(resolvingPower)) : '—'}`, title: 'Approximate resolving power R ≈ λ/Δλ.' },
-      { text: `Peaks: ${quickPeaks.length}`, title: 'Quick-detected local peaks in the current active signal using the current peak threshold/distance settings.' },
-      { text: `Strong: ${strongPeaks}`, title: 'Peaks that pass the current Strong Peak level weighting (1–5).' },
-      { text: `Base: ${formatMaybe(min, 1)}`, title: 'Estimated baseline floor in the active signal (same unit as Signal).' },
-      { text: `Headroom: ${Number.isFinite(headroom) ? formatMaybe(headroom, (headroom <= 1.01 ? 3 : 1)) : '—'}`, title: 'Remaining headroom before clipping: 255 - max for raw data, or 1 - max for normalized data.' },
-      { text: `Cov: ${formatRange(coverage.min, coverage.max, 0)}${Number.isFinite(coverage.min) && Number.isFinite(coverage.max) ? ' nm' : ''}`, title: 'Calibrated wavelength coverage of the current active spectrum.' },
-      { text: `Conf: ${Number.isFinite(conf) ? formatMaybe(conf, 2) : '—'}`, title: 'Best current analysis confidence from the active top-hit set.' },
-      { text: `Cal err: ${Number.isFinite(calRmsNm) ? (formatMaybe(calRmsNm, 2) + ' nm') : '—'}`, title: 'RMS calibration fit error computed from calibration points and the active polynomial fit.' }
+      line('Signal:', `${formatMaybe(min, 1)}–${formatMaybe(max, 1)}`, 'Minimum and maximum signal intensity in the active stripe.', 'signal'),
+      line('Avg/Dyn:', `${formatMaybe(avg, 1)} / ${formatMaybe(dyn, 1)}`, 'Average intensity and dynamic range (max - min).', 'signal'),
+      line('Base:', `${formatMaybe(baseline, 1)}`, 'Estimated baseline floor from the lower 5% percentile of the active signal.', 'signal'),
+      line('Headroom:', `${Number.isFinite(headroom) ? formatMaybe(headroom, (headroom <= 1.01 ? 3 : 1)) : '—'}`, 'Remaining headroom before clipping: clip max - strongest sample.', 'signal'),
+      line('Sat:', `${satText}`, 'Clipped or near-clipped samples in the active signal.', 'signal'),
+      line('Peaks:', `${quickPeaks.length}`, 'Detected local peaks in the current active signal using current threshold/distance settings.', 'analysis'),
+      line('Strong:', `${strongPeaks}`, 'Peaks that pass the current Strong Peak level weighting (1–5).', 'analysis'),
+      line('Hits/QC:', `${((st.analysis && st.analysis.topHits) || []).length}/${((st.analysis && st.analysis.qcFlags) || []).length}`, 'Top hits / QC flags from the current LAB analysis.', 'analysis'),
+      line('Peak Δ:', `${hasLabAnalysis(st) ? (formatMaybe(peakResidualNm, 2) + ' nm') : '—'}`, 'Mean wavelength offset between matched peaks and library lines.', 'analysis'),
+      line('Conf:', `${Number.isFinite(conf) ? formatMaybe(conf, 2) : '—'}`, 'Best current analysis confidence from the active top-hit set.', 'analysis'),
+      line('Noise σ:', `${formatMaybe(noiseMetrics.sigma, 2)}`, 'Estimated noise sigma from residual signal fluctuations.', 'quality'),
+      line('SNR:', `${formatMaybe(noiseMetrics.sn, 2)}`, 'Estimated signal-to-noise ratio.', 'quality'),
+      line('Res:', `${Number.isFinite(resolutionNmPerPx) ? resolutionNmPerPx.toFixed(2) + ' nm/px' : '—'}`, 'Estimated calibration resolution in nm per pixel.', 'calibration'),
+      line('Cov:', `${formatRange(coverage.min, coverage.max, 0)}${Number.isFinite(coverage.min) && Number.isFinite(coverage.max) ? ' nm' : ''}`, 'Calibrated wavelength coverage of the current active spectrum.', 'calibration'),
+      line('Cal err:', `${Number.isFinite(calRmsNm) ? (formatMaybe(calRmsNm, 2) + ' nm') : '—'}`, 'RMS calibration fit error computed from calibration points and the active polynomial fit.', 'calibration'),
+      line('FWHM:', `${Number.isFinite(hwFwhmNm) ? (formatMaybe(hwFwhmNm, 2) + ' nm') : '—'}`, 'Instrument full width at half maximum, if known from hardware data.', 'hardware'),
+      line('Eff. R:', `${Number.isFinite(resolvingPower) ? ('R≈' + Math.round(resolvingPower)) : '—'}`, 'Approximate resolving power R ≈ λ/Δλ.', 'hardware')
     ];
 
-    return { status, dq, metrics: { min, max, avg, dyn, validCount, saturation: satText, snr: snrText, peakResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.sn, resolutionNmPerPx, hardwareFwhmNm: hwFwhmNm, resolvingPower, quickPeakCount: quickPeaks.length, strongPeakCount: strongPeaks, baseline: min, headroom, coverageMinNm: coverage.min, coverageMaxNm: coverage.max, bestConfidence: conf, calibrationRmsNm: calRmsNm } };
+    return { status, dq, metrics: { min, max, avg, dyn, validCount, saturation: satText, snr: snrText, peakResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.sn, resolutionNmPerPx, hardwareFwhmNm: hwFwhmNm, resolvingPower, quickPeakCount: quickPeaks.length, strongPeakCount: strongPeaks, baseline: baseline, headroom, coverageMinNm: coverage.min, coverageMaxNm: coverage.max, bestConfidence: conf, calibrationRmsNm: calRmsNm } };
   }
 
   mod.compute = compute;

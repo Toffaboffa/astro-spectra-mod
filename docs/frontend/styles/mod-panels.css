@@ -1382,3 +1382,15 @@ label[for="peakSizeLower"],
     max-width:100%;
   }
 }
+
+
+#SpectraProDockHost .sp-info-line{display:flex!important;align-items:baseline!important;gap:4px!important;flex-wrap:wrap!important;padding:1px 4px!important;border-radius:4px!important;margin:0 0 1px 0!important;}
+#SpectraProDockHost .sp-info-label{font-weight:700!important;color:#f3f8ff!important;}
+#SpectraProDockHost .sp-info-value{color:#dfeeff!important;}
+#SpectraProDockHost .sp-info-line--system{background:rgba(150,190,255,.08)!important;}
+#SpectraProDockHost .sp-info-line--analysis{background:rgba(120,255,210,.08)!important;}
+#SpectraProDockHost .sp-info-line--calibration{background:rgba(255,218,120,.08)!important;}
+#SpectraProDockHost .sp-info-line--processing{background:rgba(220,170,255,.08)!important;}
+#SpectraProDockHost .sp-info-line--hardware{background:rgba(255,160,160,.08)!important;}
+#SpectraProDockHost .sp-info-line--quality{background:rgba(180,220,255,.08)!important;}
+#SpectraProDockHost .sp-info-line--signal{background:rgba(160,220,255,.08)!important;}

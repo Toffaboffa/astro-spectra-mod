@@ -48,9 +48,15 @@ function renderInfoLines(lines) {
   const items = Array.isArray(lines) ? lines : [];
   return items.map(function (item) {
     if (item && typeof item === 'object') {
-      const text = escapeHtml(item.text == null ? '' : item.text);
       const title = item.title ? ` title="${escapeAttr(item.title)}"` : '';
-      return `<div class="sp-info-line"${title}>${text}</div>`;
+      const groupCls = item.group ? ` sp-info-line--${escapeAttr(String(item.group).toLowerCase())}` : '';
+      if (Object.prototype.hasOwnProperty.call(item, 'label') || Object.prototype.hasOwnProperty.call(item, 'value')) {
+        const label = escapeHtml(item.label == null ? '' : item.label);
+        const value = escapeHtml(item.value == null ? '' : item.value);
+        return `<div class="sp-info-line${groupCls}"${title}><span class="sp-info-label">${label}</span><span class="sp-info-value">${value}</span></div>`;
+      }
+      const text = escapeHtml(item.text == null ? '' : item.text);
+      return `<div class="sp-info-line${groupCls}"${title}>${text}</div>`;
     }
     return `<div class="sp-info-line">${escapeHtml(item == null ? '' : item)}</div>`;
   }).join('');
