@@ -2440,16 +2440,16 @@ function renderConsole() {
     try { syncDarkRefAvailability(state); } catch (_) {}
     try { syncCaptureAvailability(); } catch (_) {}
     const lines = computeDataQualityLines(state);
-    sEl.innerHTML = lines.status.join('<br>');
-    qEl.innerHTML = lines.dq.join('<br>');
+    sEl.innerHTML = renderInfoLines(lines.status);
+    qEl.innerHTML = renderInfoLines(lines.dq);
 
     const dqDetails = $('spDQDetailsBody');
     if (dqDetails) {
       const combined = [];
       combined.push('<b>Status</b>');
-      combined.push(lines.status.join('<br>'));
+      combined.push(renderInfoLines(lines.status));
       combined.push('<br><br><b>Data Quality</b>');
-      combined.push(lines.dq.join('<br>'));
+      combined.push(renderInfoLines(lines.dq));
       dqDetails.innerHTML = combined.join('');
     }
 

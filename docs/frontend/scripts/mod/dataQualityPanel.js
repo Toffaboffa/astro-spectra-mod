@@ -209,16 +209,18 @@
     const camZoom = (camera.supported && camera.supported.zoom) ? 'zoom✓' : 'zoom—';
 
     const status = [
-      `Mode: ${st.appMode || 'CORE'}`,
-      `Worker: ${(st.worker && st.worker.status) || 'idle'}${(st.worker && st.worker.analysisHz) ? ` · ${st.worker.analysisHz} Hz` : ''}`,
-      `Frame source: ${(latest && latest.source) || (st.frame && st.frame.source) || 'none'}${(latest && latest.pixelWidth) ? ` · ${latest.pixelWidth} px` : ''}`,
-      `Calibration: ${(st.calibration && st.calibration.isCalibrated) ? 'calibrated' : 'uncalibrated'} · pts ${(st.calibration && (st.calibration.points || []).length) || (st.calibration && st.calibration.pointCount) || 0} · shell ${(st.calibration && st.calibration.shellPointCount) || 0}`,
-      `Reference: ${(st.reference && st.reference.hasReference) ? 'yes' : 'no'} · count ${(st.reference && st.reference.count) || 0}`,
-      `Dark: ${(st.subtraction && st.subtraction.hasDark) ? 'Yes' : 'No'}`,
-      `Ref: ${(st.subtraction && st.subtraction.hasReference) ? 'Yes' : 'No'}`,
-      `Mode: ${formatSubMode((st.subtraction && st.subtraction.mode) || 'raw')}`,
-      `Camera: ${camStatus} · ${camRes} · ${camExposure} ${camZoom}`,
-      `v1.5 modules: ${loadedV15}/8 loaded`
+      { text: `App: ${st.appMode || 'CORE'}`, title: 'Current app mode/section.' },
+      { text: `Worker: ${(st.worker && st.worker.status) || 'idle'}${(st.worker && st.worker.analysisHz) ? ` · ${st.worker.analysisHz} Hz` : ''}`, title: 'Worker state and analysis refresh rate.' },
+      { text: `Src: ${(latest && latest.source) || (st.frame && st.frame.source) || 'none'}${(latest && latest.pixelWidth) ? ` · ${latest.pixelWidth} px` : ''}`, title: 'Current frame source and active signal width in pixels.' },
+      { text: `Cal: ${(st.calibration && st.calibration.isCalibrated) ? 'yes' : 'no'} · pts ${(st.calibration && (st.calibration.points || []).length) || (st.calibration && st.calibration.pointCount) || 0} · sh ${(st.calibration && st.calibration.shellPointCount) || 0}`,
+        title: 'Calibration state. pts = calibration points. sh = shell points.' },
+      { text: `RefG: ${(st.reference && st.reference.hasReference) ? 'yes' : 'no'} · n ${(st.reference && st.reference.count) || 0}`,
+        title: 'Reference graph overlay state. n = number of loaded reference graphs.' },
+      { text: `Dark: ${(st.subtraction && st.subtraction.hasDark) ? 'yes' : 'no'}`, title: 'Whether a dark frame/reference image is loaded for subtraction.' },
+      { text: `Ref: ${(st.subtraction && st.subtraction.hasReference) ? 'yes' : 'no'}`, title: 'Whether an imported reference image is loaded for processing.' },
+      { text: `Proc: ${formatSubMode((st.subtraction && st.subtraction.mode) || 'raw')}`, title: 'Active processing/subtraction mode for the plotted spectrum.' },
+      { text: `Cam: ${camStatus} · ${camRes} · ${camExposure} ${camZoom}`, title: 'Camera status, resolution, exposure control support and zoom support.' },
+      { text: `Mods: ${loadedV15}/8`, title: 'Loaded v1.5 frontend modules.' }
     ];
 
     const resolutionNmPerPx = estimateResolutionNmPerPx(st, latest);
@@ -229,16 +231,23 @@
     const resolvingPower = computeResolvingPower(st, resolutionNmPerPx);
 
     const dq = [
-      `Signal: ${min} - ${max}`,
-      `Avg: ${avg} · Dyn: ${dyn}`,
-      `Saturation: ${satText}`,
-      `Hits/QC: ${((st.analysis && st.analysis.topHits) || []).length}/${((st.analysis && st.analysis.qcFlags) || []).length}`,
-      `Calibration resolution: ${Number.isFinite(resolutionNmPerPx) ? resolutionNmPerPx.toFixed(2) + ' nm/px' : '—'}`,
-      `Peak match residual: ${hasLabAnalysis(st) ? (formatMaybe(peakResidualNm, 2) + ' nm') : '—'}`,
-      `Real noise estimate: ${hasLabAnalysis(st) ? formatMaybe(noiseMetrics.sigma, 2) : '—'}`,
-      `S/N: ${hasLabAnalysis(st) ? formatMaybe(noiseMetrics.sn, 2) : '—'}`,
-      `Estimated FWHM: ${Number.isFinite(hwFwhmNm) ? (formatMaybe(hwFwhmNm, 2) + ' nm') : '—'}`,
-      `Effective resolving power: ${Number.isFinite(resolvingPower) ? ('R≈' + Math.round(resolvingPower)) : '—'}`
+      { text: `Signal: ${min}–${max}`, title: 'Minimum and maximum signal intensity in the active stripe.' },
+      { text: `Avg/Dyn: ${avg} / ${dyn}`, title: 'Average intensity and dynamic range (max - min).' },
+      { text: `Sat: ${satText}`, title: 'Clipped or near-clipped samples in the active signal.' },
+      { text: `Hits/QC: ${((st.analysis && st.analysis.topHits) || []).length}/${((st.analysis && st.analysis.qcFlags) || []).length}`,
+        title: 'Top hits / QC flags from the current LAB analysis.' },
+      { text: `Res: ${Number.isFinite(resolutionNmPerPx) ? resolutionNmPerPx.toFixed(2) + ' nm/px' : '—'}`,
+        title: 'Estimated calibration resolution in nm per pixel.' },
+      { text: `Peak Δ: ${hasLabAnalysis(st) ? (formatMaybe(peakResidualNm, 2) + ' nm') : '—'}`,
+        title: 'Mean wavelength offset between matched peaks and library lines.' },
+      { text: `Noise σ: ${hasLabAnalysis(st) ? formatMaybe(noiseMetrics.sigma, 2) : '—'}`,
+        title: 'Estimated noise sigma from residual signal fluctuations.' },
+      { text: `SNR: ${hasLabAnalysis(st) ? formatMaybe(noiseMetrics.sn, 2) : '—'}`,
+        title: 'Estimated signal-to-noise ratio.' },
+      { text: `FWHM: ${Number.isFinite(hwFwhmNm) ? (formatMaybe(hwFwhmNm, 2) + ' nm') : '—'}`,
+        title: 'Instrument full width at half maximum, if known from hardware data.' },
+      { text: `Eff. R: ${Number.isFinite(resolvingPower) ? ('R≈' + Math.round(resolvingPower)) : '—'}`,
+        title: 'Approximate resolving power R ≈ λ/Δλ.' }
     ];
 
     return { status, dq, metrics: { min, max, avg, dyn, saturation: satText, snr: snrText, peakResidualNm: peakResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.sn, resolutionNmPerPx: resolutionNmPerPx, hardwareFwhmNm: hwFwhmNm, resolvingPower: resolvingPower } };
