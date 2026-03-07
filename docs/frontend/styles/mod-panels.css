@@ -1310,3 +1310,75 @@ label[for="peakSizeLower"],
 }
 
 #SpectraProDockHost .sp-form-grid.sp-form-grid--core-8 .sp-field--stackgroup .sp-mini-row input{margin:0;justify-self:end;}
+
+
+/* === HARDWARE panel dedicated CSS === */
+#spPanel-hardware #spHardwareCard .sp-hw-layout{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+#spPanel-hardware #spHardwareCard .sp-hw-grid{
+  display:grid;
+  grid-template-columns:250px repeat(6, minmax(0, 1fr));
+  gap:10px;
+  align-items:end;
+}
+#spPanel-hardware #spHardwareCard .sp-hw-field{
+  min-width:0;
+}
+#spPanel-hardware #spHardwareCard .sp-hw-field--preset select{
+  width:250px;
+  max-width:250px;
+}
+#spPanel-hardware #spHardwareCard .sp-hw-field input,
+#spPanel-hardware #spHardwareCard .sp-hw-field select{
+  width:100%;
+  max-width:100%;
+}
+#spPanel-hardware #spHardwareCard .sp-hw-field--unit{
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  gap:4px;
+}
+#spPanel-hardware #spHardwareCard .sp-hw-unit-label{
+  color:#d2e8ff;
+  font-size:13px;
+}
+#spPanel-hardware #spHardwareCard .sp-hw-unit-value{
+  min-height:32px;
+  display:flex;
+  align-items:center;
+  padding:0 10px;
+  border:1px solid rgba(120,180,255,.22);
+  border-radius:8px;
+  background:rgba(6,18,40,.55);
+  color:#e9f4ff;
+}
+#spPanel-hardware #spHardwareCard .sp-hw-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:2px;
+}
+#spPanel-hardware #spHardwareCard .sp-hw-actions button{
+  min-width:unset;
+}
+#spPanel-hardware #spHardwareCard .sp-hw-summary{
+  margin-top:0;
+}
+@media (max-width: 1400px){
+  #spPanel-hardware #spHardwareCard .sp-hw-grid{
+    grid-template-columns:250px repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px){
+  #spPanel-hardware #spHardwareCard .sp-hw-grid{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+  #spPanel-hardware #spHardwareCard .sp-hw-field--preset select{
+    width:100%;
+    max-width:100%;
+  }
+}

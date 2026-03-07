@@ -1844,17 +1844,17 @@ function ensureHardwarePanel() {
     '    <div class="sp-lab-title">HARDWARE</div>',
     '    <div id="spHardwareFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
     '  </div>',
-    '  <div class="sp-form-grid sp-form-grid--hardware">',
-    '    <label class="sp-field" title="Choose a known spectrometer profile. Selecting one applies the values immediately.">Spectrometer<select id="spHardwarePreset" class="spctl-select"><option value="">Custom / manual</option><option value="spectra-1">SPECTRA-1</option></select></label>',
-    '    <div class="sp-field sp-field--placeholder" aria-hidden="true"></div>',
-    '    <label class="sp-field" title="Spectral start wavelength.">Spectral range min (nm)<input id="spHardwareRangeMin" class="spctl-input" type="number" step="any" placeholder="360"></label>',
-    '    <label class="sp-field" title="Spectral end wavelength.">Spectral range max (nm)<input id="spHardwareRangeMax" class="spctl-input" type="number" step="any" placeholder="930"></label>',
-    '    <label class="sp-field" title="Manufacturer spectrometer resolution (FWHM).">Spectrometer resolution <input id="spHardwareFwhm" class="spctl-input" type="number" step="any" placeholder="1.8"></label>',
-    '    <label class="sp-field" title="Manufacturer pixel sampling / pixel resolution.">Pixel resolution <input id="spHardwarePixelRes" class="spctl-input" type="number" step="any" placeholder="0.5"></label>',
-    '    <label class="sp-field" title="Grating density in lines per mm.">Grating density <input id="spHardwareGrating" class="spctl-input" type="number" step="any" placeholder="500"></label>',
-    '    <div class="sp-actions sp-actions--lab"><button type="button" id="spHardwareApplyBtn">Apply</button><button type="button" id="spHardwareClearBtn">Clear</button></div>',
+    '  <div class="sp-hw-grid">',
+    '    <label class="sp-field sp-hw-field sp-hw-field--preset" title="Choose a known spectrometer profile. Selecting one applies the values immediately.">Spectrometer<select id="spHardwarePreset" class="spctl-select"><option value="">CUSTOM</option><option value="spectra-1">KVANT - Spectra-1</option></select></label>',
+    '    <label class="sp-field sp-hw-field" title="Spectral start wavelength.">Range (min)<input id="spHardwareRangeMin" class="spctl-input" type="number" step="any" placeholder="360"></label>',
+    '    <label class="sp-field sp-hw-field" title="Spectral end wavelength.">Range (max)<input id="spHardwareRangeMax" class="spctl-input" type="number" step="any" placeholder="930"></label>',
+    '    <div class="sp-field sp-hw-field sp-hw-field--unit" title="Spectral range unit."><span class="sp-hw-unit-label">Unit</span><span class="sp-hw-unit-value">nm</span></div>',
+    '    <label class="sp-field sp-hw-field" title="Manufacturer spectrometer resolution (FWHM).">Resolution<input id="spHardwareFwhm" class="spctl-input" type="number" step="any" placeholder="1.8"></label>',
+    '    <label class="sp-field sp-hw-field" title="Manufacturer pixel sampling / pixel resolution.">Pixel resolution<input id="spHardwarePixelRes" class="spctl-input" type="number" step="any" placeholder="0.5"></label>',
+    '    <label class="sp-field sp-hw-field" title="Grating density in lines per mm.">Grating density<input id="spHardwareGrating" class="spctl-input" type="number" step="any" placeholder="500"></label>',
     '  </div>',
-    '  <div id="spHardwareSummary" class="sp-note" style="margin-top:10px"></div>',
+    '  <div class="sp-actions sp-hw-actions"><button type="button" id="spHardwareApplyBtn">Apply</button><button type="button" id="spHardwareClearBtn">Clear</button></div>',
+    '  <div id="spHardwareSummary" class="sp-note sp-hw-summary"></div>',
     '</div>'
   ].join('');
   panel.appendChild(card);
@@ -1863,7 +1863,7 @@ function ensureHardwarePanel() {
   const profiles = {
     'spectra-1': {
       profileId: 'spectra-1',
-      profileName: 'SPECTRA-1',
+      profileName: 'KVANT - Spectra-1',
       spectralRangeMinNm: 360,
       spectralRangeMaxNm: 930,
       spectrometerResolutionFwhmNm: 1.8,
