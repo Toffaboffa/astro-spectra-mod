@@ -674,13 +674,13 @@ body{overflow:hidden;}
   padding:10px 12px !important;
 }
 #SpectraProDockHost .sp-status-card h4{
-  font-size:13px !important;
-  margin:0 0 8px !important;
+  font-size:11px !important;
+  margin:0 0 6px !important;
   letter-spacing:.02em !important;
 }
 #SpectraProDockHost .sp-status-lines{
-  font-size:12px !important;
-  line-height:1.45 !important;
+  font-size:11px !important;
+  line-height:1.35 !important;
 }
 
 /* 2) No scrollbar inside tab panel area */
