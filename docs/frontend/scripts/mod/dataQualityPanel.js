@@ -157,7 +157,11 @@
       const a = evalPoly(coeffs, 0); const b = evalPoly(coeffs, pixelWidth - 1);
       if (Number.isFinite(a) && Number.isFinite(b)) return { min: Math.min(a, b), max: Math.max(a, b) };
     }
-    const hw = getHardware(st);
+    return estimateHardwareRangeNm(st);
+  }
+
+  function estimateHardwareRangeNm(state) {
+    const hw = getHardware(state || {});
     const hwMin = Number(hw.spectralRangeMinNm), hwMax = Number(hw.spectralRangeMaxNm);
     if (Number.isFinite(hwMin) && Number.isFinite(hwMax)) return { min: Math.min(hwMin, hwMax), max: Math.max(hwMin, hwMax) };
     return { min: null, max: null };
@@ -364,6 +368,7 @@
     const camExposure = (camera.supported && camera.supported.exposureTime) ? 'exp✓' : 'exp—';
     const camZoom = (camera.supported && camera.supported.zoom) ? 'zoom✓' : 'zoom—';
     const coverage = estimateCoverageNm(st, latest);
+    const hardwareRange = estimateHardwareRangeNm(st);
     const stripe = getStripeStatus();
 
     const status = [
@@ -378,7 +383,7 @@
       line('Norm:', `${st.display && st.display.normalizeYAxis ? 'on' : 'off'}`, 'Whether the graph Y-axis is normalized to the strongest peak.', 'analysis'),
       line('Stripe:', `y${Number.isFinite(stripe.y) ? stripe.y : '—'} · h${Number.isFinite(stripe.h) ? stripe.h : '—'}`, 'Stripe placement and stripe height used for the extracted spectrum.', 'analysis'),
       line('Cal:', `${(st.calibration && st.calibration.isCalibrated) ? 'yes' : 'no'} · pts ${(st.calibration && (st.calibration.points || []).length) || (st.calibration && st.calibration.pointCount) || 0} · sh ${(st.calibration && st.calibration.shellPointCount) || 0}`, 'Calibration state. pts = calibration points. sh = shell points.', 'calibration'),
-      line('Range:', `${formatRange(coverage.min, coverage.max, 0)}${Number.isFinite(coverage.min) && Number.isFinite(coverage.max) ? ' nm' : ''}`, 'Current calibrated wavelength span for the active spectrum, or hardware range when available.', 'calibration'),
+      line('Range:', `${formatRange(hardwareRange.min, hardwareRange.max, 0)}${Number.isFinite(hardwareRange.min) && Number.isFinite(hardwareRange.max) ? ' nm' : ''}`, 'Configured hardware wavelength range from the Hardware panel.', 'hardware'),
       line('Dark:', `${(st.subtraction && st.subtraction.hasDark) ? 'yes' : 'no'}`, 'Whether a dark frame/reference image is loaded for subtraction.', 'processing'),
       line('Ref:', `${(st.subtraction && st.subtraction.hasReference) ? 'yes' : 'no'}`, 'Whether an imported reference image is loaded for processing.', 'processing'),
       line('RefG:', `${(st.reference && st.reference.hasReference) ? 'yes' : 'no'} · n ${(st.reference && st.reference.count) || 0}`, 'Reference graph overlay state. n = number of loaded reference graphs.', 'processing'),
