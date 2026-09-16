@@ -4,9 +4,9 @@ This directory contains the server-side boundary for the future **AI Interpretat
 
 The browser must never receive `OPENAI_API_KEY`. SPECTRA PRO sends its compact `spectra-pro-ai-analysis/v1` payload to this Worker; the Worker validates and rate-limits the request before any future OpenAI API call is allowed.
 
-## Step 3 behavior
+## Step 4 behavior
 
-`POST /api/interpret` currently performs only the security boundary:
+`POST /api/interpret` now performs the security boundary and prepares the scientific interpretation prompt contract:
 
 - exact origin allowlist
 - `POST` + `application/json` only
@@ -15,11 +15,34 @@ The browser must never receive `OPENAI_API_KEY`. SPECTRA PRO sends its compact `
 - SPECTRA PRO schema and array-size validation
 - no request/payload logging
 - `Cache-Control: no-store`
+- scientific prompt contract `spectra-pro-interpretation/v1`
+- user observation treated as untrusted contextual data, never as developer instructions
 - no OpenAI call yet
 
-A valid request deliberately returns HTTP `501` with `AI_CONNECTOR_NOT_ENABLED`. Step 4 will add the scientific prompt contract. Step 6 will enable the OpenAI Responses API request.
+A valid request deliberately returns HTTP `501` with `AI_CONNECTOR_NOT_ENABLED`, plus non-secret prompt-contract metadata. Step 5 will add the structured response schema. Step 6 will enable the OpenAI Responses API request.
 
-`GET /health` returns a small non-secret health response.
+`GET /health` returns a small non-secret health response including the active prompt-contract version.
+
+## Scientific prompt contract
+
+`src/prompt.js` contains the stable interpretation rules. The contract deliberately separates developer instructions from the serialized SPECTRA PRO payload so measured data and user observation cannot silently become higher-priority instructions.
+
+The model is instructed to:
+
+- distinguish measured features, SPECTRA PRO matches and model interpretation
+- never invent peaks, wavelengths, calibration data, QC flags or experimental conditions
+- treat Score Share as relative ranking only, never probability, concentration or abundance
+- treat Best Match as the highest current candidate score, not proof of identity
+- allow multiple species when evidence supports them
+- require stronger evidence from multiple consistent atomic lines or molecular bands than from a single coincidence
+- use the observation as context/plausibility information without allowing it to override spectral evidence
+- consider residuals, calibration, coverage, QC, saturation, signal quality, overlap and settings only when those data are actually present
+- avoid unsupported quantitative claims about concentration, temperature, pressure or electron density
+- avoid interpreting raw/normalized intensity directly as abundance without an explicit instrument correction basis
+- answer in the observation language when reliably identifiable, otherwise English
+- keep the result concise, text-only and normally around 120–220 words
+
+The current contract does **not** yet define the final machine-readable response schema. That belongs to Step 5.
 
 ## Setup
 
