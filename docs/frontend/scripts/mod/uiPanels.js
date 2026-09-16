@@ -52,10 +52,11 @@
     const summaries = scope.querySelectorAll ? scope.querySelectorAll('.sp-es-summary') : [];
     summaries.forEach(function (el) {
       if (!el || !el.innerHTML) return;
-      let html = el.innerHTML;
+      const originalHtml = el.innerHTML;
+      let html = originalHtml;
       html = html.replace(/Winner:\s*<b>/g, 'Best match: <b>');
       html = html.replace(/<\/b>\s*•\s*([0-9]+)%/g, '</b> · Score share $1%');
-      el.innerHTML = html;
+      if (html !== originalHtml) el.innerHTML = html;
       el.title = 'Best current Smart-match. Score share is the relative share of positive candidate score, not a statistical probability or abundance estimate.';
     });
   }
