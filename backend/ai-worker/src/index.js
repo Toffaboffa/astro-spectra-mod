@@ -1,3 +1,5 @@
+import { buildPromptPackage, PROMPT_CONTRACT_VERSION } from './prompt.js';
+
 const EXPECTED_SCHEMA = 'spectra-pro-ai-analysis/v1';
 const DEFAULT_MAX_BODY_BYTES = 65536;
 const MAX_OBSERVATION_CHARS = 1200;
@@ -173,7 +175,12 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === '/health' && request.method === 'GET') {
-      return json({ ok: true, service: 'spectra-pro-ai', stage: 3 }, 200, null);
+      return json({
+        ok: true,
+        service: 'spectra-pro-ai',
+        stage: 4,
+        promptContract: PROMPT_CONTRACT_VERSION
+      }, 200, null);
     }
 
     if (url.pathname !== '/api/interpret') {
@@ -230,14 +237,22 @@ export default {
       return json({ ok: false, error: 'INVALID_ANALYSIS_PAYLOAD', details: errors }, 422, origin);
     }
 
-    // Step 3 intentionally stops here. The request has been origin-checked,
-    // rate-limited, size-limited and schema-validated. Step 4 adds the scientific
-    // prompt contract; Step 6 performs the actual OpenAI Responses API request.
+    // Step 4 prepares a stable scientific developer instruction plus a separate
+    // untrusted-data input. The package is built here so deployment catches prompt
+    // integration errors before Step 6 enables the actual OpenAI request.
+    const promptPackage = buildPromptPackage(parsed.value);
+
     return json({
       ok: false,
       error: 'AI_CONNECTOR_NOT_ENABLED',
-      stage: 3,
-      accepted: requestSummary(parsed.value)
+      stage: 4,
+      accepted: requestSummary(parsed.value),
+      prompt: {
+        contractVersion: promptPackage.contractVersion,
+        textOnly: promptPackage.responsePolicy.textOnly,
+        languagePolicy: promptPackage.responsePolicy.language,
+        structuredOutput: promptPackage.responsePolicy.structuredOutput
+      }
     }, 501, origin);
   }
 };
