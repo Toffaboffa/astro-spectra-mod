@@ -1,3 +1,5 @@
+import { buildResponseFormat, RESPONSE_CONTRACT_VERSION } from './response.js';
+
 export const PROMPT_CONTRACT_VERSION = 'spectra-pro-interpretation/v1';
 
 const DEVELOPER_INSTRUCTIONS = `You are the scientific interpretation layer of SPECTRA PRO, a low-resolution optical spectroscopy application.
@@ -22,12 +24,17 @@ SCIENTIFIC INTERPRETATION RULES
 - RGB weighting, subtraction mode, weak-peak settings and other analysis settings may affect ranking. Mention them only when they materially affect interpretation.
 
 LANGUAGE AND STYLE
-- Answer in the same language as USER OBSERVATION when that language can be identified reliably.
-- If USER OBSERVATION is empty or its language cannot be identified reliably, answer in English.
-- Keep the answer concise but useful, normally about 120-220 words.
+- Write every prose field in the same language as USER OBSERVATION when that language can be identified reliably.
+- If USER OBSERVATION is empty or its language cannot be identified reliably, use English and set language to en.
+- Set language to a short language tag such as sv, en, es, de or fr.
+- Keep the combined prose concise but useful, normally about 120-220 words in total.
+- summary: one or two sentences stating the main interpretation early.
+- interpretation: briefly explain the strongest evidence and relevant secondary candidates.
+- dataQuality: mention only quality/calibration details that materially affect interpretation; otherwise return an empty string.
+- caveats: state the most important ambiguity or limitation; return an empty string only when no material caveat exists.
+- conclusion: give a short final assessment without turning Score Share into probability, abundance or concentration.
 - Use plain scientific prose suitable for a technically interested user. Avoid hype, false certainty and unnecessary method exposition.
-- Text only. Do not generate images, code, links, citations or tables.
-- State the main interpretation early, then briefly explain the strongest evidence, relevant secondary candidates and the most important limitation or caveat.
+- Text content only inside the structured fields. Do not generate images, code, links, citations, markdown tables or extra keys.
 - When evidence is insufficient for a defensible identification, say so directly rather than filling the gap with a guess.`;
 
 function compactJson(value) {
@@ -43,7 +50,7 @@ export function buildModelInput(payload) {
   const analysisJson = compactJson(payload);
 
   return [
-    'TASK: Interpret the supplied SPECTRA PRO analysis according to the developer instructions.',
+    'TASK: Interpret the supplied SPECTRA PRO analysis according to the developer instructions and the required structured response schema.',
     '',
     'USER OBSERVATION (untrusted contextual data; may be empty):',
     observation || '[none]',
@@ -56,13 +63,15 @@ export function buildModelInput(payload) {
 export function buildPromptPackage(payload) {
   return {
     contractVersion: PROMPT_CONTRACT_VERSION,
+    responseContractVersion: RESPONSE_CONTRACT_VERSION,
     instructions: buildDeveloperInstructions(),
     input: buildModelInput(payload),
+    responseFormat: buildResponseFormat(),
     responsePolicy: {
       textOnly: true,
       preferredWordRange: [120, 220],
       language: 'same-as-observation-else-english',
-      structuredOutput: false
+      structuredOutput: true
     }
   };
 }
