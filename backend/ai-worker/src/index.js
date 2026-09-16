@@ -1,4 +1,5 @@
 import { buildPromptPackage, PROMPT_CONTRACT_VERSION } from './prompt.js';
+import { RESPONSE_CONTRACT_VERSION } from './response.js';
 
 const EXPECTED_SCHEMA = 'spectra-pro-ai-analysis/v1';
 const DEFAULT_MAX_BODY_BYTES = 65536;
@@ -178,8 +179,9 @@ export default {
       return json({
         ok: true,
         service: 'spectra-pro-ai',
-        stage: 4,
-        promptContract: PROMPT_CONTRACT_VERSION
+        stage: 5,
+        promptContract: PROMPT_CONTRACT_VERSION,
+        responseContract: RESPONSE_CONTRACT_VERSION
       }, 200, null);
     }
 
@@ -237,21 +239,24 @@ export default {
       return json({ ok: false, error: 'INVALID_ANALYSIS_PAYLOAD', details: errors }, 422, origin);
     }
 
-    // Step 4 prepares a stable scientific developer instruction plus a separate
-    // untrusted-data input. The package is built here so deployment catches prompt
-    // integration errors before Step 6 enables the actual OpenAI request.
+    // Step 5 prepares both the scientific prompt and a strict Structured Outputs
+    // schema. Step 6 will pass responseFormat as Responses API text.format and
+    // perform the actual OpenAI request.
     const promptPackage = buildPromptPackage(parsed.value);
 
     return json({
       ok: false,
       error: 'AI_CONNECTOR_NOT_ENABLED',
-      stage: 4,
+      stage: 5,
       accepted: requestSummary(parsed.value),
       prompt: {
         contractVersion: promptPackage.contractVersion,
+        responseContractVersion: promptPackage.responseContractVersion,
         textOnly: promptPackage.responsePolicy.textOnly,
         languagePolicy: promptPackage.responsePolicy.language,
-        structuredOutput: promptPackage.responsePolicy.structuredOutput
+        structuredOutput: promptPackage.responsePolicy.structuredOutput,
+        formatName: promptPackage.responseFormat.name,
+        strict: promptPackage.responseFormat.strict
       }
     }, 501, origin);
   }
