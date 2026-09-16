@@ -1,4 +1,3 @@
-
 (function (global) {
   'use strict';
 
@@ -187,7 +186,7 @@
   global.SpectraPro.createStateStore = createStore;
   global.SpectraPro.store = global.SpectraPro.store || createStore();
 
-  // Load the small v2.0.3 UI alignment patch without adding another hard-coded
+  // Load the current UI alignment patch without adding another hard-coded
   // script tag to the legacy recording page.
   if (global.document && !global.document.getElementById('spUiTweaksV203Loader')) {
     const script = global.document.createElement('script');
@@ -195,5 +194,29 @@
     script.src = '../scripts/mod/uiTweaksV203.js';
     script.defer = true;
     (global.document.head || global.document.documentElement).appendChild(script);
+  }
+
+  // AI Interpretation is kept modular. Load the compact payload builder first,
+  // then the UI layer. Neither module performs network requests in Step 2.
+  if (global.document) {
+    const loadAiUi = function () {
+      if (global.document.getElementById('spAiAnalysisUiLoader')) return;
+      const uiScript = global.document.createElement('script');
+      uiScript.id = 'spAiAnalysisUiLoader';
+      uiScript.src = '../scripts/mod/aiAnalysisUi.js';
+      uiScript.defer = true;
+      (global.document.head || global.document.documentElement).appendChild(uiScript);
+    };
+
+    if (global.SpectraPro.aiAnalysisPayload) {
+      loadAiUi();
+    } else if (!global.document.getElementById('spAiAnalysisPayloadLoader')) {
+      const payloadScript = global.document.createElement('script');
+      payloadScript.id = 'spAiAnalysisPayloadLoader';
+      payloadScript.src = '../scripts/mod/aiAnalysisPayload.js';
+      payloadScript.defer = true;
+      payloadScript.addEventListener('load', loadAiUi, { once: true });
+      (global.document.head || global.document.documentElement).appendChild(payloadScript);
+    }
   }
 })(window);
