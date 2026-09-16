@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "spectra-pro-ai",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-16",
+  "workers_dev": true,
+  "vars": {
+    "ALLOWED_ORIGINS": "https://toffaboffa.github.io,http://localhost:8000,http://127.0.0.1:8000",
+    "MAX_BODY_BYTES": "65536"
+  },
+  "secrets": {
+    "required": ["OPENAI_API_KEY"]
+  },
+  "ratelimits": [
+    {
+      "name": "AI_RATE_LIMITER",
+      "namespace_id": "2026091601",
+      "simple": {
+        "limit": 12,
+        "period": 60
+      }
+    }
+  ]
+}
