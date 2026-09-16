@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = 'v2.0.5';
+  const VERSION = 'v2.0.6';
   let initialStripeCentered = false;
 
   function updateVersionBadge() {
@@ -24,8 +24,6 @@
     const canvasRect = canvas.getBoundingClientRect();
     if (!(canvasRect.width > 0) || !(canvasRect.height > 0)) return false;
 
-    // Centre the question on the actual graph canvas, not on the surrounding
-    // main-content/drawer area.
     const left = (canvasRect.left - hostRect.left) + canvasRect.width / 2;
     const top = (canvasRect.top - hostRect.top) + canvasRect.height / 2;
 
@@ -134,13 +132,10 @@
     if (image && !image.__spInitialStripeCenterBound) {
       image.__spInitialStripeCenterBound = true;
       image.addEventListener('load', function () {
-        // A newly loaded still image gets its own centred sampling stripe.
         global.setTimeout(function () { centerStripe(true); }, 0);
       });
     }
 
-    // Covers the case where camera metadata was already available before this
-    // patch loaded. Stop retrying as soon as a valid centre was applied.
     [80, 300, 800, 1600].forEach(function (delay) {
       global.setTimeout(function () {
         if (!initialStripeCentered) centerStripe(false);
