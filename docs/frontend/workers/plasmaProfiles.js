@@ -43,7 +43,9 @@
   };
 
   root.SPECTRA_PRO_plasmaProfiles = {
-    version: '1.0.0',
+    version: '1.0.1',
+    scoreLabel: 'Score share',
+    scoreHelp: 'Relative share of the positive Smart candidate score. This is not a statistical probability or abundance estimate.',
     profiles: PROFILES
   };
 })(typeof self !== 'undefined' ? self : this);
