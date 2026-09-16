@@ -186,4 +186,14 @@
   global.SpectraPro = global.SpectraPro || {};
   global.SpectraPro.createStateStore = createStore;
   global.SpectraPro.store = global.SpectraPro.store || createStore();
+
+  // Load the small v2.0.3 UI alignment patch without adding another hard-coded
+  // script tag to the legacy recording page.
+  if (global.document && !global.document.getElementById('spUiTweaksV203Loader')) {
+    const script = global.document.createElement('script');
+    script.id = 'spUiTweaksV203Loader';
+    script.src = '../scripts/mod/uiTweaksV203.js';
+    script.defer = true;
+    (global.document.head || global.document.documentElement).appendChild(script);
+  }
 })(window);
