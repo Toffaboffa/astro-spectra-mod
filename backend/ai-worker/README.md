@@ -1,12 +1,12 @@
 # SPECTRA PRO AI Worker
 
-This directory contains the server-side boundary for the future **AI Interpretation** feature.
+This directory contains the server-side boundary for the **AI Interpretation** feature.
 
 The browser must never receive `OPENAI_API_KEY`. SPECTRA PRO sends its compact `spectra-pro-ai-analysis/v1` payload to this Worker; the Worker validates and rate-limits the request before any future OpenAI API call is allowed.
 
-## Step 4 behavior
+## Step 5 behavior
 
-`POST /api/interpret` now performs the security boundary and prepares the scientific interpretation prompt contract:
+`POST /api/interpret` currently performs the security boundary, prepares the scientific interpretation prompt, and defines the strict machine-readable response format:
 
 - exact origin allowlist
 - `POST` + `application/json` only
@@ -16,12 +16,26 @@ The browser must never receive `OPENAI_API_KEY`. SPECTRA PRO sends its compact `
 - no request/payload logging
 - `Cache-Control: no-store`
 - scientific prompt contract `spectra-pro-interpretation/v1`
+- response contract `spectra-pro-ai-response/v1`
 - user observation treated as untrusted contextual data, never as developer instructions
 - no OpenAI call yet
 
-A valid request deliberately returns HTTP `501` with `AI_CONNECTOR_NOT_ENABLED`, plus non-secret prompt-contract metadata. Step 5 will add the structured response schema. Step 6 will enable the OpenAI Responses API request.
+A valid request deliberately returns HTTP `501` with `AI_CONNECTOR_NOT_ENABLED`, plus non-secret prompt/response-contract metadata. Step 6 enables the OpenAI Responses API request.
 
-`GET /health` returns a small non-secret health response including the active prompt-contract version.
+`GET /health` returns a small non-secret health response including the active prompt and response contract versions.
+
+## Structured response
+
+`src/response.js` defines the strict Structured Outputs schema that Step 6 will pass as the Responses API `text.format` JSON schema. The schema contains only:
+
+- `language`
+- `summary`
+- `interpretation`
+- `dataQuality`
+- `caveats`
+- `conclusion`
+
+All fields are strings and all keys are required. `dataQuality` and `caveats` may be empty strings when there is nothing material to add. The frontend joins the prose fields into a normal text result, so users do not see JSON.
 
 ## Scientific prompt contract
 
@@ -40,9 +54,28 @@ The model is instructed to:
 - avoid unsupported quantitative claims about concentration, temperature, pressure or electron density
 - avoid interpreting raw/normalized intensity directly as abundance without an explicit instrument correction basis
 - answer in the observation language when reliably identifiable, otherwise English
-- keep the result concise, text-only and normally around 120–220 words
+- keep the combined result concise and normally around 120–220 words
 
-The current contract does **not** yet define the final machine-readable response schema. That belongs to Step 5.
+## OpenAI API key
+
+Use a dedicated OpenAI Project for SPECTRA PRO and preferably a project service account rather than a personal user-owned production key. Give the key only the API access the Worker needs. For the planned integration that means write access to the Responses endpoint; other endpoint permissions can remain disabled unless a later feature requires them.
+
+The key value must never be committed to this repository.
+
+## Cloudflare Secrets Store
+
+Production uses Cloudflare Secrets Store. The current binding in `wrangler.jsonc` is:
+
+```text
+Worker binding: OPENAI_API_KEY
+Secrets Store secret: SpectraPRO
+```
+
+The account Secrets Store ID is referenced in `wrangler.jsonc` because Workers need it to bind the existing secret. The Store ID is an identifier, not the secret value.
+
+The secret must have the `workers` permission scope. When Step 6 reads it, Secrets Store requires an asynchronous `get()` call on the binding.
+
+For local development, use Wrangler's local Secrets Store commands without `--remote`. Do not copy the production key into source code or a committed file.
 
 ## Setup
 
@@ -53,28 +86,18 @@ cd backend/ai-worker
 npm install
 ```
 
-For local development, copy `dev.vars.example` to `.dev.vars` and put a project-specific OpenAI API key there. `.dev.vars*`, `.env*` and `.wrangler/` are ignored by git.
-
-For production, store the key as an encrypted Worker secret instead of a committed variable:
-
-```bash
-npx wrangler secret put OPENAI_API_KEY
-```
-
-Then verify and deploy:
+Verify and deploy:
 
 ```bash
 npm run check
 npm run deploy
 ```
 
-Wrangler will provide a `workers.dev` URL unless a custom domain is configured. The future frontend service should call:
+Wrangler will provide a `workers.dev` URL unless a custom domain is configured. The frontend service will eventually call:
 
 ```text
 https://<worker-host>/api/interpret
 ```
-
-Do not put this API key in `wrangler.jsonc`, frontend JavaScript, GitHub Actions output, documentation, screenshots, or issue text.
 
 ## Allowed origins
 
@@ -94,4 +117,4 @@ The Worker uses Cloudflare's `AI_RATE_LIMITER` binding at 12 accepted attempts p
 
 ## Secret policy
 
-Use a dedicated OpenAI Project and a project-scoped API key with appropriate permissions and spend controls. Rotate the key if it is ever exposed. The Worker code references only the environment binding name `OPENAI_API_KEY`; no key value belongs in this repository.
+Rotate the OpenAI key if it is ever exposed. Do not place the value in frontend JavaScript, `wrangler.jsonc`, GitHub Actions output, documentation, screenshots, issues, or prompts.
