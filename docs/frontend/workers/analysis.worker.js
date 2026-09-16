@@ -11,6 +11,8 @@ importScripts(
   './qcRules.js',
   './confidenceModel.js',
   './analysisPipeline.js',
+  './plasmaProfiles.js',
+  './molecularEvidencePatch.js',
   './workerRouter.js'
 );
 
