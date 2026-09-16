@@ -1,6 +1,8 @@
 (function (global) {
   'use strict';
   const sp = global.SpectraPro = global.SpectraPro || {};
+  const VERSION = 'v2.0.1';
+  sp.version = VERSION;
 
   function createModeTabs(container) {
     if (!container) return null;
@@ -65,11 +67,6 @@
     }
   }
 
-  function getBestSmartRow() {
-    const rows = getAnalysisRows();
-    return rows.length ? rows[0] : null;
-  }
-
   function patchSmartScoreSemantics(root) {
     const scope = root || document;
     const headers = scope.querySelectorAll ? scope.querySelectorAll('.sp-lab-th') : [];
@@ -129,14 +126,42 @@
     });
   }
 
-  function installSmartScoreSemanticsPatch() {
-    function apply() {
-      patchSmartScoreSemantics(document.getElementById('spPanel-lab') || document);
+  function installVersionBadge() {
+    const host = document.getElementById('sidebarLogo');
+    if (!host) return;
+    try {
+      if (global.getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    } catch (_) {
+      host.style.position = 'relative';
     }
-    apply();
-    if (typeof MutationObserver === 'undefined' || !document.body) return;
-    const observer = new MutationObserver(function () { apply(); });
-    observer.observe(document.body, { childList: true, subtree: true });
+
+    let badge = document.getElementById('spVersionBadge');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.id = 'spVersionBadge';
+      badge.className = 'sp-version-badge';
+      host.appendChild(badge);
+    }
+    badge.textContent = VERSION;
+    badge.title = 'SPECTRA PRO ' + VERSION;
+  }
+
+  function installVersionBadgeCss() {
+    if (document.getElementById('spVersionBadgeStyle')) return;
+    const style = document.createElement('style');
+    style.id = 'spVersionBadgeStyle';
+    style.textContent = [
+      '#sidebarLogo{position:relative;}',
+      '.sp-version-badge{',
+      'position:absolute;right:8px;bottom:6px;z-index:20;',
+      'padding:2px 7px;border-radius:999px;',
+      'font:600 11px/1.25 system-ui,-apple-system,Segoe UI,sans-serif;',
+      'letter-spacing:.02em;color:#dff8ff;',
+      'background:rgba(5,18,34,.82);border:1px solid rgba(66,217,230,.58);',
+      'box-shadow:0 1px 4px rgba(0,0,0,.35);pointer-events:none;user-select:none;',
+      '}'
+    ].join('');
+    document.head.appendChild(style);
   }
 
   function isStaticImageSource() {
@@ -153,27 +178,46 @@
     }
   }
 
-  function redrawLoadedImage(suppressGraphFrame, invalidatePeaks) {
-    if (!isStaticImageSource()) return false;
-    const redraw = global.redrawGraphIfLoadedImage;
-    const draw = global.drawGraph;
+  function withGraphFrameSuppressed(fn) {
     const hooks = sp.coreHooks;
     const originalEmit = hooks && typeof hooks.emit === 'function' ? hooks.emit : null;
-    if (suppressGraphFrame && originalEmit) {
+    if (originalEmit) {
       hooks.emit = function (name) {
         if (name === 'graphFrame') return undefined;
         return originalEmit.apply(this, arguments);
       };
     }
     try {
-      if (typeof redraw === 'function') redraw(!!invalidatePeaks);
-      else if (typeof draw === 'function') draw();
-      return true;
-    } catch (_) {
-      return false;
+      return fn();
     } finally {
-      if (suppressGraphFrame && originalEmit) hooks.emit = originalEmit;
+      if (originalEmit) hooks.emit = originalEmit;
     }
+  }
+
+  function redrawLoadedImage(suppressGraphFrame, invalidatePeaks, forceDraw) {
+    if (!isStaticImageSource()) return false;
+    const redraw = global.redrawGraphIfLoadedImage;
+    const draw = global.drawGraph;
+    const perform = function () {
+      let didSomething = false;
+      try {
+        if (typeof redraw === 'function') {
+          redraw(!!invalidatePeaks);
+          didSomething = true;
+        }
+      } catch (_) {}
+      try {
+        if (forceDraw && typeof draw === 'function') {
+          draw();
+          didSomething = true;
+        } else if (!didSomething && typeof draw === 'function') {
+          draw();
+          didSomething = true;
+        }
+      } catch (_) {}
+      return didSomething;
+    };
+    return suppressGraphFrame ? withGraphFrameSuppressed(perform) : perform();
   }
 
   function eventPatchKeys(evt) {
@@ -205,6 +249,7 @@
       'analysis.maxDistanceNm',
       'analysis.strongPeakLevel',
       'analysis.useRgbScore',
+      'analysis.stableHits',
       'subtraction.mode',
       'peaks.threshold',
       'peaks.distance',
@@ -235,16 +280,22 @@
       if (analyzeTimer) global.clearTimeout(analyzeTimer);
       analyzeTimer = global.setTimeout(function () {
         analyzeTimer = null;
-        redrawLoadedImage(false, true);
-      }, 340);
+        // For a still image there is no next camera frame. Rebuild the graph so a
+        // fresh graphFrame is emitted and the worker analyzes the current image
+        // with the new LAB settings.
+        redrawLoadedImage(false, true, false);
+      }, 120);
     }
 
     function scheduleResultRedraw() {
       if (resultRedrawTimer) global.clearTimeout(resultRedrawTimer);
       resultRedrawTimer = global.setTimeout(function () {
         resultRedrawTimer = null;
-        redrawLoadedImage(true, false);
-      }, 24);
+        // Worker results change the labels, not the source spectrum. Repaint the
+        // graph with graphFrame suppressed so this does not start another analysis.
+        redrawLoadedImage(true, false, true);
+        patchSmartScoreSemantics(document.getElementById('spPanel-lab') || document);
+      }, 16);
     }
 
     bus.on('state:changed', function (evt) {
@@ -263,6 +314,13 @@
         return;
       }
       if (keyMatches(keys, reanalyzeKeys)) scheduleAnalyzeRedraw();
+    });
+
+    // This is the reliable end-of-analysis signal. State updates arrive as a
+    // series of small patches; worker:result guarantees we repaint after the
+    // complete Smart result has landed.
+    bus.on('worker:result', function () {
+      if (isStaticImageSource()) scheduleResultRedraw();
     });
   }
 
@@ -296,7 +354,19 @@
     overlays.drawOnGraph = wrapped;
   }
 
+  function installSmartScoreSemanticsPatch() {
+    function apply() {
+      patchSmartScoreSemantics(document.getElementById('spPanel-lab') || document);
+    }
+    apply();
+    if (typeof MutationObserver === 'undefined' || !document.body) return;
+    const observer = new MutationObserver(function () { apply(); });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
   function installAllPatches() {
+    installVersionBadgeCss();
+    installVersionBadge();
     installSmartScoreSemanticsPatch();
     installSmartHitHighlightFilter();
     installStaticImageAutoRefresh();
@@ -306,6 +376,7 @@
     createModeTabs,
     renderStatus,
     patchSmartScoreSemantics,
+    installVersionBadge,
     isStaticImageSource,
     redrawLoadedImage
   };
