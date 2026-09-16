@@ -1,4 +1,3 @@
-
 (function (global) {
   'use strict';
   const sp = global.SpectraPro = global.SpectraPro || {};
@@ -57,14 +56,18 @@
     return String(value == null ? '' : value);
   }
 
-  function getBestSmartRow() {
+  function getAnalysisRows() {
     try {
       const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
-      const rows = state && state.analysis && Array.isArray(state.analysis.elementScores) ? state.analysis.elementScores : [];
-      return rows.length ? rows[0] : null;
+      return state && state.analysis && Array.isArray(state.analysis.elementScores) ? state.analysis.elementScores : [];
     } catch (_) {
-      return null;
+      return [];
     }
+  }
+
+  function getBestSmartRow() {
+    const rows = getAnalysisRows();
+    return rows.length ? rows[0] : null;
   }
 
   function patchSmartScoreSemantics(root) {
@@ -77,7 +80,8 @@
       }
     });
 
-    const winner = getBestSmartRow();
+    const rows = getAnalysisRows();
+    const winner = rows.length ? rows[0] : null;
     const summaries = scope.querySelectorAll ? scope.querySelectorAll('.sp-es-summary') : [];
     summaries.forEach(function (el) {
       if (!el) return;
@@ -106,6 +110,23 @@
 
       el.title = 'Best current Smart-match. Score share is the relative share of positive candidate score, not a statistical probability or abundance estimate.';
     });
+
+    const smartRows = scope.querySelectorAll ? scope.querySelectorAll('.sp-hit--smart') : [];
+    smartRows.forEach(function (el, idx) {
+      const row = rows[idx] || null;
+      if (!el || !row) return;
+      const noun = String(row.mode || '').toLowerCase() === 'molecular' ? 'bands' : 'lines';
+      const txt = String(el.textContent || '');
+      const next = txt.replace(/\b(?:lines|bands)\s*$/i, noun);
+      if (next !== txt) el.textContent = next;
+
+      const shareRaw = row.scoreSharePct != null ? row.scoreSharePct : row.likelyPct;
+      const share = Number(shareRaw);
+      const evidenceRaw = row.matchedPeaks != null ? row.matchedPeaks : (row.matchedCount != null ? row.matchedCount : row.lineCount);
+      const evidence = Number(evidenceRaw);
+      const isStrong = idx < 3 && Number.isFinite(share) && share >= 5 && Number.isFinite(evidence) && evidence >= 2;
+      el.style.display = isStrong ? '' : 'none';
+    });
   }
 
   function installSmartScoreSemanticsPatch() {
@@ -118,11 +139,180 @@
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
-  sp.uiPanels = { createModeTabs, renderStatus, patchSmartScoreSemantics };
+  function isStaticImageSource() {
+    try {
+      const img = document.getElementById('cameraImage');
+      if (!img || !img.src || !img.complete || !(Number(img.naturalWidth) > 0)) return false;
+      const rt = sp.runtime || {};
+      if (typeof rt.isSourceLive === 'function' && rt.isSourceLive()) return false;
+      const filename = document.getElementById('loadedImageFilename');
+      if (filename && String(filename.textContent || '').trim() && global.getComputedStyle(filename).display !== 'none') return true;
+      return global.getComputedStyle(img).display !== 'none';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function redrawLoadedImage(suppressGraphFrame, invalidatePeaks) {
+    if (!isStaticImageSource()) return false;
+    const redraw = global.redrawGraphIfLoadedImage;
+    const draw = global.drawGraph;
+    const hooks = sp.coreHooks;
+    const originalEmit = hooks && typeof hooks.emit === 'function' ? hooks.emit : null;
+    if (suppressGraphFrame && originalEmit) {
+      hooks.emit = function (name) {
+        if (name === 'graphFrame') return undefined;
+        return originalEmit.apply(this, arguments);
+      };
+    }
+    try {
+      if (typeof redraw === 'function') redraw(!!invalidatePeaks);
+      else if (typeof draw === 'function') draw();
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      if (suppressGraphFrame && originalEmit) hooks.emit = originalEmit;
+    }
+  }
+
+  function eventPatchKeys(evt) {
+    const patch = evt && evt.patch && typeof evt.patch === 'object' ? evt.patch : null;
+    return patch ? Object.keys(patch) : [];
+  }
+
+  function keyMatches(keys, exactOrPrefix) {
+    for (let i = 0; i < keys.length; i += 1) {
+      const key = String(keys[i] || '');
+      for (let j = 0; j < exactOrPrefix.length; j += 1) {
+        const wanted = String(exactOrPrefix[j] || '');
+        if (key === wanted || key.indexOf(wanted + '.') === 0) return true;
+      }
+    }
+    return false;
+  }
+
+  function installStaticImageAutoRefresh() {
+    const bus = sp.eventBus;
+    if (!bus || typeof bus.on !== 'function') return;
+
+    const reanalyzeKeys = [
+      'analysis.enabled',
+      'analysis.presetId',
+      'analysis.includeWeakPeaks',
+      'analysis.peakThresholdRel',
+      'analysis.peakDistancePx',
+      'analysis.maxDistanceNm',
+      'analysis.strongPeakLevel',
+      'analysis.useRgbScore',
+      'subtraction.mode',
+      'peaks.threshold',
+      'peaks.distance',
+      'peaks.smoothing',
+      'calibration.coefficients',
+      'calibration.points',
+      'calibration.isCalibrated'
+    ];
+    const redrawOnlyKeys = [
+      'analysis.showHits',
+      'analysis.smartFindEnabled'
+    ];
+    const resultKeys = [
+      'analysis.topHits',
+      'analysis.rawTopHits',
+      'analysis.smartFindHits',
+      'analysis.smartFindGroups',
+      'analysis.elementScores',
+      'analysis.winnerBreakdown',
+      'analysis.qcFlags',
+      'analysis.offsetNm'
+    ];
+
+    let analyzeTimer = null;
+    let resultRedrawTimer = null;
+
+    function scheduleAnalyzeRedraw() {
+      if (analyzeTimer) global.clearTimeout(analyzeTimer);
+      analyzeTimer = global.setTimeout(function () {
+        analyzeTimer = null;
+        redrawLoadedImage(false, true);
+      }, 340);
+    }
+
+    function scheduleResultRedraw() {
+      if (resultRedrawTimer) global.clearTimeout(resultRedrawTimer);
+      resultRedrawTimer = global.setTimeout(function () {
+        resultRedrawTimer = null;
+        redrawLoadedImage(true, false);
+      }, 24);
+    }
+
+    bus.on('state:changed', function (evt) {
+      if (!isStaticImageSource()) return;
+      const source = evt && evt.meta && evt.meta.source ? String(evt.meta.source) : '';
+      const keys = eventPatchKeys(evt);
+      if (!keys.length) return;
+
+      if (keyMatches(keys, resultKeys)) {
+        scheduleResultRedraw();
+        return;
+      }
+      if (source.indexOf('proBootstrap.frameSync') === 0 || source.indexOf('workerClient') === 0) return;
+      if (keyMatches(keys, redrawOnlyKeys)) {
+        scheduleResultRedraw();
+        return;
+      }
+      if (keyMatches(keys, reanalyzeKeys)) scheduleAnalyzeRedraw();
+    });
+  }
+
+  function installSmartHitHighlightFilter() {
+    const overlays = sp.overlays;
+    if (!overlays || typeof overlays.drawOnGraph !== 'function' || overlays.drawOnGraph.__strongEvidenceFilter) return;
+    const original = overlays.drawOnGraph;
+
+    const wrapped = function (ctx, graphState) {
+      const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
+      const analysis = state && state.analysis ? state.analysis : null;
+      if (!analysis || !Array.isArray(analysis.smartFindGroups)) return original.apply(this, arguments);
+
+      const originalGroups = analysis.smartFindGroups;
+      const strongGroups = originalGroups.filter(function (group) {
+        const shareRaw = group && (group.scoreSharePct != null ? group.scoreSharePct : group.likelyPct);
+        const share = Number(shareRaw);
+        const evidenceRaw = group && (group.matchedPeaks != null ? group.matchedPeaks : (group.lineCount != null ? group.lineCount : group.matchCount));
+        const evidence = Number(evidenceRaw);
+        return Number.isFinite(share) && share >= 5 && Number.isFinite(evidence) && evidence >= 2;
+      }).slice(0, 3);
+
+      analysis.smartFindGroups = strongGroups;
+      try {
+        return original.apply(this, arguments);
+      } finally {
+        analysis.smartFindGroups = originalGroups;
+      }
+    };
+    wrapped.__strongEvidenceFilter = true;
+    overlays.drawOnGraph = wrapped;
+  }
+
+  function installAllPatches() {
+    installSmartScoreSemanticsPatch();
+    installSmartHitHighlightFilter();
+    installStaticImageAutoRefresh();
+  }
+
+  sp.uiPanels = {
+    createModeTabs,
+    renderStatus,
+    patchSmartScoreSemantics,
+    isStaticImageSource,
+    redrawLoadedImage
+  };
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', installSmartScoreSemanticsPatch, { once: true });
+    document.addEventListener('DOMContentLoaded', installAllPatches, { once: true });
   } else {
-    installSmartScoreSemanticsPatch();
+    installAllPatches();
   }
 })(window);
