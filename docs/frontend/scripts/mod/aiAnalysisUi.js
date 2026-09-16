@@ -7,6 +7,8 @@
   const STYLE_ID = 'spAiInterpretStyle';
   let lastPayload = null;
   let lastFocused = null;
+  let eventHooksInstalled = false;
+  let keyHookInstalled = false;
 
   function $(id) { return global.document ? global.document.getElementById(id) : null; }
 
@@ -209,9 +211,28 @@
     return true;
   }
 
+  function installEventHooks() {
+    if (!eventHooksInstalled && sp.eventBus && typeof sp.eventBus.on === 'function') {
+      eventHooksInstalled = true;
+      sp.eventBus.on('state:changed', attachButton);
+      sp.eventBus.on('ui:refresh', attachButton);
+      sp.eventBus.on('mode:changed', attachButton);
+    }
+    if (!keyHookInstalled && global.document) {
+      keyHookInstalled = true;
+      global.document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          const modal = $(MODAL_ID);
+          if (modal && modal.classList.contains('is-open')) close();
+        }
+      });
+    }
+  }
+
   function install() {
     installStyles();
     ensureModal();
+    installEventHooks();
     attachButton();
   }
 
