@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = 'v2.0.8';
+  const VERSION = 'v2.0.9';
   let initialStripeCentered = false;
 
   function updateVersionBadge() {
