@@ -36,6 +36,8 @@
       '.sp-ai-modal__status[data-tone="ok"]{border-color:rgba(92,222,190,.42);color:#c7fff0;background:rgba(10,54,46,.34);}',
       '.sp-ai-modal__result{display:none;margin-top:12px;padding:12px;border-radius:8px;border:1px solid rgba(86,217,225,.28);background:rgba(3,15,27,.58);font-size:13px;line-height:1.55;color:#e4f6f9;white-space:pre-wrap;}',
       '.sp-ai-modal__result.is-visible{display:block;}',
+      '.sp-ai-modal__meta{display:none;margin-top:7px;font:500 10px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#7fa8b4;overflow-wrap:anywhere;}',
+      '.sp-ai-modal__meta.is-visible{display:block;}',
       '.sp-ai-modal__actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}',
       '.sp-ai-modal__actions button,.sp-ai-action{border:1px solid rgba(78,211,221,.38);border-radius:7px;background:rgba(20,53,69,.9);color:#e9fbff;padding:7px 12px;font:600 12px/1.2 system-ui,-apple-system,Segoe UI,sans-serif;cursor:pointer;}',
       '.sp-ai-modal__actions button:hover,.sp-ai-action:hover{border-color:rgba(92,235,241,.74);background:rgba(23,72,88,.95);}',
@@ -58,6 +60,11 @@
     button.dataset.mode = isCopy ? 'copy' : 'analyze';
     button.textContent = isCopy ? 'Kopiera text' : 'Analyze';
     button.title = isCopy ? 'Kopiera AI-tolkningen till urklipp.' : 'Analyze the current spectrum with AI Interpretation.';
+  }
+
+  function setNewRunVisible(visible) {
+    const button = $('spAiNewRunBtn');
+    if (button) button.style.display = visible ? '' : 'none';
   }
 
   function ensureModal() {
@@ -84,8 +91,10 @@
       '    <textarea id="spAiObservation" maxlength="1200" spellcheck="true" placeholder="Example: Low-pressure air plasma in a glass tube..."></textarea>',
       '    <div id="spAiStatus" class="sp-ai-modal__status" aria-live="polite"></div>',
       '    <div id="spAiResult" class="sp-ai-modal__result" aria-live="polite"></div>',
+      '    <div id="spAiMeta" class="sp-ai-modal__meta" aria-live="polite"></div>',
       '    <div class="sp-ai-modal__actions">',
       '      <button type="button" id="spAiCancelBtn">Cancel</button>',
+      '      <button type="button" id="spAiNewRunBtn" style="display:none">Ny analys</button>',
       '      <button type="button" id="spAiAnalyzeBtn" class="sp-ai-primary" data-mode="analyze">Analyze</button>',
       '    </div>',
       '  </div>',
@@ -97,6 +106,7 @@
       const target = event.target;
       if (!target) return;
       if (target.id === 'spAiInterpretClose' || target.id === 'spAiCancelBtn' || target.getAttribute('data-ai-close') === '1') close();
+      if (target.id === 'spAiNewRunBtn') prepareNewRun();
       if (target.id === 'spAiAnalyzeBtn') {
         if (target.dataset.mode === 'copy') copyResultText();
         else submit();
@@ -129,6 +139,48 @@
     if (action) action.disabled = !!loading;
   }
 
+  function setMeta(text) {
+    const meta = $('spAiMeta');
+    if (!meta) return;
+    const value = String(text == null ? '' : text).trim();
+    meta.textContent = value;
+    meta.classList.toggle('is-visible', !!value);
+  }
+
+  function shortContract(value) {
+    const text = String(value || '');
+    const slash = text.lastIndexOf('/');
+    return slash >= 0 ? text.slice(slash + 1) : text;
+  }
+
+  function formatTime(value) {
+    if (!value) return '';
+    try {
+      const date = new Date(value);
+      if (!Number.isFinite(date.getTime())) return '';
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function setRunMeta(response) {
+    if (!response || typeof response !== 'object') {
+      setMeta('');
+      return;
+    }
+    const parts = [];
+    const when = formatTime(response.completedAt || response.startedAt);
+    if (when) parts.push('Körning ' + when);
+    if (response.promptContract) parts.push('prompt ' + shortContract(response.promptContract));
+    const usage = response.usage && typeof response.usage === 'object' ? response.usage : {};
+    if (Number.isFinite(Number(usage.inputTokens))) parts.push(Number(usage.inputTokens).toLocaleString() + ' in');
+    if (Number.isFinite(Number(usage.outputTokens))) parts.push(Number(usage.outputTokens).toLocaleString() + ' ut');
+    if (response.runId) parts.push('run ' + String(response.runId).slice(0, 8));
+    if (response.openaiResponseId) parts.push('OpenAI ' + String(response.openaiResponseId).slice(0, 18));
+    setMeta(parts.join(' · '));
+  }
+
   function formatStructuredResult(value) {
     if (value == null) return '';
     if (typeof value === 'string') return value.trim();
@@ -153,6 +205,7 @@
     result.textContent = text;
     result.classList.toggle('is-visible', !!text);
     setPrimaryActionMode(text ? 'copy' : 'analyze');
+    setNewRunVisible(!!text);
   }
 
   function fallbackCopy(text) {
@@ -196,18 +249,24 @@
     fallbackCopy(text);
   }
 
+  function prepareNewRun() {
+    lastResultText = '';
+    setMeta('');
+    setStatus('', 'info', false);
+    setResult('');
+    setPrimaryActionMode('analyze');
+    setNewRunVisible(false);
+    const textarea = $('spAiObservation');
+    if (textarea) global.setTimeout(function () { textarea.focus(); }, 0);
+  }
+
   function open() {
     installStyles();
     const modal = ensureModal();
     if (!modal) return false;
     lastFocused = global.document.activeElement || null;
-    lastResultText = '';
-    setPrimaryActionMode('analyze');
-    setStatus('', 'info', false);
-    setResult('');
+    prepareNewRun();
     modal.classList.add('is-open');
-    const textarea = $('spAiObservation');
-    if (textarea) global.setTimeout(function () { textarea.focus(); }, 0);
     return true;
   }
 
@@ -232,6 +291,8 @@
 
   function submit() {
     setPrimaryActionMode('analyze');
+    setNewRunVisible(false);
+    setMeta('');
     setResult('');
     setStatus('Preparing current SPECTRA PRO analysis…', 'info', true);
     try {
@@ -260,7 +321,9 @@
           const value = response && typeof response === 'object' && response.result != null ? response.result : response;
           setStatus('', 'info', false);
           setResult(value);
+          setRunMeta(response);
         }).catch(function (error) {
+          setMeta('');
           setStatus('AI interpretation failed: ' + String(error && error.message || error || 'Unknown error'), 'error', false);
         });
         return;
@@ -271,6 +334,7 @@
         if (sp.eventBus && typeof sp.eventBus.emit === 'function') sp.eventBus.emit('ai:payloadPrepared', { payload: payload });
       } catch (_) {}
     } catch (error) {
+      setMeta('');
       setStatus('Could not prepare AI analysis data: ' + String(error && error.message || error), 'error', false);
     }
   }
@@ -334,6 +398,7 @@
   }
 
   function showError(text) {
+    setMeta('');
     setResult('');
     setStatus(text || 'AI interpretation failed.', 'error', false);
   }
@@ -350,6 +415,7 @@
     close: close,
     submit: submit,
     copyResultText: copyResultText,
+    prepareNewRun: prepareNewRun,
     setLoading: setLoading,
     showResult: showResult,
     showError: showError,

@@ -2,6 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
+  const AI_ASSET_VERSION = '2.0.9';
 
   const defaultPresetCatalog = {
     groups: [
@@ -188,20 +189,19 @@
   if (global.document && !global.document.getElementById('spUiTweaksV203Loader')) {
     const script = global.document.createElement('script');
     script.id = 'spUiTweaksV203Loader';
-    script.src = '../scripts/mod/uiTweaksV203.js';
+    script.src = '../scripts/mod/uiTweaksV203.js?v=' + AI_ASSET_VERSION;
     script.defer = true;
     (global.document.head || global.document.documentElement).appendChild(script);
   }
 
   // AI Interpretation load order: payload builder -> secure transport service -> UI.
-  // The service only talks to the configured Worker endpoint; the OpenAI key never
-  // exists in browser state or source code.
+  // Versioned URLs avoid stale browser copies after a visible SPECTRA release.
   if (global.document) {
     const loadAiUi = function () {
       if (global.document.getElementById('spAiAnalysisUiLoader')) return;
       const uiScript = global.document.createElement('script');
       uiScript.id = 'spAiAnalysisUiLoader';
-      uiScript.src = '../scripts/mod/aiAnalysisUi.js';
+      uiScript.src = '../scripts/mod/aiAnalysisUi.js?v=' + AI_ASSET_VERSION;
       uiScript.defer = true;
       (global.document.head || global.document.documentElement).appendChild(uiScript);
     };
@@ -214,7 +214,7 @@
       if (global.document.getElementById('spAiAnalysisServiceLoader')) return;
       const serviceScript = global.document.createElement('script');
       serviceScript.id = 'spAiAnalysisServiceLoader';
-      serviceScript.src = '../scripts/mod/aiAnalysisService.js';
+      serviceScript.src = '../scripts/mod/aiAnalysisService.js?v=' + AI_ASSET_VERSION;
       serviceScript.defer = true;
       serviceScript.addEventListener('load', loadAiUi, { once: true });
       (global.document.head || global.document.documentElement).appendChild(serviceScript);
@@ -225,7 +225,7 @@
     } else if (!global.document.getElementById('spAiAnalysisPayloadLoader')) {
       const payloadScript = global.document.createElement('script');
       payloadScript.id = 'spAiAnalysisPayloadLoader';
-      payloadScript.src = '../scripts/mod/aiAnalysisPayload.js';
+      payloadScript.src = '../scripts/mod/aiAnalysisPayload.js?v=' + AI_ASSET_VERSION;
       payloadScript.defer = true;
       payloadScript.addEventListener('load', loadAiService, { once: true });
       (global.document.head || global.document.documentElement).appendChild(payloadScript);
