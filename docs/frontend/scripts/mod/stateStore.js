@@ -34,8 +34,8 @@
     appMode: 'CORE',
     worker: {
       enabled: false,
-      status: 'idle', // idle|starting|ready|running|error
-      mode: 'auto', // auto|on|off
+      status: 'idle',
+      mode: 'auto',
       lastPingAt: null,
       lastResultAt: null,
       lastError: null,
@@ -71,17 +71,13 @@
     },
     display: {
       mode: 'normal',
-      // Default menu state (requested): Manual Y-axis at 255.
       yAxisMode: 'manual',
       yAxisMax: 255,
-      // Default menu state (requested): Fill Mode OFF with ~80% opacity preselected.
-      // Opacity is kept even when fill is OFF so switching to SOURCE/SYNTHETIC keeps the desired level.
       fillMode: 'off',
       fillOpacity: 0.8,
       overlaysEnabled: true
     },
     peaks: {
-      // Default menu state (requested)
       threshold: 20,
       distance: 7,
       smoothing: null
@@ -123,17 +119,16 @@
       hasDark: false,
       hasReference: false,
       hasFlat: false,
-      // Stored intensity arrays captured from the live frame (or the core reference graph).
-      // Kept small: only combined intensity (I) is stored.
       darkI: null,
       referenceI: null,
       darkCapturedAt: null,
       referenceCapturedAt: null
-    }
-,
+    },
     ui: {
       inlineFeedback: false,
-      disableInfoPopups: true, console: { lines: [], maxLines: 200 } }
+      disableInfoPopups: true,
+      console: { lines: [], maxLines: 200 }
+    }
   };
 
   function deepClone(obj) {
@@ -185,9 +180,8 @@
   global.SpectraPro = global.SpectraPro || {};
   global.SpectraPro.createStateStore = createStore;
   global.SpectraPro.store = global.SpectraPro.store || createStore();
+  global.SpectraPro.aiAnalysisConfig = global.SpectraPro.aiAnalysisConfig || {};
 
-  // Load the current UI alignment patch without adding another hard-coded
-  // script tag to the legacy recording page.
   if (global.document && !global.document.getElementById('spUiTweaksV203Loader')) {
     const script = global.document.createElement('script');
     script.id = 'spUiTweaksV203Loader';
@@ -196,8 +190,9 @@
     (global.document.head || global.document.documentElement).appendChild(script);
   }
 
-  // AI Interpretation is kept modular. Load the compact payload builder first,
-  // then the UI layer. Neither module performs network requests in Step 2.
+  // AI Interpretation load order: payload builder -> secure transport service -> UI.
+  // The service only talks to the configured Worker endpoint; the OpenAI key never
+  // exists in browser state or source code.
   if (global.document) {
     const loadAiUi = function () {
       if (global.document.getElementById('spAiAnalysisUiLoader')) return;
@@ -208,14 +203,28 @@
       (global.document.head || global.document.documentElement).appendChild(uiScript);
     };
 
+    const loadAiService = function () {
+      if (global.SpectraPro.aiAnalysisService) {
+        loadAiUi();
+        return;
+      }
+      if (global.document.getElementById('spAiAnalysisServiceLoader')) return;
+      const serviceScript = global.document.createElement('script');
+      serviceScript.id = 'spAiAnalysisServiceLoader';
+      serviceScript.src = '../scripts/mod/aiAnalysisService.js';
+      serviceScript.defer = true;
+      serviceScript.addEventListener('load', loadAiUi, { once: true });
+      (global.document.head || global.document.documentElement).appendChild(serviceScript);
+    };
+
     if (global.SpectraPro.aiAnalysisPayload) {
-      loadAiUi();
+      loadAiService();
     } else if (!global.document.getElementById('spAiAnalysisPayloadLoader')) {
       const payloadScript = global.document.createElement('script');
       payloadScript.id = 'spAiAnalysisPayloadLoader';
       payloadScript.src = '../scripts/mod/aiAnalysisPayload.js';
       payloadScript.defer = true;
-      payloadScript.addEventListener('load', loadAiUi, { once: true });
+      payloadScript.addEventListener('load', loadAiService, { once: true });
       (global.document.head || global.document.documentElement).appendChild(payloadScript);
     }
   }
