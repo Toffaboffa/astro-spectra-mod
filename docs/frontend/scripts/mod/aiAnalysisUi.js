@@ -6,6 +6,7 @@
   const MODAL_ID = 'spAiInterpretModal';
   const STYLE_ID = 'spAiInterpretStyle';
   let lastPayload = null;
+  let lastResultText = '';
   let lastFocused = null;
   let eventHooksInstalled = false;
   let keyHookInstalled = false;
@@ -20,7 +21,7 @@
       '.sp-ai-modal{position:fixed;inset:0;z-index:4200;display:none;align-items:center;justify-content:center;padding:18px;}',
       '.sp-ai-modal.is-open{display:flex;}',
       '.sp-ai-modal__backdrop{position:absolute;inset:0;background:rgba(2,8,18,.72);backdrop-filter:blur(2px);}',
-      '.sp-ai-modal__panel{position:relative;width:min(620px,calc(100vw - 28px));max-height:min(720px,calc(100vh - 28px));overflow:auto;border:1px solid rgba(71,221,230,.58);border-radius:12px;background:linear-gradient(180deg,rgba(9,28,46,.985),rgba(5,18,32,.99));box-shadow:0 18px 60px rgba(0,0,0,.55),0 0 0 1px rgba(38,184,201,.08) inset;color:#e8f7fb;}',
+      '.sp-ai-modal__panel{position:relative;width:min(820px,calc(100vw - 28px));max-height:min(720px,calc(100vh - 28px));overflow:auto;border:1px solid rgba(71,221,230,.58);border-radius:12px;background:linear-gradient(180deg,rgba(9,28,46,.985),rgba(5,18,32,.99));box-shadow:0 18px 60px rgba(0,0,0,.55),0 0 0 1px rgba(38,184,201,.08) inset;color:#e8f7fb;}',
       '.sp-ai-modal__head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 11px;border-bottom:1px solid rgba(80,202,215,.18);}',
       '.sp-ai-modal__title{font-size:14px;font-weight:700;letter-spacing:.06em;color:#8cebf0;}',
       '.sp-ai-modal__close{border:0;background:transparent;color:#bfdce4;font-size:23px;line-height:1;padding:0 3px;cursor:pointer;}',
@@ -40,11 +41,23 @@
       '.sp-ai-modal__actions button:hover,.sp-ai-action:hover{border-color:rgba(92,235,241,.74);background:rgba(23,72,88,.95);}',
       '.sp-ai-modal__actions .sp-ai-primary,.sp-ai-action{background:linear-gradient(180deg,rgba(19,137,151,.95),rgba(10,104,121,.95));border-color:rgba(85,235,240,.62);}',
       '.sp-ai-modal__actions button:disabled{opacity:.48;cursor:default;}',
+      '.sp-ai-launch{position:relative;display:inline-flex;padding:3px;border:1px solid rgba(255,215,72,.95);border-radius:10px;box-shadow:0 0 0 1px rgba(255,215,72,.12),0 0 12px rgba(255,215,72,.10);}',
+      '.sp-ai-launch__badge{position:absolute;right:7px;top:-9px;z-index:2;padding:1px 6px;border-radius:999px;background:#ffd748;color:#2d2500;border:1px solid rgba(255,242,162,.9);font:800 9px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;letter-spacing:.08em;pointer-events:none;}',
+      '.sp-ai-launch .sp-ai-action{margin:0;}',
       '.sp-ai-spinner{display:inline-block;width:12px;height:12px;margin-right:7px;border:2px solid rgba(212,249,252,.28);border-top-color:#d4f9fc;border-radius:50%;vertical-align:-2px;animation:spAiSpin .75s linear infinite;}',
       '@keyframes spAiSpin{to{transform:rotate(360deg);}}',
       '@media(max-width:640px){.sp-ai-modal{padding:8px}.sp-ai-modal__panel{width:calc(100vw - 16px);max-height:calc(100vh - 16px)}.sp-ai-modal__body{padding:13px}.sp-ai-modal__actions{flex-wrap:wrap}.sp-ai-modal__actions button{flex:1 1 120px}}'
     ].join('');
     (global.document.head || global.document.documentElement).appendChild(style);
+  }
+
+  function setPrimaryActionMode(mode) {
+    const button = $('spAiAnalyzeBtn');
+    if (!button) return;
+    const isCopy = mode === 'copy';
+    button.dataset.mode = isCopy ? 'copy' : 'analyze';
+    button.textContent = isCopy ? 'Kopiera text' : 'Analyze';
+    button.title = isCopy ? 'Kopiera AI-tolkningen till urklipp.' : 'Analyze the current spectrum with AI Interpretation.';
   }
 
   function ensureModal() {
@@ -73,7 +86,7 @@
       '    <div id="spAiResult" class="sp-ai-modal__result" aria-live="polite"></div>',
       '    <div class="sp-ai-modal__actions">',
       '      <button type="button" id="spAiCancelBtn">Cancel</button>',
-      '      <button type="button" id="spAiAnalyzeBtn" class="sp-ai-primary">Analyze</button>',
+      '      <button type="button" id="spAiAnalyzeBtn" class="sp-ai-primary" data-mode="analyze">Analyze</button>',
       '    </div>',
       '  </div>',
       '</div>'
@@ -84,7 +97,10 @@
       const target = event.target;
       if (!target) return;
       if (target.id === 'spAiInterpretClose' || target.id === 'spAiCancelBtn' || target.getAttribute('data-ai-close') === '1') close();
-      if (target.id === 'spAiAnalyzeBtn') submit();
+      if (target.id === 'spAiAnalyzeBtn') {
+        if (target.dataset.mode === 'copy') copyResultText();
+        else submit();
+      }
     });
 
     const textarea = $('spAiObservation');
@@ -92,7 +108,9 @@
       textarea.addEventListener('keydown', function (event) {
         if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
           event.preventDefault();
-          submit();
+          const action = $('spAiAnalyzeBtn');
+          if (action && action.dataset.mode === 'copy') copyResultText();
+          else submit();
         }
       });
     }
@@ -101,14 +119,14 @@
 
   function setStatus(text, tone, loading) {
     const status = $('spAiStatus');
-    const analyze = $('spAiAnalyzeBtn');
+    const action = $('spAiAnalyzeBtn');
     if (!status) return;
     const message = String(text == null ? '' : text);
     status.innerHTML = loading ? '<span class="sp-ai-spinner" aria-hidden="true"></span>' + message : '';
     if (!loading) status.textContent = message;
     status.classList.toggle('is-visible', !!message);
     status.dataset.tone = tone || 'info';
-    if (analyze) analyze.disabled = !!loading;
+    if (action) action.disabled = !!loading;
   }
 
   function formatStructuredResult(value) {
@@ -131,8 +149,51 @@
     const result = $('spAiResult');
     if (!result) return;
     const text = formatStructuredResult(value);
+    lastResultText = text;
     result.textContent = text;
     result.classList.toggle('is-visible', !!text);
+    setPrimaryActionMode(text ? 'copy' : 'analyze');
+  }
+
+  function fallbackCopy(text) {
+    try {
+      const temp = global.document.createElement('textarea');
+      temp.value = text;
+      temp.setAttribute('readonly', '');
+      temp.style.position = 'fixed';
+      temp.style.left = '-9999px';
+      temp.style.opacity = '0';
+      (global.document.body || global.document.documentElement).appendChild(temp);
+      temp.select();
+      temp.setSelectionRange(0, temp.value.length);
+      const ok = global.document.execCommand && global.document.execCommand('copy');
+      temp.remove();
+      if (ok) {
+        setStatus('Text kopierad.', 'ok', false);
+        return true;
+      }
+    } catch (_) {}
+    setStatus('Kunde inte kopiera texten automatiskt.', 'error', false);
+    return false;
+  }
+
+  function copyResultText() {
+    const text = String(lastResultText || (($('spAiResult') && $('spAiResult').textContent) || '')).trim();
+    if (!text) {
+      setStatus('Det finns ingen AI-text att kopiera ännu.', 'error', false);
+      return;
+    }
+    try {
+      if (global.navigator && global.navigator.clipboard && typeof global.navigator.clipboard.writeText === 'function' && global.isSecureContext) {
+        global.navigator.clipboard.writeText(text).then(function () {
+          setStatus('Text kopierad.', 'ok', false);
+        }).catch(function () {
+          fallbackCopy(text);
+        });
+        return;
+      }
+    } catch (_) {}
+    fallbackCopy(text);
   }
 
   function open() {
@@ -140,6 +201,8 @@
     const modal = ensureModal();
     if (!modal) return false;
     lastFocused = global.document.activeElement || null;
+    lastResultText = '';
+    setPrimaryActionMode('analyze');
     setStatus('', 'info', false);
     setResult('');
     modal.classList.add('is-open');
@@ -168,6 +231,7 @@
   }
 
   function submit() {
+    setPrimaryActionMode('analyze');
     setResult('');
     setStatus('Preparing current SPECTRA PRO analysis…', 'info', true);
     try {
@@ -216,6 +280,15 @@
     if ($(BUTTON_ID)) return true;
     const actions = global.document.querySelector('#spLabCard .sp-actions--lab');
     if (!actions) return false;
+
+    const launch = global.document.createElement('div');
+    launch.className = 'sp-ai-launch';
+
+    const badge = global.document.createElement('span');
+    badge.className = 'sp-ai-launch__badge';
+    badge.textContent = 'NYHET';
+    badge.setAttribute('aria-hidden', 'true');
+
     const button = global.document.createElement('button');
     button.type = 'button';
     button.id = BUTTON_ID;
@@ -223,7 +296,10 @@
     button.textContent = 'AI Interpretation';
     button.title = 'Prepare the current LAB spectrum and analysis for a concise AI-assisted scientific interpretation.';
     button.addEventListener('click', open);
-    actions.appendChild(button);
+
+    launch.appendChild(button);
+    launch.appendChild(badge);
+    actions.appendChild(launch);
     return true;
   }
 
@@ -273,6 +349,7 @@
     open: open,
     close: close,
     submit: submit,
+    copyResultText: copyResultText,
     setLoading: setLoading,
     showResult: showResult,
     showError: showError,
