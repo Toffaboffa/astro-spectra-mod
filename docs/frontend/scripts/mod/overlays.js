@@ -4,6 +4,17 @@
   const formatChemicalLabel = (sp.utils && typeof sp.utils.formatChemicalLabel === 'function')
     ? sp.utils.formatChemicalLabel
     : function (label) { return String(label == null ? '' : label); };
+
+  function normalizeSpeciesKey(value){
+    return String(value == null ? '' : value)
+      .trim()
+      .replace(/[₀-₉]/g, function(ch){ return String('₀₁₂₃₄₅₆₇₈₉'.indexOf(ch)); })
+      .replace(/⁺/g, '+')
+      .replace(/⁻/g, '-')
+      .replace(/\s+/g, '')
+      .toUpperCase();
+  }
+
   function getCanvasTheme(canvas){
     const styles = (canvas && global.getComputedStyle) ? global.getComputedStyle(canvas) : null;
     function read(name, fallback){
@@ -38,6 +49,7 @@
       smartRadius: readNum('--sp-graph-smart-radius', 7)
     };
   }
+
   function drawOnGraph(ctx, graphState){
     try {
       const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
@@ -104,10 +116,12 @@
         if (!Number.isFinite(localMax) || localMax <= 0 || !Number.isFinite(latestMaxValue) || latestMaxValue <= 0) return null;
         return plotBottom - (localMax / latestMaxValue) * plotHeight;
       }
+
       const highlightElements = Object.create(null);
       for (let gi = 0; gi < smartGroups.length && gi < 6; gi += 1) {
-        const el = String((smartGroups[gi] && smartGroups[gi].element) || '').trim();
-        if (el) highlightElements[el] = gi;
+        const raw = String((smartGroups[gi] && (smartGroups[gi].element || smartGroups[gi].species || smartGroups[gi].speciesKey)) || '').trim();
+        const key = normalizeSpeciesKey(raw);
+        if (key) highlightElements[key] = gi;
       }
       const highlightedSeen = Object.create(null);
       const clustered = [];
@@ -124,13 +138,13 @@
         const x = calcX(pxObserved - zoomStart, zoomEnd - zoomStart, wCalc);
         const xCanvas = (wCalc && w && wCalc !== w) ? (x * (w / wCalc)) : x;
         if (!Number.isFinite(xCanvas) || xCanvas < plotLeft || xCanvas > plotRight) continue;
-        const name = String(hit.element || hit.species || '').trim();
+        const name = String(hit.element || hit.species || hit.speciesKey || '').trim();
         if (!name) continue;
         const deltaNm = Number.isFinite(referenceNm) ? Math.abs(referenceNm - observedNm) : NaN;
         const item = {
           hit: hit,
           label: formatChemicalLabel(name) + ' ' + formatDeltaNm(deltaNm),
-          element: formatChemicalLabel(name),
+          speciesKey: normalizeSpeciesKey(name),
           deltaNm: deltaNm,
           observedNm: observedNm,
           referenceNm: referenceNm,
@@ -202,9 +216,14 @@
           const ty = startY + ri * rowStep;
           ctx.save();
           ctx.setLineDash([]);
-          const isSmartHighlight = !!(smartEnabled && item.element && Object.prototype.hasOwnProperty.call(highlightElements, item.element) && !highlightedSeen[item.element]);
+          const isSmartHighlight = !!(
+            smartEnabled &&
+            item.speciesKey &&
+            Object.prototype.hasOwnProperty.call(highlightElements, item.speciesKey) &&
+            !highlightedSeen[item.speciesKey]
+          );
           if (isSmartHighlight) {
-            highlightedSeen[item.element] = true;
+            highlightedSeen[item.speciesKey] = true;
             const metrics = ctx.measureText(label);
             const padX = theme.smartPadX;
             const padY = theme.smartPadY;
@@ -245,5 +264,6 @@
       return { ok:true, labels:0, bands:0, graphState: !!graphState };
     }
   }
+
   sp.overlays = { drawOnGraph };
 })(window);
