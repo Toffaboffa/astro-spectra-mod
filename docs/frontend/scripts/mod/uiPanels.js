@@ -91,9 +91,9 @@
           : (winner.matchedPeaks != null ? winner.matchedPeaks : winner.matchedCount);
         const matched = Number.isFinite(Number(matchedRaw)) ? Math.max(0, Math.round(Number(matchedRaw))) : 0;
         const delta = Number.isFinite(Number(winner.medianDeltaNm)) ? Number(winner.medianDeltaNm).toFixed(2) : null;
-        const unit = matched === 1 ? 'band/line' : 'bands/lines';
+        const evidenceKind = String(winner.mode || '').toLowerCase() === 'molecular' ? 'bands' : 'lines';
         let html = 'Best match: <b>' + species + '</b> · Score share ' + share + '%';
-        if (matched > 0) html += ' · Evidence ' + matched + ' ' + unit;
+        if (matched > 0) html += ' · Evidence ' + matched + ' ' + evidenceKind;
         if (delta != null) html += ' · Δmed ' + escapeHtml(delta) + ' nm';
         if (el.innerHTML !== html) el.innerHTML = html;
       } else if (el.innerHTML) {
