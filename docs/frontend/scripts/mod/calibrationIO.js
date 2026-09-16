@@ -136,3 +136,231 @@
 
   mod.version = 'step6-calibration-io-apply-ready';
 })();
+
+/* SPECTRA-PRO v2.0.2 startup calibration UX */
+(function () {
+  'use strict';
+
+  const sp = window.SpectraPro || (window.SpectraPro = {});
+  const UI_VERSION = 'v2.0.2';
+  let wasCalibrated = false;
+  let loadPromptDismissed = false;
+  let axisPromptShown = false;
+
+  function isCalibratedNow() {
+    try {
+      if (window.SpectraCore && window.SpectraCore.calibration && typeof window.SpectraCore.calibration.getState === 'function') {
+        const state = window.SpectraCore.calibration.getState() || {};
+        if (state.calibrated != null) return !!state.calibrated;
+        if (Array.isArray(state.coefficients)) return state.coefficients.length > 0;
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.isCalibrated === 'function') return !!window.isCalibrated();
+    } catch (_) {}
+    try {
+      const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
+      const cal = state && state.calibration ? state.calibration : null;
+      if (cal) {
+        if (cal.isCalibrated != null) return !!cal.isCalibrated;
+        if (cal.calibrated != null) return !!cal.calibrated;
+        if (Array.isArray(cal.coefficients)) return cal.coefficients.length > 0;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function installPromptCss() {
+    if (document.getElementById('spCalibrationPromptStyle')) return;
+    const style = document.createElement('style');
+    style.id = 'spCalibrationPromptStyle';
+    style.textContent = [
+      '#graphWindowContainer{position:relative;}',
+      '.sp-calibration-prompt{',
+      'position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:2500;',
+      'display:flex;align-items:center;gap:10px;max-width:calc(100% - 32px);',
+      'padding:8px 12px;border-radius:8px;',
+      'font:600 13px/1.25 system-ui,-apple-system,Segoe UI,sans-serif;',
+      'color:#eefaff;background:rgba(7,18,34,.94);border:1px solid rgba(66,217,230,.62);',
+      'box-shadow:0 4px 16px rgba(0,0,0,.38);backdrop-filter:blur(3px);',
+      '}',
+      '.sp-calibration-prompt__text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.sp-calibration-prompt__buttons{display:flex;gap:6px;flex:0 0 auto;}',
+      '.sp-calibration-prompt__btn{',
+      'border:1px solid rgba(105,215,229,.55);border-radius:6px;padding:3px 10px;',
+      'font:600 12px/1.3 system-ui,-apple-system,Segoe UI,sans-serif;cursor:pointer;',
+      'color:#ecfbff;background:#173356;',
+      '}',
+      '.sp-calibration-prompt__btn:hover{background:#224876;}',
+      '.sp-calibration-prompt__btn--no{background:#17243a;border-color:rgba(255,255,255,.22);}',
+      '@media (max-width:700px){.sp-calibration-prompt{top:5px;font-size:11px;padding:6px 8px;gap:6px}.sp-calibration-prompt__btn{padding:2px 7px;font-size:11px}}'
+    ].join('');
+    document.head.appendChild(style);
+  }
+
+  function updateVersionBadge() {
+    sp.version = UI_VERSION;
+    const badge = document.getElementById('spVersionBadge');
+    if (badge) {
+      badge.textContent = UI_VERSION;
+      badge.title = 'SPECTRA PRO ' + UI_VERSION;
+    }
+  }
+
+  function hidePrompt() {
+    const old = document.getElementById('spCalibrationPrompt');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+  }
+
+  function showPrompt(text, onYes, onNo) {
+    installPromptCss();
+    const host = document.getElementById('graphWindowContainer') || document.getElementById('graphWindow');
+    if (!host) return false;
+    hidePrompt();
+
+    const box = document.createElement('div');
+    box.id = 'spCalibrationPrompt';
+    box.className = 'sp-calibration-prompt';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-live', 'polite');
+
+    const label = document.createElement('div');
+    label.className = 'sp-calibration-prompt__text';
+    label.textContent = text;
+
+    const buttons = document.createElement('div');
+    buttons.className = 'sp-calibration-prompt__buttons';
+
+    const yes = document.createElement('button');
+    yes.type = 'button';
+    yes.className = 'sp-calibration-prompt__btn';
+    yes.textContent = 'Yes';
+    yes.addEventListener('click', function () {
+      if (typeof onYes === 'function') onYes();
+    });
+
+    const no = document.createElement('button');
+    no.type = 'button';
+    no.className = 'sp-calibration-prompt__btn sp-calibration-prompt__btn--no';
+    no.textContent = 'No';
+    no.addEventListener('click', function () {
+      if (typeof onNo === 'function') onNo();
+      else hidePrompt();
+    });
+
+    buttons.appendChild(yes);
+    buttons.appendChild(no);
+    box.appendChild(label);
+    box.appendChild(buttons);
+    host.appendChild(box);
+    return true;
+  }
+
+  function requestCalibrationFile() {
+    const input = document.getElementById('my-file');
+    if (!input) return;
+    try { input.click(); } catch (_) {}
+  }
+
+  function switchXAxisToWavelength() {
+    const nmRadio = document.getElementById('toggleXLabelsNm');
+    const pxRadio = document.getElementById('toggleXLabelsPx');
+    if (pxRadio) pxRadio.checked = false;
+    if (nmRadio) {
+      const alreadyChecked = !!nmRadio.checked;
+      nmRadio.checked = true;
+      try {
+        if (!alreadyChecked) nmRadio.click();
+        else nmRadio.dispatchEvent(new Event('change', { bubbles: true }));
+      } catch (_) {}
+      try { nmRadio.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+    }
+
+    // Keep any PRO proxy/select in sync if present.
+    ['spCoreXAxis', 'spXAxisMode', 'spCoreXAxisMode'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (!el || !('value' in el)) return;
+      try {
+        el.value = 'nm';
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      } catch (_) {}
+    });
+
+    try { if (typeof window.redrawGraphIfLoadedImage === 'function') window.redrawGraphIfLoadedImage(false); } catch (_) {}
+    try { if (typeof window.drawGraph === 'function') window.drawGraph(); } catch (_) {}
+    hidePrompt();
+  }
+
+  function showAxisQuestion() {
+    if (axisPromptShown) return;
+    axisPromptShown = true;
+    showPrompt('Switch x-axis to wavelength?', function () {
+      switchXAxisToWavelength();
+    }, function () {
+      hidePrompt();
+    });
+  }
+
+  function onCalibrationChanged(payload) {
+    let calibrated = null;
+    const data = payload && typeof payload === 'object' ? payload : null;
+    if (data) {
+      if (data.calibrated != null) calibrated = !!data.calibrated;
+      else if (data.isCalibrated != null) calibrated = !!data.isCalibrated;
+      else if (Array.isArray(data.coefficients)) calibrated = data.coefficients.length > 0;
+    }
+    if (calibrated == null) calibrated = isCalibratedNow();
+
+    if (calibrated && !wasCalibrated) {
+      wasCalibrated = true;
+      hidePrompt();
+      window.setTimeout(showAxisQuestion, 70);
+    } else if (!calibrated) {
+      wasCalibrated = false;
+      axisPromptShown = false;
+    }
+  }
+
+  function showInitialCalibrationQuestion() {
+    if (loadPromptDismissed || isCalibratedNow()) return;
+    showPrompt('Not Calibrated. Load Calibrationfile now?', function () {
+      requestCalibrationFile();
+    }, function () {
+      loadPromptDismissed = true;
+      hidePrompt();
+    });
+  }
+
+  function installCalibrationUx() {
+    updateVersionBadge();
+    installPromptCss();
+    wasCalibrated = isCalibratedNow();
+
+    try {
+      if (sp.coreHooks && typeof sp.coreHooks.on === 'function') {
+        sp.coreHooks.on('calibrationChanged', onCalibrationChanged);
+      }
+    } catch (_) {}
+
+    const fileInput = document.getElementById('my-file');
+    if (fileInput && !fileInput.__spectraPromptBound) {
+      fileInput.__spectraPromptBound = true;
+      fileInput.addEventListener('change', function () {
+        window.setTimeout(function () {
+          onCalibrationChanged({ calibrated: isCalibratedNow() });
+        }, 120);
+      });
+    }
+
+    // The logo badge is created by uiPanels at DOM ready. Run once more after it.
+    window.setTimeout(updateVersionBadge, 0);
+    window.setTimeout(updateVersionBadge, 250);
+    window.setTimeout(showInitialCalibrationQuestion, 300);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installCalibrationUx, { once: true });
+  } else {
+    installCalibrationUx();
+  }
+})();
