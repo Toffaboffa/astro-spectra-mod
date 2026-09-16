@@ -118,10 +118,14 @@
       }
 
       const highlightElements = Object.create(null);
+      let bestHighlightKey = '';
       for (let gi = 0; gi < smartGroups.length && gi < 6; gi += 1) {
         const raw = String((smartGroups[gi] && (smartGroups[gi].element || smartGroups[gi].species || smartGroups[gi].speciesKey)) || '').trim();
         const key = normalizeSpeciesKey(raw);
-        if (key) highlightElements[key] = gi;
+        if (key) {
+          highlightElements[key] = gi;
+          if (!bestHighlightKey) bestHighlightKey = key;
+        }
       }
       const highlightedSeen = Object.create(null);
       const clustered = [];
@@ -216,14 +220,15 @@
           const ty = startY + ri * rowStep;
           ctx.save();
           ctx.setLineDash([]);
+          const isBestMatchHit = !!(bestHighlightKey && item.speciesKey === bestHighlightKey);
           const isSmartHighlight = !!(
             smartEnabled &&
             item.speciesKey &&
             Object.prototype.hasOwnProperty.call(highlightElements, item.speciesKey) &&
-            !highlightedSeen[item.speciesKey]
+            (isBestMatchHit || !highlightedSeen[item.speciesKey])
           );
           if (isSmartHighlight) {
-            highlightedSeen[item.speciesKey] = true;
+            if (!isBestMatchHit) highlightedSeen[item.speciesKey] = true;
             const metrics = ctx.measureText(label);
             const padX = theme.smartPadX;
             const padY = theme.smartPadY;
