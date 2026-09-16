@@ -1,5 +1,6 @@
 import { buildPromptPackage, PROMPT_CONTRACT_VERSION } from './prompt.js';
 import { RESPONSE_CONTRACT_VERSION } from './response.js';
+import { interpretWithOpenAI, OpenAIConnectorError } from './openaiClient.js';
 
 const EXPECTED_SCHEMA = 'spectra-pro-ai-analysis/v1';
 const DEFAULT_MAX_BODY_BYTES = 65536;
@@ -131,20 +132,6 @@ function validatePayload(payload) {
   return errors.slice(0, 12);
 }
 
-function requestSummary(payload) {
-  const candidates = payload.analysis && Array.isArray(payload.analysis.candidates) ? payload.analysis.candidates.length : 0;
-  const hits = payload.analysis && Array.isArray(payload.analysis.hits) ? payload.analysis.hits.length : 0;
-  const tracePoints = payload.trace && Array.isArray(payload.trace.points) ? payload.trace.points.length : 0;
-  return {
-    schema: payload.schema,
-    candidates,
-    hits,
-    tracePoints,
-    calibrated: !!(payload.readiness && payload.readiness.calibrated),
-    hasObservation: typeof payload.observation === 'string' && payload.observation.trim().length > 0
-  };
-}
-
 async function applyRateLimit(request, env) {
   if (!env.AI_RATE_LIMITER || typeof env.AI_RATE_LIMITER.limit !== 'function') return true;
   const ip = request.headers.get('cf-connecting-ip') || 'unknown';
@@ -171,6 +158,23 @@ async function readJsonBody(request, maxBodyBytes) {
   }
 }
 
+function connectorErrorResponse(error, origin) {
+  if (error instanceof OpenAIConnectorError) {
+    const body = {
+      ok: false,
+      error: error.code,
+      message: error.message
+    };
+    if (error.details && error.code !== 'OPENAI_AUTH_FAILED') body.details = error.details;
+    return json(body, error.status || 502, origin);
+  }
+  return json({
+    ok: false,
+    error: 'AI_CONNECTOR_ERROR',
+    message: 'The AI interpretation service failed unexpectedly.'
+  }, 502, origin);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -179,7 +183,8 @@ export default {
       return json({
         ok: true,
         service: 'spectra-pro-ai',
-        stage: 5,
+        stage: 6,
+        model: String(env.OPENAI_MODEL || 'gpt-5.6-terra'),
         promptContract: PROMPT_CONTRACT_VERSION,
         responseContract: RESPONSE_CONTRACT_VERSION
       }, 200, null);
@@ -223,7 +228,7 @@ export default {
       return json({ ok: false, error: 'RATE_LIMIT_UNAVAILABLE' }, 503, origin);
     }
     if (!rateAllowed) {
-      return json({ ok: false, error: 'RATE_LIMITED' }, 429, origin);
+      return json({ ok: false, error: 'RATE_LIMITED', message: 'Too many AI interpretation requests. Try again shortly.' }, 429, origin);
     }
 
     const configuredMax = Number(env.MAX_BODY_BYTES);
@@ -239,25 +244,21 @@ export default {
       return json({ ok: false, error: 'INVALID_ANALYSIS_PAYLOAD', details: errors }, 422, origin);
     }
 
-    // Step 5 prepares both the scientific prompt and a strict Structured Outputs
-    // schema. Step 6 will pass responseFormat as Responses API text.format and
-    // perform the actual OpenAI request.
     const promptPackage = buildPromptPackage(parsed.value);
-
-    return json({
-      ok: false,
-      error: 'AI_CONNECTOR_NOT_ENABLED',
-      stage: 5,
-      accepted: requestSummary(parsed.value),
-      prompt: {
-        contractVersion: promptPackage.contractVersion,
-        responseContractVersion: promptPackage.responseContractVersion,
-        textOnly: promptPackage.responsePolicy.textOnly,
-        languagePolicy: promptPackage.responsePolicy.language,
-        structuredOutput: promptPackage.responsePolicy.structuredOutput,
-        formatName: promptPackage.responseFormat.name,
-        strict: promptPackage.responseFormat.strict
-      }
-    }, 501, origin);
+    try {
+      const interpreted = await interpretWithOpenAI(promptPackage, env);
+      return json({
+        ok: true,
+        stage: 6,
+        promptContract: PROMPT_CONTRACT_VERSION,
+        responseContract: RESPONSE_CONTRACT_VERSION,
+        model: interpreted.model,
+        result: interpreted.result,
+        text: interpreted.text,
+        usage: interpreted.usage
+      }, 200, origin);
+    } catch (error) {
+      return connectorErrorResponse(error, origin);
+    }
   }
 };
