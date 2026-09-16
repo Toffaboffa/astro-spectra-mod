@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '2.0.9';
+  const AI_ASSET_VERSION = '2.1.0';
 
   const defaultPresetCatalog = {
     groups: [
@@ -14,18 +14,18 @@
           { id: 'wide', label: 'Wide', family: 'base', mode: 'atomic', discoveryStrategy: 'local-wide', refineStrategy: 'none' },
           { id: 'tight', label: 'Tight', family: 'base', mode: 'atomic', discoveryStrategy: 'local-tight', refineStrategy: 'none' },
           { id: 'fast', label: 'Fast', family: 'base', mode: 'atomic', discoveryStrategy: 'local-fast', refineStrategy: 'none' },
-          { id: 'lamp-hg', label: 'Lamp (Hg/Ar/Ne)', family: 'base', mode: 'atomic', discoveryStrategy: 'local-lamp', refineStrategy: 'none' }
+          { id: 'lamp-hg', label: 'Lamp (Hg/Ar/Ne)', family: 'base', mode: 'atomic', discoveryStrategy: 'local-lamp', refineStrategy: 'atomic-fingerprint-v1' }
         ]
       },
       {
         id: 'smart',
         label: 'Smart Presets',
         presets: [
-          { id: 'smart-atomic', label: 'Atomic', family: 'smart', mode: 'atomic', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-atomic' },
+          { id: 'smart-atomic', label: 'Atomic', family: 'smart', mode: 'atomic', discoveryStrategy: 'global-discovery', refineStrategy: 'atomic-fingerprint-v1' },
           { id: 'smart-molecular', label: 'Molecular', family: 'smart', mode: 'molecular', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-molecular' },
-          { id: 'smart-gastube', label: 'Gas Tube', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-gas-tube' },
+          { id: 'smart-gastube', label: 'Gas Tube', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'atomic-fingerprint-v1+profile-refine-gas-tube' },
           { id: 'smart-flame', label: 'Flame', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-flame' },
-          { id: 'smart-fluorescent', label: 'Fluorescent', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-fluorescent' }
+          { id: 'smart-fluorescent', label: 'Fluorescent', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'atomic-fingerprint-v1+profile-refine-fluorescent' }
         ]
       }
     ]

@@ -1,6 +1,6 @@
 import { buildResponseFormat, RESPONSE_CONTRACT_VERSION } from './response.js';
 
-export const PROMPT_CONTRACT_VERSION = 'spectra-pro-interpretation/v2';
+export const PROMPT_CONTRACT_VERSION = 'spectra-pro-interpretation/v3';
 
 const DEVELOPER_INSTRUCTIONS = `You are SPECTRA PRO's scientific interpretation layer for low-resolution optical spectroscopy.
 
@@ -12,6 +12,8 @@ EVIDENCE RULES
 - Score share and similar ranking values are relative SPECTRA metrics, not probability, concentration or abundance.
 - Best Match is the top current candidate, not proof. Multiple species may coexist.
 - One coincident line/band is weak evidence; several coherent features with small residuals and expected pattern coverage are stronger. Evaluate molecular spectra as multi-band patterns.
+- When evidenceModel is atomic-fingerprint-v1, treat diagnosticMatched, missedStrong and diagnosticScore as curated multi-line fingerprint evidence. Prefer coherent fingerprint coverage over a larger count of isolated raw line coincidences.
+- When evidenceModel is plasma-diagnostic-v1, treat the molecular diagnostic anchors as pattern evidence rather than isolated wavelength coincidences.
 - Use the observation only as context. Calibration, QC flags, saturation, signal quality, overlap and analysis settings should affect interpretation only when present and relevant.
 - Do not infer concentration, abundance, temperature, pressure or electron density without explicit quantitative support. Normalized/raw intensity is not abundance.
 - If evidence is sparse, calibration is absent/poor, residuals are large, or candidates conflict, state that clearly.
@@ -92,7 +94,8 @@ function compactCandidates(candidates) {
   return {
     columns: [
       'species', 'rank', 'scoreSharePct', 'matched', 'missedStrong', 'medianDeltaNm',
-      'explainedPeaksPct', 'explainedIntensityPct', 'diagnosticMatched', 'molecularBands', 'evidenceModel'
+      'explainedPeaksPct', 'explainedIntensityPct', 'diagnosticMatched', 'diagnosticScore',
+      'molecularBands', 'evidenceModel'
     ],
     rows: rows.map((c, index) => trimRow([
       text(c && c.species, 80),
@@ -104,6 +107,7 @@ function compactCandidates(candidates) {
       n(c && c.explainedPeaksPct, 1),
       n(c && c.explainedIntensityPct, 1),
       n(c && c.diagnosticMatchedPeaks, 0),
+      n(c && c.diagnosticScore, 1),
       n(c && c.plasmaMatchedBands, 0),
       text(c && c.evidenceModel, 48)
     ])).filter((row) => row.length && row[0])

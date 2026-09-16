@@ -13,6 +13,8 @@ importScripts(
   './analysisPipeline.js',
   './plasmaProfiles.js',
   './molecularEvidencePatch.js',
+  './atomicProfiles.js',
+  './atomicEvidence.js',
   './workerRouter.js'
 );
 

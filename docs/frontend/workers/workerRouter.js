@@ -42,18 +42,19 @@
             const qq = q.trim().toLowerCase();
             hits = hits.filter(l => String(l.speciesKey || l.species || '').toLowerCase().indexOf(qq) !== -1 || String(l.element || '').toLowerCase() === qq);
           }
-          // Keep payload small
           const out = hits.slice(0, 200).map(function (l) {
             return { species: l.species, speciesKey: l.speciesKey, element: l.element, nm: l.nm, kind: l.kind || 'atom' };
           });
           return { type: TYPES.QUERY_LIBRARY_RESULT, requestId: requestId, payload: { ok: true, count: hits.length, shown: out.length, minNm: lo, maxNm: hi, hits: out } };
         }
         case TYPES.ANALYZE_FRAME: {
-          const out = root.SPECTRA_PRO_analysisPipeline.analyzeFrame(
-            (msg.payload && msg.payload.frame) || null,
-            STATE,
-            (msg.payload && msg.payload.options) || null
-          );
+          const frame = (msg.payload && msg.payload.frame) || null;
+          const options = (msg.payload && msg.payload.options) || null;
+          let out = root.SPECTRA_PRO_analysisPipeline.analyzeFrame(frame, STATE, options);
+          if (root.SPECTRA_PRO_atomicEvidence && typeof root.SPECTRA_PRO_atomicEvidence.enhance === 'function') {
+            out = root.SPECTRA_PRO_atomicEvidence.enhance(out, frame, STATE, options);
+          }
+          if (out && out.ok) out.analysisVersion = '2.1.0';
           STATE.lastAnalysis = out;
           return { type: TYPES.ANALYZE_RESULT, requestId: requestId, payload: out };
         }
