@@ -67,7 +67,7 @@
       '  </div>',
       '  <div class="sp-ai-modal__body">',
       '    <div class="sp-ai-modal__question">Describe what you have observed</div>',
-      '    <div class="sp-ai-modal__hint">Optional. Describe the light source, experiment, object, colour, pressure, gas, discharge or anything else that may help interpretation. You may write in any language; the future AI response will use the same language when it can be identified, otherwise English.</div>',
+      '    <div class="sp-ai-modal__hint">Optional. Describe the light source, experiment, object, colour, pressure, gas, discharge or anything else that may help interpretation. You may write in any language; the AI response will use the same language when it can be identified, otherwise English.</div>',
       '    <textarea id="spAiObservation" maxlength="1200" spellcheck="true" placeholder="Example: Low-pressure air plasma in a glass tube..."></textarea>',
       '    <div id="spAiStatus" class="sp-ai-modal__status" aria-live="polite"></div>',
       '    <div id="spAiResult" class="sp-ai-modal__result" aria-live="polite"></div>',
@@ -111,12 +111,28 @@
     if (analyze) analyze.disabled = !!loading;
   }
 
-  function setResult(text) {
+  function formatStructuredResult(value) {
+    if (value == null) return '';
+    if (typeof value === 'string') return value.trim();
+    if (typeof value !== 'object' || Array.isArray(value)) return String(value).trim();
+
+    const data = value.result && typeof value.result === 'object' && !Array.isArray(value.result)
+      ? value.result
+      : value;
+    const parts = ['summary', 'interpretation', 'dataQuality', 'caveats', 'conclusion']
+      .map(function (key) { return typeof data[key] === 'string' ? data[key].trim() : ''; })
+      .filter(Boolean);
+    if (parts.length) return parts.join('\n\n');
+    if (typeof data.text === 'string') return data.text.trim();
+    return '';
+  }
+
+  function setResult(value) {
     const result = $('spAiResult');
     if (!result) return;
-    const value = String(text == null ? '' : text).trim();
-    result.textContent = value;
-    result.classList.toggle('is-visible', !!value);
+    const text = formatStructuredResult(value);
+    result.textContent = text;
+    result.classList.toggle('is-visible', !!text);
   }
 
   function open() {
@@ -177,16 +193,16 @@
 
       if (sp.aiAnalysisService && typeof sp.aiAnalysisService.interpret === 'function') {
         Promise.resolve(sp.aiAnalysisService.interpret(payload)).then(function (response) {
-          const text = response && typeof response === 'object' && response.text != null ? response.text : response;
+          const value = response && typeof response === 'object' && response.result != null ? response.result : response;
           setStatus('', 'info', false);
-          setResult(String(text == null ? '' : text));
+          setResult(value);
         }).catch(function (error) {
           setStatus('AI interpretation failed: ' + String(error && error.message || error || 'Unknown error'), 'error', false);
         });
         return;
       }
 
-      setStatus(payloadSummary(payload) + '\nSecure AI backend is not connected yet. This is expected in Step 2; no data has left the browser.', 'ok', false);
+      setStatus(payloadSummary(payload) + '\nStructured response handling is ready. Secure OpenAI transport is enabled in Step 6; no data has left the browser.', 'ok', false);
       try {
         if (sp.eventBus && typeof sp.eventBus.emit === 'function') sp.eventBus.emit('ai:payloadPrepared', { payload: payload });
       } catch (_) {}
@@ -236,9 +252,9 @@
     attachButton();
   }
 
-  function showResult(text) {
+  function showResult(value) {
     setStatus('', 'info', false);
-    setResult(text);
+    setResult(value);
   }
 
   function showError(text) {
@@ -260,6 +276,7 @@
     setLoading: setLoading,
     showResult: showResult,
     showError: showError,
+    formatStructuredResult: formatStructuredResult,
     getLastPayload: function () { return lastPayload; }
   };
 
