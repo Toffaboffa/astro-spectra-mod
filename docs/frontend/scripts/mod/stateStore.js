@@ -181,6 +181,9 @@
   global.SpectraPro.createStateStore = createStore;
   global.SpectraPro.store = global.SpectraPro.store || createStore();
   global.SpectraPro.aiAnalysisConfig = global.SpectraPro.aiAnalysisConfig || {};
+  if (!global.SpectraPro.aiAnalysisConfig.endpoint) {
+    global.SpectraPro.aiAnalysisConfig.endpoint = 'https://spectra-pro-ai.kristoffer-aberg81.workers.dev';
+  }
 
   if (global.document && !global.document.getElementById('spUiTweaksV203Loader')) {
     const script = global.document.createElement('script');
