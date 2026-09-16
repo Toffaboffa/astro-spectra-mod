@@ -1,12 +1,12 @@
 # SPECTRA PRO AI Worker
 
-This directory contains the server-side boundary for the **AI Interpretation** feature.
+This directory contains the server-side boundary for **AI Interpretation**.
 
-The browser must never receive `OPENAI_API_KEY`. SPECTRA PRO sends its compact `spectra-pro-ai-analysis/v1` payload to this Worker; the Worker validates and rate-limits the request before any future OpenAI API call is allowed.
+The browser never receives `OPENAI_API_KEY`. SPECTRA PRO sends its compact `spectra-pro-ai-analysis/v1` payload to this Worker; the Worker validates and rate-limits the request, retrieves the OpenAI key from Cloudflare Secrets Store, calls the OpenAI Responses API, validates the structured result, and returns only the interpretation plus compact token-usage metadata.
 
-## Step 5 behavior
+## Step 6 behavior
 
-`POST /api/interpret` currently performs the security boundary, prepares the scientific interpretation prompt, and defines the strict machine-readable response format:
+`POST /api/interpret` now performs the complete server-side interpretation flow:
 
 - exact origin allowlist
 - `POST` + `application/json` only
@@ -16,88 +16,96 @@ The browser must never receive `OPENAI_API_KEY`. SPECTRA PRO sends its compact `
 - no request/payload logging
 - `Cache-Control: no-store`
 - scientific prompt contract `spectra-pro-interpretation/v1`
-- response contract `spectra-pro-ai-response/v1`
-- user observation treated as untrusted contextual data, never as developer instructions
-- no OpenAI call yet
+- strict response contract `spectra-pro-ai-response/v1`
+- account-level Secrets Store binding `OPENAI_API_KEY` -> secret `SpectraPRO`
+- OpenAI Responses API with Structured Outputs (`text.format` JSON schema)
+- developer-role scientific instructions separated from user/measurement data
+- `store: false` for the OpenAI response
+- configurable model/output/timeout limits
+- validated structured result returned to the browser
+- compact token usage returned for Step 7 cost optimization
 
-A valid request deliberately returns HTTP `501` with `AI_CONNECTOR_NOT_ENABLED`, plus non-secret prompt/response-contract metadata. Step 6 enables the OpenAI Responses API request.
+`GET /health` returns a small non-secret health response with stage, model and contract versions. It does not expose or test the secret value.
 
-`GET /health` returns a small non-secret health response including the active prompt and response contract versions.
+## OpenAI configuration
 
-## Structured response
+Production defaults in `wrangler.jsonc`:
 
-`src/response.js` defines the strict Structured Outputs schema that Step 6 will pass as the Responses API `text.format` JSON schema. The schema contains only:
+- model: `gpt-5.6-terra`
+- reasoning effort: `low`
+- text verbosity: `low`
+- max output tokens: `900`
+- upstream timeout: `35000 ms`
+- OpenAI response storage: disabled (`store: false`)
 
-- `language`
-- `summary`
-- `interpretation`
-- `dataQuality`
-- `caveats`
-- `conclusion`
+The project API key should be restricted to the Responses endpoint and stored only in Cloudflare Secrets Store. The Worker supports the Secrets Store binding via `await env.OPENAI_API_KEY.get()`; a plain string `OPENAI_API_KEY` is accepted only to keep local `.dev.vars` development simple.
 
-All fields are strings and all keys are required. `dataQuality` and `caveats` may be empty strings when there is nothing material to add. The frontend joins the prose fields into a normal text result, so users do not see JSON.
+## Cloudflare secret binding
 
-## Scientific prompt contract
-
-`src/prompt.js` contains the stable interpretation rules. The contract deliberately separates developer instructions from the serialized SPECTRA PRO payload so measured data and user observation cannot silently become higher-priority instructions.
-
-The model is instructed to:
-
-- distinguish measured features, SPECTRA PRO matches and model interpretation
-- never invent peaks, wavelengths, calibration data, QC flags or experimental conditions
-- treat Score Share as relative ranking only, never probability, concentration or abundance
-- treat Best Match as the highest current candidate score, not proof of identity
-- allow multiple species when evidence supports them
-- require stronger evidence from multiple consistent atomic lines or molecular bands than from a single coincidence
-- use the observation as context/plausibility information without allowing it to override spectral evidence
-- consider residuals, calibration, coverage, QC, saturation, signal quality, overlap and settings only when those data are actually present
-- avoid unsupported quantitative claims about concentration, temperature, pressure or electron density
-- avoid interpreting raw/normalized intensity directly as abundance without an explicit instrument correction basis
-- answer in the observation language when reliably identifiable, otherwise English
-- keep the combined result concise and normally around 120–220 words
-
-## OpenAI API key
-
-Use a dedicated OpenAI Project for SPECTRA PRO and preferably a project service account rather than a personal user-owned production key. Give the key only the API access the Worker needs. For the planned integration that means write access to the Responses endpoint; other endpoint permissions can remain disabled unless a later feature requires them.
-
-The key value must never be committed to this repository.
-
-## Cloudflare Secrets Store
-
-Production uses Cloudflare Secrets Store. The current binding in `wrangler.jsonc` is:
+The repository is configured for the account-level secret already created in Cloudflare:
 
 ```text
-Worker binding: OPENAI_API_KEY
 Secrets Store secret: SpectraPRO
+Worker binding:       OPENAI_API_KEY
+Permission scope:     Workers
 ```
 
-The account Secrets Store ID is referenced in `wrangler.jsonc` because Workers need it to bind the existing secret. The Store ID is an identifier, not the secret value.
+`wrangler.jsonc` contains only the store ID, secret name and binding name. It never contains the secret value.
 
-The secret must have the `workers` permission scope. When Step 6 reads it, Secrets Store requires an asynchronous `get()` call on the binding.
+## Deploy
 
-For local development, use Wrangler's local Secrets Store commands without `--remote`. Do not copy the production key into source code or a committed file.
-
-## Setup
-
-Requirements: Node.js/npm and a Cloudflare account.
+Requirements: Node.js/npm, Wrangler authentication and permission to deploy a Worker that binds the Secrets Store secret.
 
 ```bash
 cd backend/ai-worker
 npm install
-```
-
-Verify and deploy:
-
-```bash
 npm run check
 npm run deploy
 ```
 
-Wrangler will provide a `workers.dev` URL unless a custom domain is configured. The frontend service will eventually call:
+After deployment Wrangler prints the Worker URL, normally similar to:
 
 ```text
-https://<worker-host>/api/interpret
+https://spectra-pro-ai.<your-workers-subdomain>.workers.dev
 ```
+
+Verify:
+
+```text
+https://spectra-pro-ai.<your-workers-subdomain>.workers.dev/health
+```
+
+The response should report `stage: 6`.
+
+## Frontend endpoint
+
+The frontend service is `docs/frontend/scripts/mod/aiAnalysisService.js`. It resolves the backend endpoint in this order:
+
+1. `SpectraPro.aiAnalysisConfig.endpoint`
+2. `window.SPECTRA_PRO_AI_ENDPOINT`
+3. `<meta name="spectra-pro-ai-endpoint" content="...">`
+
+The configured URL may be the Worker origin or the full endpoint. If only the origin is supplied, `/api/interpret` is added automatically.
+
+Example, set before using AI Interpretation:
+
+```js
+window.SPECTRA_PRO_AI_ENDPOINT = 'https://spectra-pro-ai.<your-workers-subdomain>.workers.dev';
+```
+
+For production, commit the final Worker URL into the frontend configuration only after the Worker has been deployed and tested. The URL itself is public and is not a secret. The OpenAI key remains server-side.
+
+## Local development
+
+For local development without production Secrets Store, copy `dev.vars.example` to `.dev.vars` and insert a project-specific test API key. `.dev.vars*`, `.env*` and `.wrangler/` are ignored by git.
+
+```bash
+cd backend/ai-worker
+npm install
+npm run dev
+```
+
+Then configure the frontend to the local Worker URL shown by Wrangler.
 
 ## Allowed origins
 
@@ -109,12 +117,37 @@ https://<worker-host>/api/interpret
 
 CORS origins contain only scheme + host + optional port, never a path. If SPECTRA PRO is deployed on a custom domain, add that exact origin to `ALLOWED_ORIGINS` before deployment.
 
-The origin check is browser hardening, not authentication. A non-browser client can forge an `Origin` header, which is why requests are also rate-limited and validated. Turnstile or authenticated per-user quotas can be added later if public abuse becomes a real problem.
+The origin check is browser hardening, not authentication. A non-browser client can forge an `Origin` header, which is why requests are also rate-limited and validated.
 
 ## Rate limiting
 
-The Worker uses Cloudflare's `AI_RATE_LIMITER` binding at 12 accepted attempts per 60 seconds for each connecting IP within a Cloudflare location. This is basic abuse protection, not billing-grade accounting. Shared school/mobile networks may place multiple users behind one IP, so the value should be tuned from real usage before wider deployment.
+The Worker uses Cloudflare's `AI_RATE_LIMITER` binding at 12 attempts per 60 seconds for each connecting IP within a Cloudflare location. This is basic abuse protection, not billing-grade accounting. Shared school/mobile networks may place multiple users behind one IP, so the value should be tuned from real usage before wider deployment.
 
-## Secret policy
+## Response shape
 
-Rotate the OpenAI key if it is ever exposed. Do not place the value in frontend JavaScript, `wrangler.jsonc`, GitHub Actions output, documentation, screenshots, issues, or prompts.
+A successful response contains approximately:
+
+```json
+{
+  "ok": true,
+  "stage": 6,
+  "model": "gpt-5.6-terra",
+  "result": {
+    "language": "sv",
+    "summary": "...",
+    "interpretation": "...",
+    "dataQuality": "...",
+    "caveats": "...",
+    "conclusion": "..."
+  },
+  "text": "...",
+  "usage": {
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "totalTokens": 0,
+    "reasoningTokens": 0
+  }
+}
+```
+
+The browser renders the structured prose as ordinary readable text rather than displaying JSON.
