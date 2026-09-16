@@ -8,9 +8,13 @@
     "ALLOWED_ORIGINS": "https://toffaboffa.github.io,http://localhost:8000,http://127.0.0.1:8000",
     "MAX_BODY_BYTES": "65536"
   },
-  "secrets": {
-    "required": ["OPENAI_API_KEY"]
-  },
+  "secrets_store_secrets": [
+    {
+      "binding": "OPENAI_API_KEY",
+      "store_id": "d9f7cbec558849968e30aaee8a7f8dd6",
+      "secret_name": "SpectraPRO"
+    }
+  ],
   "ratelimits": [
     {
       "name": "AI_RATE_LIMITER",
