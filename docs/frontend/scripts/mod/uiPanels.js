@@ -39,5 +39,42 @@
     ].join('<br>');
   }
 
-  sp.uiPanels = { createModeTabs, renderStatus };
+  function patchSmartScoreSemantics(root) {
+    const scope = root || document;
+    const headers = scope.querySelectorAll ? scope.querySelectorAll('.sp-lab-th') : [];
+    headers.forEach(function (el) {
+      if (String(el.textContent || '').trim() === 'ELEMENT SCORE') {
+        el.textContent = 'MATCH SCORE';
+        el.title = 'Smart-match ranking. Percentages are relative score shares, not statistical probabilities or abundance estimates.';
+      }
+    });
+
+    const summaries = scope.querySelectorAll ? scope.querySelectorAll('.sp-es-summary') : [];
+    summaries.forEach(function (el) {
+      if (!el || !el.innerHTML) return;
+      let html = el.innerHTML;
+      html = html.replace(/Winner:\s*<b>/g, 'Best match: <b>');
+      html = html.replace(/<\/b>\s*•\s*([0-9]+)%/g, '</b> · Score share $1%');
+      el.innerHTML = html;
+      el.title = 'Best current Smart-match. Score share is the relative share of positive candidate score, not a statistical probability or abundance estimate.';
+    });
+  }
+
+  function installSmartScoreSemanticsPatch() {
+    function apply() {
+      patchSmartScoreSemantics(document.getElementById('spPanel-lab') || document);
+    }
+    apply();
+    if (typeof MutationObserver === 'undefined' || !document.body) return;
+    const observer = new MutationObserver(function () { apply(); });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  sp.uiPanels = { createModeTabs, renderStatus, patchSmartScoreSemantics };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installSmartScoreSemanticsPatch, { once: true });
+  } else {
+    installSmartScoreSemanticsPatch();
+  }
 })(window);
