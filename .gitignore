@@ -4,3 +4,6 @@ dist/
 .vscode/
 .idea/
 *.log
+.wrangler/
+.dev.vars*
+.env*
