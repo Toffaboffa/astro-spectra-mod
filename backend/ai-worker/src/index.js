@@ -158,12 +158,13 @@ async function readJsonBody(request, maxBodyBytes) {
   }
 }
 
-function connectorErrorResponse(error, origin) {
+function connectorErrorResponse(error, origin, runId) {
   if (error instanceof OpenAIConnectorError) {
     const body = {
       ok: false,
       error: error.code,
-      message: error.message
+      message: error.message,
+      runId: runId || null
     };
     if (error.details && error.code !== 'OPENAI_AUTH_FAILED') body.details = error.details;
     return json(body, error.status || 502, origin);
@@ -171,8 +172,16 @@ function connectorErrorResponse(error, origin) {
   return json({
     ok: false,
     error: 'AI_CONNECTOR_ERROR',
-    message: 'The AI interpretation service failed unexpectedly.'
+    message: 'The AI interpretation service failed unexpectedly.',
+    runId: runId || null
   }, 502, origin);
+}
+
+function makeRunId() {
+  try {
+    if (crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  } catch (_) {}
+  return 'run-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
 }
 
 export default {
@@ -244,21 +253,27 @@ export default {
       return json({ ok: false, error: 'INVALID_ANALYSIS_PAYLOAD', details: errors }, 422, origin);
     }
 
+    const runId = makeRunId();
+    const startedAt = new Date().toISOString();
     const promptPackage = buildPromptPackage(parsed.value);
     try {
       const interpreted = await interpretWithOpenAI(promptPackage, env);
       return json({
         ok: true,
         stage: 6,
+        runId,
+        startedAt,
+        completedAt: new Date().toISOString(),
         promptContract: PROMPT_CONTRACT_VERSION,
         responseContract: RESPONSE_CONTRACT_VERSION,
         model: interpreted.model,
+        openaiResponseId: interpreted.responseId || null,
         result: interpreted.result,
         text: interpreted.text,
         usage: interpreted.usage
       }, 200, origin);
     } catch (error) {
-      return connectorErrorResponse(error, origin);
+      return connectorErrorResponse(error, origin, runId);
     }
   }
 };
