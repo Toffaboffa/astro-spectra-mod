@@ -1,0 +1,3 @@
+# Local development only. Copy to .dev.vars and replace the placeholder.
+# Never commit .dev.vars; the repository .gitignore excludes it.
+OPENAI_API_KEY=replace_with_project_api_key
