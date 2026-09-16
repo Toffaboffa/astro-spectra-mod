@@ -1,3 +1,4 @@
-# Local development only. Copy to .dev.vars and replace the placeholder.
-# Never commit .dev.vars; the repository .gitignore excludes it.
-OPENAI_API_KEY=replace_with_project_api_key
+# Production uses Cloudflare Secrets Store, not .dev.vars.
+# Binding: OPENAI_API_KEY -> account secret named SpectraPRO.
+# For local Worker development, create a local Secrets Store secret with Wrangler
+# (omit --remote) rather than placing the real production key in this file.
