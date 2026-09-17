@@ -1,4 +1,3 @@
-
 (function (root) {
   'use strict';
 
@@ -30,7 +29,7 @@
           const p = msg.payload || {};
           const minNm = Number(p.minNm);
           const maxNm = Number(p.maxNm);
-          const q = (p.query || null);
+          const q = p.query || null;
           if (!STATE.libraryIndex) {
             return { type: TYPES.QUERY_LIBRARY_RESULT, requestId: requestId, payload: { ok: false, message: 'Library not initialized', hits: [] } };
           }
@@ -40,21 +39,27 @@
           let hits = root.SPECTRA_PRO_libraryQuery.queryByRange(STATE.libraryIndex, lo, hi);
           if (q && typeof q === 'string' && q.trim()) {
             const qq = q.trim().toLowerCase();
-            hits = hits.filter(l => String(l.speciesKey || l.species || '').toLowerCase().indexOf(qq) !== -1 || String(l.element || '').toLowerCase() === qq);
+            hits = hits.filter(function (l) {
+              return String(l.speciesKey || l.species || '').toLowerCase().indexOf(qq) !== -1 ||
+                String(l.element || '').toLowerCase() === qq;
+            });
           }
-          const out = hits.slice(0, 200).map(function (l) {
+          const shown = hits.slice(0, 200).map(function (l) {
             return { species: l.species, speciesKey: l.speciesKey, element: l.element, nm: l.nm, kind: l.kind || 'atom' };
           });
-          return { type: TYPES.QUERY_LIBRARY_RESULT, requestId: requestId, payload: { ok: true, count: hits.length, shown: out.length, minNm: lo, maxNm: hi, hits: out } };
+          return { type: TYPES.QUERY_LIBRARY_RESULT, requestId: requestId, payload: { ok: true, count: hits.length, shown: shown.length, minNm: lo, maxNm: hi, hits: shown } };
         }
         case TYPES.ANALYZE_FRAME: {
           const frame = (msg.payload && msg.payload.frame) || null;
           const options = (msg.payload && msg.payload.options) || null;
           let out = root.SPECTRA_PRO_analysisPipeline.analyzeFrame(frame, STATE, options);
-          if (root.SPECTRA_PRO_atomicEvidence && typeof root.SPECTRA_PRO_atomicEvidence.enhance === 'function') {
+          if (out && String(out.presetId || '') === 'smart-fluorescent' &&
+              root.SPECTRA_PRO_fluorescenceAnalysis && typeof root.SPECTRA_PRO_fluorescenceAnalysis.enhance === 'function') {
+            out = root.SPECTRA_PRO_fluorescenceAnalysis.enhance(out, frame, STATE, options);
+          } else if (root.SPECTRA_PRO_atomicEvidence && typeof root.SPECTRA_PRO_atomicEvidence.enhance === 'function') {
             out = root.SPECTRA_PRO_atomicEvidence.enhance(out, frame, STATE, options);
           }
-          if (out && out.ok) out.analysisVersion = '2.1.0';
+          if (out && out.ok) out.analysisVersion = '2.2.0';
           STATE.lastAnalysis = out;
           return { type: TYPES.ANALYZE_RESULT, requestId: requestId, payload: out };
         }
@@ -66,5 +71,5 @@
     }
   }
 
-  root.SPECTRA_PRO_workerRouter = { handleMessage };
+  root.SPECTRA_PRO_workerRouter = { handleMessage: handleMessage };
 })(typeof self !== 'undefined' ? self : this);

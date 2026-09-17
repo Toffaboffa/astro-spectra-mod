@@ -1,4 +1,3 @@
-
 importScripts(
   './workerTypes.js',
   './workerState.js',
@@ -15,6 +14,7 @@ importScripts(
   './molecularEvidencePatch.js',
   './atomicProfiles.js',
   './atomicEvidence.js',
+  './fluorescenceAnalysis.js',
   './workerRouter.js'
 );
 

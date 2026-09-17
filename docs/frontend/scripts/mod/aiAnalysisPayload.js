@@ -20,21 +20,6 @@
     return Math.round(n * p) / p;
   }
 
-  function compactPrimitiveObject(source, allowedKeys) {
-    const src = source && typeof source === 'object' ? source : {};
-    const out = {};
-    (Array.isArray(allowedKeys) ? allowedKeys : []).forEach(function (key) {
-      const value = src[key];
-      if (value == null) return;
-      if (typeof value === 'number') {
-        if (Number.isFinite(value)) out[key] = value;
-        return;
-      }
-      if (typeof value === 'string' || typeof value === 'boolean') out[key] = value;
-    });
-    return out;
-  }
-
   function cleanString(value, maxLength) {
     const text = String(value == null ? '' : value).trim();
     if (!text) return '';
@@ -42,12 +27,24 @@
     return limit && text.length > limit ? text.slice(0, limit) : text;
   }
 
+  function compactPrimitiveObject(source, allowedKeys) {
+    const src = source && typeof source === 'object' ? source : {};
+    const out = {};
+    (allowedKeys || []).forEach(function (key) {
+      const value = src[key];
+      if (value == null) return;
+      if (typeof value === 'number') {
+        if (Number.isFinite(value)) out[key] = value;
+      } else if (typeof value === 'string' || typeof value === 'boolean') {
+        out[key] = value;
+      }
+    });
+    return out;
+  }
+
   function getState() {
-    try {
-      return sp.store && typeof sp.store.getState === 'function' ? (sp.store.getState() || {}) : {};
-    } catch (_) {
-      return {};
-    }
+    try { return sp.store && sp.store.getState ? (sp.store.getState() || {}) : {}; }
+    catch (_) { return {}; }
   }
 
   function getAppVersion() {
@@ -55,10 +52,8 @@
     if (direct) return direct;
     try {
       const badge = global.document && global.document.getElementById('spVersionBadge');
-      const fromBadge = cleanString(badge && badge.textContent, 32);
-      if (fromBadge) return fromBadge;
-    } catch (_) {}
-    return null;
+      return cleanString(badge && badge.textContent, 32) || null;
+    } catch (_) { return null; }
   }
 
   function getDetailedCalibrationState() {
@@ -70,43 +65,24 @@
     return null;
   }
 
-  function sanitizeCalibrationPoint(point) {
-    if (!point || typeof point !== 'object') return null;
-    const px = finiteNumber(point.px);
-    const nm = finiteNumber(point.nm);
-    if (px == null || nm == null) return null;
-    return { px: rounded(px, 3), nm: rounded(nm, 4) };
-  }
-
   function buildCalibration(state, frame) {
     const stored = state && state.calibration && typeof state.calibration === 'object' ? state.calibration : {};
     const detailed = getDetailedCalibrationState() || {};
-    const pointsSource = Array.isArray(stored.points) && stored.points.length
-      ? stored.points
-      : (Array.isArray(detailed.points) ? detailed.points : []);
-    const coefficientsSource = Array.isArray(stored.coefficients) && stored.coefficients.length
-      ? stored.coefficients
-      : (Array.isArray(detailed.coefficients) ? detailed.coefficients : []);
-    const points = pointsSource.map(sanitizeCalibrationPoint).filter(Boolean).slice(0, 20);
-    const coefficients = coefficientsSource.map(function (v) { return rounded(v, 10); }).filter(function (v) { return v != null; }).slice(0, 8);
+    const pointSource = Array.isArray(stored.points) && stored.points.length ? stored.points : (Array.isArray(detailed.points) ? detailed.points : []);
+    const coeffSource = Array.isArray(stored.coefficients) && stored.coefficients.length ? stored.coefficients : (Array.isArray(detailed.coefficients) ? detailed.coefficients : []);
+    const points = pointSource.map(function (p) {
+      const px = finiteNumber(p && p.px), nm = finiteNumber(p && p.nm);
+      return px == null || nm == null ? null : { px: rounded(px, 3), nm: rounded(nm, 4) };
+    }).filter(Boolean).slice(0, 20);
+    const coefficients = coeffSource.map(function (v) { return rounded(v, 10); }).filter(function (v) { return v != null; }).slice(0, 8);
     const frameNm = frame && Array.isArray(frame.nm) ? frame.nm.map(finiteNumber).filter(function (v) { return v != null; }) : [];
-    const isCalibrated = !!(
-      stored.isCalibrated || detailed.isCalibrated || detailed.calibrated || coefficients.length || frameNm.length
-    );
-    let spectralRangeNm = null;
-    if (frameNm.length) {
-      spectralRangeNm = {
-        min: rounded(Math.min.apply(null, frameNm), 3),
-        max: rounded(Math.max.apply(null, frameNm), 3)
-      };
-    }
     return {
-      calibrated: isCalibrated,
+      calibrated: !!(stored.isCalibrated || detailed.isCalibrated || detailed.calibrated || coefficients.length || frameNm.length),
       pointCount: finiteNumber(stored.pointCount) != null ? Number(stored.pointCount) : points.length,
       points: points,
       coefficients: coefficients,
       residualStatus: cleanString(stored.residualStatus || detailed.residualStatus || '', 48) || null,
-      spectralRangeNm: spectralRangeNm
+      spectralRangeNm: frameNm.length ? { min: rounded(Math.min.apply(null, frameNm), 3), max: rounded(Math.max.apply(null, frameNm), 3) } : null
     };
   }
 
@@ -114,22 +90,18 @@
     if (!row || typeof row !== 'object') return null;
     const species = cleanString(row.element || row.species || row.speciesKey || row.name || '', 80);
     if (!species) return null;
-    const out = { rank: finiteNumber(row.rank) != null ? Number(row.rank) : (index + 1), species: species };
-    const primitiveKeys = [
+    const out = { rank: finiteNumber(row.rank) != null ? Number(row.rank) : index + 1, species: species };
+    Object.assign(out, compactPrimitiveObject(row, [
       'mode', 'family', 'scoreSharePct', 'likelyPct', 'totalScore', 'score',
       'matchedPeaks', 'matchedCount', 'matchedExpected', 'matchCount', 'lineCount',
       'missedStrong', 'medianDeltaNm', 'avgDeltaNm', 'explainedProm',
       'explainedIntensityPct', 'explainedPeaks', 'explainedPeaksPct', 'explainedShare',
       'closenessScore', 'rgbSupport', 'evidenceModel', 'evidenceFactor',
-      'diagnosticMatchedPeaks', 'diagnosticScore', 'plasmaMatchedBands'
-    ];
-    Object.assign(out, compactPrimitiveObject(row, primitiveKeys));
-    if (Array.isArray(row.supportLines)) {
-      out.supportLines = row.supportLines.map(function (v) { return rounded(v, 4); }).filter(function (v) { return v != null; }).slice(0, 16);
-    }
-    if (Array.isArray(row.diagnosticSupportLines)) {
-      out.diagnosticSupportLines = row.diagnosticSupportLines.map(function (v) { return rounded(v, 4); }).filter(function (v) { return v != null; }).slice(0, 16);
-    }
+      'diagnosticMatchedPeaks', 'diagnosticScore', 'plasmaMatchedBands',
+      'profileExpected', 'diagnosticExpected', 'missingImportant', 'patternCoveragePct', 'fingerprintScore'
+    ]));
+    if (Array.isArray(row.supportLines)) out.supportLines = row.supportLines.map(function (v) { return rounded(v, 4); }).filter(function (v) { return v != null; }).slice(0, 16);
+    if (Array.isArray(row.diagnosticSupportLines)) out.diagnosticSupportLines = row.diagnosticSupportLines.map(function (v) { return rounded(v, 4); }).filter(function (v) { return v != null; }).slice(0, 16);
     return out;
   }
 
@@ -138,31 +110,19 @@
     const species = cleanString(hit.element || hit.speciesKey || hit.species || hit.name || '', 96);
     if (!species) return null;
     const out = { species: species };
-    const observedNm = hit.observedNm != null ? hit.observedNm : hit.obsNm;
-    const referenceNm = hit.referenceNm != null ? hit.referenceNm : hit.refNm;
-    const numericMap = {
-      observedNm: observedNm,
-      referenceNm: referenceNm,
-      deltaNm: hit.deltaNm,
-      confidence: hit.confidence,
-      score: hit.score,
-      rawScore: hit.rawScore,
-      prominence: hit.prominence,
-      peakIndex: hit.peakIndex,
-      peakValue: hit.peakValue,
-      bandMinNm: hit.bandMinNm,
-      bandMaxNm: hit.bandMaxNm,
-      bandPeakCount: hit.bandPeakCount,
-      bandProminence: hit.bandProminence,
-      stableCount: hit.stableCount,
-      smartGroupRank: hit.smartGroupRank,
-      smartGroupScore: hit.smartGroupScore
+    const numeric = {
+      observedNm: hit.observedNm != null ? hit.observedNm : hit.obsNm,
+      referenceNm: hit.referenceNm != null ? hit.referenceNm : hit.refNm,
+      deltaNm: hit.deltaNm, confidence: hit.confidence, score: hit.score, rawScore: hit.rawScore,
+      prominence: hit.prominence, peakIndex: hit.peakIndex, peakValue: hit.peakValue,
+      bandMinNm: hit.bandMinNm, bandMaxNm: hit.bandMaxNm, bandPeakCount: hit.bandPeakCount,
+      bandProminence: hit.bandProminence, stableCount: hit.stableCount,
+      smartGroupRank: hit.smartGroupRank, smartGroupScore: hit.smartGroupScore
     };
-    Object.keys(numericMap).forEach(function (key) {
-      const n = finiteNumber(numericMap[key]);
+    Object.keys(numeric).forEach(function (key) {
+      const n = finiteNumber(numeric[key]);
       if (n == null) return;
-      const digits = key === 'peakIndex' || key === 'bandPeakCount' || key === 'stableCount' || key === 'smartGroupRank' ? 0 : 4;
-      out[key] = rounded(n, digits);
+      out[key] = rounded(n, /Index|Count|Rank/.test(key) ? 0 : 4);
     });
     ['kind', 'evidenceModel'].forEach(function (key) {
       const value = cleanString(hit[key], 64);
@@ -176,17 +136,11 @@
     if (!winner || typeof winner !== 'object') return null;
     const out = compactPrimitiveObject(winner, [
       'preset', 'primaryEmitter', 'primaryLikelyPct', 'explainedPeaksPct',
-      'explainedIntensityPct', 'expectedMissed', 'scoreSemantics'
+      'explainedIntensityPct', 'expectedMissed', 'scoreSemantics', 'evidenceModel'
     ]);
-    if (Array.isArray(winner.expectedFound)) {
-      out.expectedFound = winner.expectedFound.map(function (v) { return rounded(v, 4); }).filter(function (v) { return v != null; }).slice(0, 16);
-    }
-    if (Array.isArray(winner.possibleBands)) {
-      out.possibleBands = winner.possibleBands.slice(0, 12).map(function (v) { return cleanString(v, 64); }).filter(Boolean);
-    }
-    if (Array.isArray(winner.backgroundComponents)) {
-      out.backgroundComponents = winner.backgroundComponents.slice(0, 12).map(function (v) { return cleanString(v, 64); }).filter(Boolean);
-    }
+    if (Array.isArray(winner.expectedFound)) out.expectedFound = winner.expectedFound.map(function (v) { return rounded(v, 4); }).filter(function (v) { return v != null; }).slice(0, 16);
+    if (Array.isArray(winner.possibleBands)) out.possibleBands = winner.possibleBands.slice(0, 12).map(function (v) { return cleanString(v, 64); }).filter(Boolean);
+    if (Array.isArray(winner.backgroundComponents)) out.backgroundComponents = winner.backgroundComponents.slice(0, 12).map(function (v) { return cleanString(v, 64); }).filter(Boolean);
     if (Array.isArray(winner.secondaryContributors)) {
       out.secondaryContributors = winner.secondaryContributors.slice(0, 4).map(function (row) {
         if (!row || typeof row !== 'object') return null;
@@ -198,11 +152,25 @@
     return Object.keys(out).length ? out : null;
   }
 
+  function compactFluorescence(summary) {
+    if (!summary || typeof summary !== 'object') return null;
+    const out = compactPrimitiveObject(summary, [
+      'model', 'spectrumType', 'broadbandDetected', 'lambdaMaxNm', 'centroidNm', 'fwhmNm',
+      'bandMinNm', 'bandMaxNm', 'bandWidthNm', 'asymmetry', 'asymmetryRatio',
+      'integratedIntensity', 'peakIntensity', 'baselineIntensity', 'smoothingWindowNm'
+    ]);
+    if (Array.isArray(summary.shoulders)) {
+      out.shoulders = summary.shoulders.slice(0, 4).map(function (sh) {
+        return { nm: rounded(sh && sh.nm, 3), relativeHeight: rounded(sh && sh.relativeHeight, 4) };
+      }).filter(function (sh) { return sh.nm != null; });
+    }
+    return Object.keys(out).length ? out : null;
+  }
+
   function selectHits(hits, bestSpecies, maxHits) {
     const list = Array.isArray(hits) ? hits.filter(Boolean) : [];
     const best = cleanString(bestSpecies, 96);
-    const primary = [];
-    const secondary = [];
+    const primary = [], secondary = [];
     list.forEach(function (hit) {
       const species = cleanString(hit && (hit.element || hit.speciesKey || hit.species || hit.name), 96);
       (best && species === best ? primary : secondary).push(hit);
@@ -218,17 +186,9 @@
       : (Array.isArray(frame.values) ? frame.values : null)));
     if (!intensity || !intensity.length) return null;
     const n = intensity.length;
-    let x = null;
-    let xUnit = 'px';
-    if (Array.isArray(frame.nm) && frame.nm.length === n) {
-      x = frame.nm;
-      xUnit = 'nm';
-    } else if (Array.isArray(frame.px) && frame.px.length === n) {
-      x = frame.px;
-    } else {
-      x = Array.from({ length: n }, function (_, idx) { return idx; });
-    }
-    return { x: x, y: intensity, xUnit: xUnit };
+    if (Array.isArray(frame.nm) && frame.nm.length === n) return { x: frame.nm, y: intensity, xUnit: 'nm' };
+    if (Array.isArray(frame.px) && frame.px.length === n) return { x: frame.px, y: intensity, xUnit: 'px' };
+    return { x: Array.from({ length: n }, function (_, i) { return i; }), y: intensity, xUnit: 'px' };
   }
 
   function downsampleEnvelope(x, y, maxPoints) {
@@ -237,26 +197,20 @@
     const cap = Math.max(16, Math.floor(finiteNumber(maxPoints) || DEFAULT_MAX_TRACE_POINTS));
     const finite = [];
     for (let i = 0; i < n; i += 1) {
-      const xv = finiteNumber(x[i]);
-      const yv = finiteNumber(y[i]);
+      const xv = finiteNumber(x[i]), yv = finiteNumber(y[i]);
       if (xv != null && yv != null) finite.push({ index: i, x: xv, y: yv });
     }
-    if (!finite.length) return [];
     if (finite.length <= cap) return finite;
-
     const bucketCount = Math.max(1, Math.floor((cap - 2) / 2));
     const bucketSize = finite.length / bucketCount;
     const selected = [];
     for (let b = 0; b < bucketCount; b += 1) {
-      const start = Math.floor(b * bucketSize);
-      const end = Math.min(finite.length, Math.floor((b + 1) * bucketSize));
+      const start = Math.floor(b * bucketSize), end = Math.min(finite.length, Math.floor((b + 1) * bucketSize));
       if (start >= end) continue;
-      let minPoint = finite[start];
-      let maxPoint = finite[start];
+      let minPoint = finite[start], maxPoint = finite[start];
       for (let i = start + 1; i < end; i += 1) {
-        const point = finite[i];
-        if (point.y < minPoint.y) minPoint = point;
-        if (point.y > maxPoint.y) maxPoint = point;
+        if (finite[i].y < minPoint.y) minPoint = finite[i];
+        if (finite[i].y > maxPoint.y) maxPoint = finite[i];
       }
       if (minPoint.index <= maxPoint.index) {
         selected.push(minPoint);
@@ -269,12 +223,10 @@
     if (selected.length && selected[0].index !== finite[0].index) selected.unshift(finite[0]);
     const last = finite[finite.length - 1];
     if (selected.length && selected[selected.length - 1].index !== last.index) selected.push(last);
-
     const seen = Object.create(null);
-    return selected.filter(function (point) {
-      const key = String(point.index);
-      if (seen[key]) return false;
-      seen[key] = true;
+    return selected.filter(function (p) {
+      if (seen[p.index]) return false;
+      seen[p.index] = true;
       return true;
     }).slice(0, cap);
   }
@@ -284,31 +236,21 @@
     if (!source) return null;
     const yFinite = source.y.map(finiteNumber).filter(function (v) { return v != null; });
     if (!yFinite.length) return null;
-    const minY = Math.min.apply(null, yFinite);
-    const maxY = Math.max.apply(null, yFinite);
-    const span = maxY - minY;
-    const selected = downsampleEnvelope(source.x, source.y, maxPoints);
-    const xDigits = source.xUnit === 'nm' ? 3 : 1;
-    const points = selected.map(function (point) {
-      const normalized = span > 0 ? (point.y - minY) / span : 0;
-      return [rounded(point.x, xDigits), rounded(normalized, 4)];
+    const minY = Math.min.apply(null, yFinite), maxY = Math.max.apply(null, yFinite), span = maxY - minY;
+    const points = downsampleEnvelope(source.x, source.y, maxPoints).map(function (p) {
+      return [rounded(p.x, source.xUnit === 'nm' ? 3 : 1), rounded(span > 0 ? (p.y - minY) / span : 0, 4)];
     });
     return {
-      columns: ['x', 'i'],
-      xUnit: source.xUnit,
-      intensityScale: 'normalized-0-1',
-      sourceSamples: source.y.length,
-      transmittedSamples: points.length,
-      rawIntensityMin: rounded(minY, 4),
-      rawIntensityMax: rounded(maxY, 4),
-      points: points
+      columns: ['x', 'i'], xUnit: source.xUnit, intensityScale: 'normalized-0-1',
+      sourceSamples: source.y.length, transmittedSamples: points.length,
+      rawIntensityMin: rounded(minY, 4), rawIntensityMax: rounded(maxY, 4), points: points
     };
   }
 
   function buildQuality(frame, analysis, trace) {
     const source = traceSource(frame);
     const values = source ? source.y.map(finiteNumber).filter(function (v) { return v != null; }) : [];
-    const sum = values.reduce(function (acc, value) { return acc + value; }, 0);
+    const sum = values.reduce(function (a, b) { return a + b; }, 0);
     return {
       qcFlags: Array.isArray(analysis.qcFlags) ? analysis.qcFlags.slice(0, 24).map(function (v) { return cleanString(v, 96); }).filter(Boolean) : [],
       offsetNm: rounded(analysis.offsetNm, 4),
@@ -321,10 +263,7 @@
   }
 
   function buildSettings(state) {
-    const analysis = state.analysis || {};
-    const peaks = state.peaks || {};
-    const subtraction = state.subtraction || {};
-    const display = state.display || {};
+    const analysis = state.analysis || {}, peaks = state.peaks || {}, subtraction = state.subtraction || {}, display = state.display || {};
     return {
       presetId: cleanString(analysis.presetId, 64) || null,
       includeWeakPeaks: !!analysis.includeWeakPeaks,
@@ -335,6 +274,7 @@
       useRgbScore: !!analysis.useRgbScore,
       stableHits: !!analysis.stableHits,
       smartFindEnabled: analysis.smartFindEnabled !== false,
+      narrowLineOverlay: !!analysis.narrowLineOverlay,
       subtractionMode: cleanString(subtraction.mode || 'raw', 32),
       displayMode: cleanString(display.mode || 'normal', 32),
       graphPeakThreshold: rounded(peaks.threshold, 3),
@@ -344,8 +284,7 @@
   }
 
   function buildInstrument(state) {
-    const hardware = state.hardware || {};
-    const out = compactPrimitiveObject(hardware, [
+    const out = compactPrimitiveObject(state.hardware || {}, [
       'profileId', 'profileName', 'spectralRangeMinNm', 'spectralRangeMaxNm',
       'spectrometerResolutionFwhmNm', 'pixelResolutionNm', 'gratingLinesPerMm'
     ]);
@@ -354,33 +293,24 @@
 
   function build(options) {
     const opts = options && typeof options === 'object' ? options : {};
-    const state = getState();
-    const analysis = state.analysis || {};
+    const state = getState(), analysis = state.analysis || {};
     const frame = state.frame && state.frame.latest ? state.frame.latest : null;
     const maxTracePoints = Math.max(16, Math.min(512, Math.floor(finiteNumber(opts.maxTracePoints) || DEFAULT_MAX_TRACE_POINTS)));
     const maxHits = Math.max(8, Math.min(160, Math.floor(finiteNumber(opts.maxHits) || DEFAULT_MAX_HITS)));
     const maxCandidates = Math.max(1, Math.min(12, Math.floor(finiteNumber(opts.maxCandidates) || DEFAULT_MAX_CANDIDATES)));
-    const candidateRows = Array.isArray(analysis.elementScores) && analysis.elementScores.length
-      ? analysis.elementScores
-      : (Array.isArray(analysis.smartFindGroups) ? analysis.smartFindGroups : []);
-    const candidates = candidateRows
-      .slice(0, maxCandidates)
-      .map(compactCandidate)
-      .filter(Boolean);
+    const candidateRows = Array.isArray(analysis.elementScores) && analysis.elementScores.length ? analysis.elementScores : (Array.isArray(analysis.smartFindGroups) ? analysis.smartFindGroups : []);
+    const candidates = candidateRows.slice(0, maxCandidates).map(compactCandidate).filter(Boolean);
     const bestMatch = candidates.length ? candidates[0] : null;
-    const rawHits = Array.isArray(analysis.rawTopHits) && analysis.rawTopHits.length
-      ? analysis.rawTopHits
-      : (Array.isArray(analysis.topHits) ? analysis.topHits : []);
+    const rawHits = Array.isArray(analysis.rawTopHits) && analysis.rawTopHits.length ? analysis.rawTopHits : (Array.isArray(analysis.topHits) ? analysis.topHits : []);
+    const fluorescence = compactFluorescence(analysis.fluorescenceSummary);
+    const narrowHits = Array.isArray(analysis.narrowLineCandidates) ? analysis.narrowLineCandidates.slice(0, 24).map(compactHit).filter(Boolean) : [];
     const trace = buildTrace(frame, maxTracePoints);
     const calibration = buildCalibration(state, frame);
 
     return {
       schema: SCHEMA_VERSION,
       generatedAt: new Date().toISOString(),
-      app: {
-        name: 'SPECTRA PRO',
-        version: getAppVersion()
-      },
+      app: { name: 'SPECTRA PRO', version: getAppVersion() },
       observation: cleanString(opts.observation, 1200) || null,
       context: {
         appMode: cleanString(state.appMode || '', 24) || null,
@@ -393,17 +323,19 @@
       calibration: calibration,
       quality: buildQuality(frame, analysis, trace),
       analysis: {
-        scoreSemantics: 'relative-score-share-not-probability-or-abundance',
+        scoreSemantics: fluorescence ? 'broadband-fluorescence-shape' : 'relative-score-share-not-probability-or-abundance',
         bestMatch: bestMatch,
         candidates: candidates,
         winnerBreakdown: compactWinnerBreakdown(analysis.winnerBreakdown),
+        fluorescence: fluorescence,
+        narrowLineCandidates: narrowHits,
         hits: selectHits(rawHits, bestMatch && bestMatch.species, maxHits)
       },
       trace: trace,
       readiness: {
         hasFrame: !!trace,
         calibrated: !!calibration.calibrated,
-        hasAnalysisResult: !!(bestMatch || rawHits.length)
+        hasAnalysisResult: !!(fluorescence || bestMatch || rawHits.length)
       }
     };
   }
@@ -411,10 +343,6 @@
   sp.aiAnalysisPayload = {
     schema: SCHEMA_VERSION,
     build: build,
-    defaults: {
-      maxTracePoints: DEFAULT_MAX_TRACE_POINTS,
-      maxHits: DEFAULT_MAX_HITS,
-      maxCandidates: DEFAULT_MAX_CANDIDATES
-    }
+    defaults: { maxTracePoints: DEFAULT_MAX_TRACE_POINTS, maxHits: DEFAULT_MAX_HITS, maxCandidates: DEFAULT_MAX_CANDIDATES }
   };
 })(window);

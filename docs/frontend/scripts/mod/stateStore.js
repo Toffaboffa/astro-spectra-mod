@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '2.1.1';
+  const AI_ASSET_VERSION = '2.2.0';
 
   const defaultPresetCatalog = {
     groups: [
@@ -25,7 +25,7 @@
           { id: 'smart-molecular', label: 'Molecular', family: 'smart', mode: 'molecular', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-molecular' },
           { id: 'smart-gastube', label: 'Gas Tube', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'atomic-fingerprint-v1+profile-refine-gas-tube' },
           { id: 'smart-flame', label: 'Flame', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'profile-refine-flame' },
-          { id: 'smart-fluorescent', label: 'Fluorescent', family: 'smart', mode: 'mixture', discoveryStrategy: 'global-discovery', refineStrategy: 'atomic-fingerprint-v1+profile-refine-fluorescent' }
+          { id: 'smart-fluorescent', label: 'Fluorescent', family: 'smart', mode: 'fluorescence', discoveryStrategy: 'broadband-shape', refineStrategy: 'broadband-fluorescence-v1' }
         ]
       }
     ]
@@ -44,10 +44,7 @@
       analysisHz: 0,
       droppedJobs: 0
     },
-    frame: {
-      latest: null,
-      source: 'none'
-    },
+    frame: { latest: null, source: 'none' },
     calibration: {
       isCalibrated: false,
       coefficients: [],
@@ -65,11 +62,7 @@
       pixelResolutionNm: null,
       gratingLinesPerMm: null
     },
-    reference: {
-      count: 0,
-      hasReference: false,
-      updatedAt: null
-    },
+    reference: { count: 0, hasReference: false, updatedAt: null },
     display: {
       mode: 'normal',
       yAxisMode: 'manual',
@@ -78,11 +71,7 @@
       fillOpacity: 0.8,
       overlaysEnabled: true
     },
-    peaks: {
-      threshold: 20,
-      distance: 7,
-      smoothing: null
-    },
+    peaks: { threshold: 20, distance: 7, smoothing: null },
     analysis: {
       enabled: false,
       maxHz: 4,
@@ -97,9 +86,11 @@
       smartFindGroups: [],
       elementScores: [],
       winnerBreakdown: null,
+      fluorescenceSummary: null,
+      narrowLineCandidates: [],
+      narrowLineOverlay: false,
       offsetNm: null,
       includeWeakPeaks: false,
-      useRgbScore: false,
       maxDistanceNm: 1,
       strongPeakLevel: 3,
       peakThresholdRel: 0.05,
@@ -141,15 +132,13 @@
     if ((a == null) || (b == null)) return false;
     const ta = typeof a, tb = typeof b;
     if (ta !== 'object' || tb !== 'object') return false;
-    try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return false; }
+    try { return JSON.stringify(a) === JSON.stringify(b); } catch (_) { return false; }
   }
 
   function createStore(seed) {
     let state = Object.assign({}, deepClone(defaultState), seed || {});
 
-    function getState() {
-      return state;
-    }
+    function getState() { return state; }
 
     function setState(patch, meta) {
       state = Object.assign({}, state, patch || {});
@@ -167,8 +156,7 @@
         target = target[parts[i]];
       }
       const leaf = parts[parts.length - 1];
-      const prevValue = target[leaf];
-      if (isSameValue(prevValue, value)) return state;
+      if (isSameValue(target[leaf], value)) return state;
       target[leaf] = value;
       state = next;
       if (bus) bus.emit('state:changed', { state: state, patch: { [path]: value }, meta: meta || null });
@@ -194,8 +182,15 @@
     (global.document.head || global.document.documentElement).appendChild(script);
   }
 
+  if (global.document && !global.document.getElementById('spFluorescenceUiLoader')) {
+    const script = global.document.createElement('script');
+    script.id = 'spFluorescenceUiLoader';
+    script.src = '../scripts/mod/fluorescenceUi.js?v=' + AI_ASSET_VERSION;
+    script.defer = true;
+    (global.document.head || global.document.documentElement).appendChild(script);
+  }
+
   // AI Interpretation load order: payload builder -> secure transport service -> UI.
-  // Versioned URLs avoid stale browser copies after a visible SPECTRA release.
   if (global.document) {
     const loadAiUi = function () {
       if (global.document.getElementById('spAiAnalysisUiLoader')) return;
