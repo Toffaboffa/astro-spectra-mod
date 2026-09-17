@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '2.2.4';
+  const AI_ASSET_VERSION = '2.2.5';
 
   const defaultPresetCatalog = {
     groups: [
@@ -194,6 +194,14 @@
     const script = global.document.createElement('script');
     script.id = 'spHelpUiLoader';
     script.src = '../scripts/mod/helpUi.js?v=' + AI_ASSET_VERSION;
+    script.defer = true;
+    (global.document.head || global.document.documentElement).appendChild(script);
+  }
+
+  if (global.document && !global.document.getElementById('spI18nUiLoader')) {
+    const script = global.document.createElement('script');
+    script.id = 'spI18nUiLoader';
+    script.src = '../scripts/mod/i18nUi.js?v=' + AI_ASSET_VERSION;
     script.defer = true;
     (global.document.head || global.document.documentElement).appendChild(script);
   }
