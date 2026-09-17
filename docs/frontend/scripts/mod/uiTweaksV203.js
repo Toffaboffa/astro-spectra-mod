@@ -112,7 +112,6 @@
     if (!tabs || !button) return false;
 
     const astro = tabs.querySelector('.sp-tab[data-tab="astro"]');
-    button.classList.add('sp-tab');
     button.classList.add('sp-help-launch');
     button.textContent = 'HELP';
     button.title = 'Open the SPECTRA PRO help guide.';
