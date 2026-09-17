@@ -10,6 +10,7 @@
   let lastFocused = null;
   let eventHooksInstalled = false;
   let keyHookInstalled = false;
+  let toastTimer = null;
 
   function $(id) { return global.document ? global.document.getElementById(id) : null; }
 
@@ -34,6 +35,9 @@
       '.sp-ai-modal__status.is-visible{display:block;}',
       '.sp-ai-modal__status[data-tone="error"]{border-color:rgba(239,118,118,.48);color:#ffd0d0;background:rgba(62,16,20,.42);}',
       '.sp-ai-modal__status[data-tone="ok"]{border-color:rgba(92,222,190,.42);color:#c7fff0;background:rgba(10,54,46,.34);}',
+      '.sp-ai-modal__toast{position:fixed;left:50%;top:22px;z-index:4300;max-width:min(520px,calc(100vw - 32px));padding:9px 12px;border-radius:8px;border:1px solid rgba(92,222,190,.48);background:rgba(7,46,40,.96);box-shadow:0 10px 30px rgba(0,0,0,.38);color:#d6fff4;font:600 12px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;opacity:0;visibility:hidden;transform:translate(-50%,-8px);transition:opacity .16s ease,transform .16s ease,visibility .16s;pointer-events:none;}',
+      '.sp-ai-modal__toast.is-visible{opacity:1;visibility:visible;transform:translate(-50%,0);}',
+      '.sp-ai-modal__toast[data-tone="error"]{border-color:rgba(239,118,118,.55);background:rgba(62,16,20,.96);color:#ffdada;}',
       '.sp-ai-modal__result{display:none;margin-top:12px;padding:12px;border-radius:8px;border:1px solid rgba(86,217,225,.28);background:rgba(3,15,27,.58);font-size:13px;line-height:1.55;color:#e4f6f9;white-space:pre-wrap;}',
       '.sp-ai-modal__result.is-visible{display:block;}',
       '.sp-ai-modal__meta{display:none;margin-top:7px;font:500 10px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#7fa8b4;overflow-wrap:anywhere;}',
@@ -48,7 +52,7 @@
       '.sp-ai-launch .sp-ai-action{margin:0;}',
       '.sp-ai-spinner{display:inline-block;width:12px;height:12px;margin-right:7px;border:2px solid rgba(212,249,252,.28);border-top-color:#d4f9fc;border-radius:50%;vertical-align:-2px;animation:spAiSpin .75s linear infinite;}',
       '@keyframes spAiSpin{to{transform:rotate(360deg);}}',
-      '@media(max-width:640px){.sp-ai-modal{padding:8px}.sp-ai-modal__panel{width:calc(100vw - 16px);max-height:calc(100vh - 16px)}.sp-ai-modal__body{padding:13px}.sp-ai-modal__actions{flex-wrap:wrap}.sp-ai-modal__actions button{flex:1 1 120px}}'
+      '@media(max-width:640px){.sp-ai-modal{padding:8px}.sp-ai-modal__panel{width:calc(100vw - 16px);max-height:calc(100vh - 16px)}.sp-ai-modal__body{padding:13px}.sp-ai-modal__actions{flex-wrap:wrap}.sp-ai-modal__actions button{flex:1 1 120px}.sp-ai-modal__toast{top:12px}}'
     ].join('');
     (global.document.head || global.document.documentElement).appendChild(style);
   }
@@ -58,8 +62,8 @@
     if (!button) return;
     const isCopy = mode === 'copy';
     button.dataset.mode = isCopy ? 'copy' : 'analyze';
-    button.textContent = isCopy ? 'Kopiera text' : 'Analyze';
-    button.title = isCopy ? 'Kopiera AI-tolkningen till urklipp.' : 'Analyze the current spectrum with AI Interpretation.';
+    button.textContent = isCopy ? 'Copy text' : 'Analyze';
+    button.title = isCopy ? 'Copy the AI interpretation to the clipboard.' : 'Analyze the current spectrum with AI Interpretation.';
   }
 
   function setNewRunVisible(visible) {
@@ -80,6 +84,7 @@
     modal.setAttribute('aria-labelledby', 'spAiInterpretTitle');
     modal.innerHTML = [
       '<div class="sp-ai-modal__backdrop" data-ai-close="1"></div>',
+      '<div id="spAiToast" class="sp-ai-modal__toast" role="status" aria-live="polite"></div>',
       '<div class="sp-ai-modal__panel">',
       '  <div class="sp-ai-modal__head">',
       '    <div class="sp-ai-modal__title" id="spAiInterpretTitle">AI INTERPRETATION</div>',
@@ -94,7 +99,7 @@
       '    <div id="spAiMeta" class="sp-ai-modal__meta" aria-live="polite"></div>',
       '    <div class="sp-ai-modal__actions">',
       '      <button type="button" id="spAiCancelBtn">Cancel</button>',
-      '      <button type="button" id="spAiNewRunBtn" style="display:none">Ny analys</button>',
+      '      <button type="button" id="spAiNewRunBtn" style="display:none">New analysis</button>',
       '      <button type="button" id="spAiAnalyzeBtn" class="sp-ai-primary" data-mode="analyze">Analyze</button>',
       '    </div>',
       '  </div>',
@@ -139,6 +144,30 @@
     if (action) action.disabled = !!loading;
   }
 
+  function clearToast() {
+    const toast = $('spAiToast');
+    if (toastTimer) {
+      global.clearTimeout(toastTimer);
+      toastTimer = null;
+    }
+    if (!toast) return;
+    toast.classList.remove('is-visible');
+    toast.textContent = '';
+  }
+
+  function showToast(text, tone) {
+    const toast = $('spAiToast');
+    if (!toast) return;
+    if (toastTimer) global.clearTimeout(toastTimer);
+    toast.textContent = String(text == null ? '' : text);
+    toast.dataset.tone = tone || 'ok';
+    toast.classList.toggle('is-visible', !!toast.textContent);
+    toastTimer = global.setTimeout(function () {
+      toast.classList.remove('is-visible');
+      toastTimer = null;
+    }, 1800);
+  }
+
   function setMeta(text) {
     const meta = $('spAiMeta');
     if (!meta) return;
@@ -171,11 +200,11 @@
     }
     const parts = [];
     const when = formatTime(response.completedAt || response.startedAt);
-    if (when) parts.push('Körning ' + when);
+    if (when) parts.push('Run ' + when);
     if (response.promptContract) parts.push('prompt ' + shortContract(response.promptContract));
     const usage = response.usage && typeof response.usage === 'object' ? response.usage : {};
     if (Number.isFinite(Number(usage.inputTokens))) parts.push(Number(usage.inputTokens).toLocaleString() + ' in');
-    if (Number.isFinite(Number(usage.outputTokens))) parts.push(Number(usage.outputTokens).toLocaleString() + ' ut');
+    if (Number.isFinite(Number(usage.outputTokens))) parts.push(Number(usage.outputTokens).toLocaleString() + ' out');
     if (response.runId) parts.push('run ' + String(response.runId).slice(0, 8));
     if (response.openaiResponseId) parts.push('OpenAI ' + String(response.openaiResponseId).slice(0, 18));
     setMeta(parts.join(' · '));
@@ -222,24 +251,24 @@
       const ok = global.document.execCommand && global.document.execCommand('copy');
       temp.remove();
       if (ok) {
-        setStatus('Text kopierad.', 'ok', false);
+        showToast('Text copied.', 'ok');
         return true;
       }
     } catch (_) {}
-    setStatus('Kunde inte kopiera texten automatiskt.', 'error', false);
+    showToast('Could not copy the text automatically.', 'error');
     return false;
   }
 
   function copyResultText() {
     const text = String(lastResultText || (($('spAiResult') && $('spAiResult').textContent) || '')).trim();
     if (!text) {
-      setStatus('Det finns ingen AI-text att kopiera ännu.', 'error', false);
+      showToast('There is no AI text to copy yet.', 'error');
       return;
     }
     try {
       if (global.navigator && global.navigator.clipboard && typeof global.navigator.clipboard.writeText === 'function' && global.isSecureContext) {
         global.navigator.clipboard.writeText(text).then(function () {
-          setStatus('Text kopierad.', 'ok', false);
+          showToast('Text copied.', 'ok');
         }).catch(function () {
           fallbackCopy(text);
         });
@@ -251,6 +280,7 @@
 
   function prepareNewRun() {
     lastResultText = '';
+    clearToast();
     setMeta('');
     setStatus('', 'info', false);
     setResult('');
@@ -271,6 +301,7 @@
   }
 
   function close() {
+    clearToast();
     const modal = $(MODAL_ID);
     if (modal) modal.classList.remove('is-open');
     if (lastFocused && typeof lastFocused.focus === 'function') {
@@ -290,6 +321,7 @@
   }
 
   function submit() {
+    clearToast();
     setPrimaryActionMode('analyze');
     setNewRunVisible(false);
     setMeta('');
@@ -350,7 +382,7 @@
 
     const badge = global.document.createElement('span');
     badge.className = 'sp-ai-launch__badge';
-    badge.textContent = 'NYHET';
+    badge.textContent = 'NEW';
     badge.setAttribute('aria-hidden', 'true');
 
     const button = global.document.createElement('button');
