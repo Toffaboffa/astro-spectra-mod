@@ -1,8 +1,8 @@
 # SPECTRA PRO
 
-**Current UI version: v2.2.4**
+**Current UI version: v2.2.5**
 
-SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, and an integrated help/manual system.
+SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
 The application is designed primarily for teaching, demonstrations, experimental spectroscopy, and exploratory analysis. Results are interpretation aids, not laboratory certification.
 
@@ -26,8 +26,23 @@ The project is no longer a scaffold. The main Recording page is functional and c
 - Status and Data Quality diagnostics
 - optional OpenAI-powered **AI Interpretation** through a secure backend
 - built-in **HELP** modal with control reference, calibration guidance, preset explanations, Status/Data Quality definitions, AI documentation, and Q&A
+- runtime **EN / SV** interface switching with English as the default language on every page load
 
 `ASTRO` is currently a staged/placeholder workspace in the visible UI. Do not treat the older roadmap/specification documents as proof that all ASTRO features are implemented.
+
+---
+
+## Interface language
+
+SPECTRA PRO starts in **English on every page load**. A compact **EN / SV** switch is shown beside the HELP control in the PRO tab row.
+
+- **EN** restores the original English source strings.
+- **SV** translates the visible application UI to Swedish at runtime.
+- Analysis data, wavelengths, units, chemical symbols, species labels and the scientific result values are not rewritten as language content.
+- AI Interpretation output is intentionally independent of the UI language and continues to follow the language of the user's observation when that language can be identified.
+- The language choice is not persisted across reloads in v2.2.5; English is always the clean baseline after a new load.
+
+The translation layer is isolated from calibration, graph rendering and worker analysis. It observes the application UI only while Swedish is active, so the normal English path keeps the same behavior as before the language feature.
 
 ---
 
@@ -221,7 +236,7 @@ The interpretation prompt is designed to distinguish:
 
 It should not invent spectral lines, treat Score Share as probability, infer concentration from normalized intensity, or claim unique identification when the supplied evidence does not support it.
 
-The AI normally replies in the language used in the user's observation text; otherwise English is used.
+The AI normally replies in the language used in the user's observation text; otherwise English is used. This behavior is independent of the EN/SV interface switch.
 
 ### Security architecture
 
@@ -261,7 +276,7 @@ The integrated HELP system currently includes:
 - **AI INTERPRETATION**
 - **Q&A**
 
-The manual documents the main visible buttons, sliders, checkboxes, selectors, Match Score columns, fluorescence metrics, Status fields, and Data Quality values.
+The manual documents the main visible buttons, sliders, checkboxes, selectors, Match Score columns, fluorescence metrics, Status fields, and Data Quality values. The runtime language layer also translates the HELP navigation and documented UI terminology when Swedish is active.
 
 Screenshot placeholders are intentionally included in the help content. They describe which screenshots should later be added to illustrate the relevant controls/workflows.
 
@@ -289,7 +304,7 @@ The worker result is then stored in the central PRO state and rendered by the UI
 ### Static frontend + optional backend
 Most of SPECTRA PRO remains static and can be served from GitHub Pages.
 
-The only current backend-dependent feature is optional AI Interpretation. Normal camera, graph, calibration, LAB and fluorescence analysis run locally in the browser.
+The only current backend-dependent feature is optional AI Interpretation. Normal camera, graph, calibration, LAB, fluorescence analysis and EN/SV translation run locally in the browser.
 
 ---
 
@@ -368,6 +383,9 @@ AI Interpretation dialog, result display and copy/new-analysis controls.
 `docs/frontend/scripts/mod/helpUi.js`  
 Integrated HELP/manual modal and documentation content.
 
+`docs/frontend/scripts/mod/i18nUi.js`  
+Runtime EN/SV interface translation layer. English is always the initial source language; Swedish can be enabled without reloading or changing scientific data.
+
 `docs/frontend/scripts/mod/uiTweaksV203.js`  
 Current small UI/version integration layer. Despite the historical filename, it also carries current patch-level UI behavior and the visible SPECTRA PRO version badge.
 
@@ -418,12 +436,13 @@ When modifying the application:
 8. Keep secrets/backend credentials out of the public frontend.
 9. Visible UI changes should update the displayed patch version consistently.
 10. Test live-camera and still-image paths separately.
+11. Keep English as the source UI and default load language; translation must remain a presentation layer and must not mutate scientific state/data.
 
 ---
 
 ## Documentation status
 
-`README.md` describes the current high-level v2.2.4 architecture and visible functionality.
+`README.md` describes the current high-level v2.2.5 architecture and visible functionality.
 
 `FunctionSpec.md` contains older planning/specification material and is **not yet fully synchronized with the current implementation**. It remains useful as historical design context, but current runtime behavior should be verified against the code and the in-app HELP guide until that document is revised.
 
@@ -433,6 +452,7 @@ Other files under `docs/` include older roadmap, migration and protocol notes. S
 
 ## Current priorities
 
+- validate Swedish UI layout and expand translation coverage where real screenshots reveal wording/overflow problems
 - continue validating Atomic/Gas Tube fingerprints against known spectra
 - refine fluorescence band/shoulder handling with real measurements
 - add screenshots to the integrated HELP guide
