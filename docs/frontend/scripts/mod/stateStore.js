@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '2.2.0';
+  const AI_ASSET_VERSION = '2.2.1';
 
   const defaultPresetCatalog = {
     groups: [
@@ -186,6 +186,14 @@
     const script = global.document.createElement('script');
     script.id = 'spFluorescenceUiLoader';
     script.src = '../scripts/mod/fluorescenceUi.js?v=' + AI_ASSET_VERSION;
+    script.defer = true;
+    (global.document.head || global.document.documentElement).appendChild(script);
+  }
+
+  if (global.document && !global.document.getElementById('spHelpUiLoader')) {
+    const script = global.document.createElement('script');
+    script.id = 'spHelpUiLoader';
+    script.src = '../scripts/mod/helpUi.js?v=' + AI_ASSET_VERSION;
     script.defer = true;
     (global.document.head || global.document.documentElement).appendChild(script);
   }
