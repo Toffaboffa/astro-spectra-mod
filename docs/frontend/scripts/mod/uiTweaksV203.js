@@ -2,8 +2,9 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = 'v2.2.2';
+  const VERSION = 'v2.2.3';
   let initialStripeCentered = false;
+  let helpClickBound = false;
 
   function updateVersionBadge() {
     sp.version = VERSION;
@@ -60,6 +61,89 @@
     global.addEventListener('resize', function () {
       global.requestAnimationFrame(positionCalibrationPrompt);
     });
+  }
+
+  function installHelpTabStyle() {
+    if (!document.getElementById('spHelpTabV223Style')) {
+      const style = document.createElement('style');
+      style.id = 'spHelpTabV223Style';
+      style.textContent = [
+        '#SpectraProDockHost #spTabs .sp-help-launch{',
+        'margin-left:0!important;',
+        'display:inline-flex!important;',
+        'align-items:center!important;',
+        'justify-content:center!important;',
+        'gap:0!important;',
+        'border:1px solid rgba(16,185,129,.85)!important;',
+        'border-bottom:0!important;',
+        'background:#9fffe5!important;',
+        'color:#071b36!important;',
+        'border-radius:8px 8px 0 0!important;',
+        'padding:6px 10px!important;',
+        'font-size:inherit!important;',
+        'font-weight:700!important;',
+        'line-height:1.1!important;',
+        'letter-spacing:normal!important;',
+        'box-shadow:none!important;',
+        'cursor:pointer!important;',
+        '}',
+        '#SpectraProDockHost #spTabs .sp-help-launch:hover,#SpectraProDockHost #spTabs .sp-help-launch:focus-visible{',
+        'background:#6efcd5!important;',
+        'color:#04172a!important;',
+        'outline:none!important;',
+        '}',
+        '#SpectraProDockHost #spTabs .sp-help-launch__q{display:none!important;}'
+      ].join('');
+      document.head.appendChild(style);
+    }
+  }
+
+  function patchHelpVersion() {
+    try {
+      if (sp.helpUi) sp.helpUi.version = VERSION.replace(/^v/, '');
+      const guideVersion = document.querySelector('#spHelpOverlay .sp-help-version b');
+      if (guideVersion) guideVersion.textContent = VERSION;
+    } catch (_) {}
+  }
+
+  function placeHelpAfterAstro() {
+    const tabs = document.getElementById('spTabs');
+    const button = document.getElementById('spHelpLaunch');
+    if (!tabs || !button) return false;
+
+    const astro = tabs.querySelector('.sp-tab[data-tab="astro"]');
+    button.classList.add('sp-tab');
+    button.classList.add('sp-help-launch');
+    button.textContent = 'HELP';
+    button.title = 'Open the SPECTRA PRO help guide.';
+
+    if (astro && astro.nextElementSibling !== button) {
+      astro.insertAdjacentElement('afterend', button);
+    } else if (!astro && button.parentElement !== tabs) {
+      tabs.appendChild(button);
+    }
+
+    patchHelpVersion();
+    return true;
+  }
+
+  function installHelpTabPolish() {
+    installHelpTabStyle();
+    [0, 80, 180, 350, 700, 1200, 2000].forEach(function (delay) {
+      global.setTimeout(placeHelpAfterAstro, delay);
+    });
+
+    if (!helpClickBound) {
+      helpClickBound = true;
+      document.addEventListener('click', function (event) {
+        const target = event.target && event.target.closest ? event.target.closest('#spHelpLaunch') : null;
+        if (!target) return;
+        global.setTimeout(function () {
+          placeHelpAfterAstro();
+          patchHelpVersion();
+        }, 0);
+      });
+    }
   }
 
   function getSourceHeight() {
@@ -146,10 +230,12 @@
   function install() {
     installPromptPositioning();
     installInitialStripeCentering();
+    installHelpTabPolish();
     updateVersionBadge();
     global.setTimeout(updateVersionBadge, 350);
     global.setTimeout(function () {
       positionCalibrationPrompt();
+      placeHelpAfterAstro();
       updateVersionBadge();
     }, 700);
   }
