@@ -316,6 +316,7 @@
       ['Weak peaks', 'Checkbox', 'Allows weaker/more closely spaced peaks into detection.', 'Useful for weak support lines, but increases accidental matches/noise sensitivity.'],
       ['Stable hits', 'Checkbox', 'Uses rolling stability behavior to reduce flickering hit labels.', 'Most useful for live camera spectra.'],
       ['Smart find', 'Checkbox', 'Shows refined Smart grouping/evidence rather than only raw proximity hits.', 'Use for source identification; raw coincidences alone are weak evidence in dense libraries.'],
+      ['Auto tune', 'Checkbox', 'Runs a multi-threshold / multi-tolerance fingerprint consensus.', 'Available for Gas Tube, Atomic, Molecular and Lamp presets. It disables the three manual peak/tolerance controls while active so identification is less dependent on hand-tuned settings.'],
       ['RGB', 'Checkbox', 'Adds RGB-channel support as an extra Smart weighting factor.', 'Use cautiously because camera spectral response and white balance can distort color-channel amplitudes.'],
       ['Strong Peak', 'Slider 1–5', 'Controls how strongly Smart rewards agreement with the strongest observed peaks.', 'Higher values focus ranking more strongly on dominant peaks; lower values give weaker features relatively more influence.'],
       ['Peak threshold', 'Number input, %', 'Relative LAB peak-detection threshold.', 'Starts at 1.5%. In supported presets with Auto tune enabled, this control is managed automatically; disable Auto tune for manual experiments.'],
