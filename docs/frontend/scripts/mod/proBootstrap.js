@@ -1337,7 +1337,7 @@ function ensureLabPanel() {
 	    '        <label id="spFieldLabStrongPeak" class="sp-field sp-field--lab-strongpeak" title="Adjust how much Smart rewards matches on the strongest observed peaks.">Strong Peak<input id="spLabStrongPeak" class="spctl-input spctl-range spctl-range--lab-strongpeak" type="range" min="1" max="5" step="1" value="3"></label>',
 	    '      </div>',
 	    '      <div class="sp-lab-fields-col">',
-	    '        <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="5"></label>',
+	    '        <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="1.5"></label>',
 	    '        <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="2"></label>',
 	    '        <label id="spFieldLabMaxDist" class="sp-field sp-field--lab-maxdist">Max distance (nm)<input id="spLabMaxDist" class="spctl-input spctl-input--lab-maxdist" type="number" min="0.2" max="50" step="0.1" value="1.8"></label>',
 	    '      </div>',
@@ -1412,7 +1412,7 @@ function ensureLabPanel() {
   if (smartEl) smartEl.checked = smartFind;
   if (rgbEl) rgbEl.checked = useRgbScore;
   if (strongPeakEl) strongPeakEl.value = String(Math.max(1, Math.min(5, Math.round(Number(s.analysis && s.analysis.strongPeakLevel) || 3))));
-  if (peakThrEl) peakThrEl.value = String(Math.max(0.5, Math.min(50, ((Number(s.analysis && s.analysis.peakThresholdRel) || 0.05) * 100))));
+  if (peakThrEl) peakThrEl.value = String(Math.max(0.5, Math.min(50, ((Number(s.analysis && s.analysis.peakThresholdRel) || 0.015) * 100))));
   if (peakDistEl) peakDistEl.value = String(Math.max(1, Math.min(64, Math.round(Number(s.analysis && s.analysis.peakDistancePx) || 2))));
   if (maxDistEl) maxDistEl.value = String(Math.max(0.2, Math.min(50, Number(s.analysis && s.analysis.maxDistanceNm) || 1.8)));
   // subtraction mode
