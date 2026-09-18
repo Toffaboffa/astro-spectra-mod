@@ -1333,7 +1333,7 @@ function ensureLabPanel() {
 	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lower peak threshold, less peak separation, and more total peaks. Affects peak detection only, not any separate smart AI logic."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
 	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
 	    '        <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
-	    '        <label id="spFieldLabAutoTune" class="sp-field sp-field--lab-autotune sp-field--checkbox-row" title="Automatically evaluates Gas Tube spectra across several peak thresholds and wavelength tolerances, then ranks the stable fingerprint consensus."><span>Auto tune</span><input id="spLabAutoTune" type="checkbox"></label>',
+	    '        <label id="spFieldLabAutoTune" class="sp-field sp-field--lab-autotune sp-field--checkbox-row" title="Automatically evaluates supported identification presets across several peak thresholds and wavelength tolerances, then ranks the stable fingerprint consensus."><span>Auto tune</span><input id="spLabAutoTune" type="checkbox"></label>',
 	    '        <label id="spFieldLabRgb" class="sp-field sp-field--lab-rgb sp-field--checkbox-row" title="Use RGB channel support as an extra hidden Smart weighting factor."><span>RGB</span><input id="spLabRgb" type="checkbox"></label>',
 	    '        <label id="spFieldLabStrongPeak" class="sp-field sp-field--lab-strongpeak" title="Adjust how much Smart rewards matches on the strongest observed peaks.">Strong Peak<input id="spLabStrongPeak" class="spctl-input spctl-range spctl-range--lab-strongpeak" type="range" min="1" max="5" step="1" value="3"></label>',
 	    '      </div>',
@@ -1428,13 +1428,14 @@ function ensureLabPanel() {
   const setVal = (path, value) => { if (store && store.update) store.update(path, value, { source: 'proBootstrap.lab' }); };
   const syncAutoTuneUi = function () {
     const currentPreset = presetEl ? String(presetEl.value || '') : '';
-    const gasTube = currentPreset === 'smart-gastube';
-    const autoOn = gasTube && !!(autoTuneEl && autoTuneEl.checked);
+    const supported = ['smart-gastube', 'smart-atomic', 'smart-molecular', 'lamp-hg'];
+    const autoSupported = supported.indexOf(currentPreset) !== -1;
+    const autoOn = autoSupported && !!(autoTuneEl && autoTuneEl.checked);
     if (autoTuneEl) {
-      autoTuneEl.disabled = !gasTube;
-      autoTuneEl.title = gasTube
-        ? 'Auto tune runs a multi-threshold / multi-tolerance fingerprint consensus for unknown discharge tubes.'
-        : 'Auto tune is currently used by the Gas Tube preset.';
+      autoTuneEl.disabled = !autoSupported;
+      autoTuneEl.title = autoSupported
+        ? 'Auto tune runs a multi-threshold / multi-tolerance fingerprint consensus for this preset.'
+        : 'Auto tune is available for Gas Tube, Atomic, Molecular, and Lamp presets.';
     }
     [peakThrEl, peakDistEl, maxDistEl].forEach(function (el) {
       if (!el) return;
@@ -1525,7 +1526,7 @@ function ensureLabPanel() {
     const on = !!e.target.checked;
     setVal('analysis.autoTune', on);
     syncAutoTuneUi();
-    setFeedback(on ? 'Gas Tube Auto tune enabled.' : 'Gas Tube Auto tune disabled; manual peak/tolerance controls active.', 'info');
+    setFeedback(on ? 'Auto tune enabled.' : 'Auto tune disabled; manual peak/tolerance controls active.', 'info');
   });
 
 
