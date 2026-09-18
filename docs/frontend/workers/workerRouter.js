@@ -59,7 +59,7 @@
           } else if (root.SPECTRA_PRO_atomicEvidence && typeof root.SPECTRA_PRO_atomicEvidence.enhance === 'function') {
             out = root.SPECTRA_PRO_atomicEvidence.enhance(out, frame, STATE, options);
           }
-          if (out && out.ok) out.analysisVersion = '2.2.0';
+          if (out && out.ok) out.analysisVersion = '2.2.7';
           STATE.lastAnalysis = out;
           return { type: TYPES.ANALYZE_RESULT, requestId: requestId, payload: out };
         }
