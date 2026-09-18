@@ -1333,6 +1333,7 @@ function ensureLabPanel() {
 	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lower peak threshold, less peak separation, and more total peaks. Affects peak detection only, not any separate smart AI logic."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
 	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
 	    '        <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
+	    '        <label id="spFieldLabAutoTune" class="sp-field sp-field--lab-autotune sp-field--checkbox-row" title="Automatically evaluates Gas Tube spectra across several peak thresholds and wavelength tolerances, then ranks the stable fingerprint consensus."><span>Auto tune</span><input id="spLabAutoTune" type="checkbox"></label>',
 	    '        <label id="spFieldLabRgb" class="sp-field sp-field--lab-rgb sp-field--checkbox-row" title="Use RGB channel support as an extra hidden Smart weighting factor."><span>RGB</span><input id="spLabRgb" type="checkbox"></label>',
 	    '        <label id="spFieldLabStrongPeak" class="sp-field sp-field--lab-strongpeak" title="Adjust how much Smart rewards matches on the strongest observed peaks.">Strong Peak<input id="spLabStrongPeak" class="spctl-input spctl-range spctl-range--lab-strongpeak" type="range" min="1" max="5" step="1" value="3"></label>',
 	    '      </div>',
@@ -1389,6 +1390,7 @@ function ensureLabPanel() {
   const includeWeak = !!(s.analysis && s.analysis.includeWeakPeaks);
   const stableHits = !!(s.analysis && s.analysis.stableHits);
   const smartFind = !!(s.analysis && s.analysis.smartFindEnabled);
+  const autoTune = !(s.analysis && s.analysis.autoTune === false);
   const useRgbScore = !!(s.analysis && s.analysis.useRgbScore);
   const enabledEl = $('spLabEnabled');
   const hzEl = $('spLabMaxHz');
@@ -1398,6 +1400,7 @@ function ensureLabPanel() {
   const weakEl = $('spLabWeak');
   const stableEl = $('spLabStable');
   const smartEl = $('spLabSmart');
+  const autoTuneEl = $('spLabAutoTune');
   const rgbEl = $('spLabRgb');
   const strongPeakEl = $('spLabStrongPeak');
   const peakThrEl = $('spLabPeakThr');
@@ -1410,6 +1413,7 @@ function ensureLabPanel() {
   if (weakEl) weakEl.checked = includeWeak;
   if (stableEl) stableEl.checked = stableHits;
   if (smartEl) smartEl.checked = smartFind;
+  if (autoTuneEl) autoTuneEl.checked = autoTune;
   if (rgbEl) rgbEl.checked = useRgbScore;
   if (strongPeakEl) strongPeakEl.value = String(Math.max(1, Math.min(5, Math.round(Number(s.analysis && s.analysis.strongPeakLevel) || 3))));
   if (peakThrEl) peakThrEl.value = String(Math.max(0.5, Math.min(50, ((Number(s.analysis && s.analysis.peakThresholdRel) || 0.015) * 100))));
@@ -1422,6 +1426,26 @@ function ensureLabPanel() {
   } catch (_) {}
 
   const setVal = (path, value) => { if (store && store.update) store.update(path, value, { source: 'proBootstrap.lab' }); };
+  const syncAutoTuneUi = function () {
+    const currentPreset = presetEl ? String(presetEl.value || '') : '';
+    const gasTube = currentPreset === 'smart-gastube';
+    const autoOn = gasTube && !!(autoTuneEl && autoTuneEl.checked);
+    if (autoTuneEl) {
+      autoTuneEl.disabled = !gasTube;
+      autoTuneEl.title = gasTube
+        ? 'Auto tune runs a multi-threshold / multi-tolerance fingerprint consensus for unknown discharge tubes.'
+        : 'Auto tune is currently used by the Gas Tube preset.';
+    }
+    [peakThrEl, peakDistEl, maxDistEl].forEach(function (el) {
+      if (!el) return;
+      el.disabled = autoOn;
+      el.title = autoOn
+        ? 'Controlled automatically by Gas Tube Auto tune. Disable Auto tune for manual testing.'
+        : '';
+    });
+  };
+  syncAutoTuneUi();
+
 
   enabledEl && enabledEl.addEventListener('change', function (e) {
     const on = !!e.target.checked;
@@ -1452,6 +1476,7 @@ function ensureLabPanel() {
       const client = ensureWorkerClient();
       if (client && typeof client.setPreset === 'function') client.setPreset(v || null);
     } catch (_) {}
+    syncAutoTuneUi();
     setFeedback(v ? ('Preset: ' + v) : 'Preset cleared.', 'info');
   });
 
@@ -1495,6 +1520,14 @@ function ensureLabPanel() {
     setVal('analysis.smartFindEnabled', on);
     setFeedback(on ? 'Smart find enabled.' : 'Smart find disabled.', 'info');
   });
+
+  autoTuneEl && autoTuneEl.addEventListener('change', function (e) {
+    const on = !!e.target.checked;
+    setVal('analysis.autoTune', on);
+    syncAutoTuneUi();
+    setFeedback(on ? 'Gas Tube Auto tune enabled.' : 'Gas Tube Auto tune disabled; manual peak/tolerance controls active.', 'info');
+  });
+
 
   rgbEl && rgbEl.addEventListener('change', function (e) {
     const on = !!e.target.checked;
