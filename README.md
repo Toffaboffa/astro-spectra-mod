@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v2.2.8**
+**Current UI version: v2.2.9**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
@@ -40,7 +40,7 @@ SPECTRA PRO starts in **English on every page load**. A compact **EN / SV** swit
 - **SV** translates the visible application UI to Swedish at runtime.
 - Analysis data, wavelengths, units, chemical symbols, species labels and the scientific result values are not rewritten as language content.
 - AI Interpretation output is intentionally independent of the UI language and continues to follow the language of the user's observation when that language can be identified.
-- The language choice is not persisted across reloads in v2.2.8; English is always the clean baseline after a new load.
+- The language choice is not persisted across reloads in v2.2.9; English is always the clean baseline after a new load.
 
 The translation layer is isolated from calibration, graph rendering and worker analysis. It observes the application UI only while Swedish is active, so the normal English path keeps the same behavior as before the language feature.
 
@@ -443,7 +443,7 @@ When modifying the application:
 
 ## Documentation status
 
-`README.md` describes the current high-level v2.2.8 architecture and visible functionality.
+`README.md` describes the current high-level v2.2.9 architecture and visible functionality.
 
 `FunctionSpec.md` contains older planning/specification material and is **not yet fully synchronized with the current implementation**. It remains useful as historical design context, but current runtime behavior should be verified against the code and the in-app HELP guide until that document is revised.
 
