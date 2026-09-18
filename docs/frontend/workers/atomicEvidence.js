@@ -182,6 +182,123 @@
     return { row: row, hits: hits };
   }
 
+  function filterPeaksByRelativeThreshold(peaks, relThreshold) {
+    const arr = (Array.isArray(peaks) ? peaks : []).filter(function (p) {
+      return Number.isFinite(Number(p && p.nm));
+    });
+    if (!arr.length) return [];
+    const maxProm = Math.max(1, arr.reduce(function (m, p) {
+      return Math.max(m, getProminence(p));
+    }, 0));
+    const minProm = maxProm * Math.max(0, Number(relThreshold) || 0);
+    return arr.filter(function (p) { return getProminence(p) >= minProm; });
+  }
+
+  function scoreProfileAuto(profile, peaks, range) {
+    const configs = [
+      { id: 'strict', threshold: 0.055, tolerance: 1.0, weight: 1.15 },
+      { id: 'clean', threshold: 0.035, tolerance: 1.4, weight: 1.00 },
+      { id: 'balanced', threshold: 0.020, tolerance: 1.8, weight: 1.00 },
+      { id: 'sensitive', threshold: 0.015, tolerance: 1.8, weight: 0.90 }
+    ];
+    const passes = [];
+    let anchored = false;
+
+    configs.forEach(function (cfg) {
+      const subset = filterPeaksByRelativeThreshold(peaks, cfg.threshold);
+      const scored = subset.length ? scoreProfile(profile, subset, cfg.tolerance, range) : null;
+      if (scored && scored.row && Number(scored.row.diagnosticMatchedPeaks || 0) > 0) anchored = true;
+      passes.push({ cfg: cfg, scored: scored, subsetCount: subset.length });
+    });
+
+    // A broad pass is confirmation only. It is never allowed to create a
+    // candidate from nothing, which keeps random dense-library coincidences
+    // from winning merely because the wavelength gate was widened.
+    if (anchored) {
+      const cfg = { id: 'confirm', threshold: 0.015, tolerance: 3.0, weight: 0.45 };
+      const subset = filterPeaksByRelativeThreshold(peaks, cfg.threshold);
+      passes.push({ cfg: cfg, scored: subset.length ? scoreProfile(profile, subset, cfg.tolerance, range) : null, subsetCount: subset.length });
+    }
+
+    const totalWeight = Math.max(0.01, passes.reduce(function (s, p) { return s + Number(p.cfg.weight || 0); }, 0));
+    let presenceWeight = 0;
+    let qualitySum = 0;
+    let best = null;
+    let bestDiagCoverage = 0;
+    let bestEvidence = 0;
+    const allHits = [];
+
+    passes.forEach(function (pass) {
+      const scored = pass.scored;
+      if (!scored || !scored.row) return;
+      const row = scored.row;
+      const w = Number(pass.cfg.weight || 0);
+      presenceWeight += w;
+      const diagExpected = Math.max(1, Number(row.diagnosticExpected || 0));
+      const diagFound = Math.max(0, Number(row.diagnosticMatchedPeaks || 0));
+      const diagCoverage = clamp(diagFound / diagExpected, 0, 1);
+      const patternCoverage = clamp(Number(row.patternCoveragePct || 0) / 100, 0, 1);
+      const fingerprint = clamp(Number(row.fingerprintScore || 0) / 100, 0, 1);
+      const evidence = clamp(Number(row.matchedCount || 0) / 4, 0, 1);
+      const explained = clamp(Number(row.explainedIntensityPct || 0) / 100, 0, 1);
+      const passQuality =
+        diagCoverage * 0.38 +
+        fingerprint * 0.22 +
+        patternCoverage * 0.16 +
+        evidence * 0.14 +
+        explained * 0.10;
+      qualitySum += passQuality * w;
+      bestDiagCoverage = Math.max(bestDiagCoverage, diagCoverage);
+      bestEvidence = Math.max(bestEvidence, evidence);
+      if (!best ||
+          diagFound > Number(best.row.diagnosticMatchedPeaks || 0) ||
+          (diagFound === Number(best.row.diagnosticMatchedPeaks || 0) && passQuality > best.quality)) {
+        best = { row: row, hits: scored.hits || [], quality: passQuality, cfg: pass.cfg };
+      }
+      Array.prototype.push.apply(allHits, scored.hits || []);
+    });
+
+    if (!best) return null;
+
+    const robustness = clamp(qualitySum / totalWeight, 0, 1);
+    const presence = clamp(presenceWeight / totalWeight, 0, 1);
+    const consensus = clamp(
+      robustness * 0.42 +
+      presence * 0.20 +
+      bestDiagCoverage * 0.23 +
+      bestEvidence * 0.15,
+      0, 1
+    );
+
+    const row = Object.assign({}, best.row, {
+      totalScore: +(consensus * 100).toFixed(3),
+      autoTune: true,
+      autoTuneConsensusPct: +(consensus * 100).toFixed(1),
+      autoTuneStabilityPct: +(presence * 100).toFixed(1),
+      autoTuneRobustnessPct: +(robustness * 100).toFixed(1),
+      autoTuneBestDiagnosticCoveragePct: +(bestDiagCoverage * 100).toFixed(1),
+      autoTuneBestPass: best.cfg.id,
+      evidenceModel: MODEL + '+auto'
+    });
+
+    return {
+      row: row,
+      hits: dedupeHits(allHits),
+      passes: passes.map(function (p) {
+        const r = p.scored && p.scored.row;
+        return {
+          id: p.cfg.id,
+          thresholdPct: +(p.cfg.threshold * 100).toFixed(1),
+          toleranceNm: p.cfg.tolerance,
+          peakCount: p.subsetCount,
+          matched: r ? Number(r.matchedCount || 0) : 0,
+          diagnosticMatched: r ? Number(r.diagnosticMatchedPeaks || 0) : 0,
+          diagnosticExpected: r ? Number(r.diagnosticExpected || 0) : 0
+        };
+      })
+    };
+  }
+
   function mergeRows(baseRows, profileRows) {
     const profiled = Object.create(null);
     (Array.isArray(profileRows) ? profileRows : []).forEach(function (row) { if (row && row.element) profiled[String(row.element)] = row; });
@@ -258,11 +375,25 @@
     const scoredRows = [];
     const profileHits = [];
 
+    const useAutoTune = out.presetId === 'smart-gastube' && out.autoTune === true;
+    const autoDiagnostics = [];
+
     profiles.forEach(function (profile) {
-      const scored = scoreProfile(profile, peaks, out.maxDistanceNm, range);
+      const scored = useAutoTune
+        ? scoreProfileAuto(profile, peaks, range)
+        : scoreProfile(profile, peaks, out.maxDistanceNm, range);
       if (!scored || !scored.row) return;
       scoredRows.push(scored.row);
       Array.prototype.push.apply(profileHits, scored.hits || []);
+      if (useAutoTune) {
+        autoDiagnostics.push({
+          element: profile.element,
+          consensusPct: Number(scored.row.autoTuneConsensusPct || 0),
+          stabilityPct: Number(scored.row.autoTuneStabilityPct || 0),
+          bestPass: scored.row.autoTuneBestPass || null,
+          passes: scored.passes || []
+        });
+      }
     });
 
     if (!scoredRows.length) return out;
@@ -271,7 +402,17 @@
     out.elementScores = merged;
     out.winnerBreakdown = buildWinnerBreakdown(out.presetId, merged);
     out.scoreSemantics = 'relative-score-share';
-    out.atomicEvidenceModel = MODEL;
+    out.atomicEvidenceModel = useAutoTune ? (MODEL + '+auto') : MODEL;
+    if (useAutoTune) {
+      out.autoTuneSummary = {
+        enabled: true,
+        mode: 'gas-tube-consensus',
+        thresholdsPct: [5.5, 3.5, 2.0, 1.5],
+        tolerancesNm: [1.0, 1.4, 1.8, 3.0],
+        candidates: autoDiagnostics
+      };
+      out.scoreSemantics = 'robust-consensus-share';
+    }
 
     const topElements = Object.create(null);
     merged.slice(0, 4).forEach(function (row) { topElements[String(row.element || '')] = true; });
@@ -294,6 +435,7 @@
   root.SPECTRA_PRO_atomicEvidence = {
     version: MODEL,
     enhance: enhance,
-    scoreProfile: scoreProfile
+    scoreProfile: scoreProfile,
+    scoreProfileAuto: scoreProfileAuto
   };
 })(typeof self !== 'undefined' ? self : this);
