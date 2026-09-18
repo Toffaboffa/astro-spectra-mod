@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '2.2.5';
+  const AI_ASSET_VERSION = '2.2.6';
 
   const defaultPresetCatalog = {
     groups: [
@@ -91,7 +91,7 @@
       narrowLineOverlay: false,
       offsetNm: null,
       includeWeakPeaks: false,
-      maxDistanceNm: 1,
+      maxDistanceNm: 1.8,
       strongPeakLevel: 3,
       peakThresholdRel: 0.05,
       peakDistancePx: 2,
