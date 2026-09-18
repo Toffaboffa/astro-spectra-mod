@@ -318,7 +318,7 @@
       ['Smart find', 'Checkbox', 'Shows refined Smart grouping/evidence rather than only raw proximity hits.', 'Use for source identification; raw coincidences alone are weak evidence in dense libraries.'],
       ['RGB', 'Checkbox', 'Adds RGB-channel support as an extra Smart weighting factor.', 'Use cautiously because camera spectral response and white balance can distort color-channel amplitudes.'],
       ['Strong Peak', 'Slider 1–5', 'Controls how strongly Smart rewards agreement with the strongest observed peaks.', 'Higher values focus ranking more strongly on dominant peaks; lower values give weaker features relatively more influence.'],
-      ['Peak threshold', 'Number input, %', 'Relative LAB peak-detection threshold.', 'Starts at 1.5%. Raise it when noise creates too many peaks; lower values preserve weak diagnostic lines but become less selective.'],
+      ['Peak threshold', 'Number input, %', 'Relative LAB peak-detection threshold.', 'Starts at 1.5%. In Gas Tube with Auto tune enabled, this control is managed automatically; disable Auto tune for manual experiments.'],
       ['Peak distance', 'Number input, px', 'Minimum separation between LAB-detected peaks.', 'Small values resolve close peaks but may split noise/shoulders; large values merge nearby structures.'],
       ['Max distance (nm)', 'Number input', 'Hard wavelength mismatch cap for candidate line matching.', 'Tight values reduce coincidences but require good calibration. Loose values increase false coincidences. This is a hard cap, not a confidence score.'],
       ['Reload / Init libraries', 'Button', 'Loads or reloads spectral libraries in the worker.', 'Libraries now load automatically on first LAB entry. Use manually to recover/reload.'],
@@ -344,7 +344,7 @@
         preset('Lamp (Hg/Ar/Ne)', 'Simple lamp-oriented line matching.', 'A base lamp workflow with relevant species and atomic fingerprint refinement. Raw line count should not be interpreted as probability.') +
         preset('Atomic', 'Narrow atomic emission lines.', 'Uses curated multi-line fingerprints for H, He, Ne, Ar, Kr, Xe, Hg and O plus supporting library evidence.') +
         preset('Molecular', 'Band systems.', 'Uses multiple diagnostic bands and molecular-profile logic. One coincident band is weak evidence; coherent systems are stronger.') +
-        preset('Gas Tube', 'Discharge tubes / mixed gas-like spectra.', 'Combines atomic fingerprints with source-family restrictions and can coexist with molecular contributors.') +
+        preset('Gas Tube', 'Discharge tubes / mixed gas-like spectra.', 'Auto tune is enabled by default and evaluates several peak-threshold and wavelength-tolerance combinations, then ranks the stable fingerprint consensus. Manual controls remain available for diagnostics. Combines atomic fingerprints with source-family restrictions and can coexist with molecular contributors.') +
         preset('Flame', 'Flame or mixed-emitter spectra.', 'Designed for flame-type conditions where atomic emitters and background/molecular contributions can coexist.') +
         preset('Fluorescent', 'Broad fluorescence.', 'Primary output is broadband shape: λmax, centroid, FWHM, band width, asymmetry, shoulders and integrated signal. Atomic labels are secondary and hidden by default.') +
       '</div></section>' +
