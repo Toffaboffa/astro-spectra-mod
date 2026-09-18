@@ -118,6 +118,8 @@
         frame: frame || null,
         options: {
           preset: (st.analysis && st.analysis.presetId) ? String(st.analysis.presetId) : null,
+          autoTune: !(st.analysis && st.analysis.autoTune === false),
+          smartFindEnabled: !!(st.analysis && st.analysis.smartFindEnabled),
           includeWeakPeaks: !!(st.analysis && st.analysis.includeWeakPeaks),
           peakThresholdRel: Number(st.analysis && st.analysis.peakThresholdRel),
           peakDistancePx: Number(st.analysis && st.analysis.peakDistancePx),
