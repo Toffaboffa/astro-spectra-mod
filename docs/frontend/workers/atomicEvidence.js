@@ -273,9 +273,13 @@
     out.scoreSemantics = 'relative-score-share';
     out.atomicEvidenceModel = MODEL;
 
-    out.overlayHits = dedupeHits((out.overlayHits || []).concat(profileHits)).slice(0, 180);
     const topElements = Object.create(null);
-    merged.slice(0, 3).forEach(function (row) { topElements[String(row.element || '')] = true; });
+    merged.slice(0, 4).forEach(function (row) { topElements[String(row.element || '')] = true; });
+    // Smart overlays should stay readable even when a low peak threshold admits
+    // many weak/noisy peaks. Keep annotations to the leading refined candidates.
+    out.overlayHits = dedupeHits((out.overlayHits || []).concat(profileHits)).filter(function (hit) {
+      return topElements[String(hit && hit.element || '')];
+    }).slice(0, 120);
     out.topHits = dedupeHits((out.topHits || []).concat(profileHits)).filter(function (hit) {
       return topElements[String(hit && hit.element || '')];
     }).sort(function (a, b) {
