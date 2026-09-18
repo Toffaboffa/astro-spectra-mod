@@ -5,7 +5,7 @@
   // Wavelengths are curated from NIST Handbook strong/persistent neutral-atom lines.
   // `weight` is a diagnostic ranking aid for low-resolution discharge spectra. It is
   // NOT an abundance, transition probability, or quantitative intensity prediction.
-  const VERSION = 'atomic-fingerprint-v1';
+  const VERSION = 'atomic-fingerprint-v2';
 
   function line(nm, weight, diagnostic) {
     return { nm: nm, weight: weight, diagnostic: diagnostic !== false };
@@ -87,13 +87,29 @@
         line(576.960, 0.42), line(579.066, 0.46), line(708.190, 0.18, false)
       ],
       groups: [[404.656, 435.833, 546.074], [576.960, 579.066]]
+    },
+    O: {
+      element: 'O', label: 'O I', family: 'oxygen', minimumEvidence: 2,
+      // Low-resolution discharge-tube fingerprint. The 777 nm and 844.6 nm
+      // multiplets are represented by one anchor each so an unresolved triplet
+      // is not penalized as three missing lines.
+      lines: [
+        line(615.818, 0.30, false),
+        line(645.598, 0.28, false),
+        line(700.223, 0.34, false),
+        line(725.415, 0.34, false),
+        line(777.350, 1.00, true),
+        line(822.182, 0.28, false),
+        line(844.650, 1.00, true)
+      ],
+      groups: [[700.223, 725.415, 777.350], [777.350, 844.650]]
     }
   };
 
   const presetMap = {
     'lamp-hg': ['Hg', 'Ne', 'Ar', 'Kr', 'Xe'],
-    'smart-atomic': ['H', 'He', 'Ne', 'Ar', 'Kr', 'Xe', 'Hg'],
-    'smart-gastube': ['H', 'He', 'Ne', 'Ar', 'Kr', 'Xe', 'Hg'],
+    'smart-atomic': ['H', 'He', 'Ne', 'Ar', 'Kr', 'Xe', 'Hg', 'O'],
+    'smart-gastube': ['H', 'He', 'Ne', 'Ar', 'Kr', 'Xe', 'Hg', 'O'],
     'smart-fluorescent': ['Hg', 'Ne', 'Ar', 'Kr', 'Xe']
   };
 
