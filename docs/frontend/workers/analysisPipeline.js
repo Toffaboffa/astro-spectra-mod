@@ -759,9 +759,16 @@
     const requestedPresetId = String((opt && opt.preset) || (state && state.activePreset) || 'nearest').trim() || 'nearest';
     const presetCfg = getPresetConfig(requestedPresetId);
     const includeWeak = !!opt.includeWeakPeaks;
-    const peakThresholdRel = Number.isFinite(Number(opt.peakThresholdRel)) ? Number(opt.peakThresholdRel) : (includeWeak ? 0.01 : 0.015);
-    const peakDistancePx = Number.isFinite(Number(opt.peakDistancePx)) ? Number(opt.peakDistancePx) : (includeWeak ? 3 : 5);
-    const hardMaxDistanceNm = Math.max(0.2, Math.min(50, Number.isFinite(Number(opt.maxDistanceNm)) ? Number(opt.maxDistanceNm) : 5));
+    const autoTuneGas = presetCfg.id === 'smart-gastube' && opt.autoTune !== false && opt.smartFindEnabled !== false;
+    const requestedPeakThresholdRel = Number.isFinite(Number(opt.peakThresholdRel)) ? Number(opt.peakThresholdRel) : (includeWeak ? 0.01 : 0.015);
+    const requestedPeakDistancePx = Number.isFinite(Number(opt.peakDistancePx)) ? Number(opt.peakDistancePx) : (includeWeak ? 3 : 5);
+    const requestedMaxDistanceNm = Math.max(0.2, Math.min(50, Number.isFinite(Number(opt.maxDistanceNm)) ? Number(opt.maxDistanceNm) : 5));
+    // Gas Tube Auto tune always starts from a permissive master peak set. The
+    // fingerprint stage then re-evaluates stricter peak/tolerance subsets, so
+    // the identification no longer hinges on one manually chosen threshold.
+    const peakThresholdRel = autoTuneGas ? 0.015 : requestedPeakThresholdRel;
+    const peakDistancePx = autoTuneGas ? 2 : requestedPeakDistancePx;
+    const hardMaxDistanceNm = autoTuneGas ? 1.8 : requestedMaxDistanceNm;
     const strongPeakLevel = Math.max(1, Math.min(5, Math.round(Number.isFinite(Number(opt.strongPeakLevel)) ? Number(opt.strongPeakLevel) : 3)));
     const useRgbScore = !!opt.useRgbScore;
 
@@ -879,6 +886,12 @@
       librariesLoaded: !!(state && state.librariesLoaded),
       calibrated: !!nmAvailable,
       maxDistanceNm: hardMaxDistanceNm,
+      autoTune: autoTuneGas,
+      requestedControls: {
+        peakThresholdRel: requestedPeakThresholdRel,
+        peakDistancePx: requestedPeakDistancePx,
+        maxDistanceNm: requestedMaxDistanceNm
+      },
       weakPeaksMode: {
         enabled: includeWeak,
         peakThresholdRel: peakThresholdRel,
