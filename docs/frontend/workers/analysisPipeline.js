@@ -759,7 +759,7 @@
     const requestedPresetId = String((opt && opt.preset) || (state && state.activePreset) || 'nearest').trim() || 'nearest';
     const presetCfg = getPresetConfig(requestedPresetId);
     const includeWeak = !!opt.includeWeakPeaks;
-    const peakThresholdRel = Number.isFinite(Number(opt.peakThresholdRel)) ? Number(opt.peakThresholdRel) : (includeWeak ? 0.02 : 0.05);
+    const peakThresholdRel = Number.isFinite(Number(opt.peakThresholdRel)) ? Number(opt.peakThresholdRel) : (includeWeak ? 0.01 : 0.015);
     const peakDistancePx = Number.isFinite(Number(opt.peakDistancePx)) ? Number(opt.peakDistancePx) : (includeWeak ? 3 : 5);
     const hardMaxDistanceNm = Math.max(0.2, Math.min(50, Number.isFinite(Number(opt.maxDistanceNm)) ? Number(opt.maxDistanceNm) : 5));
     const strongPeakLevel = Math.max(1, Math.min(5, Math.round(Number.isFinite(Number(opt.strongPeakLevel)) ? Number(opt.strongPeakLevel) : 3)));
@@ -767,7 +767,7 @@
 
     const rawPeaks = peakDetect.detectPeaks(I, { prominenceWindowPx: Math.max(4, peakDistancePx * 2) });
     const peaks = inferPeaks(frame, peakScoring.scorePeaks(rawPeaks, {
-      maxPeaks: includeWeak ? 120 : 72,
+      maxPeaks: includeWeak ? 96 : 48,
       minRelHeight: Math.max(0.003, Math.min(0.95, peakThresholdRel)),
       minPeakDistancePx: Math.max(1, Math.min(64, Math.round(peakDistancePx)))
     }));
@@ -883,7 +883,7 @@
         enabled: includeWeak,
         peakThresholdRel: peakThresholdRel,
         peakDistancePx: peakDistancePx,
-        maxPeaks: includeWeak ? 120 : 72
+        maxPeaks: includeWeak ? 96 : 48
       },
       elementScores: elementScores,
       winnerBreakdown: winnerBreakdown
