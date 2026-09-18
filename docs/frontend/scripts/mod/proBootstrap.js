@@ -1441,7 +1441,7 @@ function ensureLabPanel() {
       if (!el) return;
       el.disabled = autoOn;
       el.title = autoOn
-        ? 'Controlled automatically by Gas Tube Auto tune. Disable Auto tune for manual testing.'
+        ? 'Controlled automatically by Auto tune for this preset. Disable Auto tune for manual testing.'
         : '';
     });
   };
