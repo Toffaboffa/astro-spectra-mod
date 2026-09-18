@@ -64,7 +64,7 @@
       candidates.sort(function (a, b) {
         return (+b.rawScore || 0) - (+a.rawScore || 0) || Math.abs(+a.deltaNm || 0) - Math.abs(+b.deltaNm || 0);
       });
-      const limit = Math.max(1, Math.min(4, Math.round(+opts.maxPerPeak || 1)));
+      const limit = Math.max(1, Math.min(8, Math.round(+opts.maxPerPeak || 1)));
       for (let k = 0; k < candidates.length && k < limit; k += 1) pushMatch(candidates[k]);
     }
 
