@@ -375,7 +375,8 @@
     const scoredRows = [];
     const profileHits = [];
 
-    const useAutoTune = out.presetId === 'smart-gastube' && out.autoTune === true;
+    const autoTuneAtomicPresets = ['smart-gastube', 'smart-atomic', 'lamp-hg'];
+    const useAutoTune = autoTuneAtomicPresets.indexOf(String(out.presetId || '')) !== -1 && out.autoTune === true;
     const autoDiagnostics = [];
 
     profiles.forEach(function (profile) {
@@ -406,7 +407,7 @@
     if (useAutoTune) {
       out.autoTuneSummary = {
         enabled: true,
-        mode: 'gas-tube-consensus',
+        mode: 'atomic-fingerprint-consensus',
         thresholdsPct: [5.5, 3.5, 2.0, 1.5],
         tolerancesNm: [1.0, 1.4, 1.8, 3.0],
         candidates: autoDiagnostics
