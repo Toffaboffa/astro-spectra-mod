@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const HELP_VERSION = '2.3.1';
+  const HELP_VERSION = '2.3.2';
   let installed = false;
   let lastFocus = null;
 
@@ -170,11 +170,11 @@
       ['Refresh UI', 'Button', 'Rebuilds/refreshes the PRO dock and visible status panels.', 'Use for UI recovery; it should not be needed during normal measurement.'],
       ['Probe camera', 'Button', 'Queries browser-reported camera capabilities and manual controls.', 'After probing, optional Zoom/Exposure controls may appear if supported.'],
       ['EXPORT', 'Large button in the left source panel', 'Opens the unified export dialog without changing the active workspace.', 'Placed beside the centered Dark/Ref controls so export is available from any workspace.'],
-      ['Spectrum (source)', 'Export checkbox', 'Exports the central 25% of the current source spectrum/frame height as PNG.', 'The centered crop removes unused dark image area and keeps the dispersed spectrum band prominent.'],
+      ['Spectrum (source)', 'Export checkbox', 'Exports a centered crop of the current source spectrum/frame as PNG.', 'The crop removes unused dark image area and keeps the dispersed spectrum band prominent. In the PDF report this source image is placed beside the graph on the same page.'],
       ['Data points (.csv)', 'Export checkbox', 'Exports the current sampled spectrum as CSV with px, nm when calibrated, RGB and intensity columns.', 'Use for numerical work in spreadsheets, Python or other analysis tools.'],
       ['Graph', 'Export checkbox', 'Exports the graph canvas exactly as currently rendered.', 'Visible annotations, hit labels and overlays are retained because the current graph canvas is exported.'],
       ['Data analysis (.json)', 'Export checkbox', 'Exports one JSON snapshot containing application state, settings, calibration, Status, Data Quality, controls, full spectrum arrays, hits/results and AI data when available.', 'This is the main machine-readable reproducibility bundle. The spectrum arrays include px/nm/R/G/B/intensity and processed/normalized values when available.'],
-      ['Report (.pdf)', 'Export checkbox', 'Generates the structured PDF report locally in the browser.', 'The cover uses the SPECTRA PRO logo and attempts to use the SPECTRA project hero from k-aberg.se. The spectrum image is center-cropped, the graph is rotated 90° to fill a page, the report includes extended continuous method text, compact two-column matched features, side-by-side Quality/Status, and any completed AI interpretation is inserted verbatim into the Abstract. The automatic report body itself remains rule-generated.'],
+      ['Report (.pdf)', 'Export checkbox', 'Generates the structured PDF report locally in the browser.', 'The cover uses the bundled SPECTRA PRO hero supplied for the project. The center-cropped source image and rotated graph share one print-efficient page, without orientation/crop notes in the headings. The report includes extended continuous method text, compact two-column matched features, side-by-side Quality/Status, and any completed AI interpretation is inserted verbatim into the Abstract. The automatic report body itself remains rule-generated.'],
       ['Export selected', 'Button', 'Creates all checked export formats and packages them into one ZIP file.', 'The selected PNG/CSV/JSON/PDF outputs are downloaded as one timestamped SPECTRA PRO ZIP archive.'],
       ['Cancel / ×', 'Buttons', 'Closes the export dialog without creating files.', 'The current measurement and analysis state are unchanged.'],
       ['Long exposure', 'Button', 'Opens the repeated-capture/long-exposure settings popup.', 'Intended for averaging/repeated capture workflows, not for increasing the physical exposure time of unsupported cameras.'],
