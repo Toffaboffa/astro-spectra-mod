@@ -74,7 +74,7 @@ jobs:
           assert "icon: SAMPLE_ICONS.orange" in ne_block, "Ne sample must use the orange tube icon"
           assert "icon: SAMPLE_ICONS.cyan" not in n2_block + ne_block, "Cyan icon is reserved for future samples"
           assert "chunk-" not in module
-          assert "const VERSION = '2.3.7';" in module
+          assert "const VERSION = '2.3.8';" in module
 
           ne = Path("docs/frontend/assets/examples/ne-spectral-tube/ne-spectral-tube.png")
           ne_data = ne.read_bytes()
@@ -85,11 +85,19 @@ jobs:
           ne_digest = hashlib.sha256(ne_data).hexdigest()
           assert ne_digest == "fbef80cbc7637f3220e4eaba31ad4c9e1e8de987fdf93537ce653d5518cbd1f0", f"Ne SHA-256 mismatch: {ne_digest}"
 
-          for name in ("purple", "orange", "cyan"):
+          icon_expectations = {
+              "purple": (8646, "d4b8bb301be315b0270807048d15cda227057c0cbc989a6f8e929a88599791d4"),
+              "orange": (9129, "2f15160ad4d182d678a810f47df796c78a8eac4c371bb670ad7aa775a77e9a1a"),
+              "cyan": (8522, "5c7bda21e42cff8cdaaf5025b0da8c0561163f025631dc01d80727a6105ea204"),
+          }
+          for name, (expected_size, expected_digest) in icon_expectations.items():
               icon_data = Path(f"docs/frontend/assets/examples/icons/spectral-tube-{name}-128.png").read_bytes()
+              assert len(icon_data) == expected_size, f"Unexpected {name} icon size: {len(icon_data)}"
               assert icon_data[:8] == b"\x89PNG\r\n\x1a\n", f"{name} icon is not PNG"
               w, h = struct.unpack(">II", icon_data[16:24])
               assert (w, h) == (128, 128), f"Unexpected {name} icon dimensions: {(w, h)}"
+              icon_digest = hashlib.sha256(icon_data).hexdigest()
+              assert icon_digest == expected_digest, f"{name} icon SHA-256 mismatch: {icon_digest}"
 
           cal_io = Path("docs/frontend/scripts/mod/calibrationIO.js").read_text(encoding="utf-8")
           assert "suppressAxisPromptFor" in cal_io
