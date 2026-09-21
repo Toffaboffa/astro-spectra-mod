@@ -74,7 +74,7 @@ jobs:
           assert "icon: SAMPLE_ICONS.orange" in ne_block, "Ne sample must use the orange tube icon"
           assert "icon: SAMPLE_ICONS.cyan" not in n2_block + ne_block, "Cyan icon is reserved for future samples"
           assert "chunk-" not in module
-          assert "const VERSION = '2.3.6';" in module
+          assert "const VERSION = '2.3.7';" in module
 
           ne = Path("docs/frontend/assets/examples/ne-spectral-tube/ne-spectral-tube.png")
           ne_data = ne.read_bytes()
