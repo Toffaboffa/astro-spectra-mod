@@ -38,7 +38,7 @@ The project is no longer a scaffold. The main Recording page is functional and c
 
 SPECTRA PRO v2.3.6 includes a **Load Example** button in the Source panel. It loads a bundled line-spectrum image through the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
 
-The bundled catalog contains N₂ and Ne spectral-tube measurements recorded with SPECTRA-1. N₂ uses the original 1280×720 PNG; Ne is bundled as lossless WebP with identical decoded RGB values to the supplied 1280×720 source. The dialog uses color-coded spectral-tube icons: purple for N₂, orange for Ne, with the cyan variant bundled for future samples. Clicking a card selects it; **Load sample** confirms and loads the selection.
+The bundled catalog contains N₂ and Ne spectral-tube measurements recorded with SPECTRA-1. Both samples use their original 1280×720 PNG source images without format conversion or cropping. The dialog uses color-coded spectral-tube icons: purple for N₂, orange for Ne, with the cyan variant bundled for future samples. Clicking a card selects it; **Load sample** confirms and loads the selection.
 
 After a sample is selected and **Load sample** is pressed, SPECTRA PRO automatically:
 
