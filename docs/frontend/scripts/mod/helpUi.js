@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const HELP_VERSION = '2.2.2';
+  const HELP_VERSION = '2.3.0';
   let installed = false;
   let lastFocus = null;
 
@@ -169,7 +169,14 @@
       ['Zoom scroller', 'Slider', 'Moves through the available X-range while zoomed.', 'Disabled when the graph has no scrollable zoom span.'],
       ['Refresh UI', 'Button', 'Rebuilds/refreshes the PRO dock and visible status panels.', 'Use for UI recovery; it should not be needed during normal measurement.'],
       ['Probe camera', 'Button', 'Queries browser-reported camera capabilities and manual controls.', 'After probing, optional Zoom/Exposure controls may appear if supported.'],
-      ['Export', 'Button', 'Opens/uses the original graph data export workflow.', 'Use to preserve numeric data and related output for later analysis.'],
+      ['EXPORT', 'Large button in the left source panel', 'Opens the unified export dialog without changing the active workspace.', 'Placed beside the centered Dark/Ref controls so export is available from any workspace.'],
+      ['Spectrum (source)', 'Export checkbox', 'Exports the current source spectrum/frame as PNG.', 'This is the source image, separate from the rendered graph.'],
+      ['Data points (.csv)', 'Export checkbox', 'Exports the current sampled spectrum as CSV with px, nm when calibrated, RGB and intensity columns.', 'Use for numerical work in spreadsheets, Python or other analysis tools.'],
+      ['Graph', 'Export checkbox', 'Exports the graph canvas exactly as currently rendered.', 'Visible annotations, hit labels and overlays are retained because the current graph canvas is exported.'],
+      ['Data analysis (.json)', 'Export checkbox', 'Exports one JSON snapshot containing application state, settings, calibration, Status, Data Quality, controls, hits/results and AI data when available.', 'This is the main machine-readable reproducibility bundle.'],
+      ['Report (.pdf)', 'Export checkbox', 'Generates a deterministic PDF report locally in the browser.', 'The report follows the SPECTRA report structure with abstract, source, graph, method/workflow, instrument/calibration, indicators, quality and reproducibility. The report text is not AI-written; a previous AI interpretation is only reproduced as a marked appendix when available.'],
+      ['Export selected', 'Button', 'Creates all checked export formats.', 'Browsers may ask permission when several files are downloaded in one action.'],
+      ['Cancel / ×', 'Buttons', 'Closes the export dialog without creating files.', 'The current measurement and analysis state are unchanged.'],
       ['Long exposure', 'Button', 'Opens the repeated-capture/long-exposure settings popup.', 'Intended for averaging/repeated capture workflows, not for increasing the physical exposure time of unsupported cameras.'],
       ['Show Reference Lines', 'Checkbox', 'Shows/hides stored reference graph overlays.', 'Reference graphs are visual/comparison traces, distinct from the processing Ref frame.'],
       ['Compare Reference Lines', 'Drop-down: NORMAL / DIFFERENCE / RATIO / TRANSMITTANCE / ABSORBANCE', 'Chooses the mathematical comparison display against stored reference lines.', 'NORMAL shows normal traces. Difference subtracts; Ratio divides; Transmittance expresses a ratio as transmission; Absorbance applies logarithmic absorbance semantics. Use only with a physically meaningful reference.'],
@@ -372,6 +379,7 @@
       ['Analyze', 'Button', 'Sends the compact SPECTRA analysis package to the secure backend and requests interpretation.', 'A successful run receives a new Run ID / OpenAI response ID and token usage metadata.'],
       ['Cancel / ×', 'Buttons', 'Closes the AI dialog without starting another request.', 'Does not alter the current measurement.'],
       ['Copy text', 'Button after result', 'Copies the AI response text to the clipboard.', 'A “Text copied.” toast appears above the dialog without changing layout.'],
+      ['Export', 'Button after result', 'Opens the unified export dialog after a completed AI interpretation.', 'The AI payload, response metadata and interpretation text are included in Data analysis JSON; the interpretation can also appear as a clearly marked appendix in the PDF report.'],
       ['New analysis', 'Button after result', 'Clears the previous AI result and returns the dialog to the observation/analyze state.', 'Use this before intentionally starting another OpenAI request.']
     ];
 
@@ -387,7 +395,7 @@
       '</ul></section>' +
       '<section class="sp-help-section"><h3>Interpretation rules</h3><p>The AI should distinguish measured features, SPECTRA matches and physical interpretation. Score Share is relative ranking, not probability or abundance. For Fluorescent mode, broadband shape is primary evidence; narrow-line coincidences are secondary. The AI should state uncertainty when calibration, signal quality or pattern coverage is weak.</p></section>' +
       '<div class="sp-help-callout sp-help-callout--warn"><b>AI is not a second spectrometer.</b> It cannot recover clipped peaks, repair an inappropriate calibration, infer concentration from normalized intensity, or uniquely identify every fluorophore from a broad band without appropriate reference data.</div>' +
-      plannedShot('AI Interpretation dialog', 'Show the AI dialog before analysis with a short observation, then a second screenshot after analysis showing the response, Copy text, New analysis and the run/token metadata line.', 'help-ai-interpretation.png');
+      plannedShot('AI Interpretation dialog', 'Show the AI dialog before analysis with a short observation, then a second screenshot after analysis showing the response, Copy text, Export, New analysis and the run/token metadata line.', 'help-ai-interpretation.png');
   }
 
   function qa(q, a) {
