@@ -6,8 +6,8 @@
   const BUTTON_ID = 'spLoadExampleBtn';
   const OVERLAY_ID = 'spExampleChooserOverlay';
   const STYLE_ID = 'spExampleChooserStyle';
-  let imageDataPromises = {};
   let loading = false;
+  let selectedExampleId = 'n2-spectral-tube';
 
   const EXAMPLES = Object.freeze([
     Object.freeze({
@@ -19,28 +19,11 @@
       sourceLabelEn: 'N₂ spectral tube (calibrated)',
       sourceLabelSv: 'N₂ spektralrör (kalibrerat)',
       image: Object.freeze({
+        path: '../assets/examples/n2-spectral-tube/n2-spectral-tube.png',
         width: 1280,
         height: 720,
         mime: 'image/png',
-        base64Length: 109728,
-        chunks: Object.freeze([
-          '../assets/examples/n2-spectral-tube/chunk-01.txt',
-          '../assets/examples/n2-spectral-tube/chunk-02.txt',
-          '../assets/examples/n2-spectral-tube/chunk-03.txt',
-          '../assets/examples/n2-spectral-tube/chunk-04.txt',
-          '../assets/examples/n2-spectral-tube/chunk-05.txt',
-          '../assets/examples/n2-spectral-tube/chunk-06.txt',
-          '../assets/examples/n2-spectral-tube/chunk-07.txt',
-          '../assets/examples/n2-spectral-tube/chunk-08.txt',
-          '../assets/examples/n2-spectral-tube/chunk-09.txt',
-          '../assets/examples/n2-spectral-tube/chunk-10.txt',
-          '../assets/examples/n2-spectral-tube/chunk-11.txt',
-          '../assets/examples/n2-spectral-tube/chunk-12.txt',
-          '../assets/examples/n2-spectral-tube/chunk-13.txt',
-          '../assets/examples/n2-spectral-tube/chunk-14.txt',
-          '../assets/examples/n2-spectral-tube/chunk-15.txt',
-          '../assets/examples/n2-spectral-tube/chunk-16.txt'
-        ])
+        sha256: 'dc624e7ca38032b9ca6c93e09f14feec476617c35742316e4f6063b050e3bbea'
       }),
       calibration: Object.freeze({
         source: 'KVANT SPECTRA 1 factory calibration from SPECTRA v6 report',
@@ -56,7 +39,7 @@
           a0: 375.834988
         })
       }),
-      stripe: Object.freeze({ widthPx: 5, yNormalized: 0.54 }),
+      stripe: Object.freeze({ widthPx: 5, yNormalized: 0.544 }),
       recommendedPreset: 'smart-gastube'
     })
   ]);
@@ -112,6 +95,7 @@
       '#' + OVERLAY_ID + ' .sp-example-intro{margin:0 0 12px;color:#b6d9d0;font-size:.88rem;}',
       '#' + OVERLAY_ID + ' .sp-example-card{width:100%;text-align:left;background:#0a2445;color:#eafff9;border:1px solid rgba(159,255,229,.26);border-radius:8px;padding:13px 14px;cursor:pointer;transition:border-color .12s ease,background .12s ease;}',
       '#' + OVERLAY_ID + ' .sp-example-card:hover,#' + OVERLAY_ID + ' .sp-example-card:focus{outline:none;border-color:#9fffe5;background:#0d2b50;}',
+      '#' + OVERLAY_ID + ' .sp-example-card.is-selected{border-color:#9fffe5;background:#0d3158;box-shadow:inset 0 0 0 1px rgba(159,255,229,.28);}',
       '#' + OVERLAY_ID + ' .sp-example-card__top{display:flex;align-items:center;justify-content:space-between;gap:12px;}',
       '#' + OVERLAY_ID + ' .sp-example-card__title{font-weight:800;font-size:1rem;}',
       '#' + OVERLAY_ID + ' .sp-example-card__badge{font-size:.72rem;font-weight:800;color:#071b36;background:#9fffe5;border-radius:999px;padding:3px 7px;white-space:nowrap;}',
@@ -130,6 +114,17 @@
     overlay.hidden = true;
   }
 
+  function updateSelectionUi(overlay) {
+    if (!overlay) return;
+    overlay.querySelectorAll('.sp-example-card').forEach(function (card) {
+      const selected = String(card.getAttribute('data-example-id') || '') === selectedExampleId;
+      card.classList.toggle('is-selected', selected);
+      card.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+    const loadButton = overlay.querySelector('.sp-example-load');
+    if (loadButton) loadButton.disabled = loading || !getExample(selectedExampleId);
+  }
+
   function renderChooser() {
     ensureStyle();
     let overlay = $(OVERLAY_ID);
@@ -145,13 +140,16 @@
       global.document.body.appendChild(overlay);
     }
 
+    if (!getExample(selectedExampleId) && EXAMPLES.length) selectedExampleId = EXAMPLES[0].id;
+
     const swedish = isSwedish();
     const cards = EXAMPLES.map(function (sample) {
       const label = swedish ? sample.labelSv : sample.labelEn;
       const desc = swedish ? sample.descriptionSv : sample.descriptionEn;
+      const selected = sample.id === selectedExampleId;
       return [
-        '<button type="button" class="sp-example-card" data-example-id="' + sample.id + '">',
-        '  <span class="sp-example-card__top"><span class="sp-example-card__title">' + label + '</span><span class="sp-example-card__badge">N₂</span></span>',
+        '<button type="button" class="sp-example-card' + (selected ? ' is-selected' : '') + '" data-example-id="' + sample.id + '" aria-pressed="' + (selected ? 'true' : 'false') + '">',
+        '  <span class="sp-example-card__top"><span class="sp-example-card__title">' + label + '</span><span class="sp-example-card__badge">SPECTRA-1</span></span>',
         '  <p>' + desc + '</p>',
         '  <span class="sp-example-meta">1280×720 px · 3-point calibration · Gas Tube preset</span>',
         '</button>'
@@ -165,9 +163,9 @@
       '    <button type="button" class="sp-example-close" aria-label="' + t('Close', 'Stäng') + '">×</button>',
       '  </div>',
       '  <div class="sp-example-body">',
-      '    <p class="sp-example-intro">' + t('Choose a bundled example measurement to load into SPECTRA PRO.', 'Välj en inbyggd exempelmätning att ladda i SPECTRA PRO.') + '</p>',
+      '    <p class="sp-example-intro">' + t('Choose a bundled example measurement, then load the selected sample.', 'Välj en inbyggd exempelmätning och ladda sedan det valda provet.') + '</p>',
       cards,
-      '    <div class="sp-example-actions"><button type="button" class="sp-example-load" data-example-id="' + EXAMPLES[0].id + '">' + t('Load sample', 'Ladda prov') + '</button></div>',
+      '    <div class="sp-example-actions"><button type="button" class="sp-example-load">' + t('Load sample', 'Ladda prov') + '</button></div>',
       '  </div>',
       '</section>'
     ].join('');
@@ -175,22 +173,28 @@
     const close = overlay.querySelector('.sp-example-close');
     if (close) close.addEventListener('click', closeChooser);
 
-    overlay.querySelectorAll('[data-example-id]').forEach(function (el) {
-      el.addEventListener('click', function () {
-        const id = String(el.getAttribute('data-example-id') || '');
-        load(id);
+    overlay.querySelectorAll('.sp-example-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        const id = String(card.getAttribute('data-example-id') || '');
+        if (!getExample(id)) return;
+        selectedExampleId = id;
+        updateSelectionUi(overlay);
       });
     });
 
+    const loadButton = overlay.querySelector('.sp-example-load');
+    if (loadButton) loadButton.addEventListener('click', function () { load(selectedExampleId); });
+
+    updateSelectionUi(overlay);
     return overlay;
   }
 
   function openChooser() {
     const overlay = renderChooser();
     overlay.hidden = false;
-    const first = overlay.querySelector('.sp-example-card');
-    if (first) {
-      try { first.focus(); } catch (_) {}
+    const selected = overlay.querySelector('.sp-example-card.is-selected') || overlay.querySelector('.sp-example-card');
+    if (selected) {
+      try { selected.focus(); } catch (_) {}
     }
   }
 
@@ -209,27 +213,32 @@
     }
   }
 
-  async function readImageDataUrl(sample) {
-    if (imageDataPromises[sample.id]) return imageDataPromises[sample.id];
-    imageDataPromises[sample.id] = (async function () {
-      const parts = [];
-      for (let i = 0; i < sample.image.chunks.length; i += 1) {
-        const response = await global.fetch(sample.image.chunks[i], { credentials: 'same-origin' });
-        if (!response.ok) throw new Error('Example image asset ' + (i + 1) + ' could not be loaded.');
-        parts.push(String(await response.text()).trim());
+  function assetUrl(sample) {
+    return sample.image.path + '?v=' + encodeURIComponent(VERSION);
+  }
+
+  function dimensionsMatch(sample, image) {
+    return Number(image && image.naturalWidth) === Number(sample.image.width) &&
+      Number(image && image.naturalHeight) === Number(sample.image.height);
+  }
+
+  function preloadAsset(sample) {
+    return new Promise(function (resolve, reject) {
+      if (typeof global.Image !== 'function') {
+        reject(new Error('Image loading is unavailable in this browser.'));
+        return;
       }
-      const base64 = parts.join('');
-      if (!base64 || base64.length !== sample.image.base64Length ||
-          base64.slice(0, 8) !== 'iVBORw0K' ||
-          base64.slice(-8) !== 'TkSuQmCC') {
-        throw new Error('Example image asset is incomplete.');
-      }
-      return 'data:' + sample.image.mime + ';base64,' + base64;
-    })().catch(function (error) {
-      delete imageDataPromises[sample.id];
-      throw error;
+      const probe = new global.Image();
+      probe.onload = function () {
+        if (!dimensionsMatch(sample, probe)) {
+          reject(new Error('Example image dimensions do not match the calibrated 1280×720 source.'));
+          return;
+        }
+        resolve(assetUrl(sample));
+      };
+      probe.onerror = function () { reject(new Error('The bundled example image could not be loaded.')); };
+      probe.src = assetUrl(sample);
     });
-    return imageDataPromises[sample.id];
   }
 
   function stopLiveSource() {
@@ -371,12 +380,13 @@
   }
 
   async function load(id) {
-    const sample = getExample(id || EXAMPLES[0].id);
+    const sample = getExample(id || selectedExampleId || EXAMPLES[0].id);
     if (!sample || loading) return false;
+    selectedExampleId = sample.id;
     setBusy(true);
 
     try {
-      const dataUrl = await readImageDataUrl(sample);
+      const imageUrl = await preloadAsset(sample);
       stopLiveSource();
       closeChooser();
 
@@ -404,6 +414,10 @@
 
       await new Promise(function (resolve, reject) {
         image.onload = function () {
+          if (!dimensionsMatch(sample, image)) {
+            reject(new Error('Example image dimensions do not match the calibrated 1280×720 source.'));
+            return;
+          }
           try {
             finishLoadedImage(sample, image);
             resolve();
@@ -414,7 +428,7 @@
         image.onerror = function () {
           reject(new Error('The bundled example image could not be decoded.'));
         };
-        image.src = dataUrl;
+        image.src = imageUrl;
         image.style.display = 'block';
       });
 
@@ -444,9 +458,17 @@
     close: closeChooser,
     load: load,
     install: install,
+    select: function (id) {
+      if (!getExample(id)) return false;
+      selectedExampleId = id;
+      const overlay = $(OVERLAY_ID);
+      if (overlay) updateSelectionUi(overlay);
+      return true;
+    },
+    getSelectedId: function () { return selectedExampleId; },
     getCatalog: function () { return EXAMPLES.map(function (item) { return item.id; }); },
     getConfig: function (id) {
-      const sample = getExample(id || EXAMPLES[0].id);
+      const sample = getExample(id || selectedExampleId || EXAMPLES[0].id);
       return sample ? JSON.parse(JSON.stringify(sample)) : null;
     }
   };

@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v2.3.4**
+**Current UI version: v2.3.5**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
@@ -36,14 +36,14 @@ The project is no longer a scaffold. The main Recording page is functional and c
 
 ## Built-in line-spectrum example
 
-SPECTRA PRO v2.3.4 adds a **Load Example** button in the Source panel. It loads a bundled line-spectrum image through the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
+SPECTRA PRO v2.3.5 adds a **Load Example** button in the Source panel. It loads a bundled line-spectrum image through the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
 
-The example source comes from an older SPECTRA-1 measurement. The original 1280×720 image is cropped vertically to 1280×160 while retaining the full horizontal detector geometry. This removes most unused dark area without altering the x/pixel calibration.
+The first bundled sample is an N₂ spectral-tube measurement recorded with SPECTRA-1. SPECTRA PRO uses the original 1280×720 PNG without vertical cropping, preserving the source image and the detector geometry used by the reported calibration. The Load Example dialog is catalog-driven: clicking a sample selects it, while **Load sample** confirms and loads that selection.
 
-When **Load Example** is pressed, SPECTRA PRO automatically:
+After a sample is selected and **Load sample** is pressed, SPECTRA PRO automatically:
 
-- loads the bundled example image
-- centers the sampling stripe and sets Stripe Width to 5 px
+- loads the selected bundled image at its original 1280×720 resolution
+- places the sampling stripe through the bright spectral band and sets Stripe Width to 5 px
 - applies the three reported SPECTRA-1 calibration anchors: 32 px → 388.86 nm, 515 px → 587.57 nm and 1110 px → 837.76 nm
 - switches the graph X-axis to nm
 - selects **Gas Tube** as the recommended LAB preset
@@ -62,7 +62,7 @@ SPECTRA PRO starts in **English on every page load**. A compact **EN / SV** swit
 - **SV** translates the visible application UI to Swedish at runtime.
 - Analysis data, wavelengths, units, chemical symbols, species labels and the scientific result values are not rewritten as language content.
 - AI Interpretation output is intentionally independent of the UI language and continues to follow the language of the user's observation when that language can be identified.
-- The language choice is not persisted across reloads in v2.3.4; English is always the clean baseline after a new load.
+- The language choice is not persisted across reloads in v2.3.5; English is always the clean baseline after a new load.
 
 The translation layer is isolated from calibration, graph rendering and worker analysis. It observes the application UI only while Swedish is active, so the normal English path keeps the same behavior as before the language feature.
 
@@ -70,7 +70,7 @@ The translation layer is isolated from calibration, graph rendering and worker a
 
 ## Unified export
 
-SPECTRA PRO v2.3.4 uses the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
+SPECTRA PRO v2.3.5 uses the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
 
 The export dialog can generate any combination of:
 
@@ -490,7 +490,7 @@ When modifying the application:
 
 ## Documentation status
 
-`README.md` describes the current high-level v2.2.10 architecture and visible functionality.
+`README.md` describes the current high-level v2.3.5 architecture and visible functionality.
 
 `FunctionSpec.md` contains older planning/specification material and is **not yet fully synchronized with the current implementation**. It remains useful as historical design context, but current runtime behavior should be verified against the code and the in-app HELP guide until that document is revised.
 

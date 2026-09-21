@@ -39,3 +39,28 @@ jobs:
           # Ensure referenced CSS files exist
           (test -f docs/frontend/styles/customColorsStyle.css || test -f docs/frontend/styles/styles.css)
           (test -f docs/frontend/styles/recordingStyle.css || test -f docs/frontend/styles/styles.css)
+
+      - name: Validate bundled N2 sample
+        shell: bash
+        run: |
+          set -e
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import struct
+
+          image = Path("docs/frontend/assets/examples/n2-spectral-tube/n2-spectral-tube.png")
+          data = image.read_bytes()
+          assert len(data) == 82296, f"Unexpected N2 example size: {len(data)}"
+          assert data[:8] == b"\x89PNG\r\n\x1a\n", "N2 example is not a PNG"
+          width, height = struct.unpack(">II", data[16:24])
+          assert (width, height) == (1280, 720), f"Unexpected N2 dimensions: {(width, height)}"
+          digest = hashlib.sha256(data).hexdigest()
+          expected = "dc624e7ca38032b9ca6c93e09f14feec476617c35742316e4f6063b050e3bbea"
+          assert digest == expected, f"N2 SHA-256 mismatch: {digest}"
+
+          module = Path("docs/frontend/scripts/mod/exampleSpectrumUi.js").read_text(encoding="utf-8")
+          assert "n2-spectral-tube.png" in module
+          assert "chunk-" not in module
+          assert "const VERSION = '2.3.5';" in module
+          PY
