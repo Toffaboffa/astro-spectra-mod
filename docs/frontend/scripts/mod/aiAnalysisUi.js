@@ -7,6 +7,7 @@
   const STYLE_ID = 'spAiInterpretStyle';
   let lastPayload = null;
   let lastResultText = '';
+  let lastResponse = null;
   let lastFocused = null;
   let eventHooksInstalled = false;
   let keyHookInstalled = false;
@@ -71,6 +72,11 @@
     if (button) button.style.display = visible ? '' : 'none';
   }
 
+  function setExportVisible(visible) {
+    const button = $('spAiExportBtn');
+    if (button) button.style.display = visible ? '' : 'none';
+  }
+
   function ensureModal() {
     if (!global.document) return null;
     let modal = $(MODAL_ID);
@@ -100,6 +106,7 @@
       '    <div class="sp-ai-modal__actions">',
       '      <button type="button" id="spAiCancelBtn">Cancel</button>',
       '      <button type="button" id="spAiNewRunBtn" style="display:none">New analysis</button>',
+      '      <button type="button" id="spAiExportBtn" style="display:none">Export</button>',
       '      <button type="button" id="spAiAnalyzeBtn" class="sp-ai-primary" data-mode="analyze">Analyze</button>',
       '    </div>',
       '  </div>',
@@ -112,6 +119,10 @@
       if (!target) return;
       if (target.id === 'spAiInterpretClose' || target.id === 'spAiCancelBtn' || target.getAttribute('data-ai-close') === '1') close();
       if (target.id === 'spAiNewRunBtn') prepareNewRun();
+      if (target.id === 'spAiExportBtn') {
+        if (sp.exportUi && typeof sp.exportUi.open === 'function') sp.exportUi.open({ source: 'ai' });
+        else showToast('Export is not available yet. Reload SPECTRA PRO and try again.', 'error');
+      }
       if (target.id === 'spAiAnalyzeBtn') {
         if (target.dataset.mode === 'copy') copyResultText();
         else submit();
@@ -235,6 +246,7 @@
     result.classList.toggle('is-visible', !!text);
     setPrimaryActionMode(text ? 'copy' : 'analyze');
     setNewRunVisible(!!text);
+    setExportVisible(!!text);
   }
 
   function fallbackCopy(text) {
@@ -280,12 +292,14 @@
 
   function prepareNewRun() {
     lastResultText = '';
+    lastResponse = null;
     clearToast();
     setMeta('');
     setStatus('', 'info', false);
     setResult('');
     setPrimaryActionMode('analyze');
     setNewRunVisible(false);
+    setExportVisible(false);
     const textarea = $('spAiObservation');
     if (textarea) global.setTimeout(function () { textarea.focus(); }, 0);
   }
@@ -350,6 +364,7 @@
 
       if (sp.aiAnalysisService && typeof sp.aiAnalysisService.interpret === 'function') {
         Promise.resolve(sp.aiAnalysisService.interpret(payload)).then(function (response) {
+          lastResponse = response && typeof response === 'object' ? response : { result: response };
           const value = response && typeof response === 'object' && response.result != null ? response.result : response;
           setStatus('', 'info', false);
           setResult(value);
@@ -452,7 +467,9 @@
     showResult: showResult,
     showError: showError,
     formatStructuredResult: formatStructuredResult,
-    getLastPayload: function () { return lastPayload; }
+    getLastPayload: function () { return lastPayload; },
+    getLastResultText: function () { return lastResultText; },
+    getLastResponse: function () { return lastResponse; }
   };
 
   if (global.document) {
