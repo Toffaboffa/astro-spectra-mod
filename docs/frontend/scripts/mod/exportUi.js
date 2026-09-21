@@ -2,10 +2,12 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '2.3.0';
+  const VERSION = '2.3.1';
   const MODAL_ID = 'spExportModal';
   const STYLE_ID = 'spExportUiStyle';
   const MAIN_BUTTON_ID = 'spExportMainBtn';
+  const REPORT_HERO_PAGE_URL = 'https://www.k-aberg.se/';
+  let projectHeroPromise = null;
 
   const I18N = {
     en: {
@@ -29,7 +31,7 @@
       exportSelected: 'Export selected',
       noneSelected: 'Select at least one export format.',
       working: 'Preparing export…',
-      done: 'Export prepared.',
+      done: 'ZIP export prepared.',
       sourceMissing: 'Source image is not available yet.',
       dataMissing: 'Spectrum data points are not available yet.',
       graphMissing: 'Graph image is not available yet.',
@@ -57,7 +59,7 @@
       exportSelected: 'Exportera valda',
       noneSelected: 'Välj minst ett exportformat.',
       working: 'Förbereder export…',
-      done: 'Exporten är förberedd.',
+      done: 'ZIP-exporten är förberedd.',
       sourceMissing: 'Källbilden är inte tillgänglig ännu.',
       dataMissing: 'Spektrumets datapunkter är inte tillgängliga ännu.',
       graphMissing: 'Diagrammet är inte tillgängligt ännu.',
@@ -206,6 +208,135 @@
     url = captureElementDataUrl(img);
     if (url) return url;
     return captureElementDataUrl($('videoMain'));
+  }
+
+  function transformDataUrl(url, drawFn) {
+    return new Promise(function (resolve) {
+      if (!url) return resolve('');
+      const img = new Image();
+      img.onload = function () {
+        try {
+          const out = drawFn(img);
+          resolve(out || '');
+        } catch (_) { resolve(''); }
+      };
+      img.onerror = function () { resolve(''); };
+      img.src = url;
+    });
+  }
+
+  function cropCenterBandDataUrl(url, fraction) {
+    const frac = Math.max(0.05, Math.min(1, Number(fraction) || 0.25));
+    return transformDataUrl(url, function (img) {
+      const w = Number(img.naturalWidth || img.width || 0);
+      const h = Number(img.naturalHeight || img.height || 0);
+      if (!w || !h) return '';
+      const cropH = Math.max(1, Math.round(h * frac));
+      const sy = Math.max(0, Math.round((h - cropH) / 2));
+      const canvas = global.document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = cropH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return '';
+      ctx.drawImage(img, 0, sy, w, cropH, 0, 0, w, cropH);
+      return canvas.toDataURL('image/png');
+    });
+  }
+
+  function rotateDataUrl90(url) {
+    return transformDataUrl(url, function (img) {
+      const w = Number(img.naturalWidth || img.width || 0);
+      const h = Number(img.naturalHeight || img.height || 0);
+      if (!w || !h) return '';
+      const canvas = global.document.createElement('canvas');
+      canvas.width = h;
+      canvas.height = w;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return '';
+      ctx.translate(h, 0);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(img, 0, 0, w, h);
+      return canvas.toDataURL('image/png');
+    });
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result || '')); };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function fetchDataUrl(url, timeoutMs) {
+    if (!url) return '';
+    if (String(url).indexOf('data:') === 0) return String(url);
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = global.setTimeout(function () { try { if (controller) controller.abort(); } catch (_) {} }, Math.max(500, Number(timeoutMs) || 3000));
+    try {
+      const response = await global.fetch(url, { mode: 'cors', credentials: 'omit', signal: controller ? controller.signal : undefined });
+      if (!response.ok) return '';
+      return await blobToDataUrl(await response.blob());
+    } catch (_) {
+      return '';
+    } finally {
+      global.clearTimeout(timer);
+    }
+  }
+
+  async function discoverProjectHeroUrl() {
+    try {
+      const response = await global.fetch(REPORT_HERO_PAGE_URL, { mode: 'cors', credentials: 'omit' });
+      if (!response.ok) return '';
+      const html = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const candidates = [];
+      const push = function (src, score) {
+        if (!src) return;
+        try {
+          const absolute = new URL(src, REPORT_HERO_PAGE_URL).href;
+          if (!/^https?:/i.test(absolute)) return;
+          candidates.push({ url: absolute, score: score || 0 });
+        } catch (_) {}
+      };
+      push((doc.querySelector('meta[property="og:image"]') || {}).content, 100);
+      push((doc.querySelector('meta[name="twitter:image"]') || {}).content, 95);
+      Array.from(doc.querySelectorAll('img')).forEach(function (img) {
+        const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src');
+        const text = [img.getAttribute('alt'), img.getAttribute('class'), img.getAttribute('id'), src].filter(Boolean).join(' ').toLowerCase();
+        let score = 5;
+        if (/spectra|spectrometer|spectroscopy/.test(text)) score += 70;
+        if (/hero|project|portfolio/.test(text)) score += 35;
+        const width = Number(img.getAttribute('width') || 0);
+        if (width >= 800) score += 10;
+        push(src, score);
+      });
+      candidates.sort(function (a, b) { return b.score - a.score; });
+      return candidates.length ? candidates[0].url : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  async function resolveProjectHeroDataUrl(fallbackUrl) {
+    if (!projectHeroPromise) {
+      projectHeroPromise = (async function () {
+        try {
+          let override = '';
+          try { override = String(global.localStorage && global.localStorage.getItem('spectraPro.reportHeroUrl') || '').trim(); } catch (_) {}
+          const heroUrl = override || await discoverProjectHeroUrl();
+          return heroUrl ? await fetchDataUrl(heroUrl, 3500) : '';
+        } catch (_) { return ''; }
+      })();
+    }
+    const remote = await projectHeroPromise;
+    return remote || fallbackUrl || '';
+  }
+
+  async function loadLocalLogoDataUrl() {
+    return await fetchDataUrl('../assets/logo.png', 2500);
   }
 
   function captureGraphDataUrl() {
@@ -429,22 +560,32 @@
     if (Array.isArray(a.rawTopHits) && a.rawTopHits.length) src = a.rawTopHits;
     else if (Array.isArray(a.topHits) && a.topHits.length) src = a.topHits;
     else if (Array.isArray(a.smartFindHits) && a.smartFindHits.length) src = a.smartFindHits;
-    return src.slice(0, 60).map(function (h) {
+    return src.slice(0, 80).map(function (h) {
       const species = candidateName(h);
       const obs = h.observedNm != null ? h.observedNm : (h.obsNm != null ? h.obsNm : (h.nm_meas != null ? h.nm_meas : h.nm));
       const ref = h.referenceNm != null ? h.referenceNm : (h.refNm != null ? h.refNm : (h.ref_nm != null ? h.ref_nm : null));
       const delta = h.deltaNm != null ? h.deltaNm : (h.delta_nm != null ? h.delta_nm : ((Number.isFinite(Number(obs)) && Number.isFinite(Number(ref))) ? Number(ref) - Number(obs) : null));
       const score = h.score != null ? h.score : (h.confidence != null ? h.confidence : '');
-      const flags = Array.isArray(h.flags) ? h.flags.join(', ') : (h.flags || '');
       return [
         species,
         Number.isFinite(Number(obs)) ? nfmt(obs, 3) : '—',
         Number.isFinite(Number(ref)) ? nfmt(ref, 3) : '—',
         Number.isFinite(Number(delta)) ? nfmt(delta, 3) : '—',
-        score === '' ? '—' : nfmt(score, 3),
-        String(flags || '')
+        score === '' ? '—' : nfmt(score, 3)
       ];
     });
+  }
+
+  function pairedFeatureRows(rows) {
+    const src = Array.isArray(rows) ? rows : [];
+    const half = Math.ceil(src.length / 2);
+    const out = [];
+    for (let i = 0; i < half; i += 1) {
+      const left = src[i] || ['', '', '', '', ''];
+      const right = src[i + half] || ['', '', '', '', ''];
+      out.push(left.concat(right));
+    }
+    return out;
   }
 
   function buildAnalysisLogLines(bundle) {
@@ -492,9 +633,9 @@
     const sat = lookupDiagnostic(dq, 'sat');
 
     if (sv) {
-      parts.push('Denna rapport sammanfattar en automatisk SPECTRA PRO-export av den aktuella spektrummätningen. Mätningen innehåller ' + count + ' provpunkter och analyserades med preset ' + preset + '. Våglängdskalibrering var ' + (calibrated ? 'aktiv' : 'inte aktiv') + ' vid exporttillfället.');
+      parts.push('Denna rapport sammanfattar den aktuella SPECTRA PRO-mätningen. Mätningen innehåller ' + count + ' provpunkter och analyserades med preset ' + preset + '. Våglängdskalibrering var ' + (calibrated ? 'aktiv' : 'inte aktiv') + ' vid exporttillfället.');
     } else {
-      parts.push('This report summarizes an automatic SPECTRA PRO export of the current spectral measurement. The measurement contains ' + count + ' sampled points and was analyzed with preset ' + preset + '. Wavelength calibration was ' + (calibrated ? 'active' : 'not active') + ' at export time.');
+      parts.push('This report summarizes the current SPECTRA PRO measurement. The measurement contains ' + count + ' sampled points and was analyzed with preset ' + preset + '. Wavelength calibration was ' + (calibrated ? 'active' : 'not active') + ' at export time.');
     }
 
     const fl = analysis.fluorescenceSummary;
@@ -512,9 +653,62 @@
       }
     }
 
-    if (sv) parts.push('Data Quality visar SNR ' + snr + ' och mättnad ' + sat + '. Resultatet bör alltid tolkas tillsammans med kalibrering, instrumentupplösning, signalnivå, QC-flaggor och den fysikaliska lämpligheten hos valt preset. Rapporttexten har genererats deterministiskt från SPECTRA PRO-data och har inte skrivits av AI.');
-    else parts.push('Data Quality reports SNR ' + snr + ' and saturation ' + sat + '. Results should always be interpreted together with calibration, instrument resolution, signal level, QC flags and the physical suitability of the selected preset. The report text is generated deterministically from SPECTRA PRO data and is not written by AI.');
+    if (sv) parts.push('Data Quality visar SNR ' + snr + ' och mättnad ' + sat + '. Resultatet bör tolkas tillsammans med kalibrering, instrumentupplösning, signalnivå, QC-flaggor och den fysikaliska lämpligheten hos valt preset.');
+    else parts.push('Data Quality reports SNR ' + snr + ' and saturation ' + sat + '. Results should be interpreted together with calibration, instrument resolution, signal level, QC flags and the physical suitability of the selected preset.');
+
+    if (bundle.ai && bundle.ai.available && bundle.ai.resultText) {
+      parts.push((sv ? 'AI-tolkning: "' : 'AI interpretation: "') + String(bundle.ai.resultText).trim() + '"');
+    }
     return parts.join(' ');
+  }
+
+  function signatureSummary(analysis, sv) {
+    const rows = Array.isArray(analysis && analysis.elementScores) ? analysis.elementScores.slice(0, 5) : [];
+    if (!rows.length) return sv ? 'inga tydliga rankade signaturer' : 'no clearly ranked signatures';
+    return rows.map(function (row) {
+      const name = candidateName(row);
+      const lines = Array.isArray(row.supportLines) ? row.supportLines.map(Number).filter(Number.isFinite).sort(function (a,b){return a-b;}) : [];
+      if (lines.length >= 2) return name + ' ' + nfmt(lines[0], 1) + '–' + nfmt(lines[lines.length - 1], 1) + ' nm';
+      return name;
+    }).join(', ');
+  }
+
+  function buildDetailedNarrative(bundle) {
+    const sv = language() === 'sv';
+    const state = bundle.state || {};
+    const analysis = state.analysis || {};
+    const cal = state.calibration || {};
+    const hw = state.hardware || {};
+    const dq = bundle.visibleDiagnostics ? bundle.visibleDiagnostics.dataQuality : [];
+    const preset = String(analysis.presetId || '—');
+    const offset = Number.isFinite(Number(analysis.offsetNm)) ? nfmt(analysis.offsetNm, 3) + ' nm' : (sv ? 'inte tillgänglig' : 'not available');
+    const signatures = signatureSummary(analysis, sv);
+    const maxDist = Number.isFinite(Number(analysis.maxDistanceNm)) ? nfmt(analysis.maxDistanceNm, 2) + ' nm' : (sv ? 'aktuell presetgräns' : 'the active preset limit');
+    const snr = lookupDiagnostic(dq, 'snr');
+    const sat = lookupDiagnostic(dq, 'sat');
+    const res = lookupDiagnostic(dq, 'res');
+    const calState = cal.isCalibrated ? (sv ? 'aktiv' : 'active') : (sv ? 'inte aktiv' : 'not active');
+    const resolution = hw.spectrometerResolutionFwhmNm != null ? nfmt(hw.spectrometerResolutionFwhmNm, 2) + ' nm FWHM' : res;
+
+    if (sv) {
+      return [
+        'Analysen bygger på den spektralprofil som extraherats ur den valda strimman i källbilden. Intensitetsdata och, när kalibrering finns, motsvarande våglängdsaxel skickas till SPECTRA PRO:s analysworker. Peak-detektionen bedömer lokala maxima med hänsyn till relativ höjd, prominens och minsta tillåtna separation. I de Smart-presets som stöder Auto tune startar analysen från ett relativt tillåtande peak-urval och omprövar sedan evidensen med stramare trösklar och våglängdstoleranser. Därmed blir identifieringen mindre beroende av ett enda manuellt valt tröskelvärde.',
+        'Matchning mot linje- och banddata sker bara inom den aktuella våglängdstäckningen. För linjebaserad analys används en hård maximal våglängdsavvikelse, här ' + maxDist + ', så att avlägsna bibliotekslinjer inte kan få stöd enbart genom att biblioteket är tätt. Den rapporterade offseten är ' + offset + ' och bygger i den aktuella browsermotorn på medianen av residualerna för de matchningar som finns tillgängliga. Den fungerar som ett diagnostiskt mått på systematisk förskjutning mellan observerade och refererade våglängder; den ersätter inte en korrekt multipunktskalibrering.',
+        'För atomära Smart-lägen bedöms inte en kandidat efter en ensam närliggande linje. Fingerprint-lagret väger samman flera diagnostiska linjer, våglängdsnärhet, hur stor del av de observerade starka topparna som förklaras, grupper av samverkande linjer och täckning av en kuraterad profil. Förväntade diagnostiska profilinslag som saknas ger en försiktig negativ viktning, och arter med täta eller tvetydiga kataloglinjer får inte automatiskt fördel av att biblioteket innehåller många möjliga sammanträffanden. Score Share normaliserar den positiva kandidatscoren inom just den aktuella körningen och är därför varken sannolikhet, koncentration eller abundans.',
+        'Molekylära lägen använder motsvarande flerbandslogik. Diagnostiska ankare och band bedöms tillsammans, och stöd från flera koherenta band väger tyngre än en isolerad överlappning. I Gas Tube kan atomära och molekylära bidrag förekomma samtidigt. Fluorescent avviker medvetet från linjematchningen: där beskriver SPECTRA PRO i första hand den breda bandformen genom lambda-max, centroid, FWHM, bandområde, asymmetri, shoulders och integrerad baslinjekorrigerad signal. Smala linjekandidater behandlas då endast som sekundär diagnostik.',
+        'Relevanta signaturer eller kluster i den aktuella körningen är: ' + signatures + '. Kalibreringen är ' + calState + ', uppskattad instrument-/samplingupplösning i rapportens diagnostik är ' + resolution + ', SNR anges som ' + snr + ' och mättnadsfältet som ' + sat + '. Dessa värden används tillsammans för att bedöma om en numeriskt bra match också är experimentellt trovärdig. Mättnad kan förstöra peakform och relativa intensiteter, medan låg SNR kan skapa extra lokala maxima eller dölja svaga diagnostiska drag.',
+        'Efter matchningen sammanställs kandidatpoäng, observerade träffar, QC-flaggor och förklarad signalandel till det resultat som visas i LAB. Rapportens spektralbild visar den centrala 25 procenten av bildhöjden för att fokusera på själva dispersionsbandet, medan diagrammet återger den graf som faktiskt visades vid exporten med aktiva annoteringar och overlays. Den detaljerade feature-tabellen redovisar observerad våglängd, referensvåglängd, residual och score/confidence för de träffar som finns i den aktuella analysen. Resultaten bör ses som reproducerbara förslag givet den uppmätta signalen, valt preset och aktuell kalibrering; ändrad optik, fokus, zoom, gittergeometri eller kamerainställningar kan kräva ny kalibrering innan våglängdsmatchningen åter är tillförlitlig.'
+      ];
+    }
+
+    return [
+      'The analysis starts from the spectral profile extracted from the selected stripe in the source image. Intensity data and, when calibration is available, the corresponding wavelength axis are passed to the SPECTRA PRO analysis worker. Peak detection evaluates local maxima using relative height, prominence and minimum separation. In Smart presets that support Auto tune, the analysis begins with a relatively permissive master peak set and then re-evaluates the evidence with stricter peak thresholds and wavelength tolerances. This reduces dependence on one manually chosen threshold.',
+      'Matching against line and band data is limited to the wavelength coverage of the current measurement. Line-based analysis uses a hard maximum wavelength mismatch, here ' + maxDist + ', so distant catalog lines cannot gain support merely because the library is dense. The reported offset is ' + offset + ' and, in the current browser engine, is estimated from the median residual of the available matches. It is a diagnostic measure of systematic displacement between observed and reference wavelengths; it is not a substitute for valid multipoint calibration.',
+      'For atomic Smart modes, a candidate is not accepted because of one nearby catalog line. The fingerprint layer combines multiple diagnostic lines, wavelength closeness, coverage of strong observed peaks, coherent line groups and coverage of a curated profile. Missing diagnostic profile features apply a cautious penalty, while dense or ambiguous catalog regions are prevented from gaining automatic advantage simply because many unrelated lines exist nearby. Score Share normalizes positive candidate score only within the current run and therefore is not a probability, concentration or abundance estimate.',
+      'Molecular modes apply the corresponding multi-band logic. Diagnostic anchors and bands are evaluated together, and support from several coherent bands carries more weight than an isolated overlap. Gas Tube can retain both atomic and molecular contributors. Fluorescent deliberately follows a different path: SPECTRA PRO primarily characterizes the broadband shape using lambda max, centroid, FWHM, band range, asymmetry, shoulders and integrated baseline-corrected signal. Narrow-line candidates are secondary diagnostics in that mode.',
+      'Relevant signatures or clusters in the current run are: ' + signatures + '. Calibration is ' + calState + ', the instrument/sampling resolution reported by the diagnostics is ' + resolution + ', SNR is ' + snr + ' and the saturation field is ' + sat + '. These values are considered together when deciding whether a numerically attractive match is also experimentally credible. Saturation can destroy peak shape and relative intensity information, whereas low SNR can introduce additional local maxima or hide weak diagnostic features.',
+      'After matching, candidate scores, observed hits, QC flags and explained-signal metrics are assembled into the LAB result. The report source image retains the central 25 percent of image height to focus on the dispersed spectrum, while the graph reproduces the canvas that was actually visible at export time with active annotations and overlays. The detailed feature table reports observed wavelength, reference wavelength, residual and score/confidence for the current hits. Results should be treated as reproducible best proposals given the measured signal, selected preset and active calibration; changes in optics, focus, zoom, grating geometry or camera settings can require recalibration before wavelength matching is trustworthy again.'
+    ];
   }
 
   function imageSize(url) {
@@ -553,6 +747,27 @@
     return y + lines.length * line;
   }
 
+  function addWrappedPaged(doc, text, x, y, width, options) {
+    const opts = options || {};
+    const size = opts.size || 9;
+    const line = opts.line || (size * 0.45);
+    doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(pdfText(text), width);
+    const bottom = Number(opts.bottom || 278);
+    for (let i = 0; i < lines.length; i += 1) {
+      if (y > bottom) {
+        doc.addPage();
+        y = 18;
+        doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
+        doc.setFontSize(size);
+      }
+      doc.text(String(lines[i]), x, y);
+      y += line;
+    }
+    return y;
+  }
+
   function sectionTitle(doc, title, y) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
@@ -584,6 +799,54 @@
     return y;
   }
 
+  function matchedFeatureTable(doc, rows, startY, sv) {
+    const paired = pairedFeatureRows(rows);
+    if (!paired.length) return startY;
+    const head = [
+      sv ? 'Art' : 'Species', sv ? 'Mätt nm' : 'Measured', 'Ref', 'Delta', 'Score',
+      sv ? 'Art' : 'Species', sv ? 'Mätt nm' : 'Measured', 'Ref', 'Delta', 'Score'
+    ];
+    if (typeof doc.autoTable === 'function') {
+      doc.autoTable({
+        head: [head],
+        body: paired,
+        startY: startY,
+        margin: { left: 12, right: 12 },
+        styles: { font: 'helvetica', fontSize: 6.1, cellPadding: 0.9, overflow: 'linebreak', halign: 'center' },
+        headStyles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold' },
+        columnStyles: {
+          0:{cellWidth:20,halign:'left'},1:{cellWidth:14},2:{cellWidth:14},3:{cellWidth:12},4:{cellWidth:14},
+          5:{cellWidth:20,halign:'left'},6:{cellWidth:14},7:{cellWidth:14},8:{cellWidth:12},9:{cellWidth:14}
+        }
+      });
+      return doc.lastAutoTable.finalY + 5;
+    }
+    return autoTable(doc, head, paired, startY);
+  }
+
+  function qualityStatusTable(doc, dq, status, startY, sv) {
+    const n = Math.max(dq.length, status.length);
+    const rows = [];
+    for (let i = 0; i < n; i += 1) {
+      const q = dq[i] || {};
+      const s = status[i] || {};
+      rows.push([q.label || q.text || '', q.value || '', s.label || s.text || '', s.value || '']);
+    }
+    if (typeof doc.autoTable === 'function') {
+      doc.autoTable({
+        head: [[sv ? 'QUALITY REPORT – fält' : 'QUALITY REPORT – field', sv ? 'Värde' : 'Value', sv ? 'STATUS – fält' : 'STATUS – field', sv ? 'Värde' : 'Value']],
+        body: rows,
+        startY: startY,
+        margin: { left: 17, right: 17 },
+        styles: { font: 'helvetica', fontSize: 7.3, cellPadding: 1.25, overflow: 'linebreak' },
+        headStyles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold' },
+        columnStyles: { 0:{cellWidth:44},1:{cellWidth:38},2:{cellWidth:44},3:{cellWidth:38} }
+      });
+      return doc.lastAutoTable.finalY + 5;
+    }
+    return autoTable(doc, ['Quality','Value','Status','Value'], rows, startY);
+  }
+
   function calibrationRows(cal) {
     const pts = Array.isArray(cal && cal.points) ? cal.points : [];
     return pts.slice(0, 30).map(function (p) {
@@ -604,29 +867,73 @@
     const status = bundle.visibleDiagnostics ? bundle.visibleDiagnostics.status : [];
     const pageW = doc.internal.pageSize.getWidth();
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text('SPECTRA PRO REPORT – ' + (bundle.appVersion || ('v' + VERSION)), pageW / 2, 18, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.text(pdfText(bundle.generatedAt), pageW / 2, 24, { align: 'center' });
+    const croppedSourceUrl = sourceUrl ? (await cropCenterBandDataUrl(sourceUrl, 0.25) || sourceUrl) : '';
+    const rotatedGraphUrl = graphUrl ? (await rotateDataUrl90(graphUrl) || graphUrl) : '';
+    const logoUrl = await loadLocalLogoDataUrl();
+    const heroUrl = await resolveProjectHeroDataUrl(croppedSourceUrl);
 
-    let y = 31;
-    if (sourceUrl) {
-      y = await addImageFit(doc, sourceUrl, y, 62);
-      y += 6;
+    // Cover page
+    let y = 20;
+    if (logoUrl) {
+      const logoSz = await imageSize(logoUrl);
+      if (logoSz) {
+        const lw = 118;
+        const lh = lw * logoSz.height / logoSz.width;
+        doc.addImage(logoUrl, 'PNG', (pageW - lw) / 2, y, lw, Math.min(42, lh), undefined, 'FAST');
+        y += Math.min(42, lh) + 10;
+      }
     }
-    y = sectionTitle(doc, sv ? 'ABSTRAKT' : 'ABSTRACT', y);
-    y = addWrapped(doc, buildAutomaticAbstract(bundle), 17, y, pageW - 34, { size: 9.2, line: 4.3 });
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(23);
+    doc.text('SPECTRA PRO', pageW / 2, y, { align:'center' });
+    y += 10;
+    doc.setFontSize(14);
+    doc.text(sv ? 'Spektralanalysrapport' : 'Spectral Analysis Report', pageW / 2, y, { align:'center' });
+    y += 10;
+    if (heroUrl) {
+      const heroSz = await imageSize(heroUrl);
+      if (heroSz) {
+        let hw = pageW - 30;
+        let hh = hw * heroSz.height / heroSz.width;
+        const maxH = 132;
+        if (hh > maxH) { hh = maxH; hw = hh * heroSz.width / heroSz.height; }
+        doc.addImage(heroUrl, 'PNG', (pageW - hw) / 2, y, hw, hh, undefined, 'FAST');
+        y += hh + 9;
+      }
+    }
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.text(pdfText(bundle.generatedAt), pageW / 2, Math.min(282, y + 3), { align:'center' });
+    doc.setFontSize(8);
+    doc.text('www.k-aberg.se', pageW / 2, Math.min(288, y + 9), { align:'center' });
 
+    // Abstract
     doc.addPage();
     y = 18;
-    y = sectionTitle(doc, sv ? 'Spektrumkälla' : 'Spectrum source', y);
-    if (sourceUrl) y = await addImageFit(doc, sourceUrl, y, 72);
-    y += 6;
-    y = sectionTitle(doc, sv ? 'Spektrumprofil / diagram' : 'Spectrum profile / graph', y);
-    if (graphUrl) y = await addImageFit(doc, graphUrl, y, 74);
+    y = sectionTitle(doc, sv ? 'ABSTRAKT' : 'ABSTRACT', y);
+    y = addWrappedPaged(doc, buildAutomaticAbstract(bundle), 17, y, pageW - 34, { size: 9.1, line: 4.15, bottom: 276 });
 
+    // Cropped spectrum source
+    doc.addPage();
+    y = 18;
+    y = sectionTitle(doc, sv ? 'Spektrumkälla – centrala 25 % av bildhöjden' : 'Spectrum source – central 25% of image height', y);
+    if (croppedSourceUrl) {
+      y = await addImageFit(doc, croppedSourceUrl, y + 3, 100);
+    } else {
+      y = addWrapped(doc, sv ? 'Ingen källbild tillgänglig.' : 'No source image available.', 17, y, pageW - 34, { size:9 });
+    }
+
+    // Graph rotated 90 degrees and filling a portrait page
+    doc.addPage();
+    y = 12;
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.text(sv ? 'SPEKTRUMPROFIL / DIAGRAM – ROTERAD 90°' : 'SPECTRUM PROFILE / GRAPH – ROTATED 90°', pageW / 2, y, { align:'center' });
+    if (rotatedGraphUrl) {
+      await addImageFit(doc, rotatedGraphUrl, 17, 263);
+    }
+
+    // Method, workflow, calibration
     doc.addPage();
     y = 18;
     y = sectionTitle(doc, sv ? 'Metodtabell' : 'Method table', y);
@@ -663,7 +970,7 @@
     ];
     workflow.forEach(function (line) { y = addWrapped(doc, '• ' + line, 20, y, pageW - 38, { size: 8.7, line: 4.0 }); });
 
-    if (y > 245) { doc.addPage(); y = 18; }
+    if (y > 230) { doc.addPage(); y = 18; }
     y += 3;
     y = sectionTitle(doc, sv ? 'Instrument / kalibrering' : 'Instrument / calibration', y);
     const instRows = [
@@ -682,11 +989,20 @@
       y = autoTable(doc, ['Pixel (px)', sv ? 'Våglängd (nm)' : 'Wavelength (nm)'], cRows, y);
     }
 
+    // Detailed continuous method text before indicators
     doc.addPage();
     y = 18;
+    y = sectionTitle(doc, sv ? 'Analysmetod och tolkningskontext' : 'Analysis method and interpretation context', y);
+    const narrative = buildDetailedNarrative(bundle);
+    for (let i = 0; i < narrative.length; i += 1) {
+      y = addWrappedPaged(doc, narrative[i], 17, y, pageW - 34, { size: 9, line: 4.15, bottom: 276 });
+      y += 4;
+    }
+
+    if (y > 225) { doc.addPage(); y = 18; }
+    y = sectionTitle(doc, sv ? 'Primära indikatorer' : 'Primary indicators', y);
     const fl = analysis.fluorescenceSummary;
     if (fl && typeof fl === 'object') {
-      y = sectionTitle(doc, sv ? 'Primära fluorescensindikatorer' : 'Primary fluorescence indicators', y);
       y = autoTable(doc, [sv ? 'Mått' : 'Metric', sv ? 'Värde' : 'Value'], [
         ['lambda max', nfmt(fl.lambdaMaxNm, 2) + ' nm'],
         ['Centroid', nfmt(fl.centroidNm, 2) + ' nm'],
@@ -697,7 +1013,6 @@
         [sv ? 'Integrerad signal' : 'Integrated signal', nfmt(fl.integratedIntensity, 2)]
       ], y);
     } else {
-      y = sectionTitle(doc, sv ? 'Primära indikatorer' : 'Primary indicators', y);
       const rows = candidateRows(analysis);
       if (rows.length) y = autoTable(doc, [sv ? 'Kandidat' : 'Candidate', sv ? 'Andel / score' : 'Share / score', sv ? 'Matchningar' : 'Matches', 'Delta nm'], rows, y);
       else y = addWrapped(doc, sv ? 'Inga rankade träffar finns i den aktuella analysen.' : 'No ranked hits are available in the current analysis.', 17, y, pageW - 34, { size: 9 });
@@ -708,18 +1023,20 @@
       if (y > 205) { doc.addPage(); y = 18; }
       y += 3;
       y = sectionTitle(doc, sv ? 'Matchade spektrala egenskaper' : 'Matched spectral features', y);
-      y = autoTable(doc, [sv ? 'Art' : 'Species', sv ? 'Mätt nm' : 'Measured nm', 'Ref nm', 'Delta nm', sv ? 'Score / conf.' : 'Score / conf.', 'Flags'], featureRows, y);
+      y = matchedFeatureTable(doc, featureRows, y, sv);
     }
 
-    if (y > 210) { doc.addPage(); y = 18; }
+    // Quality and Status side-by-side
+    if (y > 205) { doc.addPage(); y = 18; }
     y += 3;
-    y = sectionTitle(doc, sv ? 'Kvalitetsrapport' : 'Quality report', y);
-    if (dq.length) y = autoTable(doc, [sv ? 'Fält' : 'Field', sv ? 'Värde' : 'Value'], dq.map(function (r) { return [r.label || r.text, r.value]; }), y);
+    y = sectionTitle(doc, sv ? 'Kvalitet och status' : 'Quality and status', y);
+    y = qualityStatusTable(doc, dq, status, y, sv);
     const qc = Array.isArray(analysis.qcFlags) ? analysis.qcFlags : [];
     if (qc.length) {
       y = addWrapped(doc, (sv ? 'QC-flaggor: ' : 'QC flags: ') + qc.join(', '), 17, y, pageW - 34, { size: 8.5 });
     }
 
+    // Detailed log and reproducibility
     doc.addPage();
     y = 18;
     y = sectionTitle(doc, sv ? 'Analyslogg (detaljerad)' : 'Analysis log (detailed)', y);
@@ -739,20 +1056,9 @@
       [sv ? 'Arbetsläge' : 'Workspace', state.appMode || '—'],
       ['Preset', analysis.presetId || '—']
     ];
-    y = autoTable(doc, [sv ? 'Fält' : 'Field', sv ? 'Värde' : 'Value'], repro, y);
-    y = sectionTitle(doc, 'STATUS', y);
-    if (status.length) y = autoTable(doc, [sv ? 'Fält' : 'Field', sv ? 'Värde' : 'Value'], status.map(function (r) { return [r.label || r.text, r.value]; }), y);
+    autoTable(doc, [sv ? 'Fält' : 'Field', sv ? 'Värde' : 'Value'], repro, y);
 
-    if (bundle.ai && bundle.ai.available && bundle.ai.resultText) {
-      doc.addPage();
-      y = 18;
-      y = sectionTitle(doc, sv ? 'AI Interpretation – bilaga' : 'AI Interpretation – appendix', y);
-      y = addWrapped(doc, sv ? 'Texten nedan återger en tidigare AI-tolkning. Den har inte använts för att generera rapportens abstrakt, tabeller eller automatiska slutsatser.' : 'The text below reproduces a previously generated AI interpretation. It was not used to generate the report abstract, tables or automatic report conclusions.', 17, y, pageW - 34, { size: 8.5, bold: true, line: 4.1 });
-      y += 3;
-      addWrapped(doc, bundle.ai.resultText, 17, y, pageW - 34, { size: 9, line: 4.2 });
-    }
-
-    doc.save(filename);
+    return doc.output('blob');
   }
 
   function optionAvailability(modal) {
@@ -866,6 +1172,17 @@
     setBusy(false);
   }
 
+  function addDataUrlToZip(zip, name, url) {
+    if (!zip || !url) return false;
+    const comma = String(url).indexOf(',');
+    if (comma < 0) return false;
+    const meta = String(url).slice(0, comma);
+    const data = String(url).slice(comma + 1);
+    if (/;base64/i.test(meta)) zip.file(name, data, { base64: true });
+    else zip.file(name, decodeURIComponent(data));
+    return true;
+  }
+
   async function runExport() {
     const modal = $(MODAL_ID);
     if (!modal) return;
@@ -879,32 +1196,54 @@
     const bundle = buildAnalysisBundle();
     const needSource = selected.indexOf('source') >= 0 || selected.indexOf('pdf') >= 0;
     const needGraph = selected.indexOf('graph') >= 0 || selected.indexOf('pdf') >= 0;
-    const sourceUrl = needSource ? captureSourceDataUrl() : '';
+    const rawSourceUrl = needSource ? captureSourceDataUrl() : '';
+    const sourceUrl = rawSourceUrl ? (await cropCenterBandDataUrl(rawSourceUrl, 0.25) || rawSourceUrl) : '';
     const graphUrl = needGraph ? captureGraphDataUrl() : '';
     const errors = [];
+    let fileCount = 0;
 
     try {
+      if (!global.JSZip) throw new Error('JSZip is unavailable');
+      const zip = new global.JSZip();
+      const prefix = 'SPECTRA_PRO_' + ts;
+
       if (selected.indexOf('source') >= 0) {
-        if (!downloadDataUrl(sourceUrl, 'SPECTRA_PRO_' + ts + '_source.png')) errors.push(t('sourceMissing'));
+        if (addDataUrlToZip(zip, prefix + '_source.png', sourceUrl)) fileCount += 1;
+        else errors.push(t('sourceMissing'));
       }
+
       if (selected.indexOf('csv') >= 0) {
         const csv = buildCsv(frame);
-        if (csv) downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'SPECTRA_PRO_' + ts + '_data.csv');
+        if (csv) { zip.file(prefix + '_data.csv', csv); fileCount += 1; }
         else errors.push(t('dataMissing'));
       }
+
       if (selected.indexOf('graph') >= 0) {
-        if (!downloadDataUrl(graphUrl, 'SPECTRA_PRO_' + ts + '_graph.png')) errors.push(t('graphMissing'));
+        if (addDataUrlToZip(zip, prefix + '_graph.png', graphUrl)) fileCount += 1;
+        else errors.push(t('graphMissing'));
       }
+
       if (selected.indexOf('json') >= 0) {
-        downloadBlob(new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json;charset=utf-8' }), 'SPECTRA_PRO_' + ts + '_analysis.json');
+        zip.file(prefix + '_analysis.json', JSON.stringify(bundle, null, 2));
+        fileCount += 1;
       }
+
       if (selected.indexOf('pdf') >= 0) {
         try {
-          await generatePdf(bundle, sourceUrl, graphUrl, 'SPECTRA_PRO_' + ts + '_report.pdf');
+          const pdfBlob = await generatePdf(bundle, rawSourceUrl, graphUrl, prefix + '_report.pdf');
+          if (pdfBlob) { zip.file(prefix + '_report.pdf', pdfBlob); fileCount += 1; }
+          else errors.push(t('pdfError'));
         } catch (error) {
           errors.push(t('pdfError') + ' ' + String(error && error.message || error || ''));
         }
       }
+
+      if (fileCount > 0) {
+        const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+        downloadBlob(zipBlob, prefix + '_export.zip');
+      }
+    } catch (error) {
+      errors.push(String(error && error.message || error || 'Export failed'));
     } finally {
       setBusy(false);
     }
@@ -948,6 +1287,8 @@
     buildCsv: buildCsv,
     captureSourceDataUrl: captureSourceDataUrl,
     captureGraphDataUrl: captureGraphDataUrl,
+    cropCenterBandDataUrl: cropCenterBandDataUrl,
+    rotateDataUrl90: rotateDataUrl90,
     generatePdf: generatePdf,
     refreshLanguage: updateModalLanguage
   };
