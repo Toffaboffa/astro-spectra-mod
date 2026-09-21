@@ -115,6 +115,13 @@
             </div>
           </div>
 
+          <div class="d-flex justify-content-center px-2 pt-1">
+            <button id="spLoadExampleBtn"
+                    type="button"
+                    class="btn btn-sm btn-secondary px-3 py-1"
+                    title="Load a calibrated SPECTRA-1 line-spectrum example.">Load Example</button>
+          </div>
+
           <div id="miscMeasuringSettings" class="flex-grow-1 overflow-auto p-2">
             <!-- Stripe Width -->
             <div id="stripeWidth" class="mb-2 mx-2 small">
@@ -537,14 +544,14 @@
 
   <!-- SPECTRA-PRO Phase 0 bridge (non-invasive) -->
   <script src="../scripts/mod/eventBus.js"></script>
-  <script src="../scripts/mod/stateStore.js?v=2.3.3"></script>
+  <script src="../scripts/mod/stateStore.js?v=2.3.4"></script>
   <script src="../scripts/mod/framePreview.js"></script>
   <script src="../scripts/mod/appMode.js"></script>
   <script src="../scripts/mod/uiPanels.js"></script>
   <script src="../scripts/mod/spectrumFrameAdapter.js"></script>
   <script src="../scripts/mod/utils.js"></script>
   <script src="../scripts/mod/overlays.js"></script>
-  <script src="../scripts/mod/analysisWorkerClient.js?v=2.3.3"></script>
+  <script src="../scripts/mod/analysisWorkerClient.js?v=2.3.4"></script>
   <script>
   (function(){
     const sp = window.SpectraPro || (window.SpectraPro = {});
@@ -564,7 +571,7 @@
   <script src="../scripts/mod/calibrationIO.js"></script>
   <script src="../scripts/mod/calibrationPointManager.js"></script>
   <script src="../scripts/mod/presets.js"></script>
-  <script src="../scripts/mod/proBootstrap.js?v=2.3.3"></script>
+  <script src="../scripts/mod/proBootstrap.js?v=2.3.4"></script>
 
 </body>
 </html>
