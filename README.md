@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v2.3.3**
+**Current UI version: v2.3.4**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
@@ -13,6 +13,7 @@ The application is designed primarily for teaching, demonstrations, experimental
 The project is no longer a scaffold. The main Recording page is functional and currently includes:
 
 - live camera acquisition and still-image loading
+- built-in calibrated **Load Example** line-spectrum demo based on a SPECTRA-1 measurement
 - movable/adjustable sampling stripe
 - real-time spectrum graph
 - pixel and calibrated wavelength axes
@@ -33,6 +34,26 @@ The project is no longer a scaffold. The main Recording page is functional and c
 
 ---
 
+## Built-in line-spectrum example
+
+SPECTRA PRO v2.3.4 adds a **Load Example** button in the Source panel. It loads a bundled line-spectrum image through the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
+
+The example source comes from an older SPECTRA-1 measurement. The original 1280×720 image is cropped vertically to 1280×160 while retaining the full horizontal detector geometry. This removes most unused dark area without altering the x/pixel calibration.
+
+When **Load Example** is pressed, SPECTRA PRO automatically:
+
+- loads the bundled example image
+- centers the sampling stripe and sets Stripe Width to 5 px
+- applies the three reported SPECTRA-1 calibration anchors: 32 px → 388.86 nm, 515 px → 587.57 nm and 1110 px → 837.76 nm
+- switches the graph X-axis to nm
+- selects **Gas Tube** as the recommended LAB preset
+
+The example does **not** enable LAB Analyze automatically. The user remains in control of when analysis starts. The calibration is applied through the existing calibration engine and therefore appears in CALIBRATE like an ordinary three-point calibration.
+
+The historical report also records a SPECTRA-1 factory quadratic fit (a2 = 8.457e-06, a1 = 0.406760986, a0 = 375.834988). The current demo intentionally feeds the reported calibration anchors through the current SPECTRA calibration engine rather than overriding that engine with legacy coefficients.
+
+---
+
 ## Interface language
 
 SPECTRA PRO starts in **English on every page load**. A compact **EN / SV** switch is shown beside the HELP control in the PRO tab row.
@@ -41,7 +62,7 @@ SPECTRA PRO starts in **English on every page load**. A compact **EN / SV** swit
 - **SV** translates the visible application UI to Swedish at runtime.
 - Analysis data, wavelengths, units, chemical symbols, species labels and the scientific result values are not rewritten as language content.
 - AI Interpretation output is intentionally independent of the UI language and continues to follow the language of the user's observation when that language can be identified.
-- The language choice is not persisted across reloads in v2.3.2; English is always the clean baseline after a new load.
+- The language choice is not persisted across reloads in v2.3.4; English is always the clean baseline after a new load.
 
 The translation layer is isolated from calibration, graph rendering and worker analysis. It observes the application UI only while Swedish is active, so the normal English path keeps the same behavior as before the language feature.
 
@@ -49,7 +70,7 @@ The translation layer is isolated from calibration, graph rendering and worker a
 
 ## Unified export
 
-SPECTRA PRO v2.3.2 uses the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
+SPECTRA PRO v2.3.4 uses the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
 
 The export dialog can generate any combination of:
 
