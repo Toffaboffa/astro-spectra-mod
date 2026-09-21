@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v2.3.0**
+**Current UI version: v2.3.1**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
@@ -41,7 +41,7 @@ SPECTRA PRO starts in **English on every page load**. A compact **EN / SV** swit
 - **SV** translates the visible application UI to Swedish at runtime.
 - Analysis data, wavelengths, units, chemical symbols, species labels and the scientific result values are not rewritten as language content.
 - AI Interpretation output is intentionally independent of the UI language and continues to follow the language of the user's observation when that language can be identified.
-- The language choice is not persisted across reloads in v2.3.0; English is always the clean baseline after a new load.
+- The language choice is not persisted across reloads in v2.3.1; English is always the clean baseline after a new load.
 
 The translation layer is isolated from calibration, graph rendering and worker analysis. It observes the application UI only while Swedish is active, so the normal English path keeps the same behavior as before the language feature.
 
@@ -49,21 +49,21 @@ The translation layer is isolated from calibration, graph rendering and worker a
 
 ## Unified export
 
-SPECTRA PRO v2.3.0 replaces the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
+SPECTRA PRO v2.3.1 uses the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
 
 The export dialog can generate any combination of:
 
-- **Spectrum (source)** – PNG of the current source spectrum/frame
+- **Spectrum (source)** – PNG cropped to the central 25% of source-image height to retain the dispersed spectrum while removing unused dark area
 - **Data points (.csv)** – current sampled px/nm/R/G/B/intensity values
 - **Graph** – PNG of the graph exactly as currently rendered, including visible hit labels, annotations and overlays
-- **Data analysis (.json)** – a single machine-readable snapshot containing the application state, calibration, analysis settings, Status, Data Quality, UI control values, hits/candidates, fluorescence data and AI payload/result metadata when available
-- **Report (.pdf)** – a deterministic, locally generated report containing source/graph images, automatic abstract, method/workflow, instrument and calibration information, primary indicators, matched features, quality information, detailed analysis log and reproducibility data
+- **Data analysis (.json)** – a single machine-readable snapshot containing application state, calibration, analysis settings, Status, Data Quality, UI control values, the full px/nm/R/G/B/intensity spectrum arrays, hits/candidates, fluorescence data and AI payload/result metadata when available
+- **Report (.pdf)** – a locally generated structured report with a SPECTRA PRO cover, project hero when accessible, center-cropped spectrum image, 90° full-page graph, automatic abstract, extended continuous analysis-method text, instrument/calibration information, primary indicators, compact two-column matched features, side-by-side Quality/Status, detailed analysis log and reproducibility data
 
-The PDF report is **not written by AI**. If an AI Interpretation has already been completed, the AI text is included only as a clearly marked appendix and is not used to create the report abstract, tables or automatic conclusions. The large reference-line database is intentionally not embedded in the PDF.
+The automatic PDF body is generated from SPECTRA PRO state and analysis rules rather than by AI. If an AI Interpretation has already been completed, that existing AI text is inserted verbatim into the **Abstract** with an explicit `AI interpretation:` / `AI-tolkning:` label. The large reference-line database is intentionally not embedded in the PDF.
 
-After a completed AI Interpretation, an **Export** button also appears in the AI result dialog beside the copy/new-analysis controls and opens the same unified export dialog.
+After a completed AI Interpretation, an **Export** button also appears in the AI result dialog beside the copy/new-analysis controls and opens the same unified export dialog.\n\nAll selected export outputs are packaged into one timestamped **ZIP archive** using the JSZip library already bundled with the application.
 
-PDF generation is performed in the browser. The report generator loads jsPDF and jsPDF-AutoTable from CDN only when PDF export is requested.
+PDF generation is performed in the browser. The report generator loads jsPDF and jsPDF-AutoTable from CDN only when PDF export is requested. The cover loads the local SPECTRA PRO logo and performs a best-effort k-aberg.se hero lookup; if the remote site/image cannot be read cross-origin, the cropped current spectrum is used as the cover image fallback.
 
 ---
 
