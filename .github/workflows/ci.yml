@@ -66,6 +66,13 @@ jobs:
           assert "spectral-tube-purple-128.png" in module
           assert "spectral-tube-orange-128.png" in module
           assert "spectral-tube-cyan-128.png" in module
+          n2_start = module.index("id: 'n2-spectral-tube'")
+          ne_start = module.index("id: 'ne-spectral-tube'")
+          n2_block = module[n2_start:ne_start]
+          ne_block = module[ne_start:]
+          assert "icon: SAMPLE_ICONS.purple" in n2_block, "N2 sample must use the purple tube icon"
+          assert "icon: SAMPLE_ICONS.orange" in ne_block, "Ne sample must use the orange tube icon"
+          assert "icon: SAMPLE_ICONS.cyan" not in n2_block + ne_block, "Cyan icon is reserved for future samples"
           assert "chunk-" not in module
           assert "const VERSION = '2.3.6';" in module
 
