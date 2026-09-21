@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v2.2.10**
+**Current UI version: v2.3.0**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
@@ -27,6 +27,7 @@ The project is no longer a scaffold. The main Recording page is functional and c
 - optional OpenAI-powered **AI Interpretation** through a secure backend
 - built-in **HELP** modal with control reference, calibration guidance, preset explanations, Status/Data Quality definitions, AI documentation, and Q&A
 - runtime **EN / SV** interface switching with English as the default language on every page load
+- unified **EXPORT** workflow for source PNG, CSV data, rendered graph PNG, complete JSON analysis data and deterministic PDF reports
 
 `ASTRO` is currently a staged/placeholder workspace in the visible UI. Do not treat the older roadmap/specification documents as proof that all ASTRO features are implemented.
 
@@ -40,9 +41,29 @@ SPECTRA PRO starts in **English on every page load**. A compact **EN / SV** swit
 - **SV** translates the visible application UI to Swedish at runtime.
 - Analysis data, wavelengths, units, chemical symbols, species labels and the scientific result values are not rewritten as language content.
 - AI Interpretation output is intentionally independent of the UI language and continues to follow the language of the user's observation when that language can be identified.
-- The language choice is not persisted across reloads in v2.2.10; English is always the clean baseline after a new load.
+- The language choice is not persisted across reloads in v2.3.0; English is always the clean baseline after a new load.
 
 The translation layer is isolated from calibration, graph rendering and worker analysis. It observes the application UI only while Swedish is active, so the normal English path keeps the same behavior as before the language feature.
+
+---
+
+## Unified export
+
+SPECTRA PRO v2.3.0 replaces the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
+
+The export dialog can generate any combination of:
+
+- **Spectrum (source)** – PNG of the current source spectrum/frame
+- **Data points (.csv)** – current sampled px/nm/R/G/B/intensity values
+- **Graph** – PNG of the graph exactly as currently rendered, including visible hit labels, annotations and overlays
+- **Data analysis (.json)** – a single machine-readable snapshot containing the application state, calibration, analysis settings, Status, Data Quality, UI control values, hits/candidates, fluorescence data and AI payload/result metadata when available
+- **Report (.pdf)** – a deterministic, locally generated report containing source/graph images, automatic abstract, method/workflow, instrument and calibration information, primary indicators, matched features, quality information, detailed analysis log and reproducibility data
+
+The PDF report is **not written by AI**. If an AI Interpretation has already been completed, the AI text is included only as a clearly marked appendix and is not used to create the report abstract, tables or automatic conclusions. The large reference-line database is intentionally not embedded in the PDF.
+
+After a completed AI Interpretation, an **Export** button also appears in the AI result dialog beside the copy/new-analysis controls and opens the same unified export dialog.
+
+PDF generation is performed in the browser. The report generator loads jsPDF and jsPDF-AutoTable from CDN only when PDF export is requested.
 
 ---
 
@@ -383,6 +404,9 @@ AI Interpretation dialog, result display and copy/new-analysis controls.
 
 `docs/frontend/scripts/mod/helpUi.js`  
 Integrated HELP/manual modal and documentation content.
+
+`docs/frontend/scripts/mod/exportUi.js`  
+Unified export dialog, source/graph capture, CSV/JSON export and deterministic browser-generated PDF report.
 
 `docs/frontend/scripts/mod/i18nUi.js`  
 Runtime EN/SV interface translation layer. English is always the initial source language; Swedish can be enabled without reloading or changing scientific data.
