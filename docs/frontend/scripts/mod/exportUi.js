@@ -286,8 +286,10 @@
   }
 
   async function discoverProjectHeroUrl() {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = global.setTimeout(function () { try { if (controller) controller.abort(); } catch (_) {} }, 3000);
     try {
-      const response = await global.fetch(REPORT_HERO_PAGE_URL, { mode: 'cors', credentials: 'omit' });
+      const response = await global.fetch(REPORT_HERO_PAGE_URL, { mode: 'cors', credentials: 'omit', signal: controller ? controller.signal : undefined });
       if (!response.ok) return '';
       const html = await response.text();
       const parser = new DOMParser();
@@ -317,6 +319,8 @@
       return candidates.length ? candidates[0].url : '';
     } catch (_) {
       return '';
+    } finally {
+      global.clearTimeout(timer);
     }
   }
 
@@ -327,7 +331,20 @@
           let override = '';
           try { override = String(global.localStorage && global.localStorage.getItem('spectraPro.reportHeroUrl') || '').trim(); } catch (_) {}
           const heroUrl = override || await discoverProjectHeroUrl();
-          return heroUrl ? await fetchDataUrl(heroUrl, 3500) : '';
+          if (!heroUrl) return '';
+          const raw = await fetchDataUrl(heroUrl, 3500);
+          if (!raw) return '';
+          return await transformDataUrl(raw, function (img) {
+            const w = Number(img.naturalWidth || img.width || 0);
+            const h = Number(img.naturalHeight || img.height || 0);
+            if (!w || !h) return '';
+            const canvas = global.document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return '';
+            ctx.drawImage(img, 0, 0, w, h);
+            return canvas.toDataURL('image/png');
+          });
         } catch (_) { return ''; }
       })();
     }
@@ -462,6 +479,16 @@
         sampleCount: Array.isArray(frame.I) ? frame.I.length : (Array.isArray(frame.px) ? frame.px.length : 0),
         hasWavelengthAxis: Array.isArray(frame.nm) && frame.nm.length > 0,
         pixelWidth: frame.pixelWidth || null
+      } : null,
+      spectrumData: frame ? {
+        px: Array.isArray(frame.px) ? frame.px.slice() : null,
+        nm: Array.isArray(frame.nm) ? frame.nm.slice() : null,
+        R: Array.isArray(frame.R) ? frame.R.slice() : null,
+        G: Array.isArray(frame.G) ? frame.G.slice() : null,
+        B: Array.isArray(frame.B) ? frame.B.slice() : null,
+        I: Array.isArray(frame.I) ? frame.I.slice() : null,
+        processedI: Array.isArray(frame.processedI) ? frame.processedI.slice() : null,
+        normalizedI: Array.isArray(frame.normalizedI) ? frame.normalizedI.slice() : null
       } : null,
       ai: aiSnapshot()
     };
