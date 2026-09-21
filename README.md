@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v2.3.2**
+**Current UI version: v2.3.3**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
@@ -489,3 +489,7 @@ Other files under `docs/` include older roadmap, migration and protocol notes. S
 The guiding principle remains simple:
 
 > **Protect the instrument behavior first, then add interpretation on top of measured evidence.**
+
+### v2.3.3 language and LAB performance fix
+
+Swedish UI mode no longer recursively translates high-frequency Status, Data Quality and LAB result mutations. Dynamic panes are translated explicitly by their renderers, LAB worker results are committed as a single state transaction, live Status/DQ rendering is throttled, and the fluorescence UI ignores unrelated per-frame state changes. These changes prevent the main-thread lockup that could occur when Swedish UI and live LAB analysis were active together.
