@@ -86,4 +86,11 @@ jobs:
 
           cal_io = Path("docs/frontend/scripts/mod/calibrationIO.js").read_text(encoding="utf-8")
           assert "suppressAxisPromptFor" in cal_io
+          assert "if (axisPromptSuppressed())" in cal_io
+          assert "if (!axisPromptSuppressed()) showAxisQuestion();" in cal_io
+          suppress_call = "suppressAxisPromptFor(1500)"
+          calibration_call = "const calibration = applyCalibration(sample);"
+          assert suppress_call in module, "Sample loader no longer suppresses the redundant wavelength-axis prompt"
+          assert module.index(suppress_call) < module.index(calibration_call), "Axis-prompt suppression must be armed before sample calibration"
+          assert "selectWavelengthAxis();" in module, "Sample loader no longer switches calibrated samples directly to wavelength"
           PY
