@@ -61,11 +61,11 @@
       sourceLabelSv: 'Ne spektralrör (kalibrerat)',
       icon: SAMPLE_ICONS.orange,
       image: Object.freeze({
-        path: '../assets/examples/ne-spectral-tube/ne-spectral-tube.webp',
+        path: '../assets/examples/ne-spectral-tube/ne-spectral-tube.png',
         width: 1280,
         height: 720,
-        mime: 'image/webp',
-        sha256: '936f2682a657ac07bc2f0177fa7c92ef98b084ba6be73a128cb6d1499d746d8c'
+        mime: 'image/png',
+        sha256: 'fbef80cbc7637f3220e4eaba31ad4c9e1e8de987fdf93537ce653d5518cbd1f0'
       }),
       calibration: SPECTRA1_CALIBRATION,
       stripe: Object.freeze({ widthPx: 5, yNormalized: 0.546 }),
