@@ -109,7 +109,7 @@
       if (now - lastAnalyzeAt < opts.throttleMs) return false;
       if (inFlight) {
         const ws = store.getState().worker;
-        store.update('worker', Object.assign({}, ws, { droppedJobs: (ws.droppedJobs || 0) + 1 }));
+        store.update('worker', Object.assign({}, ws, { droppedJobs: (ws.droppedJobs || 0) + 1 }), { source: 'workerClient.drop' });
         return false;
       }
       lastAnalyzeAt = now;
@@ -252,13 +252,13 @@
       const type = msg.type;
       if (type === (types.MSG && types.MSG.PONG || 'PONG')) {
         const ws = store.getState().worker;
-        store.update('worker', Object.assign({}, ws, { status: 'ready', lastPingAt: Date.now(), lastError: null }));
+        store.update('worker', Object.assign({}, ws, { status: 'ready', lastPingAt: Date.now(), lastError: null }), { source: 'workerClient.status' });
         if (bus) bus.emit('worker:ready', msg);
         return;
       }
       if (type === (types.MSG && types.MSG.INIT_LIBRARIES_RESULT || 'INIT_LIBRARIES_RESULT')) {
         const ws = store.getState().worker;
-        store.update('worker', Object.assign({}, ws, { status: 'ready', lastError: null, librariesLoaded: !!(msg.payload && msg.payload.ok) }));
+        store.update('worker', Object.assign({}, ws, { status: 'ready', lastError: null, librariesLoaded: !!(msg.payload && msg.payload.ok) }), { source: 'workerClient.libraries' });
         if (bus) bus.emit('worker:libraries', msg);
         return;
       }
@@ -268,17 +268,29 @@
       }
       if (type === (types.MSG && types.MSG.QUERY_LIBRARY_RESULT || 'QUERY_LIBRARY_RESULT')) {
         if (msg.payload && store) {
-          if (Array.isArray(msg.payload.hits)) store.update('analysis.libraryQueryHits', msg.payload.hits);
-          if (typeof msg.payload.count === 'number') store.update('analysis.libraryQueryCount', msg.payload.count);
-          if (typeof msg.payload.minNm === 'number') store.update('analysis.libraryQueryMinNm', msg.payload.minNm);
-          if (typeof msg.payload.maxNm === 'number') store.update('analysis.libraryQueryMaxNm', msg.payload.maxNm);
+          const current = store.getState() || {};
+          const analysisNext = Object.assign({}, current.analysis || {});
+          if (Array.isArray(msg.payload.hits)) analysisNext.libraryQueryHits = msg.payload.hits;
+          if (typeof msg.payload.count === 'number') analysisNext.libraryQueryCount = msg.payload.count;
+          if (typeof msg.payload.minNm === 'number') analysisNext.libraryQueryMinNm = msg.payload.minNm;
+          if (typeof msg.payload.maxNm === 'number') analysisNext.libraryQueryMaxNm = msg.payload.maxNm;
+          if (typeof store.setState === 'function') store.setState({ analysis: analysisNext }, { source: 'workerClient.queryResult' });
+          else {
+            if (Array.isArray(msg.payload.hits)) store.update('analysis.libraryQueryHits', msg.payload.hits, { source: 'workerClient.queryResult' });
+            if (typeof msg.payload.count === 'number') store.update('analysis.libraryQueryCount', msg.payload.count, { source: 'workerClient.queryResult' });
+            if (typeof msg.payload.minNm === 'number') store.update('analysis.libraryQueryMinNm', msg.payload.minNm, { source: 'workerClient.queryResult' });
+            if (typeof msg.payload.maxNm === 'number') store.update('analysis.libraryQueryMaxNm', msg.payload.maxNm, { source: 'workerClient.queryResult' });
+          }
         }
         if (bus) bus.emit('worker:query', msg);
         return;
       }
       if (type === (types.MSG && types.MSG.ANALYZE_RESULT || 'ANALYZE_RESULT')) {
         if (inFlight && msg.requestId === inFlight.requestId) inFlight = null;
-        const ws = store.getState().worker;
+
+        const currentState = store && store.getState ? (store.getState() || {}) : {};
+        const ws = currentState.worker || {};
+        const analysisNext = Object.assign({}, currentState.analysis || {});
         const tNow = nowMs();
         stats.count += 1;
         const elapsed = tNow - stats.lastWindowStart;
@@ -287,36 +299,38 @@
           hz = stats.count / (elapsed / 1000);
           stats = { lastWindowStart: tNow, count: 0 };
         }
-        store.update('worker', Object.assign({}, ws, { status: 'ready', lastResultAt: Date.now(), analysisHz: +hz.toFixed(2), lastError: null }));
-        if (msg.payload && store) {
+        const workerNext = Object.assign({}, ws, {
+          status: 'ready',
+          lastResultAt: Date.now(),
+          analysisHz: +hz.toFixed(2),
+          lastError: null
+        });
+
+        if (msg.payload) {
+          function normalizeHits(list) {
+            return (Array.isArray(list) ? list : []).map(function (h) {
+              const hit = Object.assign({}, h || {});
+              if (!hit.element) {
+                const raw = String(hit.species || hit.speciesKey || hit.name || '').trim();
+                const s = raw.replace(/^[0-9]+/, '');
+                const m = s.match(/^([A-Z][a-z]?)/);
+                if (m) hit.element = m[1];
+              }
+              return hit;
+            });
+          }
+
           if (Array.isArray(msg.payload.topHits)) {
-            function normalizeHits(list) {
-              return (Array.isArray(list) ? list : []).map(function (h) {
-                const hit = Object.assign({}, h || {});
-                if (!hit.element) {
-                  const raw = String(hit.species || hit.speciesKey || hit.name || '').trim();
-                  const s = raw.replace(/^[0-9]+/, '');
-                  const m = s.match(/^([A-Z][a-z]?)/);
-                  if (m) hit.element = m[1];
-                }
-                return hit;
-              });
-            }
             const rawHits = normalizeHits(msg.payload.topHits);
             const overlayHits = Array.isArray(msg.payload.overlayHits) && msg.payload.overlayHits.length
               ? normalizeHits(msg.payload.overlayHits)
               : rawHits.slice();
-            store.update('analysis.rawTopHits', overlayHits);
-            if (Array.isArray(msg.payload.elementScores)) {
-              store.update('analysis.elementScores', msg.payload.elementScores.slice(0, 8));
-            } else {
-              store.update('analysis.elementScores', []);
-            }
-            if (msg.payload.winnerBreakdown && typeof msg.payload.winnerBreakdown === 'object') {
-              store.update('analysis.winnerBreakdown', msg.payload.winnerBreakdown);
-            } else {
-              store.update('analysis.winnerBreakdown', null);
-            }
+            analysisNext.rawTopHits = overlayHits;
+            analysisNext.elementScores = Array.isArray(msg.payload.elementScores) ? msg.payload.elementScores.slice(0, 8) : [];
+            analysisNext.winnerBreakdown = (msg.payload.winnerBreakdown && typeof msg.payload.winnerBreakdown === 'object')
+              ? msg.payload.winnerBreakdown
+              : null;
+
             let smart = { groups: [], hits: [] };
             try {
               if (Array.isArray(msg.payload.elementScores) && msg.payload.elementScores.length) {
@@ -334,24 +348,21 @@
               } else {
                 smart = buildSmartFind(rawHits);
               }
-            } catch (err) {
+            } catch (_) {
               smart = { groups: [], hits: [] };
             }
-            store.update('analysis.smartFindGroups', smart.groups.slice(0, 6));
-            store.update('analysis.smartFindHits', smart.hits.slice(0, 120));
+            analysisNext.smartFindGroups = smart.groups.slice(0, 6);
+            analysisNext.smartFindHits = smart.hits.slice(0, 120);
 
-            // Optional stability filter.
-            const st = store.getState();
-            const useStable = !!(st.analysis && st.analysis.stableHits);
+            const useStable = !!analysisNext.stableHits;
             if (!useStable) {
-              store.update('analysis.topHits', rawHits.slice(0, 120));
+              analysisNext.topHits = rawHits.slice(0, 120);
             } else {
               const t = nowMs();
               const windowMs = 8000;
               const pruneEveryMs = 1000;
               const minCount = 2;
 
-              // Update rolling counts.
               for (let i = 0; i < rawHits.length; i += 1) {
                 const h = rawHits[i];
                 const refNm = Number(h.referenceNm != null ? h.referenceNm : h.observedNm);
@@ -360,39 +371,66 @@
                 const rec = stable.byKey[key] || { count: 0, lastSeen: 0, best: null };
                 rec.count += 1;
                 rec.lastSeen = t;
-                // Keep the best (highest confidence) representative.
                 if (!rec.best || (+h.confidence || 0) > (+rec.best.confidence || 0)) rec.best = h;
                 stable.byKey[key] = rec;
               }
 
-              // Prune old entries.
               if (t - stable.lastPruneAt > pruneEveryMs) {
                 stable.lastPruneAt = t;
                 Object.keys(stable.byKey).forEach(function (k) {
                   const rec = stable.byKey[k];
-                  if (!rec) return;
-                  if (t - rec.lastSeen > windowMs) delete stable.byKey[k];
+                  if (rec && t - rec.lastSeen > windowMs) delete stable.byKey[k];
                 });
               }
 
-              // Build stable list: prefer high count, then confidence.
-              const stableList = Object.keys(stable.byKey)
+              analysisNext.topHits = Object.keys(stable.byKey)
                 .map(function (k) {
                   const rec = stable.byKey[k];
                   return rec && rec.best ? Object.assign({ stableCount: rec.count }, rec.best) : null;
                 })
                 .filter(Boolean)
-                .filter(h => (h.stableCount || 0) >= minCount)
-                .sort((a, b) => ((b.stableCount || 0) * 2 + (+b.confidence || 0)) - ((a.stableCount || 0) * 2 + (+a.confidence || 0)));
-
-              store.update('analysis.topHits', stableList.slice(0, 120));
+                .filter(function (h) { return (h.stableCount || 0) >= minCount; })
+                .sort(function (a, b) {
+                  return ((b.stableCount || 0) * 2 + (+b.confidence || 0)) - ((a.stableCount || 0) * 2 + (+a.confidence || 0));
+                })
+                .slice(0, 120);
             }
           }
-          // Do not let asynchronous worker results overwrite the user's current preset selection.
-          // The UI/store is the source of truth for selected preset; otherwise a late result from an
-          // older request can revert the preset and make Element Score appear "stuck" in another mode.
-          if (typeof msg.payload.offsetNm === 'number') store.update('analysis.offsetNm', msg.payload.offsetNm);
-          if (Array.isArray(msg.payload.qcFlags)) store.update('analysis.qcFlags', msg.payload.qcFlags);
+
+          if (Object.prototype.hasOwnProperty.call(msg.payload, 'fluorescenceSummary')) {
+            analysisNext.fluorescenceSummary = (msg.payload.fluorescenceSummary && typeof msg.payload.fluorescenceSummary === 'object')
+              ? msg.payload.fluorescenceSummary
+              : null;
+          }
+          if (Object.prototype.hasOwnProperty.call(msg.payload, 'narrowLineCandidates')) {
+            analysisNext.narrowLineCandidates = Array.isArray(msg.payload.narrowLineCandidates)
+              ? normalizeHits(msg.payload.narrowLineCandidates).slice(0, 120)
+              : [];
+          }
+
+          // Fluorescent mode treats narrow atomic coincidences as an optional overlay.
+          // Keep that overlay decision in the same state transaction as the worker result.
+          if (String(analysisNext.presetId || '') === 'smart-fluorescent') {
+            const narrow = Array.isArray(analysisNext.narrowLineCandidates) ? analysisNext.narrowLineCandidates.slice(0, 80) : [];
+            const overlay = analysisNext.narrowLineOverlay ? narrow : [];
+            analysisNext.rawTopHits = overlay;
+            analysisNext.smartFindHits = overlay;
+            analysisNext.smartFindGroups = [];
+          }
+
+          if (typeof msg.payload.offsetNm === 'number') analysisNext.offsetNm = msg.payload.offsetNm;
+          if (Array.isArray(msg.payload.qcFlags)) analysisNext.qcFlags = msg.payload.qcFlags;
+        }
+
+        if (store) {
+          if (typeof store.setState === 'function') {
+            // One result -> one state event. The old per-field updates could cause 6-9
+            // complete UI renders for a single analysis result.
+            store.setState({ worker: workerNext, analysis: analysisNext }, { source: 'workerClient.analysisResult' });
+          } else {
+            store.update('worker', workerNext, { source: 'workerClient.analysisResult' });
+            store.update('analysis', analysisNext, { source: 'workerClient.analysisResult' });
+          }
         }
         if (bus) bus.emit('worker:result', msg);
         return;
