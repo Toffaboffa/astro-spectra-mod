@@ -306,8 +306,30 @@
     }
   } catch (_) {}
 
+  function isWavelengthAxisSelected() {
+    try {
+      const nmRadio = document.getElementById('toggleXLabelsNm');
+      if (nmRadio && nmRadio.checked) return true;
+    } catch (_) {}
+
+    try {
+      const proxyIds = ['spCoreXAxis', 'spXAxisMode', 'spCoreXAxisMode'];
+      for (let i = 0; i < proxyIds.length; i += 1) {
+        const el = document.getElementById(proxyIds[i]);
+        if (el && String(el.value || '').toLowerCase() === 'nm') return true;
+      }
+    } catch (_) {}
+
+    return false;
+  }
+
   function showAxisQuestion() {
     if (axisPromptShown || axisPromptSuppressed()) return;
+    if (isWavelengthAxisSelected()) {
+      axisPromptShown = true;
+      hidePrompt();
+      return;
+    }
     axisPromptShown = true;
     showPrompt('Switch x-axis to wavelength?', function () {
       switchXAxisToWavelength();

@@ -95,6 +95,8 @@ jobs:
           assert "suppressAxisPromptFor" in cal_io
           assert "if (axisPromptSuppressed())" in cal_io
           assert "if (!axisPromptSuppressed()) showAxisQuestion();" in cal_io
+          assert "function isWavelengthAxisSelected()" in cal_io
+          assert "if (isWavelengthAxisSelected())" in cal_io
           suppress_call = "suppressAxisPromptFor(1500)"
           calibration_call = "const calibration = applyCalibration(sample);"
           assert suppress_call in module, "Sample loader no longer suppresses the redundant wavelength-axis prompt"
