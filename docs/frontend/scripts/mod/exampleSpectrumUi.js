@@ -221,6 +221,9 @@
 
     try { if (typeof global.initializeZoomList === 'function') global.initializeZoomList(); } catch (_) {}
 
+    // Put the intended physics in state before any stripe/axis redraw can trigger
+    // an already-enabled LAB analysis.
+    selectRecommendedPreset();
     applyStripeDefaults();
 
     const calibration = applyExampleCalibration();
@@ -230,8 +233,6 @@
     } else {
       log('Example image loaded, but calibration could not be applied: ' + calibration.reason);
     }
-
-    selectRecommendedPreset();
 
     try {
       if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage(true);
@@ -252,7 +253,7 @@
 
       try {
         if (typeof global.switchLoadedImageSettings === 'function') {
-          global.switchLoadedImageSettings('SPECTRA-1 example (calibrated)');
+          global.switchLoadedImageSettings(isSwedish() ? 'SPECTRA-1 exempel (kalibrerat)' : 'SPECTRA-1 example (calibrated)');
         }
       } catch (_) {}
 
@@ -291,9 +292,7 @@
       return true;
     } catch (error) {
       log('Load failed: ' + String(error && error.message || error));
-      try {
-        if (typeof global.callError === 'function') global.callError(String(error && error.message || error));
-      } catch (_) {}
+      try { global.console && global.console.error && global.console.error('[SPECTRA example]', error); } catch (_) {}
       return false;
     } finally {
       loading = false;
