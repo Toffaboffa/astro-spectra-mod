@@ -61,7 +61,8 @@ jobs:
 
           module = Path("docs/frontend/scripts/mod/exampleSpectrumUi.js").read_text(encoding="utf-8")
           assert "n2-spectral-tube.png" in module
-          assert "ne-spectral-tube.png" in module\n          assert "ne-spectral-tube.webp" not in module
+          assert "ne-spectral-tube.png" in module
+          assert "ne-spectral-tube.webp" not in module
           assert "spectral-tube-purple-128.png" in module
           assert "spectral-tube-orange-128.png" in module
           assert "spectral-tube-cyan-128.png" in module
@@ -71,7 +72,7 @@ jobs:
           ne = Path("docs/frontend/assets/examples/ne-spectral-tube/ne-spectral-tube.png")
           ne_data = ne.read_bytes()
           assert len(ne_data) == 43805, f"Unexpected Ne example size: {len(ne_data)}"
-          assert ne_data[:8] == b"\\x89PNG\\r\\n\\x1a\\n", "Ne example is not a PNG"
+          assert ne_data[:8] == b"\x89PNG\r\n\x1a\n", "Ne example is not a PNG"
           ne_width, ne_height = struct.unpack(">II", ne_data[16:24])
           assert (ne_width, ne_height) == (1280, 720), f"Unexpected Ne dimensions: {(ne_width, ne_height)}"
           ne_digest = hashlib.sha256(ne_data).hexdigest()
