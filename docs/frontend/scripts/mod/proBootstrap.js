@@ -69,6 +69,25 @@ function el(tag, cls, text) {
   return n;
 }
 
+function translateDynamicRoot(root) {
+  try {
+    const i18n = window.SpectraPro && window.SpectraPro.i18n;
+    if (root && i18n && typeof i18n.translateSubtree === 'function' && i18n.getLanguage && i18n.getLanguage() === 'sv') {
+      i18n.translateSubtree(root);
+    }
+  } catch (_) {}
+}
+
+function setDynamicHtml(el, html) {
+  if (!el) return false;
+  const raw = String(html == null ? '' : html);
+  if (el.__spDynamicSourceHtml === raw) return false;
+  el.__spDynamicSourceHtml = raw;
+  el.innerHTML = raw;
+  translateDynamicRoot(el);
+  return true;
+}
+
   
 
 function captureCurrentDisplayDataUrl(){
@@ -2492,17 +2511,19 @@ function renderConsole() {
     try { syncDarkRefAvailability(state); } catch (_) {}
     try { syncCaptureAvailability(); } catch (_) {}
     const lines = computeDataQualityLines(state);
-    sEl.innerHTML = renderInfoLines(lines.status);
-    qEl.innerHTML = renderInfoLines(lines.dq);
+    const statusHtml = renderInfoLines(lines.status);
+    const dqHtml = renderInfoLines(lines.dq);
+    setDynamicHtml(sEl, statusHtml);
+    setDynamicHtml(qEl, dqHtml);
 
     const dqDetails = $('spDQDetailsBody');
     if (dqDetails) {
       const combined = [];
       combined.push('<b>Status</b>');
-      combined.push(renderInfoLines(lines.status));
+      combined.push(statusHtml);
       combined.push('<br><br><b>Data Quality</b>');
-      combined.push(renderInfoLines(lines.dq));
-      dqDetails.innerHTML = combined.join('');
+      combined.push(dqHtml);
+      setDynamicHtml(dqDetails, combined.join(''));
     }
 
     const appModeSel = $('spAppMode');
@@ -2832,6 +2853,9 @@ function renderLabPanel() {
       }
     }
   } catch (_) {}
+
+  translateDynamicRoot(hitsEl);
+  translateDynamicRoot(qcEl);
 }
 
 
@@ -2899,13 +2923,43 @@ function autoCloseInfoPopupIfDefault() {
     if (bus && bus.on) {
       bus.on('state:changed', function (evt) {
         const src = evt && evt.meta && evt.meta.source ? String(evt.meta.source) : '';
-        if (src.indexOf('proBootstrap.frameSync') === 0) { renderStatus(); return; }
-        if (src.indexOf('proBootstrap.calibrationSync') === 0 || src.indexOf('proBootstrap.referenceSync') === 0) { renderStatus(); return; }
+
+        // Live frame state is updated on every graph frame. Status is rendered by the
+        // throttled frame queue below, so never rebuild the UI from these state events.
+        if (src.indexOf('proBootstrap.frameSync') === 0) return;
+
+        if (src.indexOf('proBootstrap.calibrationSync') === 0 || src.indexOf('proBootstrap.referenceSync') === 0) {
+          renderStatus();
+          return;
+        }
+
+        // A worker result is committed as one transaction. Only the two panes that
+        // depend on it need repainting; rebuilding the complete shell used to amplify
+        // Swedish MutationObserver work dramatically.
+        if (src.indexOf('workerClient.analysisResult') === 0) {
+          renderStatus();
+          renderLabPanel();
+          cleanupSpuriousPopup();
+          return;
+        }
+
+        // Worker lifecycle/drop counters affect Status only. Query results are rendered
+        // once by the worker:query handler below.
+        if (src.indexOf('workerClient') === 0) {
+          renderStatus();
+          return;
+        }
+
+        // Fluorescence UI owns its own result pane render.
+        if (src.indexOf('fluorescenceUi.') === 0) {
+          renderStatus();
+          return;
+        }
+
         render();
       });
       bus.on('ui:refresh', render);
       bus.on('mode:changed', render);
-      bus.on('frame:updated', renderStatus);
       bus.on('worker:ready', function(){ setCoreActionFeedback('Worker ready.', 'ok'); renderStatus(); });
       bus.on('worker:libraries', function(msg){
         try {
@@ -2922,7 +2976,6 @@ function autoCloseInfoPopupIfDefault() {
       });
       bus.on('worker:error', function(){ setCoreActionFeedback('Worker error. See STATUS.', 'error'); renderStatus(); });
       bus.on('worker:timeout', function(){ setCoreActionFeedback('Worker timeout.', 'warn'); renderStatus(); });
-      bus.on('worker:result', renderStatus);
       bus.on('worker:query', function(msg){
         try {
           const p = msg && msg.payload ? msg.payload : {};
@@ -2939,12 +2992,25 @@ function autoCloseInfoPopupIfDefault() {
     }
     if (window.SpectraPro && window.SpectraPro.coreHooks && window.SpectraPro.coreHooks.on) {
       let statusRafId = 0;
+      let statusTimerId = 0;
+      let statusLastRenderAt = 0;
       let frameSyncRafId = 0;
       let pendingFrame = null;
+      const STATUS_RENDER_MIN_MS = 200;
       const queueStatusRender = function () {
-        if (statusRafId) return;
+        if (statusRafId || statusTimerId) return;
+        const now = (window.performance && performance.now) ? performance.now() : Date.now();
+        const wait = Math.max(0, STATUS_RENDER_MIN_MS - (now - statusLastRenderAt));
+        if (wait > 1) {
+          statusTimerId = global.setTimeout(function () {
+            statusTimerId = 0;
+            queueStatusRender();
+          }, wait);
+          return;
+        }
         statusRafId = requestAnimationFrame(function () {
           statusRafId = 0;
+          statusLastRenderAt = (window.performance && performance.now) ? performance.now() : Date.now();
           renderStatus();
         });
       };
