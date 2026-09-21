@@ -2,49 +2,64 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '2.3.4';
+  const VERSION = '2.3.5';
   const BUTTON_ID = 'spLoadExampleBtn';
-  let imageDataPromise = null;
+  const OVERLAY_ID = 'spExampleChooserOverlay';
+  const STYLE_ID = 'spExampleChooserStyle';
+  let imageDataPromises = {};
   let loading = false;
 
-  const EXAMPLE = Object.freeze({
-    id: 'spectra1-line-spectrum-2025-09-15',
-    label: 'SPECTRA-1 line spectrum example',
-    image: {
-      originalWidth: 1280,
-      originalHeight: 720,
-      cropYStart: 300,
-      cropYEnd: 460,
-      width: 1280,
-      height: 160,
-      mime: 'image/png',
-      chunks: [
-        '../assets/examples/spectra1-line-spectrum/chunk-01.txt',
-        '../assets/examples/spectra1-line-spectrum/chunk-02.txt',
-        '../assets/examples/spectra1-line-spectrum/chunk-03.txt',
-        '../assets/examples/spectra1-line-spectrum/chunk-04.txt',
-        '../assets/examples/spectra1-line-spectrum/chunk-05.txt',
-        '../assets/examples/spectra1-line-spectrum/chunk-06.txt',
-        '../assets/examples/spectra1-line-spectrum/chunk-07.txt'
-      ]
-    },
-    calibration: {
-      source: 'KVANT SPECTRA 1 factory calibration from SPECTRA v6 report',
-      direction: 'nm-left-to-right',
-      points: [
-        { px: 32, nm: 388.86 },
-        { px: 515, nm: 587.57 },
-        { px: 1110, nm: 837.76 }
-      ],
-      reportedPolynomial: {
-        a2: 8.457e-6,
-        a1: 0.406760986,
-        a0: 375.834988
-      }
-    },
-    stripe: { widthPx: 5, yNormalized: 0.5 },
-    recommendedPreset: 'smart-gastube'
-  });
+  const EXAMPLES = Object.freeze([
+    Object.freeze({
+      id: 'n2-spectral-tube',
+      labelEn: 'N₂ spectral tube',
+      labelSv: 'N₂ spektralrör',
+      descriptionEn: 'Nitrogen discharge-tube spectrum recorded with SPECTRA-1.',
+      descriptionSv: 'Kvävespektrum från spektralrör, registrerat med SPECTRA-1.',
+      sourceLabelEn: 'N₂ spectral tube (calibrated)',
+      sourceLabelSv: 'N₂ spektralrör (kalibrerat)',
+      image: Object.freeze({
+        width: 1280,
+        height: 720,
+        mime: 'image/png',
+        base64Length: 109728,
+        chunks: Object.freeze([
+          '../assets/examples/n2-spectral-tube/chunk-01.txt',
+          '../assets/examples/n2-spectral-tube/chunk-02.txt',
+          '../assets/examples/n2-spectral-tube/chunk-03.txt',
+          '../assets/examples/n2-spectral-tube/chunk-04.txt',
+          '../assets/examples/n2-spectral-tube/chunk-05.txt',
+          '../assets/examples/n2-spectral-tube/chunk-06.txt',
+          '../assets/examples/n2-spectral-tube/chunk-07.txt',
+          '../assets/examples/n2-spectral-tube/chunk-08.txt',
+          '../assets/examples/n2-spectral-tube/chunk-09.txt',
+          '../assets/examples/n2-spectral-tube/chunk-10.txt',
+          '../assets/examples/n2-spectral-tube/chunk-11.txt',
+          '../assets/examples/n2-spectral-tube/chunk-12.txt',
+          '../assets/examples/n2-spectral-tube/chunk-13.txt',
+          '../assets/examples/n2-spectral-tube/chunk-14.txt',
+          '../assets/examples/n2-spectral-tube/chunk-15.txt',
+          '../assets/examples/n2-spectral-tube/chunk-16.txt'
+        ])
+      }),
+      calibration: Object.freeze({
+        source: 'KVANT SPECTRA 1 factory calibration from SPECTRA v6 report',
+        direction: 'nm-left-to-right',
+        points: Object.freeze([
+          Object.freeze({ px: 32, nm: 388.86 }),
+          Object.freeze({ px: 515, nm: 587.57 }),
+          Object.freeze({ px: 1110, nm: 837.76 })
+        ]),
+        reportedPolynomial: Object.freeze({
+          a2: 8.457e-6,
+          a1: 0.406760986,
+          a0: 375.834988
+        })
+      }),
+      stripe: Object.freeze({ widthPx: 5, yNormalized: 0.54 }),
+      recommendedPreset: 'smart-gastube'
+    })
+  ]);
 
   function $(id) {
     return global.document ? global.document.getElementById(id) : null;
@@ -58,12 +73,16 @@
     }
   }
 
-  function label() {
-    return isSwedish() ? 'Ladda exempel' : 'Load Example';
+  function t(en, sv) {
+    return isSwedish() ? sv : en;
+  }
+
+  function buttonLabel() {
+    return t('Load Example', 'Ladda exempel');
   }
 
   function loadingLabel() {
-    return isSwedish() ? 'Laddar…' : 'Loading…';
+    return t('Loading…', 'Laddar…');
   }
 
   function log(message) {
@@ -74,32 +93,143 @@
     } catch (_) {}
   }
 
-  function setButtonBusy(busy) {
-    const button = $(BUTTON_ID);
-    if (!button) return;
-    button.disabled = !!busy;
-    button.textContent = busy ? loadingLabel() : label();
+  function getExample(id) {
+    return EXAMPLES.find(function (item) { return item.id === id; }) || null;
   }
 
-  async function readImageDataUrl() {
-    if (imageDataPromise) return imageDataPromise;
-    imageDataPromise = (async function () {
+  function ensureStyle() {
+    if (!global.document || $(STYLE_ID)) return;
+    const style = global.document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = [
+      '#' + OVERLAY_ID + '{position:fixed;inset:0;z-index:10040;background:rgba(2,8,23,.72);display:flex;align-items:center;justify-content:center;padding:20px;}',
+      '#' + OVERLAY_ID + '[hidden]{display:none!important;}',
+      '#' + OVERLAY_ID + ' .sp-example-dialog{width:min(560px,94vw);max-height:84vh;overflow:auto;background:#071b36;color:#d9fff3;border:1px solid rgba(16,185,129,.78);border-radius:10px;box-shadow:0 22px 70px rgba(0,0,0,.55);}',
+      '#' + OVERLAY_ID + ' .sp-example-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(16,185,129,.35);}',
+      '#' + OVERLAY_ID + ' .sp-example-head h2{font-size:1rem;margin:0;font-weight:800;letter-spacing:.03em;}',
+      '#' + OVERLAY_ID + ' .sp-example-close{border:0;background:transparent;color:#9fffe5;font-size:24px;line-height:1;padding:0 4px;cursor:pointer;}',
+      '#' + OVERLAY_ID + ' .sp-example-body{padding:14px 16px 16px;}',
+      '#' + OVERLAY_ID + ' .sp-example-intro{margin:0 0 12px;color:#b6d9d0;font-size:.88rem;}',
+      '#' + OVERLAY_ID + ' .sp-example-card{width:100%;text-align:left;background:#0a2445;color:#eafff9;border:1px solid rgba(159,255,229,.26);border-radius:8px;padding:13px 14px;cursor:pointer;transition:border-color .12s ease,background .12s ease;}',
+      '#' + OVERLAY_ID + ' .sp-example-card:hover,#' + OVERLAY_ID + ' .sp-example-card:focus{outline:none;border-color:#9fffe5;background:#0d2b50;}',
+      '#' + OVERLAY_ID + ' .sp-example-card__top{display:flex;align-items:center;justify-content:space-between;gap:12px;}',
+      '#' + OVERLAY_ID + ' .sp-example-card__title{font-weight:800;font-size:1rem;}',
+      '#' + OVERLAY_ID + ' .sp-example-card__badge{font-size:.72rem;font-weight:800;color:#071b36;background:#9fffe5;border-radius:999px;padding:3px 7px;white-space:nowrap;}',
+      '#' + OVERLAY_ID + ' .sp-example-card p{margin:7px 0 8px;color:#b6d9d0;font-size:.84rem;}',
+      '#' + OVERLAY_ID + ' .sp-example-meta{font-size:.75rem;color:#83c8b7;}',
+      '#' + OVERLAY_ID + ' .sp-example-actions{display:flex;justify-content:flex-end;margin-top:12px;}',
+      '#' + OVERLAY_ID + ' .sp-example-load{border:1px solid #9fffe5;background:#9fffe5;color:#071b36;border-radius:6px;padding:6px 11px;font-weight:800;cursor:pointer;}',
+      '#' + OVERLAY_ID + ' .sp-example-load:disabled{opacity:.55;cursor:wait;}'
+    ].join('');
+    (global.document.head || global.document.documentElement).appendChild(style);
+  }
+
+  function closeChooser() {
+    const overlay = $(OVERLAY_ID);
+    if (!overlay) return;
+    overlay.hidden = true;
+  }
+
+  function renderChooser() {
+    ensureStyle();
+    let overlay = $(OVERLAY_ID);
+    if (!overlay) {
+      overlay = global.document.createElement('div');
+      overlay.id = OVERLAY_ID;
+      overlay.hidden = true;
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.addEventListener('click', function (event) {
+        if (event.target === overlay) closeChooser();
+      });
+      global.document.body.appendChild(overlay);
+    }
+
+    const swedish = isSwedish();
+    const cards = EXAMPLES.map(function (sample) {
+      const label = swedish ? sample.labelSv : sample.labelEn;
+      const desc = swedish ? sample.descriptionSv : sample.descriptionEn;
+      return [
+        '<button type="button" class="sp-example-card" data-example-id="' + sample.id + '">',
+        '  <span class="sp-example-card__top"><span class="sp-example-card__title">' + label + '</span><span class="sp-example-card__badge">N₂</span></span>',
+        '  <p>' + desc + '</p>',
+        '  <span class="sp-example-meta">1280×720 px · 3-point calibration · Gas Tube preset</span>',
+        '</button>'
+      ].join('');
+    }).join('');
+
+    overlay.innerHTML = [
+      '<section class="sp-example-dialog" aria-labelledby="spExampleChooserTitle">',
+      '  <div class="sp-example-head">',
+      '    <h2 id="spExampleChooserTitle">' + t('Choose sample', 'Välj prov') + '</h2>',
+      '    <button type="button" class="sp-example-close" aria-label="' + t('Close', 'Stäng') + '">×</button>',
+      '  </div>',
+      '  <div class="sp-example-body">',
+      '    <p class="sp-example-intro">' + t('Choose a bundled example measurement to load into SPECTRA PRO.', 'Välj en inbyggd exempelmätning att ladda i SPECTRA PRO.') + '</p>',
+      cards,
+      '    <div class="sp-example-actions"><button type="button" class="sp-example-load" data-example-id="' + EXAMPLES[0].id + '">' + t('Load sample', 'Ladda prov') + '</button></div>',
+      '  </div>',
+      '</section>'
+    ].join('');
+
+    const close = overlay.querySelector('.sp-example-close');
+    if (close) close.addEventListener('click', closeChooser);
+
+    overlay.querySelectorAll('[data-example-id]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        const id = String(el.getAttribute('data-example-id') || '');
+        load(id);
+      });
+    });
+
+    return overlay;
+  }
+
+  function openChooser() {
+    const overlay = renderChooser();
+    overlay.hidden = false;
+    const first = overlay.querySelector('.sp-example-card');
+    if (first) {
+      try { first.focus(); } catch (_) {}
+    }
+  }
+
+  function setBusy(busy) {
+    loading = !!busy;
+    const button = $(BUTTON_ID);
+    if (button) {
+      button.disabled = !!busy;
+      button.textContent = busy ? loadingLabel() : buttonLabel();
+    }
+    const overlay = $(OVERLAY_ID);
+    if (overlay) {
+      overlay.querySelectorAll('button').forEach(function (el) {
+        if (!el.classList.contains('sp-example-close')) el.disabled = !!busy;
+      });
+    }
+  }
+
+  async function readImageDataUrl(sample) {
+    if (imageDataPromises[sample.id]) return imageDataPromises[sample.id];
+    imageDataPromises[sample.id] = (async function () {
       const parts = [];
-      for (let i = 0; i < EXAMPLE.image.chunks.length; i += 1) {
-        const response = await global.fetch(EXAMPLE.image.chunks[i], { credentials: 'same-origin' });
+      for (let i = 0; i < sample.image.chunks.length; i += 1) {
+        const response = await global.fetch(sample.image.chunks[i], { credentials: 'same-origin' });
         if (!response.ok) throw new Error('Example image asset ' + (i + 1) + ' could not be loaded.');
         parts.push(String(await response.text()).trim());
       }
       const base64 = parts.join('');
-      if (!base64 || base64.length !== 50840 || base64.slice(0, 8) !== 'iVBORw0K') {
+      if (!base64 || base64.length !== sample.image.base64Length ||
+          base64.slice(0, 8) !== 'iVBORw0K' ||
+          base64.slice(-8) !== 'TkSuQmCC') {
         throw new Error('Example image asset is incomplete.');
       }
-      return 'data:' + EXAMPLE.image.mime + ';base64,' + base64;
+      return 'data:' + sample.image.mime + ';base64,' + base64;
     })().catch(function (error) {
-      imageDataPromise = null;
+      delete imageDataPromises[sample.id];
       throw error;
     });
-    return imageDataPromise;
+    return imageDataPromises[sample.id];
   }
 
   function stopLiveSource() {
@@ -122,8 +252,8 @@
     } catch (_) {}
   }
 
-  function applyExampleCalibration() {
-    const points = EXAMPLE.calibration.points;
+  function applyCalibration(sample) {
+    const points = sample.calibration.points;
     if (typeof global.resetCalibrationPoints !== 'function' ||
         typeof global.addInputPair !== 'function' ||
         typeof global.setCalibrationPoints !== 'function') {
@@ -132,21 +262,20 @@
 
     try {
       global.resetCalibrationPoints();
-
       let guard = 0;
       while (!$('point' + points.length + 'px') && guard < 8) {
         global.addInputPair();
         guard += 1;
       }
 
-      for (let i = 0; i < points.length; i += 1) {
+      points.forEach(function (point, i) {
         const index = i + 1;
         const px = $('point' + index + 'px');
         const nm = $('point' + index + 'nm');
-        if (!px || !nm) return { ok: false, reason: 'Calibration input #' + index + ' is unavailable.' };
-        px.value = String(points[i].px);
-        nm.value = String(points[i].nm);
-      }
+        if (!px || !nm) throw new Error('Calibration input #' + index + ' is unavailable.');
+        px.value = String(point.px);
+        nm.value = String(point.nm);
+      });
 
       global.setCalibrationPoints();
 
@@ -164,26 +293,38 @@
     }
   }
 
-  function applyStripeDefaults() {
+  function selectRecommendedPreset(sample) {
+    try {
+      if (sp.store && typeof sp.store.update === 'function') {
+        sp.store.update('analysis.presetId', sample.recommendedPreset, { source: 'exampleSpectrum.preset' });
+      }
+      const preset = $('spLabPreset');
+      if (preset) preset.value = sample.recommendedPreset;
+      const client = sp.analysisWorkerClient;
+      if (client && typeof client.setPreset === 'function') client.setPreset(sample.recommendedPreset);
+    } catch (_) {}
+  }
+
+  function applyStripe(sample) {
     try {
       const stripe = global.SpectraCore && global.SpectraCore.stripe;
       if (stripe && typeof stripe.setStripeWidth === 'function') {
-        stripe.setStripeWidth(EXAMPLE.stripe.widthPx);
+        stripe.setStripeWidth(sample.stripe.widthPx);
       } else {
         const width = $('stripeWidthRange');
         if (width) {
-          width.value = String(EXAMPLE.stripe.widthPx);
+          width.value = String(sample.stripe.widthPx);
           if (typeof global.changeStripeWidth === 'function') global.changeStripeWidth(0);
         }
       }
 
       if (stripe && typeof stripe.setStripeY === 'function') {
-        stripe.setStripeY(EXAMPLE.stripe.yNormalized);
+        stripe.setStripeY(sample.stripe.yNormalized);
       } else {
         const place = $('stripePlacementRange');
         if (place) {
-          const max = Number(place.max) || EXAMPLE.image.height;
-          place.value = String(Math.round(max * EXAMPLE.stripe.yNormalized));
+          const max = Number(place.max) || sample.image.height;
+          place.value = String(Math.round(max * sample.stripe.yNormalized));
           if (typeof global.changeStripePlacement === 'function') global.changeStripePlacement(0);
         }
       }
@@ -201,18 +342,7 @@
     } catch (_) {}
   }
 
-  function selectRecommendedPreset() {
-    try {
-      if (sp.store && typeof sp.store.update === 'function') {
-        sp.store.update('analysis.presetId', EXAMPLE.recommendedPreset, { source: 'exampleSpectrum.preset' });
-      }
-
-      const preset = $('spLabPreset');
-      if (preset) preset.value = EXAMPLE.recommendedPreset;
-    } catch (_) {}
-  }
-
-  function finishLoadedImage(image) {
+  function finishLoadedImage(sample, image) {
     try {
       const rt = sp.runtime || {};
       if (typeof rt.setVideoElement === 'function') rt.setVideoElement(image);
@@ -221,15 +351,13 @@
 
     try { if (typeof global.initializeZoomList === 'function') global.initializeZoomList(); } catch (_) {}
 
-    // Put the intended physics in state before any stripe/axis redraw can trigger
-    // an already-enabled LAB analysis.
-    selectRecommendedPreset();
-    applyStripeDefaults();
+    selectRecommendedPreset(sample);
+    applyStripe(sample);
 
-    const calibration = applyExampleCalibration();
+    const calibration = applyCalibration(sample);
     if (calibration.ok) {
       selectWavelengthAxis();
-      log('SPECTRA-1 calibration loaded: 32→388.86 nm, 515→587.57 nm, 1110→837.76 nm.');
+      log((isSwedish() ? sample.labelSv : sample.labelEn) + ': calibration loaded.');
     } else {
       log('Example image loaded, but calibration could not be applied: ' + calibration.reason);
     }
@@ -239,21 +367,22 @@
       else if (typeof global.drawGraph === 'function') global.drawGraph();
     } catch (_) {}
 
-    log('Line-spectrum example loaded · 1280×160 px · stripe 5 px centered · recommended preset Gas Tube.');
+    log((isSwedish() ? sample.labelSv : sample.labelEn) + ' loaded · 1280×720 px · stripe 5 px · Gas Tube preset.');
   }
 
-  async function load() {
-    if (loading) return false;
-    loading = true;
-    setButtonBusy(true);
+  async function load(id) {
+    const sample = getExample(id || EXAMPLES[0].id);
+    if (!sample || loading) return false;
+    setBusy(true);
 
     try {
-      const dataUrl = await readImageDataUrl();
+      const dataUrl = await readImageDataUrl(sample);
       stopLiveSource();
+      closeChooser();
 
       try {
         if (typeof global.switchLoadedImageSettings === 'function') {
-          global.switchLoadedImageSettings(isSwedish() ? 'SPECTRA-1 exempel (kalibrerat)' : 'SPECTRA-1 example (calibrated)');
+          global.switchLoadedImageSettings(isSwedish() ? sample.sourceLabelSv : sample.sourceLabelEn);
         }
       } catch (_) {}
 
@@ -276,7 +405,7 @@
       await new Promise(function (resolve, reject) {
         image.onload = function () {
           try {
-            finishLoadedImage(image);
+            finishLoadedImage(sample, image);
             resolve();
           } catch (error) {
             reject(error);
@@ -295,8 +424,7 @@
       try { global.console && global.console.error && global.console.error('[SPECTRA example]', error); } catch (_) {}
       return false;
     } finally {
-      loading = false;
-      setButtonBusy(false);
+      setBusy(false);
     }
   }
 
@@ -304,19 +432,29 @@
     const button = $(BUTTON_ID);
     if (!button || button.__spExampleBound) return false;
     button.__spExampleBound = true;
-    button.addEventListener('click', function () { load(); });
-    button.textContent = label();
+    button.addEventListener('click', openChooser);
+    button.textContent = buttonLabel();
+    button.title = t('Choose a bundled example measurement.', 'Välj en inbyggd exempelmätning.');
     return true;
   }
 
   sp.exampleSpectrumUi = {
     version: VERSION,
+    open: openChooser,
+    close: closeChooser,
     load: load,
     install: install,
-    getConfig: function () { return JSON.parse(JSON.stringify(EXAMPLE)); }
+    getCatalog: function () { return EXAMPLES.map(function (item) { return item.id; }); },
+    getConfig: function (id) {
+      const sample = getExample(id || EXAMPLES[0].id);
+      return sample ? JSON.parse(JSON.stringify(sample)) : null;
+    }
   };
 
   if (global.document) {
+    global.document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') closeChooser();
+    });
     if (global.document.readyState === 'loading') {
       global.document.addEventListener('DOMContentLoaded', install, { once: true });
     } else {
