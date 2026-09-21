@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const HELP_VERSION = '2.3.3';
+  const HELP_VERSION = '2.3.4';
   let installed = false;
   let lastFocus = null;
 
@@ -96,7 +96,7 @@
   function quickHtml() {
     return '<section class="sp-help-section"><h2>Quick Start</h2><p>This is the shortest reliable workflow. The detailed control reference is in the CONTROLS tab.</p></section>' +
       '<div class="sp-help-steps">' +
-        step('1', 'Select the source', 'Choose a camera from the source selector or press <b>Load Image</b>. For live work, use Pause/Play only when you deliberately want to freeze or resume the camera stream.') +
+        step('1', 'Select the source', 'Choose a camera from the source selector, press <b>Load Image</b>, or use <b>Load Example</b> for the bundled SPECTRA-1 line spectrum. Load Example also applies its matching three-point calibration, centers a 5 px stripe, switches the X-axis to nm and selects Gas Tube as the recommended preset. It does not turn Analyze on automatically.') +
         step('2', 'Place the sampling stripe', 'Move <b>Stripe Place</b> through the spectral image. Use <b>Stripe Width</b> to average additional image rows when that improves signal stability without mixing unwanted background.') +
         step('3', 'Avoid clipping', 'Watch <b>Headroom</b> and <b>Sat</b> in Data Quality. Reduce exposure when important peaks approach clipping. A clipped peak has lost quantitative shape information.') +
         step('4', 'Calibrate', 'Load a calibration file or add known px↔nm points in CALIBRATE. Confirm <b>Cal: yes</b>, inspect calibration error, and switch the X-axis to nm before trusting wavelength matches.') +
@@ -135,6 +135,7 @@
       ['Refresh', 'Button', 'Re-enumerates available cameras.', 'Use after connecting/disconnecting a camera or when the browser does not list the expected device.'],
       ['Pause / Play', 'Button pair', 'Pauses or resumes the live video stream.', 'Useful for inspecting a stable frame. A loaded still image does not need Play.'],
       ['Load Image', 'Button', 'Loads a still spectrum image into the camera/source area.', 'Still images are reanalyzed when relevant LAB settings change. Calibration must still match the geometry of the image.'],
+      ['Load Example', 'Button', 'Loads the bundled calibrated SPECTRA-1 line-spectrum example.', 'The demo keeps the original 1280 px horizontal geometry, uses a vertically cropped source image, applies the reported SPECTRA-1 calibration points (32→388.86 nm, 515→587.57 nm, 1110→837.76 nm), centers a 5 px stripe and selects Gas Tube. Analyze remains under user control.'],
       ['Compare images / Stop comparison', 'Button', 'Loads multiple images for comparison, or exits that comparison state.', 'Use for qualitative comparison of repeated measurements. Do not confuse image comparison with reference-graph processing.'],
       ['Stripe Width − / slider / +', 'Buttons + slider', 'Sets how many image rows are averaged into the one-dimensional spectrum.', 'A wider stripe can improve stability/SNR but may mix background or vertically displaced spectra. Start narrow and increase only when useful.'],
       ['Stripe Place − / slider / +', 'Buttons + slider', 'Moves the sampling stripe vertically through the source image.', 'Place it through the brightest, cleanest section of the spectrum. Changing it changes the measured data.'],
