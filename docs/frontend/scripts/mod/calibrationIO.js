@@ -142,10 +142,11 @@
   'use strict';
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
-  const UI_VERSION = 'v2.0.2';
+  const UI_VERSION = 'v2.3.6';
   let wasCalibrated = false;
   let loadPromptDismissed = false;
   let axisPromptShown = false;
+  let suppressAxisPromptUntil = 0;
 
   function isCalibratedNow() {
     try {
@@ -291,8 +292,22 @@
     hidePrompt();
   }
 
+  function axisPromptSuppressed() {
+    return Date.now() < suppressAxisPromptUntil;
+  }
+
+  try {
+    if (sp.v15 && sp.v15.calibrationIO) {
+      sp.v15.calibrationIO.suppressAxisPromptFor = function (milliseconds) {
+        suppressAxisPromptUntil = Date.now() + Math.max(100, Number(milliseconds) || 1000);
+        hidePrompt();
+        return true;
+      };
+    }
+  } catch (_) {}
+
   function showAxisQuestion() {
-    if (axisPromptShown) return;
+    if (axisPromptShown || axisPromptSuppressed()) return;
     axisPromptShown = true;
     showPrompt('Switch x-axis to wavelength?', function () {
       switchXAxisToWavelength();
@@ -314,7 +329,13 @@
     if (calibrated && !wasCalibrated) {
       wasCalibrated = true;
       hidePrompt();
-      window.setTimeout(showAxisQuestion, 70);
+      if (axisPromptSuppressed()) {
+        axisPromptShown = true;
+        return;
+      }
+      window.setTimeout(function () {
+        if (!axisPromptSuppressed()) showAxisQuestion();
+      }, 70);
     } else if (!calibrated) {
       wasCalibrated = false;
       axisPromptShown = false;

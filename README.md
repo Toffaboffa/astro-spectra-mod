@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v2.3.5**
+**Current UI version: v2.3.6**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
@@ -36,16 +36,16 @@ The project is no longer a scaffold. The main Recording page is functional and c
 
 ## Built-in line-spectrum example
 
-SPECTRA PRO v2.3.5 adds a **Load Example** button in the Source panel. It loads a bundled line-spectrum image through the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
+SPECTRA PRO v2.3.6 includes a **Load Example** button in the Source panel. It loads a bundled line-spectrum image through the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
 
-The first bundled sample is an N₂ spectral-tube measurement recorded with SPECTRA-1. SPECTRA PRO uses the original 1280×720 PNG without vertical cropping, preserving the source image and the detector geometry used by the reported calibration. The Load Example dialog is catalog-driven: clicking a sample selects it, while **Load sample** confirms and loads that selection.
+The bundled catalog contains N₂ and Ne spectral-tube measurements recorded with SPECTRA-1. N₂ uses the original 1280×720 PNG; Ne is bundled as lossless WebP with identical decoded RGB values to the supplied 1280×720 source. The dialog uses color-coded spectral-tube icons: purple for N₂, orange for Ne, with the cyan variant bundled for future samples. Clicking a card selects it; **Load sample** confirms and loads the selection.
 
 After a sample is selected and **Load sample** is pressed, SPECTRA PRO automatically:
 
 - loads the selected bundled image at its original 1280×720 resolution
 - places the sampling stripe through the bright spectral band and sets Stripe Width to 5 px
 - applies the three reported SPECTRA-1 calibration anchors: 32 px → 388.86 nm, 515 px → 587.57 nm and 1110 px → 837.76 nm
-- switches the graph X-axis to nm
+- switches the graph X-axis directly to nm without showing the redundant wavelength-axis confirmation
 - selects **Gas Tube** as the recommended LAB preset
 
 The example does **not** enable LAB Analyze automatically. The user remains in control of when analysis starts. The calibration is applied through the existing calibration engine and therefore appears in CALIBRATE like an ordinary three-point calibration.

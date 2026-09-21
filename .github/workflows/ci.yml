@@ -40,7 +40,7 @@ jobs:
           (test -f docs/frontend/styles/customColorsStyle.css || test -f docs/frontend/styles/styles.css)
           (test -f docs/frontend/styles/recordingStyle.css || test -f docs/frontend/styles/styles.css)
 
-      - name: Validate bundled N2 sample
+      - name: Validate bundled spectral samples and icons
         shell: bash
         run: |
           set -e
@@ -61,6 +61,30 @@ jobs:
 
           module = Path("docs/frontend/scripts/mod/exampleSpectrumUi.js").read_text(encoding="utf-8")
           assert "n2-spectral-tube.png" in module
+          assert "ne-spectral-tube.webp" in module
+          assert "spectral-tube-purple-128.png" in module
+          assert "spectral-tube-orange-128.png" in module
+          assert "spectral-tube-cyan-128.png" in module
           assert "chunk-" not in module
-          assert "const VERSION = '2.3.5';" in module
+          assert "const VERSION = '2.3.6';" in module
+
+          ne = Path("docs/frontend/assets/examples/ne-spectral-tube/ne-spectral-tube.webp")
+          ne_data = ne.read_bytes()
+          assert len(ne_data) == 24636, f"Unexpected Ne example size: {len(ne_data)}"
+          assert ne_data[:4] == b"RIFF" and ne_data[8:12] == b"WEBP" and ne_data[12:16] == b"VP8L", "Ne example is not lossless WebP"
+          bits = int.from_bytes(ne_data[21:25], "little")
+          ne_width = (bits & 0x3FFF) + 1
+          ne_height = ((bits >> 14) & 0x3FFF) + 1
+          assert (ne_width, ne_height) == (1280, 720), f"Unexpected Ne dimensions: {(ne_width, ne_height)}"
+          ne_digest = hashlib.sha256(ne_data).hexdigest()
+          assert ne_digest == "936f2682a657ac07bc2f0177fa7c92ef98b084ba6be73a128cb6d1499d746d8c", f"Ne SHA-256 mismatch: {ne_digest}"
+
+          for name in ("purple", "orange", "cyan"):
+              icon_data = Path(f"docs/frontend/assets/examples/icons/spectral-tube-{name}-128.png").read_bytes()
+              assert icon_data[:8] == b"\x89PNG\r\n\x1a\n", f"{name} icon is not PNG"
+              w, h = struct.unpack(">II", icon_data[16:24])
+              assert (w, h) == (128, 128), f"Unexpected {name} icon dimensions: {(w, h)}"
+
+          cal_io = Path("docs/frontend/scripts/mod/calibrationIO.js").read_text(encoding="utf-8")
+          assert "suppressAxisPromptFor" in cal_io
           PY

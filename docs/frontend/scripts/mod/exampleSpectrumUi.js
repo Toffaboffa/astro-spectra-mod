@@ -2,12 +2,33 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '2.3.5';
+  const VERSION = '2.3.6';
   const BUTTON_ID = 'spLoadExampleBtn';
   const OVERLAY_ID = 'spExampleChooserOverlay';
   const STYLE_ID = 'spExampleChooserStyle';
   let loading = false;
   let selectedExampleId = 'n2-spectral-tube';
+
+  const SAMPLE_ICONS = Object.freeze({
+    purple: '../assets/examples/icons/spectral-tube-purple-128.png',
+    orange: '../assets/examples/icons/spectral-tube-orange-128.png',
+    cyan: '../assets/examples/icons/spectral-tube-cyan-128.png'
+  });
+
+  const SPECTRA1_CALIBRATION = Object.freeze({
+    source: 'KVANT SPECTRA 1 factory calibration from SPECTRA v6 report',
+    direction: 'nm-left-to-right',
+    points: Object.freeze([
+      Object.freeze({ px: 32, nm: 388.86 }),
+      Object.freeze({ px: 515, nm: 587.57 }),
+      Object.freeze({ px: 1110, nm: 837.76 })
+    ]),
+    reportedPolynomial: Object.freeze({
+      a2: 8.457e-6,
+      a1: 0.406760986,
+      a0: 375.834988
+    })
+  });
 
   const EXAMPLES = Object.freeze([
     Object.freeze({
@@ -18,6 +39,7 @@
       descriptionSv: 'Kvävespektrum från spektralrör, registrerat med SPECTRA-1.',
       sourceLabelEn: 'N₂ spectral tube (calibrated)',
       sourceLabelSv: 'N₂ spektralrör (kalibrerat)',
+      icon: SAMPLE_ICONS.purple,
       image: Object.freeze({
         path: '../assets/examples/n2-spectral-tube/n2-spectral-tube.png',
         width: 1280,
@@ -25,21 +47,28 @@
         mime: 'image/png',
         sha256: 'dc624e7ca38032b9ca6c93e09f14feec476617c35742316e4f6063b050e3bbea'
       }),
-      calibration: Object.freeze({
-        source: 'KVANT SPECTRA 1 factory calibration from SPECTRA v6 report',
-        direction: 'nm-left-to-right',
-        points: Object.freeze([
-          Object.freeze({ px: 32, nm: 388.86 }),
-          Object.freeze({ px: 515, nm: 587.57 }),
-          Object.freeze({ px: 1110, nm: 837.76 })
-        ]),
-        reportedPolynomial: Object.freeze({
-          a2: 8.457e-6,
-          a1: 0.406760986,
-          a0: 375.834988
-        })
-      }),
+      calibration: SPECTRA1_CALIBRATION,
       stripe: Object.freeze({ widthPx: 5, yNormalized: 0.544 }),
+      recommendedPreset: 'smart-gastube'
+    }),
+    Object.freeze({
+      id: 'ne-spectral-tube',
+      labelEn: 'Ne spectral tube',
+      labelSv: 'Ne spektralrör',
+      descriptionEn: 'Neon discharge-tube spectrum recorded with SPECTRA-1.',
+      descriptionSv: 'Neonspektrum från spektralrör, registrerat med SPECTRA-1.',
+      sourceLabelEn: 'Ne spectral tube (calibrated)',
+      sourceLabelSv: 'Ne spektralrör (kalibrerat)',
+      icon: SAMPLE_ICONS.orange,
+      image: Object.freeze({
+        path: '../assets/examples/ne-spectral-tube/ne-spectral-tube.webp',
+        width: 1280,
+        height: 720,
+        mime: 'image/webp',
+        sha256: '936f2682a657ac07bc2f0177fa7c92ef98b084ba6be73a128cb6d1499d746d8c'
+      }),
+      calibration: SPECTRA1_CALIBRATION,
+      stripe: Object.freeze({ widthPx: 5, yNormalized: 0.546 }),
       recommendedPreset: 'smart-gastube'
     })
   ]);
@@ -93,9 +122,12 @@
       '#' + OVERLAY_ID + ' .sp-example-close{border:0;background:transparent;color:#9fffe5;font-size:24px;line-height:1;padding:0 4px;cursor:pointer;}',
       '#' + OVERLAY_ID + ' .sp-example-body{padding:14px 16px 16px;}',
       '#' + OVERLAY_ID + ' .sp-example-intro{margin:0 0 12px;color:#b6d9d0;font-size:.88rem;}',
-      '#' + OVERLAY_ID + ' .sp-example-card{width:100%;text-align:left;background:#0a2445;color:#eafff9;border:1px solid rgba(159,255,229,.26);border-radius:8px;padding:13px 14px;cursor:pointer;transition:border-color .12s ease,background .12s ease;}',
+      '#' + OVERLAY_ID + ' .sp-example-card{width:100%;text-align:left;background:#0a2445;color:#eafff9;border:1px solid rgba(159,255,229,.26);border-radius:8px;padding:11px 12px;cursor:pointer;transition:border-color .12s ease,background .12s ease;margin-bottom:9px;}',
       '#' + OVERLAY_ID + ' .sp-example-card:hover,#' + OVERLAY_ID + ' .sp-example-card:focus{outline:none;border-color:#9fffe5;background:#0d2b50;}',
       '#' + OVERLAY_ID + ' .sp-example-card.is-selected{border-color:#9fffe5;background:#0d3158;box-shadow:inset 0 0 0 1px rgba(159,255,229,.28);}',
+      '#' + OVERLAY_ID + ' .sp-example-card__layout{display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:center;}',
+      '#' + OVERLAY_ID + ' .sp-example-card__icon{width:72px;height:72px;object-fit:contain;display:block;}',
+      '#' + OVERLAY_ID + ' .sp-example-card__content{min-width:0;}',
       '#' + OVERLAY_ID + ' .sp-example-card__top{display:flex;align-items:center;justify-content:space-between;gap:12px;}',
       '#' + OVERLAY_ID + ' .sp-example-card__title{font-weight:800;font-size:1rem;}',
       '#' + OVERLAY_ID + ' .sp-example-card__badge{font-size:.72rem;font-weight:800;color:#071b36;background:#9fffe5;border-radius:999px;padding:3px 7px;white-space:nowrap;}',
@@ -149,9 +181,14 @@
       const selected = sample.id === selectedExampleId;
       return [
         '<button type="button" class="sp-example-card' + (selected ? ' is-selected' : '') + '" data-example-id="' + sample.id + '" aria-pressed="' + (selected ? 'true' : 'false') + '">',
-        '  <span class="sp-example-card__top"><span class="sp-example-card__title">' + label + '</span><span class="sp-example-card__badge">SPECTRA-1</span></span>',
-        '  <p>' + desc + '</p>',
-        '  <span class="sp-example-meta">1280×720 px · 3-point calibration · Gas Tube preset</span>',
+        '  <span class="sp-example-card__layout">',
+        '    <img class="sp-example-card__icon" src="' + sample.icon + '?v=' + encodeURIComponent(VERSION) + '" alt="" aria-hidden="true">',
+        '    <span class="sp-example-card__content">',
+        '      <span class="sp-example-card__top"><span class="sp-example-card__title">' + label + '</span><span class="sp-example-card__badge">SPECTRA-1</span></span>',
+        '      <p>' + desc + '</p>',
+        '      <span class="sp-example-meta">1280×720 px · 3-point calibration · Gas Tube preset</span>',
+        '    </span>',
+        '  </span>',
         '</button>'
       ].join('');
     }).join('');
@@ -362,6 +399,11 @@
 
     selectRecommendedPreset(sample);
     applyStripe(sample);
+
+    try {
+      const calIo = sp.v15 && sp.v15.calibrationIO;
+      if (calIo && typeof calIo.suppressAxisPromptFor === 'function') calIo.suppressAxisPromptFor(1500);
+    } catch (_) {}
 
     const calibration = applyCalibration(sample);
     if (calibration.ok) {
