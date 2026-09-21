@@ -2,9 +2,10 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '2.3.2';
+  const VERSION = '2.3.3';
   const SWITCH_ID = 'spLanguageSwitch';
   const STYLE_ID = 'spLanguageSwitchStyle';
+  const HIGH_FREQUENCY_SELECTOR = '#spStatusText,#spDataQualityText,#spDQDetailsBody,#spLabHits,#spLabQc,#spSideConsolePre';
 
   // English remains the source language and is always the initial language after page load.
   let currentLanguage = 'en';
@@ -367,6 +368,16 @@
     return !!el.closest('script,style,code,pre,#spAiResult,#spAiObservation,[data-i18n-skip="true"]');
   }
 
+  function isHighFrequencyNode(node) {
+    const el = node && (node.nodeType === 1 ? node : node.parentElement);
+    if (!el || !el.closest) return false;
+    try {
+      return !!(el.matches && el.matches(HIGH_FREQUENCY_SELECTOR)) || !!el.closest(HIGH_FREQUENCY_SELECTOR);
+    } catch (_) {
+      return false;
+    }
+  }
+
   function translateTextNode(node) {
     if (!node || node.nodeType !== 3 || isSkipped(node)) return;
     const raw = node.nodeValue || '';
@@ -458,9 +469,21 @@
     uiObserver = new MutationObserver(function (mutations) {
       if (applying || currentLanguage !== 'sv') return;
       mutations.forEach(function (m) {
-        if (m.type === 'characterData') translateTextNode(m.target);
-        if (m.type === 'childList') m.addedNodes.forEach(translateTree);
-        if (m.type === 'attributes') translateAttributes(m.target);
+        // Status, Data Quality and LAB result panes are rebuilt frequently while a
+        // live source is running. They are translated explicitly by their renderers
+        // instead of recursively walking every mutation here.
+        if (isHighFrequencyNode(m.target)) return;
+        if (m.type === 'characterData') {
+          if (!isHighFrequencyNode(m.target)) translateTextNode(m.target);
+          return;
+        }
+        if (m.type === 'childList') {
+          m.addedNodes.forEach(function (node) {
+            if (!isHighFrequencyNode(node)) translateTree(node);
+          });
+          return;
+        }
+        if (m.type === 'attributes' && !isHighFrequencyNode(m.target)) translateAttributes(m.target);
       });
     });
 
@@ -574,6 +597,10 @@
     version: VERSION,
     getLanguage: function () { return currentLanguage; },
     setLanguage: setLanguage,
+    translateValue: translateValue,
+    translateSubtree: function (root) {
+      if (currentLanguage === 'sv' && root) translateTree(root);
+    },
     refresh: function () { if (currentLanguage === 'sv') roots().forEach(translateTree); },
     ensureSwitch: ensureSwitch
   };
