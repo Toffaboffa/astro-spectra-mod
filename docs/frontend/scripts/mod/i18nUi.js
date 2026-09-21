@@ -26,6 +26,7 @@
     'Load Image': 'Ladda bild',
     'Load Example': 'Ladda exempel',
     'Load a calibrated SPECTRA-1 line-spectrum example.': 'Ladda ett kalibrerat linjespektrumexempel från SPECTRA-1.',
+    'SPECTRA-1 example (calibrated)': 'SPECTRA-1 exempel (kalibrerat)',
     'Compare images': 'Jämför bilder',
     'Stop comparison': 'Avsluta jämförelse',
     'Stripe Width': 'Remsbredd',
