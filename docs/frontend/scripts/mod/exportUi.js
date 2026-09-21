@@ -423,6 +423,51 @@
     });
   }
 
+  function matchedFeatureRows(analysis) {
+    const a = analysis || {};
+    let src = [];
+    if (Array.isArray(a.rawTopHits) && a.rawTopHits.length) src = a.rawTopHits;
+    else if (Array.isArray(a.topHits) && a.topHits.length) src = a.topHits;
+    else if (Array.isArray(a.smartFindHits) && a.smartFindHits.length) src = a.smartFindHits;
+    return src.slice(0, 60).map(function (h) {
+      const species = candidateName(h);
+      const obs = h.observedNm != null ? h.observedNm : (h.obsNm != null ? h.obsNm : (h.nm_meas != null ? h.nm_meas : h.nm));
+      const ref = h.referenceNm != null ? h.referenceNm : (h.refNm != null ? h.refNm : (h.ref_nm != null ? h.ref_nm : null));
+      const delta = h.deltaNm != null ? h.deltaNm : (h.delta_nm != null ? h.delta_nm : ((Number.isFinite(Number(obs)) && Number.isFinite(Number(ref))) ? Number(ref) - Number(obs) : null));
+      const score = h.score != null ? h.score : (h.confidence != null ? h.confidence : '');
+      const flags = Array.isArray(h.flags) ? h.flags.join(', ') : (h.flags || '');
+      return [
+        species,
+        Number.isFinite(Number(obs)) ? nfmt(obs, 3) : '—',
+        Number.isFinite(Number(ref)) ? nfmt(ref, 3) : '—',
+        Number.isFinite(Number(delta)) ? nfmt(delta, 3) : '—',
+        score === '' ? '—' : nfmt(score, 3),
+        String(flags || '')
+      ];
+    });
+  }
+
+  function buildAnalysisLogLines(bundle) {
+    const state = bundle && bundle.state ? bundle.state : {};
+    const analysis = state.analysis || {};
+    const cal = state.calibration || {};
+    const worker = state.worker || {};
+    const lines = [];
+    lines.push('Workspace=' + String(state.appMode || '—') + '; preset=' + String(analysis.presetId || '—') + '; processing=' + String((state.subtraction && state.subtraction.mode) || 'raw') + '.');
+    lines.push('Calibration=' + (cal.isCalibrated ? 'active' : 'inactive') + '; points=' + String(Array.isArray(cal.points) ? cal.points.length : 0) + '; worker=' + String(worker.status || '—') + '; analysis rate=' + String(worker.analysisHz != null ? worker.analysisHz : '—') + ' Hz.');
+    lines.push('Detected peaks=' + String(analysis.detectedPeakCount != null ? analysis.detectedPeakCount : '—') + '; top hits=' + String(Array.isArray(analysis.topHits) ? analysis.topHits.length : 0) + '; raw hits=' + String(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits.length : 0) + '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
+    if (analysis.offsetNm != null) lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm.');
+    if (analysis.fluorescenceSummary) {
+      const fl = analysis.fluorescenceSummary;
+      lines.push('Fluorescence model=' + String(fl.model || '—') + '; type=' + String(fl.spectrumType || '—') + '; lambdaMax=' + nfmt(fl.lambdaMaxNm, 2) + ' nm; FWHM=' + nfmt(fl.fwhmNm, 2) + ' nm; asymmetry=' + String(fl.asymmetry || '—') + '.');
+    } else {
+      const rows = candidateRows(analysis).slice(0, 8);
+      if (rows.length) lines.push('Ranked candidates: ' + rows.map(function (r) { return r[0] + ' ' + r[1]; }).join('; ') + '.');
+    }
+    if (Array.isArray(analysis.qcFlags) && analysis.qcFlags.length) lines.push('QC: ' + analysis.qcFlags.join('; ') + '.');
+    return lines;
+  }
+
   function lookupDiagnostic(rows, keyStart) {
     const key = String(keyStart || '').toLowerCase();
     const found = (rows || []).find(function (r) {
@@ -658,6 +703,14 @@
       else y = addWrapped(doc, sv ? 'Inga rankade träffar finns i den aktuella analysen.' : 'No ranked hits are available in the current analysis.', 17, y, pageW - 34, { size: 9 });
     }
 
+    const featureRows = matchedFeatureRows(analysis);
+    if (featureRows.length) {
+      if (y > 205) { doc.addPage(); y = 18; }
+      y += 3;
+      y = sectionTitle(doc, sv ? 'Matchade spektrala egenskaper' : 'Matched spectral features', y);
+      y = autoTable(doc, [sv ? 'Art' : 'Species', sv ? 'Mätt nm' : 'Measured nm', 'Ref nm', 'Delta nm', sv ? 'Score / conf.' : 'Score / conf.', 'Flags'], featureRows, y);
+    }
+
     if (y > 210) { doc.addPage(); y = 18; }
     y += 3;
     y = sectionTitle(doc, sv ? 'Kvalitetsrapport' : 'Quality report', y);
@@ -669,6 +722,13 @@
 
     doc.addPage();
     y = 18;
+    y = sectionTitle(doc, sv ? 'Analyslogg (detaljerad)' : 'Analysis log (detailed)', y);
+    const analysisLog = buildAnalysisLogLines(bundle);
+    analysisLog.forEach(function (line) {
+      y = addWrapped(doc, '• ' + line, 17, y, pageW - 34, { size: 8.5, line: 4.0 });
+    });
+
+    y += 5;
     y = sectionTitle(doc, sv ? 'Reproducerbarhet' : 'Reproducibility', y);
     const repro = [
       [sv ? 'Tidsstämpel' : 'Timestamp', bundle.generatedAt],
