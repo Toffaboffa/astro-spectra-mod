@@ -199,6 +199,14 @@
     (global.document.head || global.document.documentElement).appendChild(script);
   }
 
+  if (global.document && !global.document.getElementById('spExportUiLoader')) {
+    const script = global.document.createElement('script');
+    script.id = 'spExportUiLoader';
+    script.src = '../scripts/mod/exportUi.js?v=' + AI_ASSET_VERSION;
+    script.defer = true;
+    (global.document.head || global.document.documentElement).appendChild(script);
+  }
+
   if (global.document && !global.document.getElementById('spI18nUiLoader')) {
     const script = global.document.createElement('script');
     script.id = 'spI18nUiLoader';
