@@ -6,8 +6,6 @@
   const MODAL_ID = 'spExportModal';
   const STYLE_ID = 'spExportUiStyle';
   const MAIN_BUTTON_ID = 'spExportMainBtn';
-  const REPORT_HERO_PAGE_URL = 'https://www.k-aberg.se/';
-  let projectHeroPromise = null;
 
   const I18N = {
     en: {
@@ -25,7 +23,7 @@
       jsonDesc: 'One complete JSON snapshot with settings, Status, Data Quality, calibration, hits, analysis and AI result when available.',
       pdf: 'Report (.pdf)',
       pdfDesc: 'Deterministic SPECTRA PRO report generated locally without AI-written report text.',
-      aiIncluded: 'AI interpretation is available and will be included in the JSON and as a clearly marked appendix in the PDF report.',
+      aiIncluded: 'AI interpretation is available and will be included in the JSON and directly in the PDF Abstract.',
       noAi: 'No completed AI interpretation is currently available.',
       cancel: 'Cancel',
       exportSelected: 'Export selected',
@@ -53,7 +51,7 @@
       jsonDesc: 'En komplett JSON-snapshot med inställningar, Status, Data Quality, kalibrering, träffar, analys och AI-resultat när det finns.',
       pdf: 'Rapport (.pdf)',
       pdfDesc: 'Deterministisk SPECTRA PRO-rapport som genereras lokalt utan AI-skriven rapporttext.',
-      aiIncluded: 'En AI-tolkning finns och inkluderas i JSON samt som tydligt markerad bilaga i PDF-rapporten.',
+      aiIncluded: 'En AI-tolkning finns och inkluderas i JSON samt direkt i PDF-rapportens Abstract.',
       noAi: 'Ingen slutförd AI-tolkning finns just nu.',
       cancel: 'Avbryt',
       exportSelected: 'Exportera valda',
@@ -285,78 +283,19 @@
     }
   }
 
-  async function discoverProjectHeroUrl() {
-    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timer = global.setTimeout(function () { try { if (controller) controller.abort(); } catch (_) {} }, 3000);
-    try {
-      const response = await global.fetch(REPORT_HERO_PAGE_URL, { mode: 'cors', credentials: 'omit', signal: controller ? controller.signal : undefined });
-      if (!response.ok) return '';
-      const html = await response.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const candidates = [];
-      const push = function (src, score) {
-        if (!src) return;
-        try {
-          const absolute = new URL(src, REPORT_HERO_PAGE_URL).href;
-          if (!/^https?:/i.test(absolute)) return;
-          candidates.push({ url: absolute, score: score || 0 });
-        } catch (_) {}
-      };
-      push((doc.querySelector('meta[property="og:image"]') || {}).content, 100);
-      push((doc.querySelector('meta[name="twitter:image"]') || {}).content, 95);
-      Array.from(doc.querySelectorAll('img')).forEach(function (img) {
-        const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src');
-        const text = [img.getAttribute('alt'), img.getAttribute('class'), img.getAttribute('id'), src].filter(Boolean).join(' ').toLowerCase();
-        let score = 5;
-        if (/spectra|spectrometer|spectroscopy/.test(text)) score += 70;
-        if (/hero|project|portfolio/.test(text)) score += 35;
-        const width = Number(img.getAttribute('width') || 0);
-        if (width >= 800) score += 10;
-        push(src, score);
-      });
-      candidates.sort(function (a, b) { return b.score - a.score; });
-      return candidates.length ? candidates[0].url : '';
-    } catch (_) {
-      return '';
-    } finally {
-      global.clearTimeout(timer);
-    }
-  }
-
-  async function resolveProjectHeroDataUrl(fallbackUrl) {
-    if (!projectHeroPromise) {
-      projectHeroPromise = (async function () {
-        try {
-          let override = '';
-          try { override = String(global.localStorage && global.localStorage.getItem('spectraPro.reportHeroUrl') || '').trim(); } catch (_) {}
-          const heroUrl = override || await discoverProjectHeroUrl();
-          if (!heroUrl) return '';
-          const raw = await fetchDataUrl(heroUrl, 3500);
-          if (!raw) return '';
-          return await transformDataUrl(raw, function (img) {
-            const w = Number(img.naturalWidth || img.width || 0);
-            const h = Number(img.naturalHeight || img.height || 0);
-            if (!w || !h) return '';
-            const canvas = global.document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return '';
-            ctx.drawImage(img, 0, 0, w, h);
-            return canvas.toDataURL('image/png');
-          });
-        } catch (_) { return ''; }
-      })();
-    }
-    const remote = await projectHeroPromise;
-    return remote || fallbackUrl || '';
-  }
-
   async function loadBundledReportCoverDataUrl() {
     try {
-      const parts = await Promise.all([1,2,3,4,5,6].map(function (index) {
-        const n = String(index).padStart(2, '0');
-        return global.fetch('../assets/report-cover/chunk-' + n + '.txt', { credentials: 'same-origin' })
+      const chunkFiles = [
+        'chunk-01.txt',
+        'chunk-02a.txt',
+        'chunk-02b.txt',
+        'chunk-03.txt',
+        'chunk-04.txt',
+        'chunk-05.txt',
+        'chunk-06.txt'
+      ];
+      const parts = await Promise.all(chunkFiles.map(function (name) {
+        return global.fetch('../assets/report-cover/' + name, { credentials: 'same-origin' })
           .then(function (response) { return response.ok ? response.text() : ''; });
       }));
       const base64 = parts.map(function (part) { return String(part || '').trim(); }).join('');
