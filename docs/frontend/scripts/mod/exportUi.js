@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '2.3.1';
+  const VERSION = '2.3.2';
   const MODAL_ID = 'spExportModal';
   const STYLE_ID = 'spExportUiStyle';
   const MAIN_BUTTON_ID = 'spExportMainBtn';
@@ -350,6 +350,20 @@
     }
     const remote = await projectHeroPromise;
     return remote || fallbackUrl || '';
+  }
+
+  async function loadBundledReportCoverDataUrl() {
+    try {
+      const parts = await Promise.all([1,2,3,4,5,6].map(function (index) {
+        const n = String(index).padStart(2, '0');
+        return global.fetch('../assets/report-cover/chunk-' + n + '.txt', { credentials: 'same-origin' })
+          .then(function (response) { return response.ok ? response.text() : ''; });
+      }));
+      const base64 = parts.map(function (part) { return String(part || '').trim(); }).join('');
+      return base64 ? 'data:image/jpeg;base64,' + base64 : '';
+    } catch (_) {
+      return '';
+    }
   }
 
   async function loadLocalLogoDataUrl() {
@@ -763,6 +777,19 @@
     });
   }
 
+  async function addImageFitToBox(doc, url, x, y, maxW, maxH) {
+    const sz = await imageSize(url);
+    if (!sz || !sz.width || !sz.height) return false;
+    const scale = Math.min(maxW / sz.width, maxH / sz.height);
+    const w = sz.width * scale;
+    const h = sz.height * scale;
+    const dx = x + (maxW - w) / 2;
+    const dy = y + (maxH - h) / 2;
+    const format = /^data:image\/jpe?g/i.test(String(url || '')) ? 'JPEG' : 'PNG';
+    doc.addImage(url, format, dx, dy, w, h, undefined, 'FAST');
+    return true;
+  }
+
   function addWrapped(doc, text, x, y, width, options) {
     const opts = options || {};
     const size = opts.size || 9;
@@ -897,7 +924,7 @@
     const croppedSourceUrl = sourceUrl ? (await cropCenterBandDataUrl(sourceUrl, 0.25) || sourceUrl) : '';
     const rotatedGraphUrl = graphUrl ? (await rotateDataUrl90(graphUrl) || graphUrl) : '';
     const logoUrl = await loadLocalLogoDataUrl();
-    const heroUrl = await resolveProjectHeroDataUrl(croppedSourceUrl);
+    const heroUrl = await loadBundledReportCoverDataUrl() || croppedSourceUrl;
 
     // Cover page
     let y = 20;
@@ -924,7 +951,8 @@
         let hh = hw * heroSz.height / heroSz.width;
         const maxH = 132;
         if (hh > maxH) { hh = maxH; hw = hh * heroSz.width / heroSz.height; }
-        doc.addImage(heroUrl, 'PNG', (pageW - hw) / 2, y, hw, hh, undefined, 'FAST');
+        const heroFormat = /^data:image\/jpe?g/i.test(String(heroUrl || '')) ? 'JPEG' : 'PNG';
+        doc.addImage(heroUrl, heroFormat, (pageW - hw) / 2, y, hw, hh, undefined, 'FAST');
         y += hh + 9;
       }
     }
@@ -940,24 +968,36 @@
     y = sectionTitle(doc, sv ? 'ABSTRAKT' : 'ABSTRACT', y);
     y = addWrappedPaged(doc, buildAutomaticAbstract(bundle), 17, y, pageW - 34, { size: 9.1, line: 4.15, bottom: 276 });
 
-    // Cropped spectrum source
-    doc.addPage();
-    y = 18;
-    y = sectionTitle(doc, sv ? 'Spektrumkälla – centrala 25 % av bildhöjden' : 'Spectrum source – central 25% of image height', y);
-    if (croppedSourceUrl) {
-      y = await addImageFit(doc, croppedSourceUrl, y + 3, 100);
-    } else {
-      y = addWrapped(doc, sv ? 'Ingen källbild tillgänglig.' : 'No source image available.', 17, y, pageW - 34, { size:9 });
-    }
-
-    // Graph rotated 90 degrees and filling a portrait page
+    // Spectrum profile and source on the same print-efficient page.
     doc.addPage();
     y = 12;
     doc.setFont('helvetica','bold');
     doc.setFontSize(11);
-    doc.text(sv ? 'SPEKTRUMPROFIL / DIAGRAM – ROTERAD 90°' : 'SPECTRUM PROFILE / GRAPH – ROTATED 90°', pageW / 2, y, { align:'center' });
+    doc.text(sv ? 'SPEKTRUMPROFIL / DIAGRAM' : 'SPECTRUM PROFILE / GRAPH', 76, y, { align:'center' });
+    doc.text(sv ? 'SPEKTRUMKÄLLA' : 'SPECTRUM SOURCE', 177, y, { align:'center' });
+
+    const visualTop = 18;
+    const graphX = 8;
+    const graphW = 136;
+    const graphH = 264;
+    const sourceX = 149;
+    const sourceW = 52;
+    const sourceH = 92;
+
     if (rotatedGraphUrl) {
-      await addImageFit(doc, rotatedGraphUrl, 17, 263);
+      await addImageFitToBox(doc, rotatedGraphUrl, graphX, visualTop, graphW, graphH);
+    } else {
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8.5);
+      doc.text(sv ? 'Diagram saknas.' : 'Graph unavailable.', graphX + graphW / 2, 34, { align:'center' });
+    }
+
+    if (croppedSourceUrl) {
+      await addImageFitToBox(doc, croppedSourceUrl, sourceX, 36, sourceW, sourceH);
+    } else {
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8.5);
+      doc.text(sv ? 'Källbild saknas.' : 'Source image unavailable.', sourceX + sourceW / 2, 54, { align:'center' });
     }
 
     // Method, workflow, calibration
@@ -1316,6 +1356,7 @@
     captureGraphDataUrl: captureGraphDataUrl,
     cropCenterBandDataUrl: cropCenterBandDataUrl,
     rotateDataUrl90: rotateDataUrl90,
+    loadBundledReportCoverDataUrl: loadBundledReportCoverDataUrl,
     generatePdf: generatePdf,
     refreshLanguage: updateModalLanguage
   };
