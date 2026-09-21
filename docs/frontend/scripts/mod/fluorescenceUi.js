@@ -17,6 +17,15 @@
     catch (_) { return {}; }
   }
 
+  function translateDynamicRoot(root) {
+    try {
+      const i18n = sp && sp.i18n;
+      if (root && i18n && typeof i18n.translateSubtree === 'function' && i18n.getLanguage && i18n.getLanguage() === 'sv') {
+        i18n.translateSubtree(root);
+      }
+    } catch (_) {}
+  }
+
   function isFluorescent() {
     const s = state();
     return String(s.analysis && s.analysis.presetId || '') === PRESET;
@@ -146,13 +155,20 @@
   }
 
   function applyNarrowOverlay() {
-    if (!store || !store.update || !isFluorescent()) return;
+    if (!store || !isFluorescent()) return;
     const s = state();
     const enabled = !!(s.analysis && s.analysis.narrowLineOverlay);
     const hits = enabled ? currentNarrowCandidates().slice(0, 80) : [];
-    store.update('analysis.rawTopHits', hits, { source: 'fluorescenceUi.overlay' });
-    store.update('analysis.smartFindHits', hits, { source: 'fluorescenceUi.overlay' });
-    store.update('analysis.smartFindGroups', [], { source: 'fluorescenceUi.overlay' });
+    const analysisNext = Object.assign({}, s.analysis || {}, {
+      rawTopHits: hits,
+      smartFindHits: hits,
+      smartFindGroups: []
+    });
+    if (typeof store.setState === 'function') {
+      store.setState({ analysis: analysisNext }, { source: 'fluorescenceUi.overlay' });
+    } else if (typeof store.update === 'function') {
+      store.update('analysis', analysisNext, { source: 'fluorescenceUi.overlay' });
+    }
     try {
       if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage();
       else if (typeof global.drawGraph === 'function') global.drawGraph();
@@ -196,6 +212,8 @@
     if (!summary) {
       hitsEl.innerHTML = '<div class="sp-empty">Waiting for broadband fluorescence analysis…</div>';
       summaryEl.innerHTML = '<div class="sp-empty">No fluorescence summary yet.</div>';
+      translateDynamicRoot(hitsEl);
+      translateDynamicRoot(summaryEl);
       return;
     }
 
@@ -241,6 +259,9 @@
       '</div>' +
       '<div class="sp-fluo-note">Band-shape metrics describe the measured fluorescence. They do not uniquely identify a fluorophore without a reference spectrum.</div>' +
       '</div>';
+
+    translateDynamicRoot(hitsEl);
+    translateDynamicRoot(summaryEl);
   }
 
   function scheduleRender() {
@@ -252,16 +273,10 @@
   }
 
   function handleWorkerResult(msg) {
-    const payload = msg && msg.payload;
-    if (!payload || !store || !store.update) return;
-    if (payload.fluorescenceSummary) {
-      store.update('analysis.fluorescenceSummary', payload.fluorescenceSummary, { source: 'fluorescenceUi.worker' });
-      store.update('analysis.narrowLineCandidates', Array.isArray(payload.narrowLineCandidates) ? payload.narrowLineCandidates : [], { source: 'fluorescenceUi.worker' });
-      applyNarrowOverlay();
-    } else if (isFluorescent()) {
-      store.update('analysis.fluorescenceSummary', null, { source: 'fluorescenceUi.worker' });
-      store.update('analysis.narrowLineCandidates', [], { source: 'fluorescenceUi.worker' });
-    }
+    // analysisWorkerClient commits fluorescence summary, narrow-line candidates and
+    // the optional overlay in the same transaction as the rest of the LAB result.
+    // This listener now only schedules the specialized fluorescence repaint.
+    if (!msg || !msg.payload) return;
     scheduleRender();
   }
 
@@ -287,9 +302,22 @@
         if (libraryRetryTimer) { global.clearTimeout(libraryRetryTimer); libraryRetryTimer = null; }
         updateLibraryButton();
       });
-      bus.on('state:changed', function () {
-        if (isLab()) ensureLibraries();
-        scheduleRender();
+      bus.on('state:changed', function (evt) {
+        const patch = evt && evt.patch && typeof evt.patch === 'object' ? evt.patch : {};
+        const keys = Object.keys(patch);
+        if (!keys.length) return;
+
+        const libraryRelevant = keys.some(function (key) {
+          return key === 'appMode' || key === 'ui.activeTab' || key === 'worker' || key.indexOf('worker.') === 0;
+        });
+        if (libraryRelevant && isLab()) ensureLibraries();
+
+        const renderRelevant = keys.some(function (key) {
+          return key === 'analysis' || key.indexOf('analysis.') === 0 ||
+            key === 'appMode' || key === 'ui.activeTab' ||
+            key === 'worker' || key === 'worker.librariesLoaded';
+        });
+        if (renderRelevant) scheduleRender();
       });
       bus.on('mode:changed', function () {
         if (isLab()) ensureLibraries();
