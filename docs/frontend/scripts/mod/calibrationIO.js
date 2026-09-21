@@ -142,7 +142,7 @@
   'use strict';
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
-  const UI_VERSION = 'v2.3.8';
+  const UI_VERSION = 'v2.3.9';
   let wasCalibrated = false;
   let loadPromptDismissed = false;
   let axisPromptShown = false;

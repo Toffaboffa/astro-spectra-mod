@@ -74,7 +74,12 @@ jobs:
           assert "icon: SAMPLE_ICONS.orange" in ne_block, "Ne sample must use the orange tube icon"
           assert "icon: SAMPLE_ICONS.cyan" not in n2_block + ne_block, "Cyan icon is reserved for future samples"
           assert "chunk-" not in module
-          assert "const VERSION = '2.3.8';" in module
+          assert "const VERSION = '2.3.9';" in module
+
+          export_ui = Path("docs/frontend/scripts/mod/exportUi.js").read_text(encoding="utf-8")
+          assert "const rotatedSourceUrl = croppedSourceUrl ? (await rotateDataUrl90(croppedSourceUrl) || croppedSourceUrl) : '';" in export_ui
+          assert "const sourceH = graphH;" in export_ui
+          assert "await addImageFitToBox(doc, rotatedSourceUrl, sourceX, visualTop, sourceW, sourceH);" in export_ui
 
           ne = Path("docs/frontend/assets/examples/ne-spectral-tube/ne-spectral-tube.png")
           ne_data = ne.read_bytes()

@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '2.3.8';
+  const VERSION = '2.3.9';
   const MODAL_ID = 'spExportModal';
   const STYLE_ID = 'spExportUiStyle';
   const MAIN_BUTTON_ID = 'spExportMainBtn';
@@ -862,6 +862,7 @@
 
     const croppedSourceUrl = sourceUrl ? (await cropCenterBandDataUrl(sourceUrl, 0.25) || sourceUrl) : '';
     const rotatedGraphUrl = graphUrl ? (await rotateDataUrl90(graphUrl) || graphUrl) : '';
+    const rotatedSourceUrl = croppedSourceUrl ? (await rotateDataUrl90(croppedSourceUrl) || croppedSourceUrl) : '';
     const logoUrl = await loadLocalLogoDataUrl();
     const heroUrl = await loadBundledReportCoverDataUrl() || croppedSourceUrl;
 
@@ -921,7 +922,7 @@
     const graphH = 264;
     const sourceX = 149;
     const sourceW = 52;
-    const sourceH = 92;
+    const sourceH = graphH;
 
     if (rotatedGraphUrl) {
       await addImageFitToBox(doc, rotatedGraphUrl, graphX, visualTop, graphW, graphH);
@@ -931,8 +932,8 @@
       doc.text(sv ? 'Diagram saknas.' : 'Graph unavailable.', graphX + graphW / 2, 34, { align:'center' });
     }
 
-    if (croppedSourceUrl) {
-      await addImageFitToBox(doc, croppedSourceUrl, sourceX, 36, sourceW, sourceH);
+    if (rotatedSourceUrl) {
+      await addImageFitToBox(doc, rotatedSourceUrl, sourceX, visualTop, sourceW, sourceH);
     } else {
       doc.setFont('helvetica','normal');
       doc.setFontSize(8.5);
