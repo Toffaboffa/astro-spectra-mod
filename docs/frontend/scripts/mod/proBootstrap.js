@@ -3002,7 +3002,7 @@ function autoCloseInfoPopupIfDefault() {
         const now = (window.performance && performance.now) ? performance.now() : Date.now();
         const wait = Math.max(0, STATUS_RENDER_MIN_MS - (now - statusLastRenderAt));
         if (wait > 1) {
-          statusTimerId = global.setTimeout(function () {
+          statusTimerId = window.setTimeout(function () {
             statusTimerId = 0;
             queueStatusRender();
           }, wait);
