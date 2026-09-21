@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '2.3.3';
+  const VERSION = '2.3.4';
   const SWITCH_ID = 'spLanguageSwitch';
   const STYLE_ID = 'spLanguageSwitchStyle';
   const HIGH_FREQUENCY_SELECTOR = '#spStatusText,#spDataQualityText,#spDQDetailsBody,#spLabHits,#spLabQc,#spSideConsolePre';
@@ -24,6 +24,8 @@
     'Pause': 'Pausa',
     'Play': 'Starta',
     'Load Image': 'Ladda bild',
+    'Load Example': 'Ladda exempel',
+    'Load a calibrated SPECTRA-1 line-spectrum example.': 'Ladda ett kalibrerat linjespektrumexempel från SPECTRA-1.',
     'Compare images': 'Jämför bilder',
     'Stop comparison': 'Avsluta jämförelse',
     'Stripe Width': 'Remsbredd',
