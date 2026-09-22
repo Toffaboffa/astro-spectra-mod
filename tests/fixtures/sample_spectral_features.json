@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "description": "Parametric numeric spectra for deterministic emission/absorption feature measurement. Profiles are generated as baseline plus or minus a Gaussian.",
+  "cases": [
+    {
+      "id": "subpixel_emission",
+      "polarity": "emission",
+      "grid": { "startNm": 490, "endNm": 511, "stepNm": 0.5 },
+      "profile": { "baseline": 20, "centerNm": 500.4, "amplitude": 80, "sigmaNm": 1.8 },
+      "expected": { "centerToleranceNm": 0.2, "fwhmNm": 4.2387, "fwhmToleranceNm": 0.65, "amplitudeTolerance": 6, "equivalentWidthSign": 1 }
+    },
+    {
+      "id": "subpixel_absorption",
+      "polarity": "absorption",
+      "grid": { "startNm": 582, "endNm": 597, "stepNm": 0.5 },
+      "profile": { "baseline": 1, "centerNm": 589.3, "amplitude": 0.45, "sigmaNm": 1.5 },
+      "expected": { "centerToleranceNm": 0.2, "fwhmNm": 3.5322, "fwhmToleranceNm": 0.55, "amplitudeTolerance": 0.04, "equivalentWidthSign": -1 }
+    },
+    {
+      "id": "truncated_emission",
+      "polarity": "emission",
+      "grid": { "startNm": 490, "endNm": 501, "stepNm": 0.5 },
+      "profile": { "baseline": 10, "centerNm": 491, "amplitude": 50, "sigmaNm": 2 },
+      "expectedFlag": "EDGE_WINDOW_TRUNCATED"
+    }
+  ]
+}

@@ -1,1 +1,24 @@
-{}
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "description": "Synthetic N2 second-positive-system band-head pattern for deterministic molecular evidence regression.",
+  "preset": "smart-molecular",
+  "expectedSpecies": "N2",
+  "minimumMatchedPeaks": 7,
+  "frame": {
+    "calibrated": true,
+    "nm": [387.96, 388.46, 388.96, 389.46, 389.96, 390.46, 390.96, 392.8, 393.3, 393.8, 394.3, 394.8, 395.3, 395.8, 398.34, 398.84, 399.34, 399.84, 400.34, 400.84, 401.34, 404.44, 404.94, 405.44, 405.94, 406.44, 406.94, 407.44, 407.98, 408.48, 408.98, 409.48, 409.98, 410.48, 410.98, 412.68, 413.18, 413.68, 414.18, 414.68, 415.18, 415.68, 418.55, 419.05, 419.55, 420.05, 420.55, 421.05, 421.55, 425.47, 425.97, 426.47, 426.97, 427.47, 427.97, 428.47, 432.86, 433.36, 433.86, 434.36, 434.86, 435.36, 435.86],
+    "I": [4, 4, 8, 48, 8, 4, 4, 4, 4, 8, 52, 8, 4, 4, 4, 4, 10, 72, 10, 4, 4, 4, 4, 11, 82, 11, 4, 4, 4, 4, 7, 44, 7, 4, 4, 4, 4, 9, 59, 9, 4, 4, 4, 4, 10, 67, 10, 4, 4, 4, 4, 11, 76, 11, 4, 4, 4, 4, 9, 64, 9, 4, 4]
+  },
+  "molecularBands": [
+    { "species": "N2", "element": "N2", "minNm": 388.7, "maxNm": 390.2, "refNm": 389.46 },
+    { "species": "N2", "element": "N2", "minNm": 393.5, "maxNm": 395.1, "refNm": 394.3 },
+    { "species": "N2", "element": "N2", "minNm": 399.1, "maxNm": 400.6, "refNm": 399.84 },
+    { "species": "N2", "element": "N2", "minNm": 405.2, "maxNm": 406.7, "refNm": 405.94 },
+    { "species": "N2", "element": "N2", "minNm": 413.4, "maxNm": 414.9, "refNm": 414.18 },
+    { "species": "N2", "element": "N2", "minNm": 419.3, "maxNm": 420.8, "refNm": 420.05 },
+    { "species": "N2", "element": "N2", "minNm": 426.2, "maxNm": 427.7, "refNm": 426.97 },
+    { "species": "N2", "element": "N2", "minNm": 433.6, "maxNm": 435.1, "refNm": 434.36 },
+    { "species": "O2", "element": "O2", "minNm": 445, "maxNm": 449, "refNm": 447 }
+  ]
+}

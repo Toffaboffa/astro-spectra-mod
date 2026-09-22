@@ -2,10 +2,10 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '2.3.9';
+  const VERSION = '3.0.0';
   const SWITCH_ID = 'spLanguageSwitch';
   const STYLE_ID = 'spLanguageSwitchStyle';
-  const HIGH_FREQUENCY_SELECTOR = '#spStatusText,#spDataQualityText,#spDQDetailsBody,#spLabHits,#spLabQc,#spSideConsolePre';
+  const HIGH_FREQUENCY_SELECTOR = '#spStatusText,#spDataQualityText,#spDQDetailsBody,#spLabHits,#spLabQc,#spAstroContinuum,#spAstroFeatures,#spAstroMatches,#spAstroQuality,#spAstroVelocity,#spResponseStatus,#spResponseCatalogNote,#spSideConsolePre';
 
   // English remains the source language and is always the initial language after page load.
   let currentLanguage = 'en';
@@ -107,6 +107,13 @@
     'Apply': 'Tillämpa',
     'Clear': 'Rensa',
     'CUSTOM': 'ANPASSAD',
+    'Instrument response': 'Instrumentrespons',
+    'Response profile': 'Responsprofil',
+    'None': 'Ingen',
+    'Load custom JSON/CSV': 'Ladda egen JSON/CSV',
+    'Loading bundled response profiles…': 'Laddar bundna responsprofiler…',
+    'Uncorrected relative intensity.': 'Okorrigerad relativ intensitet.',
+    'Uncorrected relative intensity. No response correction is applied.': 'Okorrigerad relativ intensitet. Ingen responskorrigering tillämpas.',
 
     'Calibration': 'Kalibrering',
     'Calibration fit graph': 'Kalibreringsgraf',
@@ -123,6 +130,32 @@
     'No': 'Nej',
 
     'Analyze': 'Analysera',
+    'Advanced analysis settings': 'Avancerade analysinställningar',
+    'Advanced ASTRO details': 'Avancerade ASTRO-detaljer',
+    'Advanced: reference spectrum comparison': 'Avancerat: jämförelse med referensspektrum',
+    'Continuum diagnostics': 'Kontinuumdiagnostik',
+    'Continuum': 'Kontinuum',
+    'Measurement quality': 'Mätkvalitet',
+    'Radial velocity': 'Radialhastighet',
+    'Stellar class evidence': 'Evidens för stjärnklass',
+    'ABSORPTION FEATURES': 'ABSORPTIONSDRAG',
+    'REFERENCE MATCHES': 'REFERENSMATCHNINGAR',
+    'Waiting for a calibrated spectrum.': 'Väntar på ett kalibrerat spektrum.',
+    'Unavailable.': 'Ej tillgängligt.',
+    'No absorption features yet.': 'Inga absorptionsdrag ännu.',
+    'No reference matches yet.': 'Inga referensmatchningar ännu.',
+    'No measurable absorption features.': 'Inga mätbara absorptionsdrag.',
+    'No matches. A calibrated wavelength axis is required.': 'Inga matchningar. En kalibrerad våglängdsaxel krävs.',
+    'Analysis is off.': 'Analysen är avstängd.',
+    'Waiting for an ASTRO result.': 'Väntar på ett ASTRO-resultat.',
+    'Educational low-resolution analysis. Broad O/B/A/F/G/K/M evidence is heuristic, not a probability, subclass or luminosity class. Radial velocity is not barycentric/heliocentric corrected.': 'Utbildningsanalys med låg upplösning. Bred O/B/A/F/G/K/M-evidens är heuristisk, inte en sannolikhet, underklass eller luminositetsklass. Radialhastigheten är inte barycentriskt/heliocentriskt korrigerad.',
+    'Broad class only; no subclass or luminosity class.': 'Endast bred klass; ingen underklass eller luminositetsklass.',
+    'Conflicting class evidence': 'Motstridig klassevidens',
+    'No class is promoted as reliable.': 'Ingen klass anges som tillförlitlig.',
+    'Insufficient class evidence': 'Otillräcklig klassevidens',
+    'More calibrated, reliable diagnostic features are required.': 'Fler kalibrerade och tillförlitliga diagnostiska drag krävs.',
+    'Insufficient reliable lines for a combined velocity.': 'Otillräckligt med tillförlitliga linjer för en kombinerad hastighet.',
+    'Radial velocity unavailable.': 'Radialhastighet ej tillgänglig.',
     'Max Hz': 'Max Hz',
     'Preset': 'Förval',
     'Mode': 'Läge',
@@ -176,6 +209,8 @@
     'Proc': 'Bearb',
     'HW': 'HW',
     'Signal': 'Signal',
+    'Quality:': 'Kvalitet:',
+    'Limit:': 'Begränsning:',
     'Avg/Dyn': 'Med/Dyn',
     'Base': 'Bas',
     'Headroom': 'Marginal',
@@ -341,6 +376,10 @@
 
   const patterns = [
     [/^Best match:\s*/i, 'Bästa matchning: '],
+    [/^Best class evidence:\s*/i, 'Bästa klassevidens: '],
+    [/^Compatible range:\s*/i, 'Kompatibelt intervall: '],
+    [/^Reasons:\s*/i, 'Skäl: '],
+    [/^Conflicts:\s*/i, 'Konflikter: '],
     [/^Primary:\s*/i, 'Primär: '],
     [/^Secondary:\s*/i, 'Sekundär: '],
     [/^Preset:\s*/i, 'Förval: '],
@@ -348,7 +387,11 @@
     [/^Libraries ready\s*·\s*/i, 'Bibliotek klara · '],
     [/^Run\s+/i, 'Körning '],
     [/^No candidates/i, 'Inga kandidater'],
-    [/^No hits/i, 'Inga träffar']
+    [/^No hits/i, 'Inga träffar'],
+    [/^Response-corrected relative intensity using[ ]*/i, 'Responskorrigerad relativ intensitet med '],
+    [/^Selected response profile:[ ]*/i, 'Vald responsprofil: '],
+    [/^Uncorrected relative intensity[.] Correction unavailable/i, 'Okorrigerad relativ intensitet. Korrigering ej tillgänglig'],
+    [/^No measured bundled response profile is available[.]?$/i, 'Ingen uppmätt bunden responsprofil är tillgänglig.']
   ];
 
   function normalizeText(value) {

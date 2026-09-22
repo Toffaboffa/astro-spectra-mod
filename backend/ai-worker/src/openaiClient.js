@@ -3,7 +3,7 @@ import { validateStructuredResult, flattenStructuredResult } from './response.js
 const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1/responses';
 const DEFAULT_MODEL = 'gpt-5.6-terra';
 const DEFAULT_TIMEOUT_MS = 35000;
-const DEFAULT_MAX_OUTPUT_TOKENS = 900;
+const DEFAULT_MAX_OUTPUT_TOKENS = 700;
 
 export class OpenAIConnectorError extends Error {
   constructor(code, message, status, details) {

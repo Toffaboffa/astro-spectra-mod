@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "description": "Small deterministic spectra for worker quality-control and ambiguous-match regression.",
+  "cases": [
+    {
+      "id": "saturated_normalized",
+      "frame": { "I": [0.04, 0.08, 0.18, 0.55, 1, 1, 0.62, 0.24, 0.1, 0.06, 0.04, 0.03] },
+      "expectedFlag": "SATURATION"
+    },
+    {
+      "id": "no_signal",
+      "frame": { "I": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+      "expectedFlag": "NO_SIGNAL"
+    },
+    {
+      "id": "low_snr",
+      "frame": { "I": [0.12, 0.78, 0.2, 0.86, 0.15, 0.74, 0.24, 0.82, 0.18, 0.7, 0.27, 0.76] },
+      "expectedFlag": "LOW_SNR"
+    },
+    {
+      "id": "too_small",
+      "frame": { "I": [0, 1, 0, 1] },
+      "expectedFlag": "FRAME_TOO_SMALL"
+    }
+  ],
+  "uncalibrated": {
+    "frame": {
+      "calibrated": false,
+      "nm": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      "I": [1, 2, 5, 24, 5, 2, 1, 2, 5, 20, 5, 2]
+    }
+  },
+  "ambiguousMatch": {
+    "observedPeaks": [{ "index": 4, "nm": 500, "value": 80, "prominence": 70 }],
+    "atomLines": [
+      { "element": "X", "species": "X I", "speciesKey": "X I", "nm": 499.6 },
+      { "element": "Y", "species": "Y I", "speciesKey": "Y I", "nm": 500.4 }
+    ],
+    "options": { "toleranceNm": 1, "hardMaxDistanceNm": 1, "maxMatches": 4, "maxPerPeak": 2 },
+    "expectedCandidateCount": 2
+  }
+}

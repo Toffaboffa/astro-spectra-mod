@@ -1,7 +1,7 @@
 (function (global) {
   'use strict';
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = 'v2.0.1';
+  const VERSION = 'v3.0.0';
   sp.version = VERSION;
 
   function createModeTabs(container) {
@@ -166,6 +166,10 @@
 
   function isStaticImageSource() {
     try {
+      const numeric = global.SpectraCore && global.SpectraCore.graph && typeof global.SpectraCore.graph.getNumericFrame === 'function'
+        ? global.SpectraCore.graph.getNumericFrame()
+        : null;
+      if (numeric && Array.isArray(numeric.I) && numeric.I.length) return true;
       const img = document.getElementById('cameraImage');
       if (!img || !img.src || !img.complete || !(Number(img.naturalWidth) > 0)) return false;
       const rt = sp.runtime || {};

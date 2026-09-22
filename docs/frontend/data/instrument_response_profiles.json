@@ -1,1 +1,5 @@
-{}
+{
+  "schema": "spectra-pro-response-profile-catalog/v1",
+  "profiles": [],
+  "note": "No measured SPECTRA instrument-response curve is currently bundled. Add only traceable measured relative-response profiles; do not substitute a fabricated curve."
+}

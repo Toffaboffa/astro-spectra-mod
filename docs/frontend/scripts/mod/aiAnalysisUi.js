@@ -3,6 +3,7 @@
 
   const sp = global.SpectraPro = global.SpectraPro || {};
   const BUTTON_ID = 'spAiInterpretBtn';
+  const ASTRO_BUTTON_ID = 'spAiInterpretBtnAstro';
   const MODAL_ID = 'spAiInterpretModal';
   const STYLE_ID = 'spAiInterpretStyle';
   let lastPayload = null;
@@ -331,7 +332,8 @@
     const trace = payload && payload.trace;
     const tracePoints = trace && Array.isArray(trace.points) ? trace.points.length : 0;
     const calibrated = !!(payload && payload.readiness && payload.readiness.calibrated);
-    return 'Payload prepared locally: ' + candidates + ' candidate(s), ' + hits + ' hit(s), ' + tracePoints + ' compact trace point(s), calibration ' + (calibrated ? 'available' : 'not available') + '.';
+    const context = payload && payload.context && payload.context.analysisContext ? payload.context.analysisContext : 'unknown';
+    return context + ' payload prepared locally: ' + candidates + ' candidate(s), ' + hits + ' hit(s), ' + tracePoints + ' compact trace point(s), calibration ' + (calibrated ? 'available' : 'not available') + '.';
   }
 
   function submit() {
@@ -358,7 +360,7 @@
         return;
       }
       if (!readiness.hasAnalysisResult) {
-        setStatus('No LAB analysis result is available yet. Run LAB analysis first, then request AI interpretation.', 'error', false);
+        setStatus('No deterministic analysis result is available yet. Run LAB or ASTRO analysis first, then request AI interpretation.', 'error', false);
         return;
       }
 
@@ -376,7 +378,7 @@
         return;
       }
 
-      setStatus(payloadSummary(payload) + '\nStructured response handling is ready. Secure OpenAI transport is enabled in Step 6; no data has left the browser.', 'ok', false);
+      setStatus(payloadSummary(payload) + '\nStructured response handling is ready. Secure OpenAI transport is configured separately; no data has left the browser.', 'ok', false);
       try {
         if (sp.eventBus && typeof sp.eventBus.emit === 'function') sp.eventBus.emit('ai:payloadPrepared', { payload: payload });
       } catch (_) {}
@@ -386,12 +388,8 @@
     }
   }
 
-  function attachButton() {
-    if (!global.document) return false;
-    if ($(BUTTON_ID)) return true;
-    const actions = global.document.querySelector('#spLabCard .sp-actions--lab');
-    if (!actions) return false;
-
+  function appendLaunch(actions, id, title) {
+    if (!actions || $(id)) return false;
     const launch = global.document.createElement('div');
     launch.className = 'sp-ai-launch';
 
@@ -402,16 +400,25 @@
 
     const button = global.document.createElement('button');
     button.type = 'button';
-    button.id = BUTTON_ID;
+    button.id = id;
     button.className = 'sp-ai-action';
     button.textContent = 'AI Interpretation';
-    button.title = 'Prepare the current LAB spectrum and analysis for a concise AI-assisted scientific interpretation.';
+    button.title = title;
     button.addEventListener('click', open);
 
     launch.appendChild(button);
     launch.appendChild(badge);
     actions.appendChild(launch);
     return true;
+  }
+
+  function attachButton() {
+    if (!global.document) return false;
+    const labActions = global.document.querySelector('#spLabCard .sp-actions--lab');
+    const astroActions = $('spAstroActions');
+    const labReady = !!$(BUTTON_ID) || appendLaunch(labActions, BUTTON_ID, 'Prepare the current LAB spectrum and analysis for a concise AI-assisted scientific interpretation.');
+    const astroReady = !!$(ASTRO_BUTTON_ID) || appendLaunch(astroActions, ASTRO_BUTTON_ID, 'Prepare the current ASTRO spectrum and deterministic evidence for a concise AI-assisted scientific interpretation.');
+    return labReady || astroReady;
   }
 
   function installEventHooks() {

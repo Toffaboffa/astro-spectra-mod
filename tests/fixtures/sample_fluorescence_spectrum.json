@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "description": "Symmetric triangular broadband profile with a 540 nm maximum. Expected values include tolerance for production smoothing and interpolated crossings.",
+  "preset": "smart-fluorescent",
+  "frame": {
+    "calibrated": true,
+    "nm": [480, 483, 486, 489, 492, 495, 498, 501, 504, 507, 510, 513, 516, 519, 522, 525, 528, 531, 534, 537, 540, 543, 546, 549, 552, 555, 558, 561, 564, 567, 570, 573, 576, 579, 582, 585, 588, 591, 594, 597, 600],
+    "I": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5]
+  },
+  "expected": {
+    "lambdaMaxNm": 540,
+    "lambdaMaxToleranceNm": 3,
+    "centroidNm": 540,
+    "centroidToleranceNm": 2,
+    "fwhmNm": 60,
+    "fwhmToleranceNm": 6,
+    "asymmetry": "balanced"
+  }
+}

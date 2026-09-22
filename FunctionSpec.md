@@ -1,1157 +1,216 @@
-# FunctionSpec.md — SPECTRA-PRO implementation plan, file map and status tracker
+# SPECTRA PRO — Current implementation and reproducibility contract
+
+This document describes the implementation that exists in the repository. It is not
+a promise that roadmap ideas are already functional. Status labels are:
+
+- **IMPLEMENTED** — present in the runtime path and covered by focused checks.
+- **EXPERIMENTAL** — functional, but scientifically or operationally limited.
+- **PLANNED** — intentionally absent; no result should imply that it exists.
+
+Current UI version: **3.0.0**.
+
+## Architecture
+
+SPECTRA PRO preserves the original browser measurement path:
+
+```text
+camera or image → sampling stripe → spectrum frame → calibration/preprocessing
+                → shared analysis worker → LAB or ASTRO interpretation → UI/export/AI
+```
+
+There is one central frontend state store, one wavelength-calibration path, one
+preprocessing path and one analysis worker. ASTRO does not have a parallel worker or
+calibration engine. Numerically expensive analysis stays worker-side.
+
+Primary runtime entry points:
+
+- `docs/frontend/pages/recording.html` — application page and load order.
+- `docs/frontend/scripts/mod/stateStore.js` — shared state.
+- `docs/frontend/scripts/mod/proBootstrap.js` — PRO workspace and UI integration.
+- `docs/frontend/scripts/mod/processingPipeline.js` — ordered preprocessing.
+- `docs/frontend/scripts/mod/analysisWorkerClient.js` — worker bridge.
+- `docs/frontend/workers/analysis.worker.js` — worker entry point.
+- `docs/frontend/workers/analysisPipeline.js` — shared analysis orchestrator.
+- `docs/frontend/scripts/mod/exportUi.js` — reproducibility/export contract.
+- `backend/ai-worker/` — optional secure AI Interpretation boundary.
 
-This document is the **single source of truth** for:
-- what SPECTRA-PRO is supposed to do,
-- which files/modules exist and what they are responsible for,
-- what is currently implemented vs scaffold/placeholder,
-- what was changed in recent patches,
-- what remains (with patch order and QA gates).
-
-It must be updated on every patch so the codebase and plan do not drift.
-
-### Latest patch snapshot
-- **Frontend UI patch:** added `CALIBRATE` tab after `CORE`, moved Export/Long exposure into CORE, moved reference-graph controls into CORE, and improved calibration file → shell-point sync.
-- **Part 1 complete:** LAB preset families documented and exposed in the UI.
-- Added canonical preset metadata for Base vs Smart families.
-- Added Smart preset labels (`Atomic`, `Molecular`, `Gas Tube`, `Flame`, `Fluorescent`) and kept them aligned with the later Part 2/3 worker logic.
-
----
-
-## Project identity
-- **Product/UI name:** `SPECTRA-PRO`
-- **Repo working name:** `astro-spectra-mod`
-- **Deployment target:** static frontend (GitHub Pages via `docs/`)
-
----
-
-## Product goal (aligned with README)
-
-SPECTRA-PRO is a **frontend-first spectrum analysis workstation** built on top of the original SPECTRA recording workflow (camera → stripe → live spectrum graph), extended with a PRO shell and staged analysis features.
-
-### Core idea
-Keep the browser instrument feel (fast graph, live camera/stripe workflow) and layer on:
-- **CORE mode** (safe baseline, SPECTRA-like)
-- **LAB mode** (teaching/lab line ID + subtraction/quality workflows)
-- **ASTRO mode** (solar/stellar workflows, normalization, absorption handling, molecular bands, preliminary offset/Doppler)
-
-### Architectural constraint
-Heavy analysis must run in a **Web Worker** so the UI remains responsive.
-
----
-
-## Functional scope (what the app should support)
-
-## LAB preset architecture
-
-LAB presets are now split into two product families:
-
-### Base Presets
-Keep the simple, local peak→line workflow. They are intended for fast feedback and manual interpretation, and should remain stable while Smart evolves.
-
-- `nearest` — direct nearest-line matching
-- `wide` — broader local match window / more candidates
-- `tight` — stricter local matching
-- `fast` — reduced candidate count / faster local pass
-- `lamp-hg` — simpler lamp-oriented base preset
-
-### Smart Presets
-Represent global source-identification workflows and are the home for Smart 2.0.
-
-- `smart-atomic` — atomic source ranking
-- `smart-molecular` — molecular / band-oriented ranking
-- `smart-gastube` — mixed discharge-tube ranking
-- `smart-flame` — future combustion / mixed-emitter ranking
-- `smart-fluorescent` — future fluorescent-lamp ranking
-
-### Smart 2.0 target model
-Smart is being staged toward a two-step pipeline:
-1. **Discovery** — broad candidate search with hard `Max distance (nm)` gating.
-2. **Profile refinement** — dynamic candidate-profile comparison using expected vs observed lines/bands, uniqueness, clustering, and missed-line penalties.
-
-**Part 1 scope:** preset family split, metadata, docs, and LAB UI grouping.
-**Part 2 scope:** worker scoring changes for Smart 2.0 core logic.
-**Part 3 scope:** source-family presets such as Flame / Fluorescent and explained-signal metrics.
-
-
-This section is the product-level checklist. Phases below describe *when* each part lands.
-
-### A. CORE instrument workflow (SPECTRA-compatible foundation)
-- Live camera or loaded image source
-- Stripe width and stripe position controls
-- Stripe preview overlay in camera view
-- Real-time graph rendering from stripe pixel data (RGB + combined intensity)
-- Graph zoom / pan / reset / back / forward
-- Peak visualization (basic)
-- Reference curves / comparison curves
-- Calibration px ↔ nm (polynomial fit)
-- Calibration quality / residual feedback (where original supports it)
-- Export graph image, source image, and numeric data
-
-### B. PRO modes (shell behavior)
-- **CORE mode** — stable baseline behavior
-- **LAB mode** — line ID, subtraction, absorbance/transmittance workflows, top hits, presets
-- **ASTRO mode** — normalization, absorption handling, presets, molecular bands, offset/Doppler (staged)
-
-### C. PRO dock / GUI (integrated under graph)
-- Bottom dock integrated in graph settings area (not floating)
-- Tabs: `General`, `CORE controls`, `LAB`, `ASTRO`, `Other`
-- **General** hosts real original graph controls (no fake duplicates)
-- Persistent status rail on the right: **Status** + **Data Quality**
-- Stable drawer height / no accidental layout jumps
-
-### D. Phase 1.5 (v5-inspired, CORE-safe UX upgrades)
-- Display modes (Normal / Difference / Ratio / etc.)
-- Data quality panel (saturation, dynamic range, QC shell)
-- Y-axis controls (auto/fixed)
-- Peak threshold/distance/smoothing controls
-- Graph appearance / fill controls
-- Camera capability abstraction (unsupported-safe)
-- Calibration I/O + multipoint manager shell
-
-### E. Phase 2 (LAB MVP)
-- Worker foundation + protocol (`PING`, library init, frame analysis)
-- Library loading/index/query (initial atomic lines)
-- Peak detection/scoring/matching + QC + confidence
-- Throttled live LAB analysis
-- Top hits panel + overlays
-- Subtraction modes (dark/reference minimum)
-- Preset plumbing + quick peaks / processing pipeline integration
-
-### F. Phase 3 (ASTRO MVP)
-- Continuum normalization
-- Smoothing/normalization pipeline
-- Absorption/emission mode (auto/manual)
-- Solar/Fraunhofer presets
-- Offset estimate + QC
-- Preliminary Doppler estimate (quality-gated)
-- Molecular band matching (first pass)
-- Species search / preset resolver
-
-### G. Phase 4 (quality/reproducibility/export+)
-- Instrument response correction
-- Response profile store
-- Instrument profile
-- Observation profile
-- Session capture
-- Flat field (staged)
-- Export augmentation (PRO metadata + QC + results)
-
----
-
-## Guiding rule (non-negotiable)
-
-**CORE mode must remain usable and stable.**
-
-Every patch must preserve:
-1. CORE works without worker analysis,
-2. PRO modules can fail/disable safely,
-3. LAB/ASTRO errors must not brick camera/stripe/graph workflow.
-
----
-
-## Ownership and duplication policy (CORE boundary map)
-
-This section clarifies **what is original SPECTRA-1 vs what is SPECTRA-PRO**, so we avoid accidental duplicate engines while preserving all PRO ideas.
-
-### Ownership types
-- **Primary (Original)** — the original script/DOM is the real source of truth. PRO may host or observe it, but must not create a parallel engine in CORE.
-- **Primary (PRO)** — new SPECTRA-PRO behavior/control added on top of the original instrument.
-- **Bridge** — PRO imports/exports/manages workflow state, then applies into the original pipeline.
-- **Host/Mirror** — PRO re-homes the real original controls/UI in a new tab/container (no fake duplicate logic).
-- **Override (visual)** — PRO may override rendering behavior in a reversible way without mutating underlying captured data.
-
-### CORE boundary map (current decisions)
-| Area | Owner | PRO role | Rule / duplicate-risk decision |
-|---|---|---|---|
-| Camera acquisition / stream lifecycle | Original | Observe + status + capability probe | No parallel camera engine in CORE. `Probe camera` is diagnostic only. |
-| Stripe selection / preview overlay | Original | Observe/status hooks | Preserve original interaction model. |
-| Live graph rendering loop | Original | Visual override hooks | PRO may alter display transform / scaling / fill, but must keep graph loop intact and reversible. |
-| General graph controls | Original | Host/Mirror in `General` tab | Same DOM nodes, same IDs. No cloned controls. |
-| Calibration solve / coefficients | Original | Bridge (`point 20`) | PRO shell may import/manage/export points and apply them into original calibration inputs + `setCalibrationPoints()`. No parallel solver in CORE. |
-| Reference capture / compare curves | Original | Observe + status | Original behavior remains authoritative in CORE. |
-| Status + Data Quality | PRO | Primary (PRO) | Unified diagnostics layer reading store/hooks without replacing instrument logic. |
-| Worker controls / library init | PRO | Primary (PRO) | Optional path; CORE must remain usable without worker. |
-| Display modes / Y-axis / Fill modes | PRO | Primary (PRO visual override) | Accepted PRO additions because they are reversible and LAB/ASTRO-prep. |
-| Peak threshold/distance/smoothing (PRO panel) | PRO | Primary (PRO analysis-facing control) | Coexists with original graph controls; semantics must stay documented. |
-| Calibration I/O text shell / point manager | PRO | Primary (PRO shell) + Bridge | Workflow layer for import/export/presets; apply target is original calibration pipeline. |
-
-### Anti-duplication rule (explicit)
-If a new CORE patch adds a control resembling an original capability, patch notes/spec must tag it as **Host/Mirror**, **Bridge**, or **Primary PRO**. This preserves your feature ideas while preventing hidden duplicate engines.
-
----
-
-## Canonical file map (what exists and what belongs where)
-
-> This section is the “where things should be” map. It is intentionally explicit.
-
-### 1) Entry points / Pages
-- `docs/index.html`
-  - GitHub Pages entry/redirect
-- `docs/frontend/index.html`
-  - Frontend landing page (project shell)
-- `docs/frontend/pages/recording.html`
-  - **Main instrument page** (camera/graph/calibration + SPECTRA-PRO integration)
-
-### 2) Styles
-- `docs/frontend/styles/styles.css`
-  - Base UI/layout styling (original SPECTRA-compatible + merged overrides)
-- `docs/frontend/styles/mod-panels.css`
-  - SPECTRA-PRO dock/status/tab layout styling (currently contains layered hotfix history)
-- `docs/frontend/styles/overlays.css`
-  - Overlay-related styling
-- `docs/frontend/styles/mobile-tweaks.css`
-  - Mobile-specific tweaks
-
-### 3) Original SPECTRA scripts (CORE stack) — `docs/frontend/scripts/`
-These are the baseline scripts that must keep working.
-- `cameraScript.js`
-- `stripeScript.js`
-- `graphScript.js`
-- `calibrationScript.js`
-- `referenceGraphScript.js`
-- `dataSavingScript.js`
-- `imageLoadingScript.js`
-- `setupScript.js`
-- `cameraSelection.js`
-- `languageScript.js`
-- `polynomialRegressionScript.js`
-- `zipScript.js`
-
-### 4) PRO integration/UI modules — `docs/frontend/scripts/mod/`
-#### 4a) Shell/foundation (Phase 1 core)
-- `coreHooks.js` — bridge namespace/hooks into original scripts
-- `eventBus.js` — app event bus (`sp.eventBus`)
-- `stateStore.js` — store (`sp.store`)
-- `appMode.js` — mode API (`CORE/LAB/ASTRO`)
-- `uiPanels.js` — panel helpers / UI shell helpers
-- `spectrumFrameAdapter.js` — frame adaptation helpers
-- `overlays.js` — graph overlay hook (currently no-op-safe)
-- `proBootstrap.js` — SPECTRA-PRO dock bootstrap, General hosting, status rail, CORE-tab controls wiring
-- `analysisWorkerClient.js` — browser worker client wrapper
-
-#### 4b) Phase 1.5 UX modules (currently mostly scaffold)
-- `displayModes.js`
-- `dataQualityPanel.js`
-- `yAxisController.js`
-- `peakControls.js`
-- `graphAppearance.js`
-- `cameraCapabilities.js`
-- `calibrationIO.js`
-- `calibrationPointManager.js`
-
-#### 4c) Phase 2+/support modules (mixed scaffold/partial)
-- `libraryClient.js`
-- `libraryFilters.js`
-- `processingPipeline.js`
-- `subtraction.js`
-- `quickPeaks.js`
-- `presets.js` — LAB preset catalog/metadata registry (Base vs Smart families, descriptions, canonical IDs)
-- `calibrationBridge.js`
-
-#### 4d) Phase 3+ ASTRO modules (mostly scaffold)
-- `continuum.js`
-- `normalization.js`
-- `smoothing.js`
-- `calibrationPresets.js`
-- `speciesSearch.js`
-
-#### 4e) Phase 4 modules (mostly scaffold)
-- `instrumentResponse.js`
-- `responseProfileStore.js`
-- `instrumentProfile.js`
-- `observationProfile.js`
-- `sessionCapture.js`
-- `exportAugment.js`
-- `flatField.js`
-
-#### 4f) Utility
-- `utils.js`
-
-### 5) Worker modules — `docs/frontend/workers/`
-#### Worker runtime/foundation
-- `analysis.worker.js`
-- `workerRouter.js`
-- `workerTypes.js`
-- `workerState.js`
-
-#### Library and analysis pipeline
-- `libraryLoader.js`
-- `libraryIndex.js`
-- `libraryQuery.js`
-- `peakDetect.js`
-- `peakScoring.js`
-- `lineMatcher.js`
-- `qcRules.js`
-- `confidenceModel.js`
-- `analysisPipeline.js`
-
-#### ASTRO/advanced worker modules (planned/staged; may be absent or scaffold)
-- `autoMode.js`
-- `offsetEstimate.js`
-- `dopplerEstimate.js`
-- `bandMatcher.js`
-- `presetResolver.js`
-
-### 6) Data assets
-- `docs/frontend/data/` (libraries, response profiles, presets; staged additions)
-- Example currently present/planned:
-  - `instrument_response_profiles.json`
-
-### 7) Documentation and tests
-- `README.md` — product vision + architecture overview
-- `FunctionSpec.md` — implementation contract and status tracker (this file)
-- `docs/v5_gap_additions.md` — gap analysis / planned additions
-- `tests/` — patch-specific test notes/smoke docs (as used)
-
----
-
-## Runtime load map (what is currently loaded on `recording.html`)
-
-### Currently loaded (classic `<script>` path)
-`recording.html` loads these PRO modules directly:
-- `mod/coreHooks.js`
-- `mod/eventBus.js`
-- `mod/stateStore.js`
-- `mod/appMode.js`
-- `mod/uiPanels.js`
-- `mod/spectrumFrameAdapter.js`
-- `mod/overlays.js`
-- `mod/analysisWorkerClient.js`
-- `mod/displayModes.js`
-- `mod/dataQualityPanel.js`
-- `mod/yAxisController.js`
-- `mod/peakControls.js`
-- `mod/graphAppearance.js`
-- `mod/cameraCapabilities.js`
-- `mod/calibrationIO.js`
-- `mod/calibrationPointManager.js`
-- `mod/presets.js`
-- `mod/proBootstrap.js`
-
-### Activation state (important)
-Phase 1.5 modules (`displayModes.js`, `yAxisController.js`, etc.) are now loaded as classic-script-compatible modules under `window.SpectraPro.v15`, and the core-safe ones are functionally integrated into graph behavior while later-phase modules remain staged.
-
-### Compatibility trap (must remember)
-Phase 1.5 scaffold modules have been converted to **classic-script-compatible namespace modules** under `window.SpectraPro.v15` in Step 3. Future additions should follow the same browser-safe pattern unless the page is migrated to `type=module`.
-
----
-
-## Current implementation status snapshot (aligned with latest patch)
-
-### Status legend
-- `TODO` = not started
-- `SCAFFOLD` = file exists, placeholder only
-- `PARTIAL` = basic implementation exists, not production-ready
-- `READY` = implemented and manually verified (or patch-level verified)
-- `DEFERRED` = intentionally postponed
-
-### A. CORE baseline import and compatibility
-- **Phase 0 original SPECTRA import into `docs/frontend/`:** `READY`
-- **CORE page pathing / Pages harness:** `READY`
-- **CORE camera/stripe/graph/calibration/export behavior parity:** `PARTIAL` (functional baseline exists; visual polish/asset parity may still differ)
-
-### B. PRO shell (items 5–8)
-#### 5) App mode / mode handling (`CORE/LAB/ASTRO`)
-- `PARTIAL`
-- `appMode.js` API exists and emits `mode:changed`.
-- **Latest Step 1 patch:** CORE-tab App Mode selector in `proBootstrap.js` now routes through `sp.appMode.setMode(...)` when available (instead of store-only writes).
-
-#### 6) State store + event bus
-- `PARTIAL` (foundation strong)
-- `eventBus.js` and `stateStore.js` are present and working as shell primitives.
-- Remaining work is normalization/consistent usage (not existence).
-
-#### 7) Read-only hooks into original scripts (graph/calibration/reference)
-- `PARTIAL` → strong
-- Hooks exist in `graphScript.js`, `calibrationScript.js`, `referenceGraphScript.js` and publish bridge data/events.
-- Remaining work: normalize state sync and reduce hybrid reads.
-
-#### 8) Overlay hook (PRO overlay integration point)
-- `READY` (shell-level)
-- `overlays.js` exists and is no-op-safe; `graphScript.js` can call it without changing CORE rendering semantics.
-
-### C. PRO dock / GUI (items 9–13)
-#### 9) Bottom dock under graph (non-floating)
-- `READY`
-- Recovered from floating-to-bottom regression; dock integrated under graph controls area.
-
-#### 10) Tab row (General / CORE controls / LAB / ASTRO / Other)
-- `READY`
-- Stable tab switching and panel containers present.
-
-#### 11) General tab hosts real original graph controls
-- `READY`
-- Original controls are re-mounted into General (real DOM nodes, original IDs preserved).
-
-#### 12) CORE controls tab (PRO shell controls)
-- `PARTIAL`
-- UI exists and is visible.
-- **Latest Step 1 patch:** Worker controls now attempt to use `analysisWorkerClient` (`start/stop/ping/initLibraries`) with safe fallback behavior.
-- Still not full LAB control surface (many controls remain shell/placeholder level).
-
-#### 13) Status rail (Status + Data Quality)
-- `PARTIAL`
-- Layout/placement is good and stable.
-- Status/Data Quality is store-normalized (Step 2) with module-based DQ compute; standalone DQ panel UI still pending.
-
-### D. Phase 1.5 v5-inspired UX upgrades (items 14–20)
-#### 14) Display modes
-- `READY` (core-safe visual override)
-- UI selector writes `state.display.mode`; `graphScript.js` applies transforms: `NORMAL`, `DIFFERENCE`, `RATIO`, `TRANSMITTANCE`, `ABSORBANCE` (requires a captured reference curve).
-
-#### 15) Data Quality module
-- `READY`
-- `dataQualityPanel.js` computes Status + DQ metrics and is rendered in the Status rail.
-- `Other` tab now includes **Data Quality (details)**, a read-only breakdown mirroring the rail.
-
-#### 16) Y-axis controls
-- `READY`
-- UI selector writes `state.display.yAxisMode` (`auto|fixed_255|manual`) and `state.display.yAxisMax`; `graphScript.js` applies scaling.
-
-#### 17) Peak controls (threshold/distance/smoothing)
-- `READY` (basic controls)
-- UI writes `state.peaks.*`; `graphScript.js` reads them via `sp.v15.peakControls.getEffective(...)` and passes into peak detection.
-
-#### 18) Graph appearance / fill modes
-- `READY`
-- Fill mode + opacity are wired (`state.display.fillMode`, `state.display.fillOpacity`) and applied in `graphScript.js` (`INHERIT|OFF|SYNTHETIC|SOURCE`).
-- `SOURCE` is defined as “use sampled pixel colors, normalized to current y-scale” and behaves consistently across zoom ranges.
-
-#### 19) Camera capability abstraction
-- `READY` (core-safe, optional controls)
-- `cameraCapabilities.js` provides `probeCurrent()` + `applySetting()` and normalizes supported/values/ranges.
-- Status rail shows camera support summary (exposure/zoom/resolution).
-- `CORE controls` tab includes optional controls for **Zoom** and **Exposure** when supported; unsupported controls stay hidden/disabled.
-
-#### 20) Calibration I/O + multipoint manager shell
-- `READY`
-- `Other` tab contains the shell manager (JSON/CSV import/export, capture current points).
-- Shell points now have **enable/disable** toggles (apply uses enabled points only), plus **Remove** per point.
-- `Undo shell edit` provides a simple undo stack for shell point edits.
-- `Rollback last apply` restores the previous calibration point set (best-effort backup) and re-applies.
-- Validation preview updates against enabled points.
-
-
-### E. Phase 2 LAB MVP
-- `PARTIAL` (end-to-end MVP loop exists, but feature surface is incomplete)
-
-**What is implemented now**
-- Worker protocol is functional: `PING → PONG`, `INIT_LIBRARIES`, `ANALYZE_FRAME → ANALYZE_RESULT`.
-- `analysisWorkerClient.js` is wired and updates store:
-  - `worker.*` (status, hz, librariesLoaded, errors)
-  - `analysis.topHits`, `analysis.qcFlags`, `analysis.offsetNm` (when present)
-- LAB panel has a working MVP loop:
-  - App mode = `LAB`
-  - Toggle **Analyze** + set **Max Hz**
-  - After **Init libraries**, frames are throttled and sent to the worker
-  - Results render in **Top hits** and **QC** lists.
-
-**Current limitations / still missing**
-- Library loading supports external JSON assets through the worker loader, with `builtin-lite` retained as a fallback when fetch/loading fails.
-- Presets are active and affect worker analysis; some deeper ASTRO-specific preset plumbing is still pending.
-- `Query library` is wired and opens a browsable modal backed by worker queries.
-- Subtraction/absorbance workflows are not yet wired into the live analysis pipeline (modules exist, plumbing pending).
-- Overlay infrastructure exists, but full on-graph labeling/annotation remains limited compared with the hit list and summary UI.
-
-
-### F. Phase 3 ASTRO MVP
-- `SCAFFOLD/PARTIAL` (mostly scaffold modules present)
-
-### G. Phase 4 correction/profiles/export+
-- `SCAFFOLD` (modules/files mostly placeholders)
-
----
-
-## Patch order and roadmap (controlled implementation plan)
-
-### Phase 0 — Baseline import harness (completed)
-**Goal:** run original SPECTRA UI inside this repo.
-- `recording.html`, styles, original scripts imported into `docs/frontend/`
-- Pages-safe pathing/harness validated
-
-**Status:** `READY`
-
-### Phase 1 — Safe hooks + PRO shell (in progress)
-**Goal:** create integration points and dock shell without changing instrument behavior.
-
-Primary files:
-- `mod/appMode.js`, `mod/stateStore.js`, `mod/eventBus.js`
-- `mod/spectrumFrameAdapter.js`, `mod/uiPanels.js`, `mod/overlays.js`
-- hook patches in `graphScript.js`, `calibrationScript.js`, `referenceGraphScript.js`
-- `mod/proBootstrap.js`
-
-Must be true before Phase 1 closes:
-- CORE still behaves correctly
-- frame/calibration/reference states are readable via hooks/bridge
-- dock UI exists and does not break original graph controls
-- overlays hook exists and is safe
-
-**Status:** `PARTIAL`
-
-### Recovery roadmap to complete Phase 1 → 1.5 (current focus)
-
-#### Step 1 — Shell wiring hardening (implemented)
-**Goal:** make PRO shell controls talk to real shell APIs instead of placeholder state writes.
-
-Implemented in latest patch:
-- Route App mode UI through `sp.appMode.setMode(...)`
-- Add safe worker client singleton init in `proBootstrap.js`
-- Wire CORE-tab Worker mode (`Auto/On/Off`) to worker client start/stop behavior (with fallback)
-- Wire `Ping worker` to real client `ping()` (with fallback)
-- Wire `Init libraries` to real client `initLibraries(...)` (with fallback marker state)
-- Add worker-event listeners (`worker:ready`, `worker:libraries`, `worker:error`, `worker:timeout`, `worker:result`) so status UI refreshes more reliably
-
-Success criteria:
-- Mode changes emit `mode:changed`
-- Ping/Init trigger real worker path when client is available
-- No new CORE null errors
-
-**Status:** `READY`
-
-#### Step 2 — Shell state normalization + status rail correctness (implemented)
-**Goal:** remove hybrid “reads from everywhere” behavior and make Status/Data Quality deterministic.
-
-Planned scope:
-- Normalize live frame sync into `store.frame.latest` via throttled bridge updates
-- Normalize calibration/reference sync into store-backed state nodes
-- Make status/data-quality read primarily from store (fallbacks only as guards)
-- Add explicit worker mode state (`auto|on|off`) instead of inferring from enabled/status
-- Keep UI changes minimal (only readability/equal-height polish if needed)
-
-Success criteria:
-- Stable Status/Data Quality across reloads and mode switches
-- Minimal direct reads from `window.SpectraCore` in render path
-- No render-loop regressions
-
-**Status:** `READY`
-
-#### Step 3 — Phase 1.5 activation scaffold (load path + compatibility wrappers) (implemented)
-**Goal:** make 14–20 load safely without breaking classic-script pages.
-
-Planned scope:
-- Convert Phase 1.5 scaffold modules from ESM `export` syntax to browser-safe namespace modules **or** add module loader wrapper
-- Add safe script load path/order in `recording.html`
-- Expose a single `sp.v15` namespace for panel integration
-- Keep features default-off until each slice is wired
-
-Success criteria:
-- No `Unexpected token 'export'` errors
-- Modules are loaded and inspectable
-- CORE unaffected when idle
-
-**Status:** `READY`
-
-#### Step 4 — Phase 1.5 functional controls (incremental slices)
-**Goal:** implement actual user-facing v5-style controls in small, testable slices.
-
-Recommended order:
-1. Display modes (14)
-2. Y-axis controls (16)
-3. Data Quality module integration (15)
-4. Peak controls (17)
-5. Graph appearance/fill (18)
-6. Camera capability abstraction (19)
-7. Calibration I/O + multipoint shell (20)
-
-Success criteria:
-- Each slice lands with CORE regression check
-- Controls affect graph behavior intentionally (not placeholder-only)
-- Features are safe to disable
-
-**Status:** `READY` (Phase 1.5 complete)
-
-### Phase 2 — Worker foundation + LAB MVP (after 1.5 shell activation)
-**Goal:** live identification in LAB mode without freezing UI.
-
-Key modules:
-- `analysisWorkerClient.js`
-- worker protocol/router/state + loader/index/query/matching pipeline files
-- `subtraction.js`, `quickPeaks.js`, `processingPipeline.js`, `presets.js`, `library*` modules
-
-Must be true before phase ends:
-- Worker responds to `PING`
-- Library can initialize/load (at least minimal atomic set)
-- LAB mode can analyze throttled frames
-- Top hits panel shows results
-- Overlay labels work
-- Dark/reference subtraction minimum path works
-
-**Status:** `PARTIAL` (foundation/scaffold exists; full LAB integration not complete)
-
-### Phase 3 — ASTRO MVP
-**Goal:** make ASTRO mode meaningfully different and useful for solar/stellar data.
-
-Must be true before phase ends:
-- Continuum normalization available
-- Absorption/emission handling works (auto/manual)
-- Solar/Fraunhofer preset exists
-- Offset estimate + QC shown
-- Preliminary Doppler display quality-gated
-- Basic molecular band matching first pass
-
-**Status:** `SCAFFOLD/PARTIAL`
-
-### Phase 4 — Response correction, profiles, export augmentation
-**Goal:** improve measurement quality, reproducibility, and export completeness.
-
-Must be true before phase ends:
-- Response correction workflow works (basic)
-- Instrument/observation profiles captured
-- Export augmented with PRO metadata + QC
-
-**Status:** `SCAFFOLD`
-
----
-
-## Known risks / regression traps (must be remembered)
-
-### GUI/dock risks
-- `mod-panels.css` still contains historical layered hotfixes; newer patches currently win by appending authoritative overrides.
-- Moving children inside `#graphSettingsDrawerLeft` can break General-tab rehosting if selectors/host timing are changed carelessly.
-- Broad CSS resets can hide original graph controls and cause downstream null errors.
-
-### Runtime integration risks
-- Status/Data Quality now normalizes graph/calibration/reference into store; guarded fallbacks remain only as resilience if sync has not fired yet.
-- Phase 1.5 scaffold modules are now classic-script-safe, but remain placeholder-only and must not silently alter CORE behavior until each Step 4 slice is wired and QA-tested.
-- Worker controls in CORE-tab are now wired, but must remain optional and fail-safe.
-
----
-
-## QA gates (minimum required checks)
-
-### CORE gate (must pass before Phase 2 work expands)
-- Camera starts/stops
-- Stripe moves and updates graph
-- Graph remains responsive
-- Calibration still works
-- Export still works
-- No console errors from PRO scripts when mode=`CORE`
-
-### LAB gate (before Phase 3)
-- Worker loop does not tank FPS
-- Top hits update and are mode-filtered
-- Ratio/difference/absorbance produce expected changes
-- Saturation warning appears when signal clips
-- Turning overlays off restores clean graph
-
-### ASTRO gate (before Phase 4)
-- Continuum normalization improves line visibility on solar sample
-- Fraunhofer preset reduces false positives vs general mode
-- Offset/Doppler display hides at low confidence
-
----
-
-## Patch maintenance protocol (how to update this file every patch)
-
-Every patch session must update **all five**:
-1. **Current status snapshot** (what is READY/PARTIAL/SCAFFOLD/TODO)
-2. **Files touched** (exact list)
-3. **What changed** (functional summary)
-4. **What remains / known risks**
-5. **Session log entry** (append-only)
-
-This prevents “spec drift” where the GUI looks newer than the documentation.
-
----
-
-## Session log (append-only)
-
-### 2026-02-24 — GUI recovery + dock stabilization (v2/v3 hotfix line)
-**Touched files (across hotfixes):**
-- `docs/frontend/scripts/mod/proBootstrap.js`
-- `docs/frontend/styles/mod-panels.css`
-- (spec updated later)
-
-**What changed**
-- Recovered bottom-docked PRO layout after floating→bottom regression.
-- Rebuilt a compatibility-first dock bootstrap.
-- General tab now hosts real original graph controls (DOM rehosting, IDs preserved).
-- Status/Data Quality rail restored on right side of dock.
-- Drawer/dock CSS stabilized so bottom dock renders in normal flow.
-- Fixed hidden-dock regression caused by legacy CSS selector expecting `#SpectraProDockHost` as direct child.
-- Added status/data-quality live rendering improvements and drawer-height/overflow stabilizers (v3 CSS/JS hotfix line).
-
-**Known remaining issues after this line**
-- Status/Data Quality normalized to store-backed state with throttled graph/calibration/reference sync; guarded fallback reads remain.
-- `mod-panels.css` still carries historical override baggage.
-
-### 2026-02-25 — Phase 1→1.5 Step 1 shell wiring hardening
-**Touched files:**
-- `docs/frontend/scripts/mod/proBootstrap.js`
-- `FunctionSpec.md`
-
-**What changed**
-- CORE-tab App mode control now uses `sp.appMode.setMode(...)` when available.
-- Added safe worker client bootstrap (`analysisWorkerClient`) in `proBootstrap.js`.
-- Wired worker mode (`Auto/On/Off`) to start/stop/lazy behavior with safe fallback.
-- Wired `Ping worker` and `Init libraries` buttons to real worker-client methods when available.
-- Added worker-event listeners to keep status UI refresh responsive.
-- No layout/CSS/DOM refactor in this step.
-
-**What passed (patch-level expectations)**
-- No original control IDs renamed/removed.
-- Shell wiring improved without changing recording.html script order.
-- Fallback behavior remains when worker client is unavailable.
-
-**What remains next**
-- Step 3: safely load/activate Phase 1.5 scaffold modules.
-- Step 4: implement 14–20 in small slices.
-- Step 4: implement 14–20 in small slices.
-
----
-
-
-### 2026-02-25 — Phase 1→1.5 Step 2 state normalization + status rail correctness
-**Touched files:**
-- `docs/frontend/scripts/mod/proBootstrap.js`
-- `docs/frontend/scripts/mod/stateStore.js`
-- `FunctionSpec.md`
-
-**What changed**
-- Added throttled store synchronization for `graphFrame` → `store.frame.latest/source` via `coreHooks` in `proBootstrap.js`.
-- Added normalization for `calibrationChanged` and `referenceChanged` payloads into deterministic store nodes.
-- Status/Data Quality render path now reads primarily from store-backed state (with guard fallbacks only).
-- Added explicit `worker.mode` (`auto|on|off`) state and bound CORE worker select to that state.
-- Reduced full-shell rerenders on high-frequency frame sync by routing frame/calibration/reference store updates to `renderStatus()` instead of `render()`.
-- Status rail now reports reference state (`hasReference/count`) from store.
-
-**What passed (patch-level expectations)**
-- No original control IDs renamed/removed.
-- No changes to `recording.html` load order.
-- Frame sync is throttled via `requestAnimationFrame` to avoid render-loop pressure.
-
-**What remains next**
-- Step 4: implement 14–20 in small slices.
-
-
-### 2026-02-25 — Phase 1→1.5 Step 3 activation scaffold (classic-script compatibility)
-**Touched files:**
-- `docs/frontend/pages/recording.html`
-- `docs/frontend/scripts/mod/displayModes.js`
-- `docs/frontend/scripts/mod/dataQualityPanel.js`
-- `docs/frontend/scripts/mod/yAxisController.js`
-- `docs/frontend/scripts/mod/peakControls.js`
-- `docs/frontend/scripts/mod/graphAppearance.js`
-- `docs/frontend/scripts/mod/cameraCapabilities.js`
-- `docs/frontend/scripts/mod/calibrationIO.js`
-- `docs/frontend/scripts/mod/calibrationPointManager.js`
-- `docs/frontend/scripts/mod/proBootstrap.js`
-- `FunctionSpec.md`
-
-**What changed**
-- Converted Phase 1.5 scaffold modules from ESM `export` syntax to classic-script-safe namespace modules under `window.SpectraPro.v15`.
-- Added Phase 1.5 scaffold scripts to `recording.html` load order before `proBootstrap.js`.
-- Added `sp.v15.registry` exposure/normalization in `proBootstrap.js` so loaded scaffold modules are discoverable/inspectable at runtime.
-- Added lightweight status-line visibility of loaded v1.5 module count (scaffold activation only; no graph behavior changes).
-
-**What passed (patch-level expectations)**
-- No `export` syntax remains in the loaded Phase 1.5 scaffold files.
-- `recording.html` still uses classic scripts (no `type=module` migration required).
-- CORE DOM/selectors untouched.
-
-**What remains next**
-- Step 4: wire Phase 1.5 controls into actual graph behavior in small slices (start with Display modes + Y-axis). [IN PROGRESS: Display mode + Y-axis slice implemented]; Data Quality module + Peak controls slice implemented
-
-### 2026-02-25 — CORE boundary cleanup + point 20 validation UX hardening (pre-LAB freeze prep)
-**Touched files:**
-- `FunctionSpec.md`
-- `docs/frontend/scripts/mod/calibrationIO.js`
-- `docs/frontend/scripts/mod/proBootstrap.js`
-- `docs/frontend/styles/mod-panels.css`
-
-**What changed**
-- Added explicit **Ownership and duplication policy** section to separate original SPECTRA-1 responsibilities from SPECTRA-PRO Host/Bridge/Override roles without removing planned PRO features.
-- Point 20 now shows a **validation preview** in `Other` tab (counts/warnings before apply), including invalid rows dropped, exact duplicate removal, duplicate `px`/`nm` warnings, sorting notice, and max-point trim notice.
-- Apply feedback now includes normalization warnings, making shell→original calibration apply less opaque.
-
-**What remains next (last CORE step before LAB freeze)**
-- Final CORE QA freeze checklist pass (manual runtime smoke): worker modes, calibration apply, exports, no console nulls, drawer hide/show, display/y-axis/peaks/fill regressions.
-- Optional polish (deferred): point disable/outlier UX and rollback affordance in point 20 shell.
-
-## Final principle
-SPECTRA-PRO should feel like a **real instrument first** and a smart analyzer second.
-
-This spec therefore prioritizes:
-- stable patch order,
-- explicit file ownership,
-- CORE safety,
-- and honest status tracking over feature-hype.
-
-
-### Session patch log (latest)
-- Step 4 slice 2: integrated `dataQualityPanel.js` compute path into status rail and wired Peak controls (threshold/distance/smoothing) from CORE tab into `graphScript.js` peak detection.
-
-
-## Patch Update — Step 4 follow-up hotfix (2026-02-25)
-
-### Fixed
-- **Data Quality saturation**: `dataQualityPanel.js` now prioritizes raw `frame.I` before normalized arrays (`combined/intensity`) and supports both **0..255** and **0..1** signal ranges when computing saturation. Added near-clipping fallback (`>=250`) so saturation is not misleadingly stuck at zero.
-- **Peak controls input usability**: `spPeakThreshold`, `spPeakDistance`, `spPeakSmoothing` no longer get value-overwritten while typing due to frequent `renderStatus()` sync. Added focus guard in `proBootstrap.js` and switched peak inputs to `input` event updates with blur-time normalization.
-- **Styling hooks / fixed widths**: Added explicit unique field wrapper ids and control classes in CORE controls UI (`spField*`, `.spctl-*`) plus fixed-width CSS rules for `select`/`input` ids to simplify future theming.
-
-### Files changed in this hotfix
-- `docs/frontend/scripts/mod/dataQualityPanel.js`
-- `docs/frontend/scripts/mod/proBootstrap.js`
-- `docs/frontend/styles/mod-panels.css`
-
-### Notes
-- No original SPECTRA-1 ids/selectors were renamed or removed.
-- No layout structure changes; CSS additions are scoped to `#SpectraProDockHost`.
-
-
-
-### 2026-02-25 — Step 4 slice 3: Graph appearance / fill modes (18)
-**Touched files:**
-- `docs/frontend/scripts/mod/graphAppearance.js`
-- `docs/frontend/scripts/mod/stateStore.js`
-- `docs/frontend/scripts/mod/proBootstrap.js`
-- `docs/frontend/scripts/graphScript.js`
-- `docs/frontend/styles/mod-panels.css`
-- `FunctionSpec.md`
-
-**What changed**
-- Implemented `sp.v15.graphAppearance.getFillModes()` + `getEffective(...)` for normalized fill mode (`inherit|off|synthetic|source` with alias support for legacy `real_sampled`) and optional fill opacity.
-- Added CORE controls for **Fill mode** and **Fill opacity** with store-backed state (`display.fillMode`, `display.fillOpacity`) and UI sync.
-- Wired `graphScript.js` to honor PRO fill mode/opacity overrides:
-  - `OFF` disables area fill even if original checkbox is on
-  - `SYNTHETIC` forces fill on and uses spectral hue gradient by x-position
-  - `SOURCE` (renamed from `REAL_SAMPLED`) forces fill on and uses existing sampled-color fill
-  - `INHERIT` preserves original SPECTRA-1 behavior
-- Added stable CSS hooks/widths for new controls (`#spFillMode`, `#spFillOpacity`, wrapper ids).
-
-**What remains next**
-- Step 4 slices: Camera capability abstraction (19), Calibration I/O + multipoint shell (20).
-
-
-### 2026-02-25 — Step 4 slice 4: Camera capability abstraction (19) + fill UI polish
-**Touched files:**
-- `docs/frontend/scripts/mod/cameraCapabilities.js`
-- `docs/frontend/scripts/mod/stateStore.js`
-- `docs/frontend/scripts/mod/proBootstrap.js`
-- `docs/frontend/scripts/mod/dataQualityPanel.js`
-- `docs/frontend/scripts/mod/graphAppearance.js`
-- `docs/frontend/scripts/graphScript.js`
-- `docs/frontend/styles/mod-panels.css`
-- `FunctionSpec.md`
-
-**What changed**
-- Implemented `cameraCapabilities` module as a real probe abstraction (classic-script safe) with:
-  - `getActiveTrack()`
-  - `probe(track)`
-  - `probeCurrent()`
-  - normalized `supported/values/ranges/summary/status`
-- Added store-backed camera capability state (`state.camera.*`) and non-blocking capability probe on bootstrap.
-- Added **Probe camera** button in CORE controls to re-probe current active camera track without touching original camera flow.
-- Surface camera capability summary in Status rail (`Camera: status · resolution · exp/zoom support`) via `dataQualityPanel.js`.
-- Renamed fill mode label/value from `REAL_SAMPLED` to **`SOURCE`** (legacy aliases preserved for compatibility).
-- Converted **Fill opacity** control from numeric input to **slider** (`range`) with live numeric readout (`#spFillOpacityValue`).
-
-**What remains next**
-- Step 4 slice: Calibration I/O + multipoint shell (20).
-
-
-### 2026-02-25 — Step 4 slice 5: Calibration I/O + multipoint shell (20) + UI action feedback hotfixes
-- **Implemented point 20 shell** in `Other` tab:
-  - calibration text area
-  - format select (JSON/CSV)
-  - actions: capture current points, export shell points, import to shell manager, clear shell
-- `calibrationIO.js` upgraded from placeholder to basic JSON/CSV parse + serialize for `{px,nm,label}` points.
-- `calibrationPointManager.js` upgraded from placeholder to simple validated point manager (`set/get/add/clear/count`).
-- Added shell point count into state (`calibration.shellPointCount`) and surfaced in Status rail (`Calibration ... shell N`).
-- CORE action buttons now provide visible feedback text (Init libraries, Ping worker, Refresh UI, Probe camera) so clicks are not silent.
-- Fill opacity slider label value removed per UI request.
-- Bottom drawer expand handle made visible/recoverable after collapse via fixed-position CSS override.
-
-**Status update**
-- Point **20 (Calibration I/O + multipoint manager shell)**: **PARTIAL → functional shell** (standalone shell manager + import/export text workflows).  
-  Not yet applied to original calibration pipeline / coefficient solving automatically (kept isolated for compatibility).
-
-
-### 2026-02-25 — Step 4 slice 6: CORE hardening (A+B) + point 20 apply bridge
-- Added **Apply shell to calibration** action in `Other` tab (point 20) that safely maps shell points into original calibration input pairs and calls original `setCalibrationPoints()` pipeline.
-- Added point normalization/validation helper in `calibrationIO.js` (sort by px, dedupe exact duplicates, min/max count guard).
-- CORE action button hardening: clearer fallback feedback for `Ping worker` / `Init libraries`, timeout feedback, and more explicit refresh message.
-- Data Quality hardening: averages/saturation percentage now use valid numeric sample count (avoids skew when arrays contain non-numeric values).
-
-**Status update**
-- Point **20 (Calibration I/O + multipoint manager shell)**: **PARTIAL → PARTIAL+** (shell + import/export + apply bridge to original calibration flow now wired).
-- CORE hardening (A+B): in progress but materially improved feedback/error semantics for worker actions and DQ stability.
-
-**What remains next (CORE before LAB freeze)**
-- Final CORE QA freeze checklist pass (worker modes, calibration apply, exports, no console nulls).
-- Optional polish (deferred): point disable/outlier UX and rollback affordance for point 20 shell.
-
-
-## LAB Phase 2 – Step 1 (Implemented)
-- LAB tab now renders functional UI (Analyze toggle, Max Hz, Preset placeholder, Init libraries, Ping worker).
-- When App mode = LAB and Analyze enabled and libraries loaded, frames are sent to worker for analysis (throttled).
-- Top hits and QC flags render from `state.analysis.topHits` / `state.analysis.qcFlags`.
-
-## LAB Phase 2 – Step 2 (Implemented)
-- Worker now supports `SET_PRESET` (stores active preset id for upcoming filtering/settings).
-- Worker now supports `QUERY_LIBRARY` (range query) and returns `QUERY_LIBRARY_RESULT`.
-- `Init libraries` loads the full atomic library from `docs/frontend/data/line_library_general_atomic.json` when available.
-- LAB Top hits rendering now matches worker payload (`species`, `referenceNm`, `observedNm`, `confidence`).
-- Graph overlays now draw lightweight vertical markers + labels for the strongest LAB hits (CORE-safe, LAB-only).
-
-## LAB Phase 2 – Step 3 (Implemented)
-- LAB subtraction/processing pipeline now runs **before** worker matching:
-  - selectable modes: `raw`, `raw-dark`, `difference`, `ratio`, `transmittance`, `absorbance`
-  - capture workflows: `Capture ref`, `Capture dark`, `Clear`
-  - reference fallback: if no PRO-captured reference is present, the latest original **reference graph** curve is used when available.
-- Worker now prefers `frame.processedI` (when provided) and applies simple **preset plumbing** (`general`, `general-tight`, `general-wide`, `fast`) for tolerance/maxMatches.
-- `Query library` now opens an in-page **popup** (closable) for browsing/searching queried lines (instead of dumping results into the LAB panel).
-- Other → Calibration shell gained convenience actions:
-  - **Sync from calibration** (copies active original calibration points into the shell)
-  - **Import from file** (triggers original `px;nm` import flow and then syncs shell)
-
-## Patch log (curated)
-
-> This log is intentionally short and accurate. Older duplicate/contradictory entries have been removed to prevent drift.
-
-### 2026-02-26 — Spec audit + status correction
-- Audited Phase **1.5** and **Phase 2** against the current codebase.
-- Updated status snapshot so it matches what is truly implemented (no “wishful READY”).
-
-### 2026-02-26 — LAB MVP loop + on-page console
-- On-page PRO console (`sp.consoleLog`) renders in the dock and is used for action/event feedback.
-- LAB panel renders as a 2-column split (QC + Top hits), and results populate from `state.analysis.*`.
-- LAB analysis loop: when `App mode=LAB`, `Analyze=on`, libs initialized, frames are throttled (Max Hz) and sent to the worker.
-
-### 2026-02-26 — Worker MVP protocol
-- Worker supports `PING/PONG`, `INIT_LIBRARIES`, and `ANALYZE_FRAME`.
-- Library loader supports real atomic library loading from `docs/frontend/data/line_library_general_atomic.json` (with builtin-lite fallback).
-
-### 2026-02-26 — CORE-safe 1.5 controls and calibration shell
-- CORE controls: Display mode, Y-axis mode/max, Peak threshold/distance/smoothing, Fill mode/opacity are wired through `sp.store` and applied in `graphScript.js` (reversible visual overrides).
-- Calibration shell (Other tab): JSON/CSV parse/serialize + shell point manager + “Apply shell to calibration” bridge to the original calibration pipeline.
-
-### 2026-02-26 — Phase 1.5 completion: DQ details + camera controls + calibration safety
-- Other tab: **Data Quality (details)** mirrors the Status rail metrics for drill-down.
-- Camera capabilities: `probeCurrent()` now stores ranges; `applySetting()` enables optional Zoom/Exposure controls when supported.
-- Calibration shell: enable/disable points (apply uses enabled only), remove points, undo shell edits, and rollback last apply.
-
-### 2026-02-27 — Phase 2 Step 2: real libraries + query + overlays
-- `INIT_LIBRARIES` now loads the full atomic library from `docs/frontend/data/line_library_general_atomic.json` (with builtin-lite fallback and warnings).
-- Added `QUERY_LIBRARY` / `QUERY_LIBRARY_RESULT` and UI wiring for the "Query library" button (queries current calibrated range when available).
-- Added `SET_PRESET` / `SET_PRESET_RESULT` plumbing (worker stores preset for upcoming filtering).
-- LAB Top hits renderer updated to match worker payload.
-- LAB overlays: vertical markers + labels for top hits drawn on the graph (LAB-only; CORE-safe).
-
-### 2026-02-27 — Phase 2 Step 3: subtraction pipeline + preset use + query popup + calibration UX
-- LAB now supports subtraction/ratio/absorbance workflows via a pre-worker processing pipeline (`subtraction.js` + `processingPipeline.js`).
-- Added capture/clear actions for reference and dark frames; worker matching uses processed intensity when available.
-- Worker preset ids now affect matching tolerance/maxMatches (no external preset file required yet).
-- Query results are displayed in a closable in-page popup with search.
-- Calibration shell gained "Sync from calibration" and "Import from file" convenience actions to reduce confusion between old and new workflows.
-
-### 2026-02-27 — Phase 2 polish: modal overlay, hits visibility, layout + robustness
-- LAB query popup is now appended to `document.body` and overlays the **entire page** (no clipping inside the LAB card).
-
-### 2026-02-27 — Phase 2 polish: tab↔mode sync, overlays enabled, Top hits usability
-- PRO tab switching now synchronizes `appMode` automatically: General/CORE/OTHER → CORE, LAB → LAB, ASTRO → ASTRO.
-- Entering LAB/ASTRO enables worker mode `auto` so the user doesn't have to toggle CORE controls to get hits.
-- LAB Top hits panel now fills available height inside the LAB card, uses internal scrolling, and renders compact rows (more visible hits).
-- LAB empty-state messages now explain prerequisites (Init libraries, Analyze, calibration) to reduce “why nothing happens” confusion.
-- LAB analysis frames are now adapted through `spectrumFrameAdapter` so the **nm-axis is generated from calibration coefficients**, enabling worker matching + Top hits.
-- `graphScript.js` now guards against `getImageData()` when width/stripe is 0 (prevents `IndexSizeError` before the video/canvas is ready).
-- LAB split columns now use flex so **Top hits and QC can fill available height** and scroll inside their panes.
-- Buttons/inputs were made slightly more compact across the app to reduce UI crowding.
-
-### 2026-02-27 — Phase 2 polish: overlays positioning + full-height Top Hits/QC table + sigma formatting
-- LAB overlays now use the same X-axis mapping as the main graph (zoomStart/zoomEnd + padding) so line markers actually land on the plotted area.
-- LAB layout updated to a two-pane design: controls on the left, and a **full-height** two-column table (Top Hits / QC) on the right.
-- Top Hits rows are now compact one-liners in the format: `6σ • He (Helium) • 123.2nm`, while in-graph labels show only the symbol (e.g. `He`).
-
-### 2026-02-27 — Phase 2: lamp preset + weak-peak detection + stable-hits filter + LAB 4-col grid
-- Added a LAB preset `Lamp (Hg/Ar/Ne)` that **filters/boosts** common discharge-lamp elements so Hg/Ne/Ar lines are more likely to win over random rare-earth near-matches.
-- Added `Weak peaks` toggle (sends worker option) to lower peak threshold and keep more candidates so secondary lamp lines can match.
-- Added `Stable hits` toggle (UI-side rolling window) to reduce flicker by showing hits that persist over time.
-- LAB form grid now uses a dedicated **4-column** layout so selects/inputs are readable (not squeezed by CORE’s wider grid rules).
-
----
-
-
-## Patch log update
-- 2026-02-27 — Phase 2 LAB tuning: added dynamic LAB peak controls (threshold + distance), changed lamp matching from hard-filter to boosted preference, stable-hits now tracks multiple lines per element, and added `Smart` preset that strongly boosts Hg only after ≥3 Hg signature lines are detected.
-
-
-- 2026-02-27: Phase 2 matching refinement actually applied: smoothed/prominence-based peak detection, multi-line-per-peak matching, Smart preset seeds >=3 Hg signature lines then fills with others, stable hits keeps multiple lines per element via element+refNm key, LAB top-hits list expanded to 18.
-
-- 2026-02-27 — Overlay rendering fix: all listed LAB hits are now drawn on the graph, using observed peak position first (fallback: reference wavelength), with no low-confidence suppression and no 6-label cap.
-
-- 2026-02-27 — Styling patch: OTHER calibration shell is now a two-column layout with Shell points on the right; LAB controls are split into two columns with inline checkbox labels; legacy General controls for Color Graph/Opacity and Toggle Peaks/Lower bound are hidden; CORE tab label shortened to CORE and now exposes Toggle nm peaks.
-
-
-## Patch Update — Smart Find + imported-image refresh hotfix (2026-02-27)
-
-### Summary
-This patch adds a LAB-side **Smart find** toggle and fixes a stale-refresh issue when the source is a loaded image instead of the live camera.
-
-### What changed
-- Added `analysis.smartFindEnabled`, `analysis.smartFindGroups`, `analysis.smartFindHits`, and `analysis.rawTopHits` store nodes.
-- Added **Smart find** checkbox to the LAB controls in `proBootstrap.js` under **Stable hits**.
-- `analysisWorkerClient.js` now computes grouped element candidates from nearby/repeated hits:
-  - groups by element/symbol,
-  - estimates distinct matched lines using a small nm clustering window,
-  - ranks groups by distinct-line count first, then summed confidence,
-  - stores grouped summaries + representative hits.
-- LAB Top Hits rendering now shows Smart Find group summaries at the top when enabled.
-- Graph overlays now prefer Smart Find hits when enabled and draw a **gold-filled circular marker** behind those labels.
-- `graphScript.js` now forces a real `drawGraph()` refresh for loaded-image sources, which causes frame hooks / worker analysis / Top Hits to update without requiring an extra manual action.
-
-### Behavioral contract
-- Smart Find is **display-side ranking assistance**, not a worker-side chemical truth engine.
-- Normal `topHits` output remains available and unchanged when Smart Find is off.
-- Stable Hits and Smart Find can coexist; Stable Hits still controls rolling persistence for the normal hit list, while Smart Find builds grouped element suggestions from the current worker result set.
-- Imported-image redraw must now refresh:
-  - graph,
-  - frame hook emission,
-  - LAB worker analysis,
-  - Top Hits / overlay labels.
-
-### Files changed in this patch
-- `docs/frontend/scripts/mod/stateStore.js`
-- `docs/frontend/scripts/mod/proBootstrap.js`
-- `docs/frontend/scripts/mod/analysisWorkerClient.js`
-- `docs/frontend/scripts/mod/overlays.js`
-- `docs/frontend/scripts/graphScript.js`
-- `FunctionSpec.md`
-
-## Hotfix — Smart Find runtime repair (2026-02-28)
-
-### Summary
-Fixes a LAB-breaking runtime error introduced by the Smart Find patch.
-
-### Root cause
-- `analysisWorkerClient.js` called `buildSmartFind(rawHits)` inside the worker result handler.
-- The helper function was referenced but not actually defined in that file.
-- Result: `ReferenceError: buildSmartFind is not defined`, which interrupted LAB result handling and made Top Hits / Smart Find / parts of LAB appear broken.
-
-### What changed
-- Added a local `buildSmartFind(rawHits)` helper inside `analysisWorkerClient.js`.
-- The helper now:
-  - normalizes element symbols from hits,
-  - groups nearby/repeated matches by element,
-  - estimates distinct matched lines using 0.5 nm bins,
-  - ranks grouped candidates by line count, member count, confidence, and raw score,
-  - emits representative Smart Find hits tagged with `smartFind` metadata.
-- Added a defensive `try/catch` around Smart Find construction so LAB keeps working even if Smart Find grouping ever fails again.
-
-### Behavioral contract
-- LAB must continue to render ordinary worker hits even if Smart Find grouping fails.
-- Smart Find remains a UI-side grouping/ranking heuristic, not a hard identification engine.
-
-
----
-
-## Patch notes 2026-02-28
-
-### Smart Find v2
-- Smart Find overlay now keeps the normal LAB hit markers/labels as the base layer.
-- Only the **group-highlighted Smart Find elements** get a gold label background behind the element text.
-- The gold background is drawn **behind the label text itself** instead of as a separate dot marker.
-- Highlighting is limited to one primary label per Smart Find group element on the graph, to avoid turning the whole plot into mustard confetti.
-
-### Smarter element grouping
-- Smart Find grouping now applies a **common-source weighting** so physically plausible tube-gas candidates (for example He, Ne, Ar, Hg, H, Na) are favored over exotic one-off matches.
-- This reduces false-positive domination from rare elements when several near-coincident lines exist in the general atomic library.
-
-### Worker-side Smart preset improvements
-- The `smart` preset now considers common lab-source emitters including **He, Hg, Ne, Ar, H, Na, Kr, Xe, O**.
-- Added lightweight **signature alignment** in the worker: observed peak patterns are compared against known line families for common emitters.
-- Signature alignment can add element boosts and seeded matches before final ranking, improving cases where multiple peaks collectively indicate the same source even if a single line alone is ambiguous.
-- This is intended to move Smart Find closer to source-level reasoning instead of only doing independent nearest-line matching.
-
-### Notes
-- Smart Find is still heuristic and not a full plasma/source inversion engine.
-- Astro mode will likely need a stricter version later, especially for solar/stellar absorption work where line families, offsets, blending and instrument response matter more.
-
-
-## Patch note – CSS-driven graph styling
-- Moved key graph/overlay presentation tokens into `docs/frontend/styles/overlays.css` as CSS custom properties (`--sp-graph-*`).
-- `docs/frontend/scripts/mod/overlays.js` now reads overlay label styling from computed CSS instead of hardcoded canvas values.
-- `docs/frontend/scripts/graphScript.js` now reads axis/grid and peak-label styling from CSS variables on `#graphCanvas`.
-- This makes tweaks like Smart Find text color, background color, padding, radius, fonts and axis label colors editable in CSS without hunting through JS draw code.
-
-
-## Patch note – Show hits + stacked label placement
-- Added a LAB toggle **Show hits** above **Weak peaks**. It defaults to checked and only affects graph overlay visibility; matches still run and Top Hits still update.
-- Added `analysis.showHits` to store state.
-- Updated graph overlay layout so hits that belong to the same nearby peak are stacked vertically just to the right of the dashed line.
-- Within each local hit stack, the match with the smallest `|referenceNm - observedNm|` is placed at the top, with less exact candidates listed underneath.
-- Overlay labels now append rounded peak offset in nm, e.g. `He 0.2`, `Hg 1.3`.
-
-
-## Patch note – Peak-aware label anchor for shorter peaks
-- LAB graph overlay stacks still sort local candidates by nearest nm offset first.
-- Added a peak-aware vertical anchor so **shorter peaks place their hit labels just above the peak apex**, while very tall peaks keep the existing top-of-graph label stack.
-- This keeps weak/moderate lines easier to associate with their own peak without dragging tall-peak labels into the trace area.
-
-
----
-
-## Patch 2026-02-28: General Normalize Y-axis
-
-- Added a new **Normalize** checkbox in the **General** tab.
-- When enabled, the graph Y-axis is normalized so the highest currently visible peak is shown as **1.0**.
-- Normalization overrides fixed/manual Y-axis scaling for rendering, while preserving the selected Y-axis mode in the UI.
-- Y-axis labels switch to normalized ticks (0, 0.2, 0.4, 0.6, 0.8, 1).
-- Works for camera/imported image views and respects currently visible reference/comparison graphs when computing the highest visible peak.
-
-
-## Part 2 – Smart 2.0 core logic
-
-Part 2 implements worker-based Smart 2.0 logic on top of the preset structure from Part 1.
-
-### Discovery
-
-- runs in the relevant candidate space depending on preset
-- always uses hard `Max distance (nm)` as an absolute gate
-- builds a broad first match list from atomic lines and/or molecular bands
-
-### Profile refinement
-
-After discovery, top candidates move on to profile scoring. The profiles are built dynamically from the library within the current observed wavelength range.
-
-### Atomic refinement
-
-Uses:
-
-- expected visible lines in the current range
-- uniqueness per line
-- group/co-occurrence bonus for line sets
-- penalty for missed expected lines
-- density penalty for dense libraries
-
-### Molecular refinement
-
-Uses:
-
-- band anchors / band regions
-- peak clusters within the band
-- local band density
-- explained local prominence
-- penalty for missed bands
-
-### Smart preset families in Part 2
-
-- `smart-atomic`
-- `smart-molecular`
-- `smart-gastube`
-- `smart-flame`
-- `smart-fluorescent`
-
-Each preset defines candidate families, profile-scoring type, and family weighting. Base Presets remain largely untouched.
-
-
-## Part 3 – Flame / Fluorescent / explained signal
-
-Part 3 completes the Smart 2.0 plan by adding source-specific mixture logic on top of Part 2.
-
-- **Flame** now uses a mixed-emitter summary with `primaryEmitter`, `secondaryContributors`, `possibleBands`, and `backgroundComponents`.
-- **Fluorescent** prioritizes Hg + helper gases and can report background components separately.
-- **Explained peaks %** and **Explained intensity %** are now computed per candidate and shown in the Smart summary.
-- The worker result now also includes `winnerBreakdown`, so the UI can show why the winner won and which secondary components are still relevant.
-
-This is still heuristic spectral interpretation, not absolute laboratory certification. But the logic is now better adapted for gas tubes, fluorescent lamps, and upcoming flame work.
+## Implementation status
+
+### Core measurement workflow — IMPLEMENTED
+
+- Live camera and still-image input.
+- Sampling stripe and RGB/intensity extraction.
+- Spectrum graph, zoom and calibrated wavelength display.
+- Existing Dark/Reference capture and transforms.
+- Polynomial wavelength calibration and calibration file/point workflows.
+- Reference graph display and standard exports.
+- Runtime EN/SV interface translation.
+
+Browser/device behavior still depends on camera drivers and permissions and therefore
+requires manual validation on target devices.
+
+### Shared scientific infrastructure — IMPLEMENTED
+
+- Compact deterministic numeric regression fixtures.
+- Shared finite-value, interpolation, smoothing, statistics and integration helpers.
+- Central preset resolution that preserves the main-compatible `lamp-hg` workflow
+  while also providing the newer `smart-gastube` analysis.
+- Unified emission/absorption feature representation with center uncertainty,
+  polarity, prominence, FWHM, equivalent width, local continuum and quality flags.
+- Calibration diagnostics: fitted points, residuals, RMS/max residual, wavelength
+  coverage, sampling and extrapolation state.
+- Uncertainty-aware matching informed by calibration, sampling, feature-center
+  uncertainty and instrument resolution.
+- Deterministic multidimensional measurement quality and one dominant limitation.
+- Ordered preprocessing provenance:
+
+```text
+raw → dark subtraction → reference transform → instrument-response correction
+    → smoothing → baseline/continuum processing → optional normalization → analysis
+```
+
+Only configured stages with valid inputs are applied; missing prerequisites are
+reported rather than fabricated.
+
+### LAB — IMPLEMENTED
+
+- Base local matching presets: Nearest, Wide, Tight, Fast and Lamp (Hg/Ar/Ne).
+- Smart Atomic, Molecular, Gas Tube, Flame and Fluorescent workflows.
+- Multi-line atomic fingerprint evidence and missed-feature penalties.
+- Molecular/multi-band evidence.
+- Broadband fluorescence λmax, centroid, FWHM, band range, asymmetry, shoulders and
+  integrated relative signal.
+- Candidate rankings, hits, QC, overlays and optional narrow-line fluorescence overlay.
+- Progressive disclosure: Analyze, Preset, Mode and results remain primary; detailed
+  thresholds, weighting and worker diagnostics are under Advanced settings.
+
+Score Share is a relative ranking, not probability, concentration or abundance.
+
+### ASTRO foundation — IMPLEMENTED
+
+- Robust rolling upper-quantile relative-continuum estimate.
+- Aligned raw, continuum and continuum-normalized arrays.
+- Calibrated absorption-feature measurement with depth, FWHM, negative equivalent
+  width, SNR and quality flags.
+- Curated low-resolution standard-air references for Balmer, Ca II H/K, Na I D and
+  selected He/Mg features.
+- Focused ASTRO UI with continuum state, features, reference matches, quality,
+  radial velocity and broad stellar-class evidence.
+- Numeric TSIS-1 HSRS-derived Solar example with checked-in provenance and checksum.
+
+### Radial velocity — EXPERIMENTAL
+
+- Relativistic wavelength-ratio equation per reliable matched line.
+- Uncertainty-aware multi-line combination and deterministic outlier rejection.
+- Per-line results, combined velocity, uncertainty, line counts and exclusions.
+- Positive velocity means redshift/receding.
+
+Limitations: low-resolution input can produce large uncertainty; no barycentric or
+heliocentric correction is applied; one line is not promoted to a combined result.
+
+### Stellar spectral-class evidence — EXPERIMENTAL
+
+- Broad O/B/A/F/G/K/M evidence from coherent Balmer, helium, metal and TiO patterns.
+- Visible reasons, compatible range, conflicts, evidence strength and insufficient-data
+  outcomes.
+
+This is heuristic broad-class evidence, not probability, exact subclass, luminosity
+class, temperature or composition. Uncorrected continuum shape is excluded.
+
+### Reference spectrum comparison — EXPERIMENTAL
+
+- Curated H, He, Ne, Hg and measured Solar references plus custom numeric JSON/CSV.
+- Interpolation, overlap checks, optional normalization, manual/automatic comparison
+  alignment, correlation, MAE, RMSE, residual arrays and overlay.
+
+Comparison alignment is not a radial-velocity measurement.
+
+### Instrument-response correction — EXPERIMENTAL
+
+- Validated relative-response JSON/CSV profiles.
+- Wavelength interpolation, full-coverage guard, hardware applicability checks,
+  division-near-zero protection and configurable amplification cap.
+- Explicit corrected/uncorrected relative-intensity labels and export provenance.
+
+No measured bundled SPECTRA profile is currently available, so the bundled profile
+catalog is intentionally empty. Correction is not absolute radiometric calibration.
+
+### AI Interpretation — EXPERIMENTAL and optional
+
+- Explicit `lab-atomic`, `lab-molecular`, `fluorescence` and `astro` contexts.
+- Compact deterministic measurement, calibration, quality and result evidence.
+- Default limits of 112 trace points, 28 prioritized hits, 6 candidates and 600
+  observation characters, with a dense-input CI budget of approximately 2500 tokens.
+- Server-side API key, origin validation, body limits, rate limiting, no-store behavior,
+  structured response schema and a non-repetitive 100–170-word output policy.
+- Prompt rules prohibit invented features, probability claims from rankings,
+  unsupported abundance/class claims, continuum-temperature misuse and radial-velocity
+  overprecision.
+
+The backend must be deployed/configured separately. AI does not replace deterministic
+analysis and its prose remains model-generated.
+
+### UI consolidation — IMPLEMENTED
+
+- LAB and ASTRO share a responsive result layout.
+- Primary workflows remain visible on normal displays.
+- Expert controls use native keyboard-accessible Advanced disclosure sections.
+- Reference-comparison controls are collapsed by default.
+
+## Reproducibility and export
+
+`Data analysis (.json)` uses `spectra-pro-export/v2`. It retains the complete state and
+adds an explicit `scientificAnalysis` snapshot containing:
+
+- analysis context and preset;
+- calibration state, diagnostics and match-uncertainty model;
+- preprocessing configuration, applied operations and warnings;
+- instrument-response configuration/result and intensity basis;
+- deterministic measurement-quality summary;
+- detected spectral features;
+- LAB hits, candidates, winner/fluorescence evidence and QC;
+- ASTRO continuum/features/matches, radial velocity and stellar-class evidence;
+- reference-spectrum comparison;
+- full numeric spectrum arrays and optional AI payload/result metadata.
+
+Export snapshots are detached from live state. CSV and deterministic PDF exports remain
+available. The PDF abstract and main narrative are generated locally from deterministic
+state. An already completed AI interpretation may be included only in a separate,
+explicitly labelled optional section with a disclaimer; the complete AI result remains
+available in the versioned JSON snapshot.
+
+## PLANNED / intentionally unsupported
+
+- Exact stellar subclasses and luminosity classes.
+- Barycentric or heliocentric velocity correction.
+- Chemical abundance/composition inference.
+- Absolute radiometric calibration or absolute spectral irradiance.
+- A fabricated bundled response profile when measured profile data is unavailable.
+- Automated visual-regression assets or generated screenshots.
+- Production-grade empirical stellar template library beyond documented references.
+
+## Deterministic validation
+
+Run from the repository root:
+
+```text
+node tests/main_compatibility.test.mjs
+node tests/analysis_regression.test.js
+node tests/ai_context_regression.test.mjs
+node tests/ai_token_budget.test.mjs
+node tests/ui_consolidation.test.mjs
+node tests/export_reproducibility.test.mjs
+node tests/pdf_report_contract.test.mjs
+node tests/repository_contract.test.mjs
+```
+
+These checks use compact numeric/JSON data and static integration assertions. They do
+not require a browser, camera, network, OpenAI call, screenshots or generated images.
+
+## Manual validation boundary
+
+Before a production release, manually verify camera permissions/devices, loaded-image
+interaction, calibration editing, supported desktop layouts, EN/SV switching, download
+behavior for every export type, graph/source image output, PDF pagination, custom
+response/reference imports and the deployed AI backend. These checks are intentionally
+not represented as already completed by deterministic unit tests.

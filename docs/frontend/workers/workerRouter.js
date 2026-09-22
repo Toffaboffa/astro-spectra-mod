@@ -21,7 +21,11 @@
           return { type: TYPES.INIT_LIBRARIES_RESULT, requestId: requestId, payload: { ok: true, count: STATE.atomLines.length, molecularCount: STATE.molecularBands.length, manifest: STATE.manifest || null, warnings: result.warnings || [] } };
         }
         case TYPES.SET_PRESET: {
-          const preset = (msg.payload && msg.payload.preset) ? msg.payload.preset : null;
+          const requestedPreset = (msg.payload && msg.payload.preset) ? msg.payload.preset : null;
+          const resolver = root.SPECTRA_PRO_presetResolver;
+          const preset = requestedPreset && resolver && typeof resolver.resolve === 'function'
+            ? resolver.resolve(requestedPreset).id
+            : requestedPreset;
           STATE.activePreset = preset;
           return { type: TYPES.SET_PRESET_RESULT, requestId: requestId, payload: { ok: true, preset: preset } };
         }
@@ -53,13 +57,19 @@
           const frame = (msg.payload && msg.payload.frame) || null;
           const options = (msg.payload && msg.payload.options) || null;
           let out = root.SPECTRA_PRO_analysisPipeline.analyzeFrame(frame, STATE, options);
-          if (out && String(out.presetId || '') === 'smart-fluorescent' &&
+          if (out && String(out.mode || '') === 'astro') {
+            // ASTRO already uses the shared feature/matching pipeline with its
+            // controlled absorption reference set. LAB evidence enhancers do not apply.
+          } else if (out && String(out.presetId || '') === 'smart-fluorescent' &&
               root.SPECTRA_PRO_fluorescenceAnalysis && typeof root.SPECTRA_PRO_fluorescenceAnalysis.enhance === 'function') {
             out = root.SPECTRA_PRO_fluorescenceAnalysis.enhance(out, frame, STATE, options);
           } else if (root.SPECTRA_PRO_atomicEvidence && typeof root.SPECTRA_PRO_atomicEvidence.enhance === 'function') {
             out = root.SPECTRA_PRO_atomicEvidence.enhance(out, frame, STATE, options);
           }
-          if (out && out.ok) out.analysisVersion = '2.2.10';
+          if (root.SPECTRA_PRO_analysisPipeline && typeof root.SPECTRA_PRO_analysisPipeline.finalizeResult === 'function') {
+            out = root.SPECTRA_PRO_analysisPipeline.finalizeResult(out, frame, options);
+          }
+          if (out && out.ok) out.analysisVersion = '3.0.0';
           STATE.lastAnalysis = out;
           return { type: TYPES.ANALYZE_RESULT, requestId: requestId, payload: out };
         }

@@ -134,15 +134,15 @@
     };
   };
 
-  mod.version = 'step6-calibration-io-apply-ready';
+  mod.version = '3.0.0';
 })();
 
-/* SPECTRA-PRO v2.0.2 startup calibration UX */
+/* SPECTRA PRO startup calibration UX */
 (function () {
   'use strict';
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
-  const UI_VERSION = 'v2.3.9';
+  const UI_VERSION = 'v3.0.0';
   let wasCalibrated = false;
   let loadPromptDismissed = false;
   let axisPromptShown = false;

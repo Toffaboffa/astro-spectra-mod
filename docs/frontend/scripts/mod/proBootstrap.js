@@ -6,7 +6,7 @@
   const formatChemicalLabel = (sp.utils && typeof sp.utils.formatChemicalLabel === 'function')
     ? sp.utils.formatChemicalLabel
     : function (label) { return String(label == null ? '' : label); };
-// --- PRO Console Log (LAB Step 1 UI Hotfix) ---
+// --- PRO on-page console bridge ---
 const CONSOLE_PATH = 'ui.console.lines';
 function getConsoleLines() {
   try { return (store?.getState()?.ui?.console?.lines) || []; } catch { return []; }
@@ -179,7 +179,7 @@ function ensureHost() {
       const tabLabels = { core: 'CORE', hardware: 'HARDWARE', calibrate: 'CALIBRATE', lab: 'LAB', astro: 'ASTRO' };
       btn.textContent = tabLabels[tab] || tab.toUpperCase();
       btn.type = 'button';
-      btn.title = ({ core: 'Core graph controls, display settings and camera utilities.', hardware: 'Spectrometer hardware profile and manual instrument specifications.', calibrate: 'Calibration I/O, shell points and detailed diagnostics.', lab: 'Laboratory spectrum matching, presets and hit analysis.', astro: 'Astro analysis workspace and future astronomy tools.' }[tab]) || tab.toUpperCase();
+      btn.title = ({ core: 'Core graph controls, display settings and camera utilities.', hardware: 'Spectrometer hardware profile and manual instrument specifications.', calibrate: 'Calibration I/O, shell points and detailed diagnostics.', lab: 'Laboratory spectrum matching, presets and hit analysis.', astro: 'Astronomical continuum, absorption, radial-velocity and broad class-evidence workspace.' }[tab]) || tab.toUpperCase();
       btn.dataset.tab = tab;
       if (idx === 0) btn.classList.add('is-active');
       tabs.appendChild(btn);
@@ -226,8 +226,8 @@ function ensureHost() {
           calibrationPointManager: !!v15.calibrationPointManager
         },
         loadedAt: Date.now(),
-        scaffold: true,
-        version: 'step4'
+        scaffold: false,
+        version: '3.0.0'
       };
     } else {
       const mods = v15.registry.modules || (v15.registry.modules = {});
@@ -235,8 +235,8 @@ function ensureHost() {
         mods[k] = !!v15[k];
       });
       v15.registry.loadedAt = v15.registry.loadedAt || Date.now();
-      v15.registry.scaffold = true;
-      v15.registry.version = 'step4';
+      v15.registry.scaffold = false;
+      v15.registry.version = '3.0.0';
     }
     return v15.registry;
   }
@@ -317,11 +317,12 @@ function ensureHost() {
     return latest;
   }
 
-let lastLabAnalyzeAt = 0;
+let lastAnalysisAt = 0;
 
-function shouldRunLabAnalysis(state) {
+function shouldRunAnalysis(state) {
   if (!state) return false;
-  if (String(state.appMode || 'CORE').toUpperCase() !== 'LAB') return false;
+  const mode = String(state.appMode || 'CORE').toUpperCase();
+  if (mode !== 'LAB' && mode !== 'ASTRO') return false;
   if (!(state.analysis && state.analysis.enabled)) return false;
   try {
     const fp = window.SpectraPro && window.SpectraPro.framePreview;
@@ -332,24 +333,24 @@ function shouldRunLabAnalysis(state) {
   return true;
 }
 
-function maybeRunLabAnalyze(frameNormalized) {
+function maybeRunAnalysis(frameNormalized) {
   try {
     const state = getStoreState();
-    if (!shouldRunLabAnalysis(state)) return;
+    if (!shouldRunAnalysis(state)) return;
     if (!frameNormalized || !Array.isArray(frameNormalized.I) || !frameNormalized.I.length) return;
+    const mode = String(state.appMode || 'CORE').toUpperCase();
     const libsLoaded = !!(state.worker && state.worker.librariesLoaded);
-    if (!libsLoaded) return;
+    if (mode === 'LAB' && !libsLoaded) return;
     const maxHz = Number(state.analysis && state.analysis.maxHz);
     const minInterval = (Number.isFinite(maxHz) && maxHz > 0) ? (1000 / maxHz) : 250;
     const now = (window.performance && performance.now) ? performance.now() : Date.now();
-    if (now - lastLabAnalyzeAt < minInterval) return;
-    lastLabAnalyzeAt = now;
+    if (now - lastAnalysisAt < minInterval) return;
+    lastAnalysisAt = now;
 
     const client = ensureWorkerClient();
     if (!client || typeof client.analyzeFrame !== 'function') return;
 
-    // Phase 2: run LAB processing pipeline (subtraction/ratio/absorbance + quick peaks)
-    // before sending to worker matching.
+    // Shared preprocessing runs before either LAB emission or ASTRO absorption analysis.
     const sub = state.subtraction || {};
     const subtractionMode = String(sub.mode || 'raw');
     let referenceI = Array.isArray(sub.referenceI) ? sub.referenceI : null;
@@ -365,25 +366,39 @@ function maybeRunLabAnalyze(frameNormalized) {
 
     const pipe = (sp && sp.processingPipeline && typeof sp.processingPipeline.run === 'function') ? sp.processingPipeline : null;
     const peakUi = getInitialPeakUiValues();
+    const preprocessing = state.preprocessing || {};
     const processed = pipe
       ? pipe.run(frameNormalized, {
           subtractionMode,
           referenceI,
           darkI,
+          smoothingPasses: peakUi.smoothing,
+          baselineMode: preprocessing.baselineMode || 'none',
+          normalizationMode: preprocessing.normalizationMode || 'none',
+          responseCorrection: Object.assign({}, preprocessing.responseCorrection || { enabled: false, profile: null }, {
+            hardwareProfileId: state.hardware && state.hardware.profileId || ''
+          }),
           // use existing Peak controls to tune quick peak sensitivity
           quickPeakThreshold: Math.max(0.01, Math.min(0.95, (Number(peakUi.threshold) || 1) / 255)),
           quickPeakDistance: Math.max(1, Math.min(32, Number(peakUi.distance) || 4))
         })
-      : { processedI: frameNormalized.I.slice(), normalizedI: null, quickPeaks: [] };
+      : {
+          processedI: frameNormalized.I.slice(), normalizedI: null, quickPeaks: [],
+          meta: { schema: 'spectra-pro-preprocessing/v1', activeOperations: [], warnings: ['processing-pipeline-unavailable'] }
+        };
 
     const nmOk = Array.isArray(frameNormalized.nm) && frameNormalized.nm.length === frameNormalized.I.length;
+    const pxOk = Array.isArray(frameNormalized.px) && frameNormalized.px.length === frameNormalized.I.length;
     const rgbOk = Array.isArray(frameNormalized.R) && Array.isArray(frameNormalized.G) && Array.isArray(frameNormalized.B) && frameNormalized.R.length === frameNormalized.I.length && frameNormalized.G.length === frameNormalized.I.length && frameNormalized.B.length === frameNormalized.I.length;
     const payloadFrame = {
       I: frameNormalized.I,
       processedI: Array.isArray(processed.processedI) ? processed.processedI : frameNormalized.I,
+      normalizedI: Array.isArray(processed.normalizedI) ? processed.normalizedI : null,
+      preprocessing: processed.meta || null,
       R: rgbOk ? frameNormalized.R : null,
       G: rgbOk ? frameNormalized.G : null,
       B: rgbOk ? frameNormalized.B : null,
+      px: pxOk ? frameNormalized.px : null,
       nm: nmOk ? frameNormalized.nm : null,
       calibrated: nmOk,
       subtractionMode,
@@ -1150,21 +1165,195 @@ if (!document.getElementById('spSubtractionControls')) {
 
     ensureHardwarePanel();
     ensureLabPanel();
-
-    ['astro'].forEach((tab) => {
-      const panel = ui.panels[tab];
-      if (!panel || panel.dataset.built) return;
-      const card = el('div', 'sp-card sp-card--flat');
-      card.innerHTML = `<div class="sp-empty">${tab.toUpperCase()} panel placeholder (tab wiring OK).</div>`;
-      panel.appendChild(card);
-      panel.dataset.built = '1';
-    });
+    ensureAstroPanel();
 
     ensureCalibrationShell();
     ensureDataQualityDetails();
     ensureStatusRail();
     ensureSideConsole();
   }
+
+
+function ensureAstroPanel() {
+  if (!ui || !ui.panels.astro) return;
+  const panel = ui.panels.astro;
+  if ($('spAstroCard')) return;
+  const card = el('div', 'sp-card sp-card--flat');
+  card.id = 'spAstroCard';
+  card.innerHTML = [
+    '<div class="sp-lab-layout sp-analysis-layout">',
+    '  <div class="sp-lab-left">',
+    '    <div class="sp-lab-head"><div class="sp-lab-title">ASTRO</div></div>',
+    '    <label class="sp-field sp-field--checkbox-row" title="Run continuum normalization and absorption analysis in the shared worker."><span>Analyze</span><input id="spAstroEnabled" type="checkbox"></label>',
+    '    <div id="spAstroActions" class="sp-actions sp-actions--astro"></div>',
+    '    <div class="sp-card-sub" style="margin-top:10px">',
+    '      <h4 class="sp-subtitle">Continuum</h4>',
+    '      <div id="spAstroContinuum" class="sp-note">Waiting for a calibrated spectrum.</div>',
+    '    </div>',
+    '    <div class="sp-card-sub" style="margin-top:10px">',
+    '      <h4 class="sp-subtitle">Measurement quality</h4>',
+    '      <div id="spAstroQuality" class="sp-note">Unavailable.</div>',
+    '    </div>',
+    '    <div class="sp-card-sub" style="margin-top:10px">',
+    '      <h4 class="sp-subtitle">Radial velocity</h4>',
+    '      <div id="spAstroVelocity" class="sp-note">Unavailable.</div>',
+    '    </div>',
+    '    <div class="sp-card-sub" style="margin-top:10px">',
+    '      <h4 class="sp-subtitle">Stellar class evidence</h4>',
+    '      <div id="spAstroClassification" class="sp-note">Unavailable.</div>',
+    '    </div>',
+    '  </div>',
+    '  <div class="sp-lab-right">',
+    '    <div class="sp-lab-table">',
+    '      <div class="sp-lab-th">ABSORPTION FEATURES</div>',
+    '      <div class="sp-lab-th">REFERENCE MATCHES</div>',
+    '      <div id="spAstroFeatures" class="sp-lab-hits"></div>',
+    '      <div id="spAstroMatches" class="sp-lab-qc"></div>',
+    '    </div>',
+    '  </div>',
+    '</div>',
+    '<details id="spAstroAdvanced" class="sp-advanced">',
+    '  <summary>Advanced ASTRO details</summary>',
+    '  <div class="sp-advanced__body">',
+    '    <h4 class="sp-subtitle">Continuum diagnostics</h4>',
+    '    <div id="spAstroContinuumAdvanced" class="sp-note">Unavailable.</div>',
+    '  </div>',
+    '</details>',
+    '<div class="sp-note" style="margin-top:10px">Educational low-resolution analysis. Broad O/B/A/F/G/K/M evidence is heuristic, not a probability, subclass or luminosity class. Radial velocity is not barycentric/heliocentric corrected.</div>'
+  ].join('');
+  panel.appendChild(card);
+  panel.dataset.built = '1';
+  ensureReferenceComparisonCard(panel, 'Astro');
+
+  const enabled = $('spAstroEnabled');
+  const state = getStoreState();
+  if (enabled) enabled.checked = !!(state.analysis && state.analysis.enabled);
+  enabled && enabled.addEventListener('change', function (event) {
+    const on = !!event.target.checked;
+    updateStorePath('analysis.enabled', on, { source: 'proBootstrap.astro' });
+    if (on) {
+      try { setCoreWorkerMode('auto'); } catch (_) {}
+      try {
+        const client = ensureWorkerClient();
+        if (client && typeof client.start === 'function') client.start();
+      } catch (_) {}
+    }
+  });
+}
+
+function setReferenceComparisonState(patch, source) {
+  const state = getStoreState();
+  const next = Object.assign({}, state.referenceComparison || {}, patch || {});
+  updateStorePath('referenceComparison', next, { source: source || 'proBootstrap.referenceComparison' });
+}
+
+function ensureReferenceComparisonCard(panel, prefix) {
+  if (!panel || $("sp" + prefix + "ReferenceComparison")) return;
+  const card = el('details', 'sp-card sp-card--flat sp-advanced sp-reference-comparison');
+  card.id = 'sp' + prefix + 'ReferenceComparison';
+  const catalog = sp.referenceCatalog && typeof sp.referenceCatalog.list === 'function' ? sp.referenceCatalog.list() : [];
+  const options = ['<option value="">None</option>'].concat(catalog.map(function (item) {
+    return '<option value="' + escapeAttr(item.id) + '">' + escapeHtml(item.label) + '</option>';
+  })).join('');
+  card.innerHTML = [
+    '<summary>Advanced: reference spectrum comparison</summary>',
+    '<div class="sp-advanced__body">',
+    '  <div class="sp-form-grid">',
+    '    <label class="sp-field">Reference<select class="spctl-select" data-ref-control="referenceId">' + options + '</select></label>',
+    '    <label class="sp-field">Normalization<select class="spctl-select" data-ref-control="normalization"><option value="min-max">Min–max</option><option value="area">Area</option><option value="none">None</option></select></label>',
+    '    <label class="sp-field">Alignment<select class="spctl-select" data-ref-control="alignmentMode"><option value="none">None</option><option value="manual">Manual</option><option value="auto">Automatic comparison</option></select></label>',
+    '    <label class="sp-field">Manual shift (nm)<input class="spctl-input" data-ref-control="manualShiftNm" type="number" min="-20" max="20" step="0.05" value="0"></label>',
+    '  </div>',
+    '  <div class="sp-actions"><button type="button" data-ref-action="custom">Load custom JSON/CSV</button><input data-ref-file type="file" accept=".json,.csv,.txt,application/json,text/csv,text/plain" hidden></div>',
+    '  <div class="sp-note" data-ref-summary>Choose a curated or custom numeric reference.</div>',
+    '  <div class="sp-note">Purple trace = visually normalized aligned reference. Comparison alignment is separate from ASTRO radial velocity.</div>',
+    '</div>'
+  ].join('');
+  panel.appendChild(card);
+
+  const referenceSelect = card.querySelector('[data-ref-control="referenceId"]');
+  const normalizationSelect = card.querySelector('[data-ref-control="normalization"]');
+  const alignmentSelect = card.querySelector('[data-ref-control="alignmentMode"]');
+  const manualInput = card.querySelector('[data-ref-control="manualShiftNm"]');
+  const customButton = card.querySelector('[data-ref-action="custom"]');
+  const fileInput = card.querySelector('[data-ref-file]');
+
+  function loadSelected(id) {
+    if (!id) {
+      setReferenceComparisonState({ enabled: false, referenceId: '', status: 'idle', error: null });
+      return;
+    }
+    if (!sp.referenceCatalog || typeof sp.referenceCatalog.loadReference !== 'function') {
+      setReferenceComparisonState({ enabled: false, referenceId: id, status: 'error', error: 'Reference catalog unavailable.' });
+      return;
+    }
+    if (id === 'custom' && !sp.referenceCatalog.getLoadedReference('custom')) {
+      if (fileInput) fileInput.click();
+      return;
+    }
+    setReferenceComparisonState({ enabled: false, referenceId: id, status: 'loading', error: null });
+    sp.referenceCatalog.loadReference(id).then(function () {
+      setReferenceComparisonState({ enabled: true, referenceId: id, status: 'ready', error: null });
+    }).catch(function (error) {
+      setReferenceComparisonState({ enabled: false, referenceId: id, status: 'error', error: String(error && error.message || error) });
+    });
+  }
+
+  referenceSelect && referenceSelect.addEventListener('change', function (event) { loadSelected(String(event.target.value || '')); });
+  normalizationSelect && normalizationSelect.addEventListener('change', function (event) { setReferenceComparisonState({ normalization: String(event.target.value || 'min-max') }); });
+  alignmentSelect && alignmentSelect.addEventListener('change', function (event) { setReferenceComparisonState({ alignmentMode: String(event.target.value || 'none') }); });
+  manualInput && manualInput.addEventListener('change', function (event) { setReferenceComparisonState({ manualShiftNm: Number(event.target.value) || 0 }); });
+  customButton && customButton.addEventListener('click', function () { if (fileInput) fileInput.click(); });
+  fileInput && fileInput.addEventListener('change', function (event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file || !sp.referenceCatalog) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        const parsed = sp.referenceCatalog.parseCustomText(reader.result, file.name);
+        sp.referenceCatalog.registerCustom(parsed);
+        setReferenceComparisonState({ enabled: true, referenceId: 'custom', status: 'ready', error: null });
+      } catch (error) {
+        setReferenceComparisonState({ enabled: false, referenceId: 'custom', status: 'error', error: String(error && error.message || error) });
+      }
+    };
+    reader.onerror = function () { setReferenceComparisonState({ enabled: false, referenceId: 'custom', status: 'error', error: 'Could not read the selected file.' }); };
+    reader.readAsText(file);
+    event.target.value = '';
+  });
+}
+
+function renderReferenceComparisonCards(state) {
+  const config = state.referenceComparison || {};
+  const result = state.analysis && state.analysis.referenceComparison;
+  ['Astro', 'Lab'].forEach(function (prefix) {
+    const card = $('sp' + prefix + 'ReferenceComparison');
+    if (!card) return;
+    const referenceSelect = card.querySelector('[data-ref-control="referenceId"]');
+    const normalizationSelect = card.querySelector('[data-ref-control="normalization"]');
+    const alignmentSelect = card.querySelector('[data-ref-control="alignmentMode"]');
+    const manualInput = card.querySelector('[data-ref-control="manualShiftNm"]');
+    const summary = card.querySelector('[data-ref-summary]');
+    if (referenceSelect && !shouldSkipSyncValue(referenceSelect)) referenceSelect.value = String(config.referenceId || '');
+    if (normalizationSelect && !shouldSkipSyncValue(normalizationSelect)) normalizationSelect.value = String(config.normalization || 'min-max');
+    if (alignmentSelect && !shouldSkipSyncValue(alignmentSelect)) alignmentSelect.value = String(config.alignmentMode || 'none');
+    if (manualInput && !shouldSkipSyncValue(manualInput)) manualInput.value = String(Number(config.manualShiftNm) || 0);
+    if (manualInput) manualInput.disabled = String(config.alignmentMode || 'none') !== 'manual';
+    if (!summary) return;
+    if (config.status === 'loading') summary.textContent = 'Loading numeric reference…';
+    else if (config.error) summary.textContent = 'Reference unavailable: ' + String(config.error);
+    else if (!config.enabled) summary.textContent = 'Choose a curated or custom numeric reference.';
+    else if (!result || result.state !== 'available') summary.textContent = result && result.reason ? 'Comparison unavailable: ' + String(result.reason) + '.' : 'Waiting for the next analyzed calibrated spectrum.';
+    else {
+      const shift = result.alignment && Number(result.alignment.shiftNm) || 0;
+      const metrics = result.metrics || {};
+      const overlap = result.overlap || {};
+      summary.textContent = String(result.referenceLabel || config.referenceId) + ': ' + String(overlap.sampleCount || 0) + ' overlapping samples; shift ' +
+        (shift >= 0 ? '+' : '') + shift.toFixed(3) + ' nm; correlation ' + (Number.isFinite(Number(metrics.correlation)) ? Number(metrics.correlation).toFixed(3) : 'n/a') +
+        '; RMSE ' + (Number.isFinite(Number(metrics.rmse)) ? Number(metrics.rmse).toFixed(4) : 'n/a') + '.';
+    }
+  });
+}
 
 
 function ensureDataQualityDetails() {
@@ -1327,45 +1516,54 @@ function ensureLabPanel() {
     .join('');
 
   card.innerHTML = [
-	    '<div class="sp-lab-layout">',
+	    '<div class="sp-lab-layout sp-analysis-layout">',
 	    '  <div class="sp-lab-left">',
 	    '    <div class="sp-lab-head">',
 	    '      <div class="sp-lab-title">LAB</div>',
 	    '      <div id="spLabFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
 	    '    </div>',
-	    '    <div class="sp-lab-fields">',
-	    '      <div class="sp-lab-fields-col">',
-	    '        <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled sp-field--checkbox-row" title="Turn continuous LAB analysis on or off."><span>Analyze</span><input id="spLabEnabled" type="checkbox"></label>',
-	    '        <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz" title="Maximum analysis update rate per second. Lower values reduce CPU load.">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
-	    '        <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset" title="Choose a tuned library weighting preset for the current type of source.">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">' + presetOptionsHtml + '</select></label>',
-	    '        <label id="spFieldLabSubMode" class="sp-field sp-field--lab-sub" title="Choose how the incoming frame is transformed before matching.">Mode<select id="spLabSubMode" class="spctl-select spctl-select--lab-sub">',
+	    '    <div class="sp-lab-primary" aria-label="Primary LAB controls">',
+	    '      <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled sp-field--checkbox-row" title="Turn continuous LAB analysis on or off."><span>Analyze</span><input id="spLabEnabled" type="checkbox"></label>',
+	    '      <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset" title="Choose a tuned library weighting preset for the current type of source.">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">' + presetOptionsHtml + '</select></label>',
+	    '      <label id="spFieldLabSubMode" class="sp-field sp-field--lab-sub" title="Choose how the incoming frame is transformed before matching.">Mode<select id="spLabSubMode" class="spctl-select spctl-select--lab-sub">',
 	    '          <option value="raw">Raw</option>',
 	    '          <option value="raw-dark">Raw - Dark</option>',
 	    '          <option value="difference">Difference (Raw - Ref)</option>',
 	    '          <option value="ratio">Ratio (Raw / Ref)</option>',
 	    '          <option value="transmittance">Transmittance %</option>',
 	    '          <option value="absorbance">Absorbance</option>',
-	    '        </select></label>',
-	    '      </div>',
-	    '      <div class="sp-lab-fields-col">',
-	    '        <label id="spFieldLabShowHits" class="sp-field sp-field--lab-showhits sp-field--checkbox-row"><span>Show hits</span><input id="spLabShowHits" type="checkbox"></label>',
-	    '        <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lower peak threshold, less peak separation, and more total peaks. Affects peak detection only, not any separate smart AI logic."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
-	    '        <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
-	    '        <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
-	    '        <label id="spFieldLabAutoTune" class="sp-field sp-field--lab-autotune sp-field--checkbox-row" title="Automatically evaluates supported identification presets across several peak thresholds and wavelength tolerances, then ranks the stable fingerprint consensus."><span>Auto tune</span><input id="spLabAutoTune" type="checkbox"></label>',
-	    '        <label id="spFieldLabRgb" class="sp-field sp-field--lab-rgb sp-field--checkbox-row" title="Use RGB channel support as an extra hidden Smart weighting factor."><span>RGB</span><input id="spLabRgb" type="checkbox"></label>',
-	    '        <label id="spFieldLabStrongPeak" class="sp-field sp-field--lab-strongpeak" title="Adjust how much Smart rewards matches on the strongest observed peaks.">Strong Peak<input id="spLabStrongPeak" class="spctl-input spctl-range spctl-range--lab-strongpeak" type="range" min="1" max="5" step="1" value="3"></label>',
-	    '      </div>',
-	    '      <div class="sp-lab-fields-col">',
-	    '        <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="1.5"></label>',
-	    '        <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="2"></label>',
-	    '        <label id="spFieldLabMaxDist" class="sp-field sp-field--lab-maxdist">Max distance (nm)<input id="spLabMaxDist" class="spctl-input spctl-input--lab-maxdist" type="number" min="0.2" max="50" step="0.1" value="1.8"></label>',
-	    '      </div>',
+	    '      </select></label>',
 	    '    </div>',
-	    '    <div class="sp-actions sp-actions--lab">',
-	    '      <button type="button" id="spLabInitLibBtn" title="Load or reload the active spectral libraries inside the worker.">Init libraries</button>',
-	    '      <button type="button" id="spLabPingBtn" title="Check that the LAB analysis worker is alive and responding.">Ping worker</button>',
-	    '      <button type="button" id="spLabQueryBtn" title="Search the loaded library within a wavelength range or by species name.">Query library</button>',	    '    </div>',
+	    '    <div class="sp-actions sp-actions--lab" aria-label="LAB interpretation actions"></div>',
+	    '    <details id="spLabAdvanced" class="sp-advanced">',
+	    '      <summary>Advanced analysis settings</summary>',
+	    '      <div class="sp-advanced__body">',
+	    '        <div class="sp-lab-fields">',
+	    '          <div class="sp-lab-fields-col">',
+	    '            <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz" title="Maximum analysis update rate per second. Lower values reduce CPU load.">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
+	    '            <label id="spFieldLabShowHits" class="sp-field sp-field--lab-showhits sp-field--checkbox-row"><span>Show hits</span><input id="spLabShowHits" type="checkbox"></label>',
+	    '            <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lower peak threshold, less peak separation, and more total peaks. Affects peak detection only, not any separate smart AI logic."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
+	    '            <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
+	    '          </div>',
+	    '          <div class="sp-lab-fields-col">',
+	    '            <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
+	    '            <label id="spFieldLabAutoTune" class="sp-field sp-field--lab-autotune sp-field--checkbox-row" title="Automatically evaluates supported identification presets across several peak thresholds and wavelength tolerances, then ranks the stable fingerprint consensus."><span>Auto tune</span><input id="spLabAutoTune" type="checkbox"></label>',
+	    '            <label id="spFieldLabRgb" class="sp-field sp-field--lab-rgb sp-field--checkbox-row" title="Use RGB channel support as an extra hidden Smart weighting factor."><span>RGB</span><input id="spLabRgb" type="checkbox"></label>',
+	    '            <label id="spFieldLabStrongPeak" class="sp-field sp-field--lab-strongpeak" title="Adjust how much Smart rewards matches on the strongest observed peaks.">Strong Peak<input id="spLabStrongPeak" class="spctl-input spctl-range spctl-range--lab-strongpeak" type="range" min="1" max="5" step="1" value="3"></label>',
+	    '          </div>',
+	    '          <div class="sp-lab-fields-col">',
+	    '            <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="1.5"></label>',
+	    '            <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="2"></label>',
+	    '            <label id="spFieldLabMaxDist" class="sp-field sp-field--lab-maxdist">Max distance (nm)<input id="spLabMaxDist" class="spctl-input spctl-input--lab-maxdist" type="number" min="0.2" max="50" step="0.1" value="1.8"></label>',
+	    '          </div>',
+	    '        </div>',
+	    '        <div class="sp-actions sp-actions--lab-diagnostics">',
+	    '          <button type="button" id="spLabInitLibBtn" title="Load or reload the active spectral libraries inside the worker.">Init libraries</button>',
+	    '          <button type="button" id="spLabPingBtn" title="Check that the LAB analysis worker is alive and responding.">Ping worker</button>',
+	    '          <button type="button" id="spLabQueryBtn" title="Search the loaded library within a wavelength range or by species name.">Query library</button>',
+	    '        </div>',
+	    '      </div>',
+	    '    </details>',
 	    '  </div>',
 	    '  <div class="sp-lab-right">',
 	    '    <div class="sp-lab-table">',
@@ -1379,6 +1577,7 @@ function ensureLabPanel() {
   ].join('');
   panel.appendChild(card);
   panel.dataset.built = '1';
+  ensureReferenceComparisonCard(panel, 'Lab');
 
   // LAB must log to the *on-page* console (the right-side console panel),
   // not to an inline LAB div and not to DevTools.
@@ -1404,7 +1603,13 @@ function ensureLabPanel() {
   const s = getStoreState();
   const enabled = !!(s.analysis && s.analysis.enabled);
   const maxHz = Number(s.analysis && s.analysis.maxHz);
-  const presetId = (s.analysis && s.analysis.presetId) ? String(s.analysis.presetId) : '';
+  const storedPresetId = (s.analysis && s.analysis.presetId) ? String(s.analysis.presetId) : '';
+  const presetId = (sp.presets && typeof sp.presets.getCanonicalPresetId === 'function')
+    ? sp.presets.getCanonicalPresetId(storedPresetId)
+    : storedPresetId;
+  if (presetId !== storedPresetId && store && typeof store.update === 'function') {
+    store.update('analysis.presetId', presetId || null, { source: 'proBootstrap.presetMigration' });
+  }
   const showHits = !(s.analysis && s.analysis.showHits === false);
   const includeWeak = !!(s.analysis && s.analysis.includeWeakPeaks);
   const stableHits = !!(s.analysis && s.analysis.stableHits);
@@ -1712,7 +1917,7 @@ function ensureLabPanel() {
     host.innerHTML = head + rows;
   }
 
-  // Capture reference/dark workflows (Phase 2 subtraction MVP)
+  // Capture reference/dark workflows.
   function capture(kind) {
     if (!canCaptureSubFrame()) {
       setFeedback('Capture works only when SOURCE is selected and camera live is active.', 'warn');
@@ -1926,6 +2131,15 @@ function ensureHardwarePanel() {
     '  </div>',
     '  <div class="sp-actions sp-hw-actions"><button type="button" id="spHardwareApplyBtn">Apply</button><button type="button" id="spHardwareClearBtn">Clear</button></div>',
     '  <div id="spHardwareSummary" class="sp-note sp-hw-summary"></div>',
+    '  <div class="sp-card-sub" style="margin-top:10px">',
+    '    <h4 class="sp-subtitle">Instrument response</h4>',
+    '    <div class="sp-form-grid">',
+    '      <label class="sp-field" title="Apply a measured relative instrument-response profile. This is not absolute radiometric calibration.">Response profile<select id="spResponseProfile" class="spctl-select"><option value="">None</option></select></label>',
+    '    </div>',
+    '    <div class="sp-actions"><button type="button" id="spResponseLoadBtn">Load custom JSON/CSV</button><input id="spResponseLoadInput" type="file" accept=".json,.csv,.txt,application/json,text/csv,text/plain" hidden></div>',
+    '    <div id="spResponseStatus" class="sp-note">Uncorrected relative intensity.</div>',
+    '    <div id="spResponseCatalogNote" class="sp-note">Loading bundled response profiles…</div>',
+    '  </div>',
     '</div>'
   ].join('');
   panel.appendChild(card);
@@ -1950,8 +2164,74 @@ function ensureHardwarePanel() {
     pixelRes: $('spHardwarePixelRes'),
     grating: $('spHardwareGrating'),
     summary: $('spHardwareSummary'),
-    feedback: $('spHardwareFeedback')
+    feedback: $('spHardwareFeedback'),
+    responseProfile: $('spResponseProfile'),
+    responseStatus: $('spResponseStatus'),
+    responseCatalogNote: $('spResponseCatalogNote'),
+    responseLoadInput: $('spResponseLoadInput')
   };
+
+  function setResponseProfile(profile, source) {
+    const enabled = !!profile;
+    updateStorePath('preprocessing.responseCorrection', {
+      enabled: enabled,
+      profileId: enabled ? String(profile.id || '') : null,
+      profile: enabled ? profile : null,
+      maxCorrectionFactor: 5
+    }, { source: source || 'proBootstrap.responseProfile' });
+    renderInstrumentResponseStatus(getStoreState());
+  }
+
+  function addResponseOption(profile, labelPrefix) {
+    if (!ids.responseProfile || !profile || !profile.id || Array.from(ids.responseProfile.options).some(function (option) { return option.value === String(profile.id); })) return;
+    const option = document.createElement('option');
+    option.value = String(profile.id);
+    option.textContent = (labelPrefix || '') + String(profile.label || profile.id);
+    ids.responseProfile.appendChild(option);
+  }
+
+  if (sp.responseProfileStore && typeof sp.responseProfileStore.loadBundled === 'function') {
+    sp.responseProfileStore.loadBundled().then(function (loaded) {
+      (loaded.profiles || []).forEach(function (profile) { addResponseOption(profile, 'Bundled: '); });
+      if (ids.responseCatalogNote) ids.responseCatalogNote.textContent = loaded.profiles && loaded.profiles.length
+        ? 'Bundled profiles are measured relative-response data with declared hardware applicability.'
+        : (loaded.note || 'No measured bundled response profile is available.');
+    }).catch(function (error) {
+      if (ids.responseCatalogNote) ids.responseCatalogNote.textContent = 'Bundled profile catalog unavailable: ' + String(error && error.message || error) + '.';
+    });
+  }
+
+  ids.responseProfile && ids.responseProfile.addEventListener('change', function (event) {
+    const id = String(event.target.value || '');
+    if (!id) {
+      setResponseProfile(null, 'proBootstrap.responseProfile.none');
+      return;
+    }
+    const profile = sp.responseProfileStore && sp.responseProfileStore.getBundled(id);
+    if (profile) setResponseProfile(profile, 'proBootstrap.responseProfile.bundled');
+  });
+
+  $('spResponseLoadBtn') && $('spResponseLoadBtn').addEventListener('click', function () {
+    if (ids.responseLoadInput) ids.responseLoadInput.click();
+  });
+  ids.responseLoadInput && ids.responseLoadInput.addEventListener('change', function (event) {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file || !sp.responseProfileStore) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        const profile = sp.responseProfileStore.parseCustomText(reader.result, file.name);
+        addResponseOption(profile, 'Custom: ');
+        if (ids.responseProfile) ids.responseProfile.value = profile.id;
+        setResponseProfile(profile, 'proBootstrap.responseProfile.custom');
+      } catch (error) {
+        if (ids.responseStatus) ids.responseStatus.textContent = 'Invalid response profile: ' + String(error && error.message || error) + '.';
+      }
+    };
+    reader.onerror = function () { if (ids.responseStatus) ids.responseStatus.textContent = 'Could not read the response profile file.'; };
+    reader.readAsText(file);
+  });
 
   function setFeedback(msg) {
     if (ids.feedback) ids.feedback.textContent = String(msg || '');
@@ -2035,7 +2315,37 @@ function ensureHardwarePanel() {
   });
 
   fillFormFromState();
+  renderInstrumentResponseStatus(getStoreState());
   return card;
+}
+
+function renderInstrumentResponseStatus(state) {
+  const status = $('spResponseStatus');
+  const select = $('spResponseProfile');
+  if (!status) return;
+  const preprocessing = state && state.preprocessing || {};
+  const config = preprocessing.responseCorrection || {};
+  const result = state && state.analysis && state.analysis.preprocessing || null;
+  const resultMeta = result && result.responseCorrection || null;
+  if (select && config.profileId && !Array.from(select.options).some(function (option) { return option.value === String(config.profileId); }) && config.profile) {
+    const option = document.createElement('option');
+    option.value = String(config.profileId);
+    option.textContent = 'Custom: ' + String(config.profile.label || config.profileId);
+    select.appendChild(option);
+  }
+  if (select) select.value = config.enabled && config.profileId ? String(config.profileId) : '';
+  if (!config.enabled) {
+    status.textContent = 'Uncorrected relative intensity. No response correction is applied.';
+  } else if (resultMeta && resultMeta.applied) {
+    status.textContent = 'Response-corrected relative intensity using ' + String(resultMeta.profileLabel || resultMeta.profileId || 'selected profile') +
+      '. Maximum amplification ×' + String(resultMeta.maxCorrectionFactor || 5) +
+      (resultMeta.clampedSampleCount ? '; limited at ' + String(resultMeta.clampedSampleCount) + ' samples.' : '.');
+  } else if (resultMeta && resultMeta.enabled) {
+    const responseStage = Array.isArray(result.stages) ? result.stages.find(function (item) { return item && item.id === 'instrument-response'; }) : null;
+    status.textContent = 'Uncorrected relative intensity. Correction unavailable' + (responseStage && responseStage.reason ? ': ' + String(responseStage.reason) : '') + '.';
+  } else {
+    status.textContent = 'Selected response profile: ' + String(config.profile && config.profile.label || config.profileId || 'custom') + '. Waiting for an analyzed calibrated spectrum.';
+  }
 }
 
 function ensureCalibrationShell() {
@@ -2858,6 +3168,98 @@ function renderLabPanel() {
   translateDynamicRoot(qcEl);
 }
 
+function renderAstroPanel() {
+  if (!ui || !ui.panels || !ui.panels.astro) return;
+  const continuumEl = $('spAstroContinuum');
+  const continuumAdvancedEl = $('spAstroContinuumAdvanced');
+  const featuresEl = $('spAstroFeatures');
+  const matchesEl = $('spAstroMatches');
+  const qualityEl = $('spAstroQuality');
+  const velocityEl = $('spAstroVelocity');
+  const classificationEl = $('spAstroClassification');
+  if (!continuumEl || !featuresEl || !matchesEl || !qualityEl || !velocityEl || !classificationEl) return;
+  const state = getStoreState();
+  const analysis = state.analysis || {};
+  const enabled = $('spAstroEnabled');
+  if (enabled) enabled.checked = !!analysis.enabled;
+
+  if (analysis.resultContext !== 'astro' || !analysis.astro) {
+    continuumEl.textContent = analysis.enabled ? 'Waiting for an ASTRO result.' : 'Analysis is off.';
+    if (continuumAdvancedEl) continuumAdvancedEl.textContent = 'Unavailable.';
+    featuresEl.innerHTML = '<div class="sp-empty">No absorption features yet.</div>';
+    matchesEl.innerHTML = '<div class="sp-empty">No reference matches yet.</div>';
+    qualityEl.textContent = 'Unavailable.';
+    velocityEl.textContent = 'Unavailable.';
+    classificationEl.textContent = 'Unavailable.';
+    return;
+  }
+
+  const astro = analysis.astro;
+  const continuum = astro.continuum || {};
+  const normalizedCount = Array.isArray(continuum.normalized) ? continuum.normalized.filter(Number.isFinite).length : 0;
+  const intensityBasis = analysis.preprocessing && analysis.preprocessing.intensityBasis;
+  continuumEl.innerHTML = [
+    '<div><strong>' + escapeHtml(String(continuum.state || 'unavailable').toUpperCase()) + '</strong></div>',
+    '<div>' + (intensityBasis === 'response-corrected-relative-intensity'
+      ? 'Relative continuum shape after instrument-response correction; not absolute irradiance.'
+      : 'Relative continuum shape; instrument response is not corrected.') + '</div>'
+  ].join('');
+  if (continuumAdvancedEl) {
+    continuumAdvancedEl.innerHTML = [
+      '<div>Method: ' + escapeHtml(String(continuum.method || '—')) + '</div>',
+      '<div>Raw / continuum / normalized samples: ' + escapeHtml(String((continuum.rawIntensity || []).length)) + ' / ' + escapeHtml(String((continuum.continuum || []).length)) + ' / ' + escapeHtml(String(normalizedCount)) + '</div>',
+      '<div>Window radius: ' + escapeHtml(String(continuum.windowRadiusPx == null ? '—' : continuum.windowRadiusPx)) + ' px · quantile ' + escapeHtml(String(continuum.quantile == null ? '—' : continuum.quantile)) + '</div>'
+    ].join('');
+  }
+
+  const features = Array.isArray(astro.absorptionFeatures) ? astro.absorptionFeatures.slice(0, 12) : [];
+  featuresEl.innerHTML = features.length ? features.map(function (feature) {
+    const center = Number.isFinite(Number(feature.centerNm)) ? Number(feature.centerNm).toFixed(2) + ' nm' : 'sample ' + String(feature.centerIndex == null ? '?' : feature.centerIndex);
+    const width = Number.isFinite(Number(feature.fwhmNm)) ? Number(feature.fwhmNm).toFixed(2) + ' nm' : 'FWHM unavailable';
+    const ew = Number.isFinite(Number(feature.equivalentWidthNm)) ? 'EW ' + Number(feature.equivalentWidthNm).toFixed(3) + ' nm' : 'EW unavailable';
+    const snr = Number.isFinite(Number(feature.snr)) ? 'SNR ' + Number(feature.snr).toFixed(1) : 'SNR unavailable';
+    return '<div class="sp-lab-hit"><strong>' + escapeHtml(center) + '</strong><div>depth ' + escapeHtml(Number(feature.depth || 0).toFixed(3)) + ' · ' + escapeHtml(width) + '</div><div>' + escapeHtml(ew) + ' · ' + escapeHtml(snr) + ' · ' + escapeHtml(String(feature.quality || 'unavailable')) + '</div></div>';
+  }).join('') : '<div class="sp-empty">No measurable absorption features.</div>';
+
+  const matches = Array.isArray(astro.referenceMatches) ? astro.referenceMatches.slice(0, 12) : [];
+  matchesEl.innerHTML = matches.length ? matches.map(function (match) {
+    const delta = Number.isFinite(Number(match.deltaNm)) ? (Number(match.deltaNm) >= 0 ? '+' : '') + Number(match.deltaNm).toFixed(2) : '—';
+    return '<div class="sp-lab-hit"><strong>' + escapeHtml(String(match.label || match.species || '?')) + '</strong><div>' + escapeHtml(Number(match.observedNm).toFixed(2)) + ' → ' + escapeHtml(Number(match.referenceNm).toFixed(2)) + ' nm</div><div>Δλ ' + escapeHtml(delta) + ' nm · ' + escapeHtml(String(match.matchQuality || 'unavailable')) + '</div></div>';
+  }).join('') : '<div class="sp-empty">No matches. A calibrated wavelength axis is required.</div>';
+
+  const quality = analysis.measurementQuality || {};
+  const limitation = quality.mainLimitation || null;
+  qualityEl.textContent = 'Overall: ' + String(quality.overallStatus || 'unavailable') + (limitation ? '. Main limitation: ' + String(limitation.reason || limitation.code) + '.' : '.');
+  const radialVelocity = astro.radialVelocity || {};
+  if (radialVelocity.state === 'available' && Number.isFinite(Number(radialVelocity.velocityKmS))) {
+    const sign = Number(radialVelocity.velocityKmS) >= 0 ? '+' : '';
+    velocityEl.innerHTML = '<div><strong>' + escapeHtml(sign + Number(radialVelocity.velocityKmS).toFixed(1) + ' ± ' + Number(radialVelocity.uncertaintyKmS).toFixed(1) + ' km/s') + '</strong></div>' +
+      '<div>' + escapeHtml(String(radialVelocity.lineCountUsed)) + ' lines used; ' + escapeHtml(String(radialVelocity.excludedLineCount)) + ' excluded.</div>' +
+      '<div>' + escapeHtml(String(radialVelocity.quality || 'unavailable')) + ' · positive means redshift/receding.</div>';
+  } else {
+    velocityEl.textContent = radialVelocity.state === 'insufficient-lines'
+      ? 'Insufficient reliable lines for a combined velocity.'
+      : 'Radial velocity unavailable.';
+  }
+  const stellar = astro.stellarClassification || {};
+  if (stellar.state === 'available' && stellar.bestClass) {
+    const reasons = Array.isArray(stellar.reasons) ? stellar.reasons.slice(0, 4) : [];
+    classificationEl.innerHTML = '<div><strong>Best class evidence: ' + escapeHtml(String(stellar.bestClass)) + '</strong> · ' + escapeHtml(String(stellar.evidenceStrength || 'weak')) + '</div>' +
+      '<div>Compatible range: ' + escapeHtml(String(stellar.compatibleRange || stellar.bestClass)) + '</div>' +
+      (reasons.length ? '<div>Reasons: ' + escapeHtml(reasons.join('; ')) + '.</div>' : '') +
+      '<div>Broad class only; no subclass or luminosity class.</div>';
+  } else if (stellar.state === 'conflicting-evidence') {
+    const conflicts = Array.isArray(stellar.conflictingEvidence) ? stellar.conflictingEvidence.slice(0, 3) : [];
+    classificationEl.innerHTML = '<div><strong>Conflicting class evidence</strong></div>' +
+      (stellar.compatibleRange ? '<div>Compatible range: ' + escapeHtml(String(stellar.compatibleRange)) + '</div>' : '') +
+      (conflicts.length ? '<div>Conflicts: ' + escapeHtml(conflicts.join('; ')) + '.</div>' : '') +
+      '<div>No class is promoted as reliable.</div>';
+  } else {
+    classificationEl.innerHTML = '<div><strong>Insufficient class evidence</strong></div><div>More calibrated, reliable diagnostic features are required.</div>';
+  }
+  translateDynamicRoot(ui.panels.astro);
+}
+
 
 
   function render() {
@@ -2873,6 +3275,9 @@ function renderLabPanel() {
     setActiveTab(active);
     renderStatus();
     renderLabPanel();
+    renderAstroPanel();
+    renderReferenceComparisonCards(state);
+    renderInstrumentResponseStatus(state);
     cleanupSpuriousPopup();
   }
 
@@ -2917,7 +3322,7 @@ function autoCloseInfoPopupIfDefault() {
     booted = true;
     wrapShowInfoPopup();
     render();
-    // Step 1 wiring: create a singleton worker client if available (lazy worker start remains in client).
+    // Create a singleton worker client if available; worker startup remains lazy.
     ensureWorkerClient();
     setTimeout(function () { probeCameraCapabilitiesIntoStore(); }, 0);
     if (bus && bus.on) {
@@ -2939,6 +3344,7 @@ function autoCloseInfoPopupIfDefault() {
         if (src.indexOf('workerClient.analysisResult') === 0) {
           renderStatus();
           renderLabPanel();
+          renderAstroPanel();
           cleanupSpuriousPopup();
           return;
         }
@@ -3022,7 +3428,7 @@ function autoCloseInfoPopupIfDefault() {
             const normalized = normalizeGraphFrame(pendingFrame);
             pendingFrame = null;
             if (normalized) {
-              // Phase 2: ensure nm-axis exists when calibration coefficients are available.
+              // Ensure the nm axis exists when calibration coefficients are available.
               // This enables worker matching and top hits.
               let adapted = normalized;
               try {
@@ -3035,7 +3441,7 @@ function autoCloseInfoPopupIfDefault() {
 
               updateStorePath('frame.latest', adapted, { source: 'proBootstrap.frameSync' });
               updateStorePath('frame.source', adapted.source || 'unknown', { source: 'proBootstrap.frameSync' });
-              maybeRunLabAnalyze(adapted);
+              maybeRunAnalysis(adapted);
             }
             if (bus && bus.emit) bus.emit('frame:updated', { source: 'proBootstrap.frameSync' });
             queueStatusRender();

@@ -1,0 +1,26 @@
+{
+  "schema": "spectra-pro-reference-comparison-fixture/v1",
+  "synthetic": true,
+  "description": "Compact deterministic Gaussian reference shifted on a calibrated wavelength grid.",
+  "grid": {
+    "startNm": 499,
+    "endNm": 503,
+    "stepNm": 0.1
+  },
+  "reference": {
+    "id": "fixture-gaussian",
+    "label": "Fixture Gaussian",
+    "centerNm": 500.8,
+    "sigmaNm": 0.18
+  },
+  "measured": {
+    "shiftNm": 0.4,
+    "scale": 7.5,
+    "offset": 2.0
+  },
+  "expected": {
+    "autoShiftToleranceNm": 0.051,
+    "manualRmseMax": 0.000001,
+    "manualCorrelationMin": 0.999999
+  }
+}

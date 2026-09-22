@@ -34,8 +34,5 @@
     return { fillMode: mode, fillOpacity: opacity };
   };
 
-  mod.apply = function applyGraphAppearance(opts) {
-    return { applied: false, placeholder: true, options: opts || {} };
-  };
-  mod.version = 'step4-appearance-source';
+  mod.version = '3.0.0';
 })();

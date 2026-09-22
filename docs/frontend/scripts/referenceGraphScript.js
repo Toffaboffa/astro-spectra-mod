@@ -53,7 +53,7 @@ function addReferenceLineFromExcel() {
     input.click()
 }
 
-/* SPECTRA-PRO Phase 0 hook patch */
+/* SPECTRA PRO reference-graph hook */
 
 (function(){
   const sp = window.SpectraPro || (window.SpectraPro = {});
@@ -83,7 +83,7 @@ function addReferenceLineFromExcel() {
 })();
 
 
-/* SPECTRA-PRO Phase 1 reference bridge enrich patch */
+/* SPECTRA PRO reference-graph bridge */
 (function(){
   if (!window.SpectraCore) window.SpectraCore = {};
   window.SpectraCore.reference = Object.assign(window.SpectraCore.reference || {}, {

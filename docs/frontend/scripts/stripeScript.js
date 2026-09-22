@@ -267,7 +267,7 @@ videoElement.addEventListener("loadedmetadata", syncCanvasToVideo);
 
 drawSelectionLine();
 
-/* SPECTRA-PRO Phase 0 hook patch */
+/* SPECTRA PRO stripe bridge */
 
 (function(){
   function trySetRange(id, value){ const el=document.getElementById(id); if (el){ el.value = value; } }

@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '2.3.9';
+  const VERSION = '3.0.0';
   const MODAL_ID = 'spExportModal';
   const STYLE_ID = 'spExportUiStyle';
   const MAIN_BUTTON_ID = 'spExportMainBtn';
@@ -22,8 +22,8 @@
       json: 'Data analysis (.json)',
       jsonDesc: 'One complete JSON snapshot with settings, Status, Data Quality, calibration, hits, analysis and AI result when available.',
       pdf: 'Report (.pdf)',
-      pdfDesc: 'Deterministic SPECTRA PRO report generated locally without AI-written report text.',
-      aiIncluded: 'AI interpretation is available and will be included in the JSON and directly in the PDF Abstract.',
+      pdfDesc: 'Deterministic SPECTRA PRO report generated locally. A completed AI interpretation is optional and clearly separated.',
+      aiIncluded: 'AI interpretation is available and will be included in JSON and as a labelled optional PDF section.',
       noAi: 'No completed AI interpretation is currently available.',
       cancel: 'Cancel',
       exportSelected: 'Export selected',
@@ -50,8 +50,8 @@
       json: 'Dataanalys (.json)',
       jsonDesc: 'En komplett JSON-snapshot med inställningar, Status, Data Quality, kalibrering, träffar, analys och AI-resultat när det finns.',
       pdf: 'Rapport (.pdf)',
-      pdfDesc: 'Deterministisk SPECTRA PRO-rapport som genereras lokalt utan AI-skriven rapporttext.',
-      aiIncluded: 'En AI-tolkning finns och inkluderas i JSON samt direkt i PDF-rapportens Abstract.',
+      pdfDesc: 'Deterministisk SPECTRA PRO-rapport som genereras lokalt. En slutförd AI-tolkning är valfri och tydligt separerad.',
+      aiIncluded: 'En AI-tolkning finns och inkluderas i JSON samt som ett märkt valfritt PDF-avsnitt.',
       noAi: 'Ingen slutförd AI-tolkning finns just nu.',
       cancel: 'Avbryt',
       exportSelected: 'Exportera valda',
@@ -412,15 +412,62 @@
     } catch (_) { return { available: false }; }
   }
 
+  function buildScientificAnalysisSnapshot(state) {
+    const source = state && typeof state === 'object' ? state : {};
+    const analysis = source.analysis && typeof source.analysis === 'object' ? source.analysis : {};
+    const preprocessingConfig = source.preprocessing && typeof source.preprocessing === 'object' ? source.preprocessing : {};
+    const preprocessingResult = analysis.preprocessing && typeof analysis.preprocessing === 'object' ? analysis.preprocessing : null;
+    const responseResult = preprocessingResult && preprocessingResult.responseCorrection && typeof preprocessingResult.responseCorrection === 'object'
+      ? preprocessingResult.responseCorrection
+      : null;
+    return {
+      context: {
+        appMode: source.appMode || 'CORE',
+        resultContext: analysis.resultContext || null,
+        presetId: analysis.presetId || null
+      },
+      calibration: {
+        state: cloneJson(source.calibration),
+        diagnostics: cloneJson(analysis.calibrationDiagnostics),
+        matchUncertaintyModel: cloneJson(analysis.matchUncertaintyModel),
+        hardMatchCapNm: Number.isFinite(Number(analysis.hardMatchCapNm)) ? Number(analysis.hardMatchCapNm) : null
+      },
+      preprocessing: {
+        configuration: cloneJson(preprocessingConfig),
+        result: cloneJson(preprocessingResult)
+      },
+      instrumentResponse: {
+        configuration: cloneJson(preprocessingConfig.responseCorrection),
+        result: cloneJson(responseResult),
+        intensityBasis: preprocessingResult && preprocessingResult.intensityBasis ? preprocessingResult.intensityBasis : 'uncorrected-relative-intensity'
+      },
+      measurementQuality: cloneJson(analysis.measurementQuality),
+      detectedFeatures: cloneJson(Array.isArray(analysis.features) ? analysis.features : []),
+      lab: {
+        topHits: cloneJson(Array.isArray(analysis.topHits) ? analysis.topHits : []),
+        rawTopHits: cloneJson(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits : []),
+        candidates: cloneJson(Array.isArray(analysis.elementScores) ? analysis.elementScores : []),
+        winnerBreakdown: cloneJson(analysis.winnerBreakdown),
+        fluorescence: cloneJson(analysis.fluorescenceSummary),
+        narrowLineCandidates: cloneJson(Array.isArray(analysis.narrowLineCandidates) ? analysis.narrowLineCandidates : []),
+        qcFlags: cloneJson(Array.isArray(analysis.qcFlags) ? analysis.qcFlags : [])
+      },
+      astro: cloneJson(analysis.astro),
+      referenceComparison: cloneJson(analysis.referenceComparison)
+    };
+  }
+
   function buildAnalysisBundle() {
     const state = (sp.store && sp.store.getState) ? sp.store.getState() : {};
     const frame = currentFrame();
     return {
-      schema: 'spectra-pro-export/v1',
+      schema: 'spectra-pro-export/v2',
       generatedAt: new Date().toISOString(),
       appVersion: sp.version || ('v' + VERSION),
       interfaceLanguage: language(),
       state: cloneJson(state),
+      scientificAnalysis: buildScientificAnalysisSnapshot(state),
+      preprocessing: cloneJson(state.analysis && state.analysis.preprocessing),
       visibleDiagnostics: {
         status: collectInfoLines('spStatusText'),
         dataQuality: collectInfoLines('spDataQualityText')
@@ -575,10 +622,22 @@
     const worker = state.worker || {};
     const lines = [];
     lines.push('Workspace=' + String(state.appMode || '—') + '; preset=' + String(analysis.presetId || '—') + '; processing=' + String((state.subtraction && state.subtraction.mode) || 'raw') + '.');
+    if (analysis.preprocessing) {
+      const operations = Array.isArray(analysis.preprocessing.activeOperations) ? analysis.preprocessing.activeOperations : [];
+      const warnings = Array.isArray(analysis.preprocessing.warnings) ? analysis.preprocessing.warnings : [];
+      lines.push('Preprocessing schema=' + String(analysis.preprocessing.schema || '—') + '; intensity basis=' + String(analysis.preprocessing.intensityBasis || 'uncorrected-relative-intensity') + '; active operations=' + (operations.length ? operations.join(', ') : 'none') + '; warnings=' + (warnings.length ? warnings.join(', ') : 'none') + '.');
+    }
     lines.push('Calibration=' + (cal.isCalibrated ? 'active' : 'inactive') + '; points=' + String(Array.isArray(cal.points) ? cal.points.length : 0) + '; worker=' + String(worker.status || '—') + '; analysis rate=' + String(worker.analysisHz != null ? worker.analysisHz : '—') + ' Hz.');
     lines.push('Detected peaks=' + String(analysis.detectedPeakCount != null ? analysis.detectedPeakCount : '—') + '; top hits=' + String(Array.isArray(analysis.topHits) ? analysis.topHits.length : 0) + '; raw hits=' + String(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits.length : 0) + '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
     if (analysis.offsetNm != null) lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm.');
-    if (analysis.fluorescenceSummary) {
+    if (analysis.resultContext === 'astro' && analysis.astro) {
+      const astro = analysis.astro;
+      const velocity = astro.radialVelocity || {};
+      const stellar = astro.stellarClassification || {};
+      lines.push('ASTRO absorption features=' + String(Array.isArray(astro.absorptionFeatures) ? astro.absorptionFeatures.length : 0) + '; reference matches=' + String(Array.isArray(astro.referenceMatches) ? astro.referenceMatches.length : 0) + '; continuum=' + String((astro.continuum && astro.continuum.state) || 'unavailable') + '.');
+      lines.push('Radial velocity=' + (velocity.state === 'available' ? (nfmt(velocity.velocityKmS, 1) + ' ± ' + nfmt(velocity.uncertaintyKmS, 1) + ' km/s') : String(velocity.state || 'unavailable')) + '; barycentric/heliocentric correction=' + ((velocity.corrections && (velocity.corrections.barycentric || velocity.corrections.heliocentric)) ? 'reported as applied' : 'not applied') + '.');
+      lines.push('Broad stellar-class evidence=' + String(stellar.bestClass || stellar.state || 'unavailable') + '; strength=' + String(stellar.evidenceStrength || 'unavailable') + '; compatible range=' + String(stellar.compatibleRange || 'unavailable') + '.');
+    } else if (analysis.fluorescenceSummary) {
       const fl = analysis.fluorescenceSummary;
       lines.push('Fluorescence model=' + String(fl.model || '—') + '; type=' + String(fl.spectrumType || '—') + '; lambdaMax=' + nfmt(fl.lambdaMaxNm, 2) + ' nm; FWHM=' + nfmt(fl.fwhmNm, 2) + ' nm; asymmetry=' + String(fl.asymmetry || '—') + '.');
     } else {
@@ -618,8 +677,19 @@
       parts.push('This report summarizes the current SPECTRA PRO measurement. The measurement contains ' + count + ' sampled points and was analyzed with preset ' + preset + '. Wavelength calibration was ' + (calibrated ? 'active' : 'not active') + ' at export time.');
     }
 
+    const astro = analysis.resultContext === 'astro' && analysis.astro && typeof analysis.astro === 'object' ? analysis.astro : null;
     const fl = analysis.fluorescenceSummary;
-    if (fl && typeof fl === 'object') {
+    if (astro) {
+      const features = Array.isArray(astro.absorptionFeatures) ? astro.absorptionFeatures.length : 0;
+      const matches = Array.isArray(astro.referenceMatches) ? astro.referenceMatches.length : 0;
+      const velocity = astro.radialVelocity || {};
+      const stellar = astro.stellarClassification || {};
+      const velocityText = velocity.state === 'available'
+        ? nfmt(velocity.velocityKmS, 1) + ' ± ' + nfmt(velocity.uncertaintyKmS, 1) + ' km/s'
+        : (sv ? 'ej tillgänglig' : 'unavailable');
+      if (sv) parts.push('ASTRO-analysen mätte ' + features + ' absorptionsdrag och ' + matches + ' referensmatchningar. Radialhastigheten är ' + velocityText + ' utan barycentrisk/heliocentrisk korrigering. Bred stjärnklassevidens är ' + String(stellar.bestClass || stellar.state || 'otillräcklig') + ' och är inte en exakt underklass eller sannolikhet.');
+      else parts.push('The ASTRO analysis measured ' + features + ' absorption features and ' + matches + ' reference matches. Radial velocity is ' + velocityText + ' without barycentric/heliocentric correction. Broad stellar-class evidence is ' + String(stellar.bestClass || stellar.state || 'insufficient') + ' and is not an exact subclass or probability.');
+    } else if (fl && typeof fl === 'object') {
       if (sv) {
         parts.push('Fluorescensanalysen beskriver ett ' + (fl.spectrumType || 'fluorescens') + ' med emissionsmaximum vid ' + nfmt(fl.lambdaMaxNm, 2) + ' nm, centroid ' + nfmt(fl.centroidNm, 2) + ' nm, FWHM ' + nfmt(fl.fwhmNm, 2) + ' nm och bandbredd ' + nfmt(fl.bandWidthNm, 2) + ' nm. Asymmetrin klassades som ' + (fl.asymmetry || '—') + '.');
       } else {
@@ -636,9 +706,6 @@
     if (sv) parts.push('Data Quality visar SNR ' + snr + ' och mättnad ' + sat + '. Resultatet bör tolkas tillsammans med kalibrering, instrumentupplösning, signalnivå, QC-flaggor och den fysikaliska lämpligheten hos valt preset.');
     else parts.push('Data Quality reports SNR ' + snr + ' and saturation ' + sat + '. Results should be interpreted together with calibration, instrument resolution, signal level, QC flags and the physical suitability of the selected preset.');
 
-    if (bundle.ai && bundle.ai.available && bundle.ai.resultText) {
-      parts.push((sv ? 'AI-tolkning: "' : 'AI interpretation: "') + String(bundle.ai.resultText).trim() + '"');
-    }
     return parts.join(' ');
   }
 
@@ -670,6 +737,29 @@
     const calState = cal.isCalibrated ? (sv ? 'aktiv' : 'active') : (sv ? 'inte aktiv' : 'not active');
     const resolution = hw.spectrometerResolutionFwhmNm != null ? nfmt(hw.spectrometerResolutionFwhmNm, 2) + ' nm FWHM' : res;
 
+    const astro = analysis.resultContext === 'astro' && analysis.astro && typeof analysis.astro === 'object' ? analysis.astro : null;
+    if (astro) {
+      const continuum = astro.continuum || {};
+      const velocity = astro.radialVelocity || {};
+      const stellar = astro.stellarClassification || {};
+      const featureCount = Array.isArray(astro.absorptionFeatures) ? astro.absorptionFeatures.length : 0;
+      const matchCount = Array.isArray(astro.referenceMatches) ? astro.referenceMatches.length : 0;
+      if (sv) return [
+        'ASTRO använder samma kalibrerade och förbehandlade spektrum som LAB men tolkar kontinuumnormaliserade absorptionsdrag. Kontinuumstatus är ' + String(continuum.state || 'ej tillgänglig') + ' och intensitetsgrunden är ' + String((analysis.preprocessing && analysis.preprocessing.intensityBasis) || 'okorrigerad relativ intensitet') + '. Okorrigerad kontinuumform används inte som temperatur- eller klassevidens.',
+        'Den aktuella körningen innehåller ' + featureCount + ' uppmätta absorptionsdrag och ' + matchCount + ' kuraterade referensmatchningar. Feature-mått kan omfatta centrum, djup, FWHM, negativ ekvivalent bredd, SNR och kvalitetsflaggor när sampling och datakvalitet räcker.',
+        'Radialhastigheten rapporteras som ' + (velocity.state === 'available' ? nfmt(velocity.velocityKmS, 1) + ' ± ' + nfmt(velocity.uncertaintyKmS, 1) + ' km/s' : String(velocity.state || 'ej tillgänglig')) + '. Positivt värde betyder rödförskjutning/bortgående. Ingen barycentrisk eller heliocentrisk korrigering har tillämpats, och jämförelsealignment är inte en radialhastighetsmätning.',
+        'Bred stjärnklassevidens är ' + String(stellar.bestClass || stellar.state || 'otillräcklig') + ' med styrka ' + String(stellar.evidenceStrength || 'ej tillgänglig') + '. Resultatet är heuristisk evidens, inte sannolikhet, exakt underklass, luminositetsklass, temperatur eller sammansättning.',
+        'Kalibreringen är ' + calState + ', instrument-/samplingupplösningen anges som ' + resolution + ', SNR som ' + snr + ' och mättnad som ' + sat + '. Dessa begränsningar samt den deterministiska huvudbegränsningen ska följas vid tolkning.'
+      ];
+      return [
+        'ASTRO uses the same calibrated and preprocessed spectrum as LAB but interprets continuum-normalized absorption features. Continuum state is ' + String(continuum.state || 'unavailable') + ' and the intensity basis is ' + String((analysis.preprocessing && analysis.preprocessing.intensityBasis) || 'uncorrected relative intensity') + '. Uncorrected continuum shape is not used as temperature or class evidence.',
+        'The current run contains ' + featureCount + ' measured absorption features and ' + matchCount + ' curated reference matches. Feature measurements may include center, depth, FWHM, negative equivalent width, SNR and quality flags when sampling and data quality support them.',
+        'Radial velocity is reported as ' + (velocity.state === 'available' ? nfmt(velocity.velocityKmS, 1) + ' ± ' + nfmt(velocity.uncertaintyKmS, 1) + ' km/s' : String(velocity.state || 'unavailable')) + '. Positive means redshift/receding. No barycentric or heliocentric correction is applied, and comparison alignment is not a radial-velocity measurement.',
+        'Broad stellar-class evidence is ' + String(stellar.bestClass || stellar.state || 'insufficient') + ' with strength ' + String(stellar.evidenceStrength || 'unavailable') + '. The result is heuristic evidence, not probability, exact subclass, luminosity class, temperature or composition.',
+        'Calibration is ' + calState + ', instrument/sampling resolution is reported as ' + resolution + ', SNR as ' + snr + ' and saturation as ' + sat + '. These limits and the deterministic dominant limitation should accompany interpretation.'
+      ];
+    }
+
     if (sv) {
       return [
         'Analysen bygger på den spektralprofil som extraherats ur den valda strimman i källbilden. Intensitetsdata och, när kalibrering finns, motsvarande våglängdsaxel skickas till SPECTRA PRO:s analysworker. Peak-detektionen bedömer lokala maxima med hänsyn till relativ höjd, prominens och minsta tillåtna separation. I de Smart-presets som stöder Auto tune startar analysen från ett relativt tillåtande peak-urval och omprövar sedan evidensen med stramare trösklar och våglängdstoleranser. Därmed blir identifieringen mindre beroende av ett enda manuellt valt tröskelvärde.',
@@ -689,6 +779,45 @@
       'Relevant signatures or clusters in the current run are: ' + signatures + '. Calibration is ' + calState + ', the instrument/sampling resolution reported by the diagnostics is ' + resolution + ', SNR is ' + snr + ' and the saturation field is ' + sat + '. These values are considered together when deciding whether a numerically attractive match is also experimentally credible. Saturation can destroy peak shape and relative intensity information, whereas low SNR can introduce additional local maxima or hide weak diagnostic features.',
       'After matching, candidate scores, observed hits, QC flags and explained-signal metrics are assembled into the LAB result. The report source image retains the central 25 percent of image height to focus on the dispersed spectrum, while the graph reproduces the canvas that was actually visible at export time with active annotations and overlays. The detailed feature table reports observed wavelength, reference wavelength, residual and score/confidence for the current hits. Results should be treated as reproducible best proposals given the measured signal, selected preset and active calibration; changes in optics, focus, zoom, grating geometry or camera settings can require recalibration before wavelength matching is trustworthy again.'
     ];
+  }
+
+  function compactPdfNarrative(paragraphs) {
+    const rows = Array.isArray(paragraphs) ? paragraphs.filter(Boolean) : [];
+    if (rows.length <= 3) return rows;
+    return [rows[0], rows[1], rows[rows.length - 1]];
+  }
+
+  function buildPdfReportModel(bundle) {
+    const sv = language() === 'sv';
+    const aiText = bundle && bundle.ai && bundle.ai.available && bundle.ai.resultText
+      ? String(bundle.ai.resultText).replace(/\s+/g, ' ').trim()
+      : '';
+    const compactAiText = aiText.length > 2400 ? aiText.slice(0, 2399).trimEnd() + '…' : aiText;
+    return {
+      schema: 'spectra-pro-pdf-report/v1',
+      sourceExportSchema: bundle && bundle.schema || null,
+      generatedAt: bundle && bundle.generatedAt || null,
+      deterministicCore: true,
+      sections: [
+        'cover', 'deterministic-abstract', 'spectrum-and-source', 'method-and-calibration',
+        'deterministic-results', 'quality-and-status', 'reproducibility'
+      ],
+      abstract: buildAutomaticAbstract(bundle || {}),
+      methodNarrative: compactPdfNarrative(buildDetailedNarrative(bundle || {})),
+      analysisLog: buildAnalysisLogLines(bundle || {}).slice(0, 12),
+      aiInterpretation: {
+        included: !!compactAiText,
+        label: sv ? 'VALFRI AI-TOLKNING' : 'OPTIONAL AI INTERPRETATION',
+        disclaimer: sv
+          ? 'Modellgenererad tolkning. Den är inte en mätning och ersätter inte rapportens deterministiska resultat.'
+          : 'Model-generated interpretation. It is not a measurement and does not replace the deterministic report results.',
+        text: compactAiText || null
+      },
+      limitations: [
+        'human-readable-summary-not-complete-reproducibility-artifact',
+        'use-json-v2-for-complete-state-and-numeric-data'
+      ]
+    };
   }
 
   function imageSize(url) {
@@ -859,6 +988,7 @@
     const dq = bundle.visibleDiagnostics ? bundle.visibleDiagnostics.dataQuality : [];
     const status = bundle.visibleDiagnostics ? bundle.visibleDiagnostics.status : [];
     const pageW = doc.internal.pageSize.getWidth();
+    const reportModel = buildPdfReportModel(bundle);
 
     const croppedSourceUrl = sourceUrl ? (await cropCenterBandDataUrl(sourceUrl, 0.25) || sourceUrl) : '';
     const rotatedGraphUrl = graphUrl ? (await rotateDataUrl90(graphUrl) || graphUrl) : '';
@@ -906,7 +1036,14 @@
     doc.addPage();
     y = 18;
     y = sectionTitle(doc, sv ? 'ABSTRAKT' : 'ABSTRACT', y);
-    y = addWrappedPaged(doc, buildAutomaticAbstract(bundle), 17, y, pageW - 34, { size: 9.1, line: 4.15, bottom: 276 });
+    y = addWrappedPaged(doc, reportModel.abstract, 17, y, pageW - 34, { size: 9.1, line: 4.15, bottom: 276 });
+    if (reportModel.aiInterpretation.included) {
+      y += 6;
+      y = sectionTitle(doc, reportModel.aiInterpretation.label, y);
+      y = addWrappedPaged(doc, reportModel.aiInterpretation.disclaimer, 17, y, pageW - 34, { size: 8.4, line: 3.9, bottom: 276, bold: true });
+      y += 2;
+      y = addWrappedPaged(doc, reportModel.aiInterpretation.text, 17, y, pageW - 34, { size: 8.8, line: 4.0, bottom: 276 });
+    }
 
     // Spectrum profile and source on the same print-efficient page.
     doc.addPage();
@@ -948,6 +1085,7 @@
       [sv ? 'Arbetsläge' : 'Workspace', state.appMode || '—', sv ? 'Aktivt SPECTRA PRO-läge' : 'Active SPECTRA PRO mode', '—'],
       ['Preset', analysis.presetId || '—', sv ? 'Aktiv analysprofil' : 'Active analysis profile', '—'],
       [sv ? 'Bearbetning' : 'Processing', (state.subtraction && state.subtraction.mode) || 'raw', sv ? 'Aktivt signalflöde' : 'Active signal processing', '—'],
+      [sv ? 'Aktiva försteg' : 'Active preprocessing', analysis.preprocessing && Array.isArray(analysis.preprocessing.activeOperations) && analysis.preprocessing.activeOperations.length ? analysis.preprocessing.activeOperations.join(', ') : 'none', sv ? 'Faktiskt tillämpade operationer' : 'Operations actually applied', '—'],
       [sv ? 'Topptröskel' : 'Peak threshold', analysis.peakThresholdRel != null ? nfmt(Number(analysis.peakThresholdRel) * 100, 2) : '—', sv ? 'Relativ LAB-tröskel' : 'Relative LAB threshold', '%'],
       [sv ? 'Toppavstånd' : 'Peak distance', analysis.peakDistancePx != null ? String(analysis.peakDistancePx) : '—', sv ? 'Minsta separation' : 'Minimum separation', 'px'],
       [sv ? 'Max avstånd' : 'Max distance', analysis.maxDistanceNm != null ? nfmt(analysis.maxDistanceNm, 3) : '—', sv ? 'Hård matchningsgräns' : 'Hard matching gate', 'nm'],
@@ -1000,7 +1138,7 @@
     doc.addPage();
     y = 18;
     y = sectionTitle(doc, sv ? 'Analysmetod och tolkningskontext' : 'Analysis method and interpretation context', y);
-    const narrative = buildDetailedNarrative(bundle);
+    const narrative = reportModel.methodNarrative;
     for (let i = 0; i < narrative.length; i += 1) {
       y = addWrappedPaged(doc, narrative[i], 17, y, pageW - 34, { size: 9, line: 4.15, bottom: 276 });
       y += 4;
@@ -1047,7 +1185,7 @@
     doc.addPage();
     y = 18;
     y = sectionTitle(doc, sv ? 'Analyslogg (detaljerad)' : 'Analysis log (detailed)', y);
-    const analysisLog = buildAnalysisLogLines(bundle);
+    const analysisLog = reportModel.analysisLog;
     analysisLog.forEach(function (line) {
       y = addWrapped(doc, '• ' + line, 17, y, pageW - 34, { size: 8.5, line: 4.0 });
     });
@@ -1291,6 +1429,7 @@
     open: open,
     close: close,
     buildAnalysisBundle: buildAnalysisBundle,
+    buildPdfReportModel: buildPdfReportModel,
     buildCsv: buildCsv,
     captureSourceDataUrl: captureSourceDataUrl,
     captureGraphDataUrl: captureGraphDataUrl,

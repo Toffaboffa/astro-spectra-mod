@@ -3,29 +3,15 @@
 
   const catalog = root.SPECTRA_PRO_atomicProfiles;
   const MODEL = catalog && catalog.version ? catalog.version : 'atomic-fingerprint-v1';
+  const spectrumMath = root.SPECTRA_PRO_spectrumMath;
+  if (!spectrumMath) return;
 
-  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-
-  function median(values) {
-    const arr = (Array.isArray(values) ? values : []).map(Number).filter(Number.isFinite).sort(function (a, b) { return a - b; });
-    if (!arr.length) return 0;
-    const mid = Math.floor(arr.length / 2);
-    return arr.length % 2 ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
-  }
+  const clamp = spectrumMath.clamp;
+  const median = spectrumMath.median;
+  const observedRange = spectrumMath.observedRange;
 
   function getProminence(peak) {
     return Math.max(0, Number(peak && (peak.prominence != null ? peak.prominence : peak.value)) || 0);
-  }
-
-  function observedRange(frame, peaks) {
-    const vals = [];
-    if (frame && Array.isArray(frame.nm)) {
-      frame.nm.forEach(function (v) { const n = Number(v); if (Number.isFinite(n)) vals.push(n); });
-    }
-    if (!vals.length) {
-      (Array.isArray(peaks) ? peaks : []).forEach(function (p) { const n = Number(p && p.nm); if (Number.isFinite(n)) vals.push(n); });
-    }
-    return vals.length ? { min: Math.min.apply(null, vals), max: Math.max.apply(null, vals) } : { min: 380, max: 900 };
   }
 
   function activeLines(profile, range) {
@@ -375,7 +361,7 @@
     const scoredRows = [];
     const profileHits = [];
 
-    const autoTuneAtomicPresets = ['smart-gastube', 'smart-atomic', 'lamp-hg'];
+    const autoTuneAtomicPresets = ['smart-gastube', 'smart-atomic'];
     const useAutoTune = autoTuneAtomicPresets.indexOf(String(out.presetId || '')) !== -1 && out.autoTune === true;
     const autoDiagnostics = [];
 

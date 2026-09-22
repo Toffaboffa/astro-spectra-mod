@@ -77,6 +77,44 @@ function getSpectraProStoreState() {
     }
 }
 
+function drawReferenceComparisonOverlay(zoomStart, zoomEnd, maxValue) {
+    try {
+        const state = getSpectraProStoreState();
+        const config = state.referenceComparison || {};
+        const result = state.analysis && state.analysis.referenceComparison;
+        const values = result && result.state === 'available' && Array.isArray(result.alignedReferenceI)
+            ? result.alignedReferenceI
+            : null;
+        if (!config.enabled || !values || values.length < 2) return;
+        const finite = values.filter(function (value) { return Number.isFinite(Number(value)); }).map(Number);
+        if (finite.length < 2) return;
+        const min = Math.min.apply(null, finite);
+        const max = Math.max.apply(null, finite);
+        const span = max - min;
+        const width = graphCanvas.getBoundingClientRect().width;
+        const height = graphCanvas.getBoundingClientRect().height;
+        const zoomRange = zoomEnd - zoomStart;
+        let drawing = false;
+        graphCtx.beginPath();
+        for (let x = zoomStart; x < zoomEnd && x < values.length; x += 1) {
+            const raw = Number(values[x]);
+            if (!Number.isFinite(raw)) {
+                drawing = false;
+                continue;
+            }
+            const visualValue = span > 0 ? ((raw - min) / span) * maxValue : 0;
+            const y = calculateYPosition(visualValue, height, maxValue);
+            const scaledX = calculateXPosition(x - zoomStart, zoomRange, width);
+            if (!drawing) graphCtx.moveTo(scaledX, y);
+            else graphCtx.lineTo(scaledX, y);
+            drawing = true;
+        }
+        graphCtx.strokeStyle = '#7c3aed';
+        graphCtx.lineWidth = 1.5;
+        graphCtx.stroke();
+    } catch (_) {}
+}
+
 function getEffectiveGraphProcessingMode() {
     try {
         const state = getSpectraProStoreState();
@@ -605,11 +643,41 @@ function buildPixelsFromRGBArrays(rgb, pixelWidth) {
     return out;
 }
 
+function getSpectraProNumericFrame() {
+    try {
+        const frame = window.SpectraPro && window.SpectraPro.coreBridge && window.SpectraPro.coreBridge.numericFrame;
+        if (!frame || !Array.isArray(frame.I) || frame.I.length < 2) return null;
+        return frame;
+    } catch (_) { return null; }
+}
+
+function buildPixelsFromNumericFrame(frame) {
+    const values = frame && Array.isArray(frame.I) ? frame.I : [];
+    if (values.length < 2) return null;
+    let maxValue = 0;
+    for (let i = 0; i < values.length; i += 1) {
+        const value = Number(values[i]);
+        if (Number.isFinite(value) && value > maxValue) maxValue = value;
+    }
+    if (!(maxValue > 0)) return null;
+    const out = new Uint8ClampedArray(values.length * 4);
+    for (let i = 0; i < values.length; i += 1) {
+        const value = Math.max(0, Number(values[i]) || 0);
+        const scaled = Math.max(0, Math.min(255, Math.round(245 * value / maxValue)));
+        out[i * 4] = scaled;
+        out[i * 4 + 1] = scaled;
+        out[i * 4 + 2] = scaled;
+        out[i * 4 + 3] = 255;
+    }
+    return out;
+}
+
 /**
  * Draws the graph line, graph grid and labels, deals with peaks, zooming and reference graph
  */
 function drawGraph() {
-    const stripeWidth = getStripeWidth();
+    const numericFrame = getSpectraProNumericFrame();
+    const stripeWidth = numericFrame ? 1 : getStripeWidth();
     const toggleStates = getToggleStates();
 
     toggleCombined = toggleStates.toggleCombined;
@@ -624,8 +692,8 @@ function drawGraph() {
     const spFillMode = String(spAppearance.fillMode || 'inherit').toLowerCase();
     if (spFillMode === 'off') fillArea = false;
     else if (spFillMode === 'synthetic' || spFillMode === 'real_sampled' || spFillMode === 'source') fillArea = true;
-    const startY = getElementHeight(videoElement) * getYPercentage() - stripeWidth / 2;
-    let pixelWidth = getElementWidth(videoElement);
+    const startY = numericFrame ? 0 : getElementHeight(videoElement) * getYPercentage() - stripeWidth / 2;
+    let pixelWidth = numericFrame ? numericFrame.I.length : getElementWidth(videoElement);
 
     // Guard: video/canvas may not be ready (e.g. before camera stream starts)
     // which would make pixelWidth or stripeWidth zero and crash getImageData().
@@ -636,23 +704,26 @@ function drawGraph() {
     lineCanvas.width = pixelWidth;
     lineCanvas.height = stripeWidth;
 
-    try {
-        lineCtx.drawImage(videoElement, 0, startY, pixelWidth, stripeWidth, 0, 0, pixelWidth, stripeWidth);
-    } catch (e) {
-        return;
-    }
-    let imageData;
-    try {
-        imageData = lineCtx.getImageData(0, 0, pixelWidth, stripeWidth);
-    } catch (e) {
-        return;
-    }
-    pixels = imageData.data;
+    if (numericFrame) {
+        pixels = buildPixelsFromNumericFrame(numericFrame);
+        if (!pixels) return;
+    } else {
+        try {
+            lineCtx.drawImage(videoElement, 0, startY, pixelWidth, stripeWidth, 0, 0, pixelWidth, stripeWidth);
+        } catch (e) {
+            return;
+        }
+        let imageData;
+        try {
+            imageData = lineCtx.getImageData(0, 0, pixelWidth, stripeWidth);
+        } catch (e) {
+            return;
+        }
+        pixels = imageData.data;
 
-    if (stripeWidth > 1) {
-        pixels = averagePixels(pixels, pixelWidth);
-    }
-    else {
+        if (stripeWidth > 1) {
+            pixels = averagePixels(pixels, pixelWidth);
+        }
     }
 
     let displayPixels = applySpectraProDisplayMode(pixels, pixelWidth);
@@ -705,6 +776,10 @@ function drawGraph() {
             drawLine(graphCtx, tempPixels, tempPixelWidth, referenceColors[i % referenceColors.length], -1, maxValue, false, zoomStart, zoomEnd);
         }
     }
+
+    // Scientific measured-vs-reference overlay. This is wavelength-aware and
+    // intentionally independent of the legacy captured-pixel reference graphs.
+    drawReferenceComparisonOverlay(zoomStart, zoomEnd, maxValue);
 
     if (comparisonGraph && comparisonGraph.length > 0) {
         for (let i = 0; i < comparisonGraph.length; i++) {
@@ -1178,7 +1253,8 @@ function redrawGraphIfLoadedImage(invalidatePeaks = false) {
     if (invalidatePeaks) {
         needToRecalculateMaxima = true;
     }
-    if (videoElement instanceof HTMLImageElement) {
+    const numericFrame = getSpectraProNumericFrame();
+    if (videoElement instanceof HTMLImageElement || numericFrame) {
         const width = getElementWidth(videoElement);
         if (!Number.isFinite(width) || width <= 0) {
             return;
@@ -1190,9 +1266,11 @@ function redrawGraphIfLoadedImage(invalidatePeaks = false) {
         } else {
             hideGraphHoverDot();
         }
-        stripeGraphCanvas.height = videoElement.naturalHeight;
-        stripeGraphCanvas.width = videoElement.naturalWidth;
-        drawSelectionLine();
+        if (!numericFrame) {
+            stripeGraphCanvas.height = videoElement.naturalHeight;
+            stripeGraphCanvas.width = videoElement.naturalWidth;
+            drawSelectionLine();
+        }
         if (typeof drawGraph === 'function') {
             try { drawGraph(); } catch (_) {}
         }
@@ -1737,7 +1815,7 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
     }
 }
 
-/* SPECTRA-PRO Phase 0 hook patch */
+/* SPECTRA PRO graph hook */
 
 (function(){
   const sp = window.SpectraPro || (window.SpectraPro = {});
@@ -1781,7 +1859,7 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
 })();
 
 
-/* SPECTRA-PRO Phase 1 hook patch (robust frame hook on drawGraph) */
+/* SPECTRA PRO robust frame hook on drawGraph */
 (function(){
   const sp = window.SpectraPro || (window.SpectraPro = {});
   function emitGraphFrame(payload){
@@ -1793,6 +1871,24 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
   }
   function buildFrame(){
     try {
+      const numeric = sp.coreBridge && sp.coreBridge.numericFrame;
+      if (numeric && Array.isArray(numeric.I) && numeric.I.length) {
+        return {
+          px: Array.isArray(numeric.px) ? numeric.px.slice() : numeric.I.map(function(_, index){ return index; }),
+          nm: Array.isArray(numeric.nm) ? numeric.nm.slice() : null,
+          R: null,
+          G: null,
+          B: null,
+          I: numeric.I.slice(),
+          pixelWidth: numeric.I.length,
+          calibrated: numeric.calibrated === true,
+          calibration: numeric.calibration || null,
+          hardware: numeric.hardware || null,
+          metadata: numeric.metadata || null,
+          timestamp: Date.now(),
+          source: numeric.source || 'numeric-example'
+        };
+      }
       if (typeof pixels === 'undefined' || !pixels || !pixels.length) return null;
       const pixelWidth = Math.floor(pixels.length / 4);
       if (!pixelWidth) return null;
@@ -1810,7 +1906,7 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
     } catch (e) { return null; }
   }
   const origDrawGraph = window.drawGraph;
-  if (typeof origDrawGraph === 'function' && !origDrawGraph.__spectraProPhase1Wrapped) {
+  if (typeof origDrawGraph === 'function' && !origDrawGraph.__spectraProFrameHookWrapped) {
     const wrapped = function(){
       try {
         if (typeof lineCanvas === 'undefined' || !lineCanvas || typeof lineCtx === 'undefined' || !lineCtx || typeof graphCanvas === 'undefined' || !graphCanvas) {
@@ -1846,7 +1942,37 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
       }
       return result;
     };
-    wrapped.__spectraProPhase1Wrapped = true;
+    wrapped.__spectraProFrameHookWrapped = true;
     window.drawGraph = wrapped;
   }
+  window.SpectraCore = window.SpectraCore || {};
+  window.SpectraCore.graph = Object.assign(window.SpectraCore.graph || {}, {
+    setNumericFrame: function(frame){
+      if (!frame || !Array.isArray(frame.I) || frame.I.length < 2) throw new Error('A numeric spectrum requires at least two intensity samples.');
+      if (!Array.isArray(frame.nm) || frame.nm.length !== frame.I.length) throw new Error('Numeric spectrum wavelength and intensity arrays must align.');
+      sp.coreBridge = sp.coreBridge || {};
+      sp.coreBridge.numericFrame = {
+        px: Array.isArray(frame.px) && frame.px.length === frame.I.length ? frame.px.slice() : frame.I.map(function(_, index){ return index; }),
+        nm: frame.nm.slice(),
+        I: frame.I.slice(),
+        calibrated: frame.calibrated === true,
+        calibration: frame.calibration || null,
+        hardware: frame.hardware || null,
+        metadata: frame.metadata || null,
+        source: frame.source || 'numeric-example'
+      };
+      zoomList = [[0, frame.I.length]];
+      needToRecalculateMaxima = true;
+      generateSpectrumList(frame.I.length);
+      resizeCanvasToDisplaySize(graphCtx, graphCanvas, 'Normal');
+      if (typeof window.drawGraph === 'function') window.drawGraph();
+      return buildFrame();
+    },
+    clearNumericFrame: function(options){
+      if (sp.coreBridge) delete sp.coreBridge.numericFrame;
+      needToRecalculateMaxima = true;
+      if ((!options || options.redraw !== false) && typeof window.drawGraph === 'function') window.drawGraph();
+    },
+    getNumericFrame: function(){ return (sp.coreBridge && sp.coreBridge.numericFrame) || null; }
+  });
 })();

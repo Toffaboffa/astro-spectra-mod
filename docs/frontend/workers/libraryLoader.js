@@ -1,6 +1,6 @@
 (function (root) {
   'use strict';
-  // Phase 2: load real libraries from /data when available.
+  // Load real libraries from /data when available.
   // Worker runs from /workers, so data lives at ../data/* (relative).
 
   const BUILTIN_ATOM_LINES = [

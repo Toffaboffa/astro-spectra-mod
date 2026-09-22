@@ -1,3 +1,13 @@
+# Archived implementation roadmap — Stages 1–16
+
+Status: **COMPLETE**
+
+This is the original staged implementation roadmap, preserved as release audit history.
+Stages 1–16 were completed sequentially before the v3.0 release gate. The text below
+is retained unchanged from Git commit `23af37278117c1629244d91ea35df7569da454a4`.
+Operational desktop acceptance remains tracked separately in `V3_RELEASE_PLAN.md`.
+
+---
 # SPECTRA PRO – Analysis Engine Refactor, Scientific Upgrade & ASTRO Implementation
 
 You are working on the existing SPECTRA PRO repository.
@@ -791,3 +801,4 @@ Never silently skip a stage.
 Never batch several major stages together merely because they appear straightforward.
 
 The purpose of this workflow is controlled development, scientific verification, low token/test overhead and easy rollback, not maximum code output per session.
+

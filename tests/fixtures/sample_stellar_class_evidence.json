@@ -1,0 +1,105 @@
+{
+  "synthetic": true,
+  "description": "Compact matched-feature patterns for broad O/B/A/F/G/K/M evidence regression.",
+  "scenarios": [
+    {
+      "id": "o-class",
+      "hits": [
+        { "label": "He II 454.2", "depth": 0.14 },
+        { "label": "He II 468.6", "depth": 0.13 },
+        { "label": "Hβ", "family": "balmer", "depth": 0.12 },
+        { "label": "Hγ", "family": "balmer", "depth": 0.11 }
+      ],
+      "expectedClass": "O",
+      "expectedStrength": "strong"
+    },
+    {
+      "id": "b-class",
+      "hits": [
+        { "label": "He I 438.8", "depth": 0.15 },
+        { "label": "He I 447.1", "depth": 0.16 },
+        { "label": "Hβ", "family": "balmer", "depth": 0.18 },
+        { "label": "Hγ", "family": "balmer", "depth": 0.17 }
+      ],
+      "expectedClass": "B",
+      "expectedStrength": "strong"
+    },
+    {
+      "id": "a-class",
+      "hits": [
+        { "label": "Hα", "family": "balmer", "depth": 0.22 },
+        { "label": "Hβ", "family": "balmer", "depth": 0.24 },
+        { "label": "Hγ", "family": "balmer", "depth": 0.23 },
+        { "label": "Hδ", "family": "balmer", "depth": 0.21 }
+      ],
+      "expectedClass": "A",
+      "expectedStrength": "strong"
+    },
+    {
+      "id": "f-class",
+      "hits": [
+        { "label": "Hβ", "family": "balmer", "depth": 0.10 },
+        { "label": "Hγ", "family": "balmer", "depth": 0.09 },
+        { "label": "Ca II K", "family": "calcium", "depth": 0.13 },
+        { "label": "Mg II 448.1", "family": "magnesium", "depth": 0.08 }
+      ],
+      "expectedClass": "F",
+      "expectedStrength": "strong"
+    },
+    {
+      "id": "g-class",
+      "hits": [
+        { "label": "Ca II K", "family": "calcium", "depth": 0.18 },
+        { "label": "Ca II H", "family": "calcium", "depth": 0.17 },
+        { "label": "Mg I b1", "family": "magnesium", "depth": 0.14 },
+        { "label": "Mg I b2", "family": "magnesium", "depth": 0.13 },
+        { "label": "Na I D2", "family": "sodium", "depth": 0.12 },
+        { "label": "Hβ", "family": "balmer", "depth": 0.08 },
+        { "label": "Hγ", "family": "balmer", "depth": 0.07 },
+        { "label": "Hδ", "family": "balmer", "depth": 0.07 }
+      ],
+      "expectedClass": "G",
+      "expectedStrength": "moderate"
+    },
+    {
+      "id": "k-class",
+      "hits": [
+        { "label": "Ca II K", "family": "calcium", "depth": 0.20 },
+        { "label": "Mg I b1", "family": "magnesium", "depth": 0.18 },
+        { "label": "Mg I b2", "family": "magnesium", "depth": 0.17 },
+        { "label": "Na I D2", "family": "sodium", "depth": 0.19 },
+        { "label": "Na I D1", "family": "sodium", "depth": 0.18 }
+      ],
+      "expectedClass": "K",
+      "expectedStrength": "strong"
+    },
+    {
+      "id": "m-class",
+      "hits": [
+        { "label": "Na I D2", "family": "sodium", "depth": 0.16 }
+      ],
+      "features": [
+        { "centerNm": 495.4, "fwhmNm": 2.4, "depth": 0.18 },
+        { "centerNm": 544.8, "fwhmNm": 3.1, "depth": 0.22 },
+        { "centerNm": 615.8, "fwhmNm": 4.0, "depth": 0.25 }
+      ],
+      "expectedClass": "M",
+      "expectedStrength": "strong"
+    }
+  ],
+  "insufficient": {
+    "hits": [{ "label": "Hβ", "family": "balmer", "depth": 0.08 }],
+    "expectedState": "insufficient-data"
+  },
+  "conflicting": {
+    "hits": [
+      { "label": "He II 454.2", "depth": 0.14 },
+      { "label": "He II 468.6", "depth": 0.13 }
+    ],
+    "features": [
+      { "centerNm": 495.4, "fwhmNm": 2.4, "depth": 0.18 },
+      { "centerNm": 615.8, "fwhmNm": 3.2, "depth": 0.22 }
+    ],
+    "expectedState": "conflicting-evidence"
+  }
+}

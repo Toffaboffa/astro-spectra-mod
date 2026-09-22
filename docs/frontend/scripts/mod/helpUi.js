@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const HELP_VERSION = '2.3.9';
+  const HELP_VERSION = '3.0.0';
   let installed = false;
   let lastFocus = null;
 
@@ -90,13 +90,18 @@
       '<p>SPECTRA PRO combines live or image-based stripe spectroscopy with calibration, graph tools, data-quality diagnostics and optional worker-based analysis. Different physical source types are intentionally analyzed differently: atomic line spectra use coherent line fingerprints, molecular spectra use band-pattern evidence, and broad fluorescence is characterized by its band shape.</p>' +
       '<p>The software is an interpretation aid. A match is only as trustworthy as the wavelength calibration, optical geometry, signal quality and physical suitability of the chosen preset.</p>' +
     '</section>' +
+    '<section class="sp-help-section"><h2>Implementation status and scientific limits</h2><dl class="sp-help-dl">' +
+      '<dt>IMPLEMENTED</dt><dd>Shared preprocessing, calibration diagnostics, emission/absorption feature measurement, deterministic quality, LAB analysis, ASTRO continuum/absorption analysis, numeric export and the bundled Solar example.</dd>' +
+      '<dt>EXPERIMENTAL</dt><dd>Low-resolution radial velocity, broad O/B/A/F/G/K/M class evidence, reference-spectrum alignment, relative instrument-response correction and optional AI Interpretation. Each retains explicit limitations.</dd>' +
+      '<dt>PLANNED / unsupported</dt><dd>Exact stellar subclasses or luminosity classes, barycentric/heliocentric correction, abundance/composition inference and absolute radiometric calibration.</dd>' +
+    '</dl><p>Emission features rise above the local baseline and use positive equivalent width in the shared convention; absorption features fall below the continuum and use negative equivalent width. FWHM is reported only when sampling supports a meaningful crossing. Missing or unreliable measurements remain unavailable rather than being invented.</p></section>' +
     plannedShot('Full application overview', 'Show the entire SPECTRA PRO window with the source panel on the left, spectrum graph at the top, PRO dock below the graph, Status/Data Quality on the right, and HELP visible. Use a calibrated spectrum so both pixel and wavelength concepts are easy to illustrate.', 'help-overview.png');
   }
 
   function quickHtml() {
     return '<section class="sp-help-section"><h2>Quick Start</h2><p>This is the shortest reliable workflow. The detailed control reference is in the CONTROLS tab.</p></section>' +
       '<div class="sp-help-steps">' +
-        step('1', 'Select the source', 'Choose a camera from the source selector, press <b>Load Image</b>, or use <b>Load Example</b> and select one of the bundled N₂ or Ne spectral-tube samples. Each sample uses a 1280×720 SPECTRA-1 spectrum, applies the matching three-point calibration, places a 5 px stripe through the bright spectral band, switches the X-axis to nm without asking again, and selects Gas Tube as the recommended preset. It does not turn Analyze on automatically.') +
+        step('1', 'Select the source', 'Choose a camera from the source selector, press <b>Load Image</b>, or use <b>Load Example</b>. The bundled N₂ and Ne images apply their SPECTRA-1 calibration and recommend Gas Tube without enabling LAB analysis. The numeric Solar spectrum applies its wavelength grid, opens ASTRO and enables analysis automatically.') +
         step('2', 'Place the sampling stripe', 'Move <b>Stripe Place</b> through the spectral image. Use <b>Stripe Width</b> to average additional image rows when that improves signal stability without mixing unwanted background.') +
         step('3', 'Avoid clipping', 'Watch <b>Headroom</b> and <b>Sat</b> in Data Quality. Reduce exposure when important peaks approach clipping. A clipped peak has lost quantitative shape information.') +
         step('4', 'Calibrate', 'Load a calibration file or add known px↔nm points in CALIBRATE. Confirm <b>Cal: yes</b>, inspect calibration error, and switch the X-axis to nm before trusting wavelength matches.') +
@@ -113,7 +118,7 @@
       '<div class="sp-help-grid2">' +
         infoCard('1 · Source panel', '<p>The left side contains the camera or loaded image, Source/Dark/Ref views, camera selector, image controls, stripe placement/width, exposure and dark/reference capture controls.</p>') +
         infoCard('2 · Spectrum graph', '<p>The upper-right graph plots the stripe signal against pixels or calibrated wavelength. The color strip above the graph is the sampled spectral image. Mouse coordinates show the current graph position.</p>') +
-        infoCard('3 · PRO dock', '<p><b>CORE</b> controls display and graph behavior. <b>HARDWARE</b> stores instrument specifications. <b>CALIBRATE</b> manages wavelength calibration. <b>LAB</b> performs spectral analysis. <b>ASTRO</b> is currently a staged/placeholder workspace.</p>') +
+        infoCard('3 · PRO dock', '<p><b>CORE</b> controls display and graph behavior. <b>HARDWARE</b> stores instrument specifications. <b>CALIBRATE</b> manages wavelength calibration. <b>LAB</b> performs emission analysis. <b>ASTRO</b> provides continuum normalization and absorption analysis.</p>') +
         infoCard('4 · Diagnostics rail', '<p><b>STATUS</b> describes current application state. <b>DATA QUALITY</b> describes signal range, clipping, detected peaks, noise, calibration coverage and instrument resolution information.</p>') +
         infoCard('5 · On-page console', '<p>The black console at the lower-left reports LAB/library actions, setting changes and errors. It is useful when a button appears to do nothing or when a worker/library action fails.</p>') +
         infoCard('6 · HELP', '<p>HELP opens this modal without changing app mode or stopping the current measurement. Close it with ×, Escape or by clicking outside the dialog.</p>') +
@@ -123,7 +128,7 @@
         '<dt>HARDWARE</dt><dd>Instrument metadata used for context and some derived metrics such as FWHM and effective resolving power.</dd>' +
         '<dt>CALIBRATE</dt><dd>Pixel-to-wavelength fit, shell points, calibration file I/O and detailed data-quality breakdown.</dd>' +
         '<dt>LAB</dt><dd>Worker-based library matching, fingerprints, molecular analysis, fluorescence analysis and AI Interpretation.</dd>' +
-        '<dt>ASTRO</dt><dd>Currently a placeholder/staged workspace in this build. Do not assume unavailable controls are hidden somewhere; they are not implemented in the visible panel yet.</dd>' +
+        '<dt>ASTRO</dt><dd>Worker-based relative-continuum normalization, absorption-feature measurement, curated reference matching, multi-line radial velocity, broad stellar-class evidence and measurement-quality limitations.</dd>' +
       '</dl></section>' +
       plannedShot('Workspace anatomy', 'Provide one full-window screenshot with numbered callouts for Source panel, graph, PRO tabs, control area, Status, Data Quality, console and HELP button.', 'help-workspace-anatomy.png');
   }
@@ -135,7 +140,7 @@
       ['Refresh', 'Button', 'Re-enumerates available cameras.', 'Use after connecting/disconnecting a camera or when the browser does not list the expected device.'],
       ['Pause / Play', 'Button pair', 'Pauses or resumes the live video stream.', 'Useful for inspecting a stable frame. A loaded still image does not need Play.'],
       ['Load Image', 'Button', 'Loads a still spectrum image into the camera/source area.', 'Still images are reanalyzed when relevant LAB settings change. Calibration must still match the geometry of the image.'],
-      ['Load Example', 'Button', 'Opens the bundled sample chooser.', 'Select N₂ or Ne spectral tube and confirm with Load sample. The bundled samples use the same SPECTRA-1 detector geometry and calibration anchors (32→388.86 nm, 515→587.57 nm, 1110→837.76 nm), place a 5 px stripe through the spectrum, switch directly to nm and select Gas Tube. Analyze remains under user control.'],
+      ['Load Example', 'Button', 'Opens the bundled sample chooser.', 'N₂ and Ne use calibrated SPECTRA-1 images and recommend Gas Tube while Analyze remains under user control. Solar spectrum loads calibrated numeric TSIS-1 HSRS data from 388–670 nm, switches to ASTRO and enables analysis.'],
       ['Compare images / Stop comparison', 'Button', 'Loads multiple images for comparison, or exits that comparison state.', 'Use for qualitative comparison of repeated measurements. Do not confuse image comparison with reference-graph processing.'],
       ['Stripe Width − / slider / +', 'Buttons + slider', 'Sets how many image rows are averaged into the one-dimensional spectrum.', 'A wider stripe can improve stability/SNR but may mix background or vertically displaced spectra. Start narrow and increase only when useful.'],
       ['Stripe Place − / slider / +', 'Buttons + slider', 'Moves the sampling stripe vertically through the source image.', 'Place it through the brightest, cleanest section of the spectrum. Changing it changes the measured data.'],
@@ -150,7 +155,7 @@
     ];
 
     const coreRows = [
-      ['App mode', 'Drop-down: CORE / LAB / ASTRO', 'Selects the application workspace.', 'CORE is baseline. LAB enables worker analysis. ASTRO is staged in the current visible build.'],
+      ['App mode', 'Drop-down: CORE / LAB / ASTRO', 'Selects the application workspace.', 'CORE is baseline. LAB analyzes emission workflows. ASTRO analyzes continuum-normalized absorption spectra.'],
       ['Worker', 'Drop-down: Auto / On / Off', 'Controls whether the analysis Web Worker is automatically managed, forced on or disabled.', 'Auto is the normal choice. Off disables worker analysis without disabling basic camera/graph operation.'],
       ['X-axis', 'Drop-down: px / nm', 'Chooses raw detector pixels or calibrated wavelength for the horizontal axis.', 'nm requires valid calibration. px is always available and is the safer view when calibration is unknown.'],
       ['Y-axis', 'Drop-down: AUTO / MANUAL / NORMALIZE', 'Controls vertical scaling.', 'AUTO follows the data; MANUAL uses Y max; NORMALIZE scales to the strongest visible peak, useful for shape comparison but not absolute intensity comparison.'],
@@ -174,8 +179,8 @@
       ['Spectrum (source)', 'Export checkbox', 'Exports a centered crop of the current source spectrum/frame as PNG.', 'The crop removes unused dark image area and keeps the dispersed spectrum band prominent. In the PDF report this source image is placed beside the graph on the same page.'],
       ['Data points (.csv)', 'Export checkbox', 'Exports the current sampled spectrum as CSV with px, nm when calibrated, RGB and intensity columns.', 'Use for numerical work in spreadsheets, Python or other analysis tools.'],
       ['Graph', 'Export checkbox', 'Exports the graph canvas exactly as currently rendered.', 'Visible annotations, hit labels and overlays are retained because the current graph canvas is exported.'],
-      ['Data analysis (.json)', 'Export checkbox', 'Exports one JSON snapshot containing application state, settings, calibration, Status, Data Quality, controls, full spectrum arrays, hits/results and AI data when available.', 'This is the main machine-readable reproducibility bundle. The spectrum arrays include px/nm/R/G/B/intensity and processed/normalized values when available.'],
-      ['Report (.pdf)', 'Export checkbox', 'Generates the structured PDF report locally in the browser.', 'The cover uses the bundled SPECTRA PRO hero supplied for the project. The center-cropped source image and rotated graph share one print-efficient page, without orientation/crop notes in the headings. The report includes extended continuous method text, compact two-column matched features, side-by-side Quality/Status, and any completed AI interpretation is inserted verbatim into the Abstract. The automatic report body itself remains rule-generated.'],
+      ['Data analysis (.json)', 'Export checkbox', 'Exports the versioned reproducibility snapshot with state, calibration diagnostics, preprocessing/response state, measurement quality, detected features, LAB/ASTRO results, reference comparison, controls, full spectrum arrays and AI data when available.', 'This is the main machine-readable reproducibility bundle (`spectra-pro-export/v2`). The spectrum arrays include px/nm/R/G/B/intensity and processed/normalized values when available.'],
+      ['Report (.pdf)', 'Export checkbox', 'Generates the structured PDF report locally in the browser.', 'The cover uses the bundled SPECTRA PRO hero supplied for the project. The center-cropped source image and rotated graph share one print-efficient page, without orientation/crop notes in the headings. The report includes a deterministic abstract, concise method summary, compact two-column matched features, side-by-side Quality/Status and a bounded analysis log. A completed AI interpretation may appear only in a separate, clearly labelled optional section with a disclaimer; it does not replace the rule-generated report.'],
       ['Export selected', 'Button', 'Creates all checked export formats and packages them into one ZIP file.', 'The selected PNG/CSV/JSON/PDF outputs are downloaded as one timestamped SPECTRA PRO ZIP archive.'],
       ['Cancel / ×', 'Buttons', 'Closes the export dialog without creating files.', 'The current measurement and analysis state are unchanged.'],
       ['Long exposure', 'Button', 'Opens the repeated-capture/long-exposure settings popup.', 'Intended for averaging/repeated capture workflows, not for increasing the physical exposure time of unsupported cameras.'],
@@ -227,7 +232,7 @@
       controlTable('Long exposure popup', 'Opened from CORE → Long exposure.', longRows) +
       controlTable('HARDWARE', 'Hardware values provide instrument context. They do not calibrate the wavelength axis by themselves.', hardwareRows) +
       controlTable('Original calibration-side controls', 'These are the original SPECTRA calibration controls in the left settings area. The CALIBRATE tab provides the newer PRO shell around the same calibration engine.', calibrationSidebarRows) +
-      '<section class="sp-help-section"><h3>ASTRO</h3><p>The visible ASTRO panel is currently a placeholder in this build, so there are no user controls to document there yet. Future ASTRO controls should be added to this help reference at the same time they become visible.</p></section>';
+      '<section class="sp-help-section"><h3>ASTRO</h3><p><b>Analyze</b> sends the shared preprocessed spectrum to the existing worker. The default view keeps continuum state, absorption/reference evidence, measurement quality, radial velocity and broad class evidence visible. Open <b>Advanced ASTRO details</b> for continuum method/sample diagnostics and <b>Advanced: reference spectrum comparison</b> for overlay/alignment controls.</p><p>The continuum uses a smoothed rolling upper quantile so narrow absorption dips do not define the baseline. Raw, continuum and normalized samples remain aligned. Detected absorption features report center, depth, FWHM when reliable, equivalent width (negative for absorption), SNR and quality. Calibrated wavelengths are compared with a compact air-wavelength set for Balmer, Ca II H/K, Na I D and selected He/Mg lines. The bundled Solar spectrum is a numeric, standard-air, 0.2 nm derivative of the LASP LISIRD TSIS-1 HSRS dataset with provenance stored in the asset. Radial velocity uses the relativistic Doppler relation for each reliable line and combines at least two compatible lines with uncertainty weighting and deterministic outlier rejection. Positive means redshift/receding. Barycentric and heliocentric corrections are not applied. Broad O/B/A/F/G/K/M class evidence uses coherent Balmer, helium, metal and broad TiO patterns and exposes reasons, compatible range, conflicts and insufficient-data outcomes. It is heuristic ranking rather than probability, subclass or luminosity class. Uncorrected continuum shape is not used.</p></section>';
   }
 
   function statusHtml() {
@@ -252,6 +257,8 @@
     ];
 
     const dqRows = [
+      ['Quality', 'Categorical overall measurement state: good, moderate, poor or unavailable.', 'A compact summary derived from separate quality dimensions. It is not a probability or percentage.', '— before worker analysis has produced a quality object.'],
+      ['Limit', 'Dominant deterministic measurement limitation and its state.', 'Use this to prioritize the most important corrective action, then inspect the detailed rows below.', '— when no limitation can be determined.'],
       ['Signal', 'Minimum–maximum intensity in the active stripe.', 'Shows the numerical span of the current measured signal. Example 28–47 means no sample is below 28 or above 47 in that frame.', 'Requires a valid frame.'],
       ['Avg/Dyn', 'Average intensity / dynamic range, where dynamic range here is max − min.', 'A larger Dyn means more contrast across the measured spectrum. Average alone is not signal quality.', 'Requires a valid frame.'],
       ['Base', 'Estimated baseline floor from the lower 5% percentile of the signal.', 'Useful for seeing how elevated the background is. A high baseline can consume dynamic range.', 'Requires enough valid samples.'],
@@ -324,7 +331,7 @@
       ['Weak peaks', 'Checkbox', 'Allows weaker/more closely spaced peaks into detection.', 'Useful for weak support lines, but increases accidental matches/noise sensitivity.'],
       ['Stable hits', 'Checkbox', 'Uses rolling stability behavior to reduce flickering hit labels.', 'Most useful for live camera spectra.'],
       ['Smart find', 'Checkbox', 'Shows refined Smart grouping/evidence rather than only raw proximity hits.', 'Use for source identification; raw coincidences alone are weak evidence in dense libraries.'],
-      ['Auto tune', 'Checkbox', 'Runs a multi-threshold / multi-tolerance fingerprint consensus.', 'Available for Gas Tube, Atomic, Molecular and Lamp presets. It disables the three manual peak/tolerance controls while active so identification is less dependent on hand-tuned settings.'],
+      ['Auto tune', 'Checkbox', 'Runs a multi-threshold / multi-tolerance fingerprint consensus.', 'Available for Gas Tube, Atomic, Molecular and the main-compatible Lamp preset. It disables the three manual peak/tolerance controls while active so identification is less dependent on hand-tuned settings.'],
       ['RGB', 'Checkbox', 'Adds RGB-channel support as an extra Smart weighting factor.', 'Use cautiously because camera spectral response and white balance can distort color-channel amplitudes.'],
       ['Strong Peak', 'Slider 1–5', 'Controls how strongly Smart rewards agreement with the strongest observed peaks.', 'Higher values focus ranking more strongly on dominant peaks; lower values give weaker features relatively more influence.'],
       ['Peak threshold', 'Number input, %', 'Relative LAB peak-detection threshold.', 'Starts at 1.5%. In supported presets with Auto tune enabled, this control is managed automatically; disable Auto tune for manual experiments.'],
@@ -334,7 +341,7 @@
       ['Ping worker', 'Button', 'Checks whether the LAB Web Worker is alive/responding.', 'Diagnostic only; it does not analyze the spectrum.'],
       ['Query library', 'Button', 'Opens a library-line browser for the active wavelength range.', 'Use to inspect available reference lines independently of the ranking result.'],
       ['Library Search', 'Text input in popup', 'Filters query results by species/element text.', 'Examples include Fe, Na or isotope-like labels supported by the library.'],
-      ['AI Interpretation', 'Button', 'Builds a compact package of the current measurement/analysis and opens the AI observation dialog.', 'Use after the measurement and LAB/fluorescence result are in a useful state.'],
+      ['AI Interpretation', 'Button', 'Builds a compact package of the current measurement/analysis and opens the AI observation dialog.', 'Use after the measurement and LAB/fluorescence or ASTRO result are in a useful state.'],
       ['Narrow-line overlay', 'Fluorescent-only checkbox', 'Shows secondary narrow atomic-line coincidences over a broad fluorescence measurement.', 'Off by default because broad band shape is the primary evidence. Enable only when lamp leakage or a genuine narrow-line contribution is relevant.']
     ];
 
@@ -347,13 +354,14 @@
       ['Δ', 'Median wavelength mismatch in nm.', 'Lower is generally better when calibration is valid. Interpret relative to instrument resolution and the Max distance cap.']
     ];
 
-    return '<section class="sp-help-section"><h2>LAB & Presets</h2><p>LAB loads its spectral libraries automatically on first entry and runs analysis in a Web Worker. Analysis settings affect detection and ranking; graph-display settings should not be confused with physical evidence.</p></section>' +
+    return '<section class="sp-help-section"><h2>LAB & Presets</h2><p>LAB loads its spectral libraries automatically on first entry and runs analysis in a Web Worker. The default view keeps Analyze, Preset, Mode and results visible. Open <b>Advanced analysis settings</b> for detection thresholds, weighting, update rate and worker/library diagnostics, or <b>Advanced: reference spectrum comparison</b> for overlay controls. Analysis settings affect detection and ranking; graph-display settings should not be confused with physical evidence.</p></section>' +
+      '<section class="sp-help-section"><h3>Preprocessing order</h3><p>The analysis path is Raw → Dark subtraction → Reference transform → instrument-response correction → smoothing → baseline/continuum stage → optional normalization → worker analysis. Only enabled stages with valid inputs are applied. Missing or length-mismatched Dark/Reference data is reported and skipped.</p><p>Instrument-response correction uses a measured relative-response profile on a calibrated wavelength axis. It requires full profile coverage, never extrapolates, and limits low-response amplification to reduce noise blow-up. Choose None for uncorrected relative intensity or load a valid custom JSON/CSV profile in HARDWARE. Corrected values remain relative intensity, not absolute spectral irradiance or radiometric calibration.</p></section>' +
       '<section class="sp-help-section"><h3>Preset guide</h3><div class="sp-help-preset-grid">' +
         preset('Nearest / Wide / Tight / Fast', 'Simple local line matching.', 'Base presets emphasize direct wavelength proximity. Useful for manual inspection, but not as strong as a coherent fingerprint for source identification.') +
-        preset('Lamp (Hg/Ar/Ne)', 'Simple lamp-oriented line matching.', 'A base lamp workflow with relevant species and atomic fingerprint refinement. Raw line count should not be interpreted as probability.') +
+        preset('Lamp (Hg/Ar/Ne)', 'Main-compatible focused lamp matching.', 'Keeps the original local Hg/Ar/Ne/Kr/Xe workflow available. Gas Tube is the newer choice when coherent atomic and molecular evidence is preferred.') +
         preset('Atomic', 'Narrow atomic emission lines.', 'Uses curated multi-line fingerprints for H, He, Ne, Ar, Kr, Xe, Hg and O plus supporting library evidence.') +
         preset('Molecular', 'Band systems.', 'Uses multiple diagnostic bands and molecular-profile logic. One coincident band is weak evidence; coherent systems are stronger.') +
-        preset('Gas Tube', 'Discharge tubes / mixed gas-like spectra.', 'Auto tune is enabled by default and evaluates several peak-threshold and wavelength-tolerance combinations, then ranks the stable fingerprint consensus. The same approach is available for Atomic, Molecular and Lamp presets; manual controls remain available for diagnostics. Combines atomic fingerprints with source-family restrictions and can coexist with molecular contributors.') +
+        preset('Gas Tube', 'Discharge tubes / mixed gas-like spectra.', 'Auto tune is enabled by default and evaluates several peak-threshold and wavelength-tolerance combinations, then ranks the stable fingerprint consensus. The same approach is available for Atomic and Molecular presets; manual controls remain available for diagnostics. Combines atomic fingerprints with source-family restrictions and can coexist with molecular contributors.') +
         preset('Flame', 'Flame or mixed-emitter spectra.', 'Designed for flame-type conditions where atomic emitters and background/molecular contributions can coexist.') +
         preset('Fluorescent', 'Broad fluorescence.', 'Primary output is broadband shape: λmax, centroid, FWHM, band width, asymmetry, shoulders and integrated signal. Atomic labels are secondary and hidden by default.') +
       '</div></section>' +
@@ -380,7 +388,7 @@
       ['Analyze', 'Button', 'Sends the compact SPECTRA analysis package to the secure backend and requests interpretation.', 'A successful run receives a new Run ID / OpenAI response ID and token usage metadata.'],
       ['Cancel / ×', 'Buttons', 'Closes the AI dialog without starting another request.', 'Does not alter the current measurement.'],
       ['Copy text', 'Button after result', 'Copies the AI response text to the clipboard.', 'A “Text copied.” toast appears above the dialog without changing layout.'],
-      ['Export', 'Button after result', 'Opens the unified export dialog after a completed AI interpretation.', 'The AI payload, response metadata and interpretation text are included in Data analysis JSON; the interpretation can also appear as a clearly marked appendix in the PDF report.'],
+      ['Export', 'Button after result', 'Opens the unified export dialog after a completed AI interpretation.', 'The complete AI payload, response metadata and interpretation text are included in Data analysis JSON; a bounded copy of the interpretation can also appear in a clearly labelled optional PDF section with a disclaimer.'],
       ['New analysis', 'Button after result', 'Clears the previous AI result and returns the dialog to the observation/analyze state.', 'Use this before intentionally starting another OpenAI request.']
     ];
 
@@ -389,12 +397,13 @@
       '<section class="sp-help-section"><h3>What is sent</h3><ul>' +
         '<li>A compact normalized spectral trace plus exact detected/matched features.</li>' +
         '<li>Calibration state, points/coefficients and available range/quality information.</li>' +
+        '<li>An explicit atomic LAB, molecular LAB, fluorescence or ASTRO context.</li>' +
         '<li>LAB settings and current preset.</li>' +
-        '<li>Candidate scores/fingerprint evidence or fluorescence band metrics, depending on preset.</li>' +
-        '<li>Data-quality/QC information.</li>' +
+        '<li>Candidate/fingerprint evidence, fluorescence metrics or compact ASTRO absorption/reference evidence as appropriate.</li>' +
+        '<li>Deterministic measurement-quality status and dominant limitation.</li>' +
         '<li>Your optional observation text.</li>' +
       '</ul></section>' +
-      '<section class="sp-help-section"><h3>Interpretation rules</h3><p>The AI should distinguish measured features, SPECTRA matches and physical interpretation. Score Share is relative ranking, not probability or abundance. For Fluorescent mode, broadband shape is primary evidence; narrow-line coincidences are secondary. The AI should state uncertainty when calibration, signal quality or pattern coverage is weak.</p></section>' +
+      '<section class="sp-help-section"><h3>Interpretation rules</h3><p>The AI should distinguish measured features, SPECTRA matches and physical interpretation. Score Share and class evidence are relative rankings, not probabilities or abundance. For Fluorescent mode, broadband shape is primary evidence; narrow-line coincidences are secondary. In ASTRO, radial velocity retains its uncertainty and missing correction status, class evidence remains broad, and uncorrected continuum shape is not temperature evidence. The AI should state uncertainty when calibration, signal quality or pattern coverage is weak.</p></section>' +
       '<div class="sp-help-callout sp-help-callout--warn"><b>AI is not a second spectrometer.</b> It cannot recover clipped peaks, repair an inappropriate calibration, infer concentration from normalized intensity, or uniquely identify every fluorophore from a broad band without appropriate reference data.</div>' +
       plannedShot('AI Interpretation dialog', 'Show the AI dialog before analysis with a short observation, then a second screenshot after analysis showing the response, Copy text, Export, New analysis and the run/token metadata line.', 'help-ai-interpretation.png');
   }

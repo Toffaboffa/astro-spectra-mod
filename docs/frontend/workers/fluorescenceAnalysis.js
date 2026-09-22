@@ -2,8 +2,9 @@
   'use strict';
 
   const MODEL = 'broadband-fluorescence-v1';
-
-  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  const spectrumMath = root.SPECTRA_PRO_spectrumMath;
+  if (!spectrumMath) return;
+  const clamp = spectrumMath.clamp;
 
   function finitePairs(frame) {
     if (!frame || !Array.isArray(frame.nm)) return [];

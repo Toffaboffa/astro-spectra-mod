@@ -1,4 +1,4 @@
-/* SPECTRA-PRO base theme + layout (Phase 1) */
+/* SPECTRA PRO base theme and layout */
 :root {
   --spectra-mint-green: #2d5f9c;
   --spectra-mint-darkgreen: #1f4f8a;
@@ -110,7 +110,7 @@ button.btn, .form-select, .form-control { border-radius:8px; }
 }
 
 
-/* Phase 1.5 layout parity fixes (keep dark theme, restore original geometry) */
+/* Layout parity rules: keep the dark theme and original geometry. */
 #mainContent {
   position: relative;
   transition: all 0.3s ease;
@@ -363,7 +363,7 @@ button.btn-success:hover, .btn.btn-success:hover {
 }
 
 
-/* Phase 2.1 hotfix (updated): dock host is separate below graph settings */
+/* Dock host is separate below graph settings. */
 #spectraProDockHost { width: 100%; }
 #spectraProPanel.sp-inline-panel, #spectraProPanel.sp-docked {
   position: static !important;

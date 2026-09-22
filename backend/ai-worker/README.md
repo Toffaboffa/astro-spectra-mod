@@ -4,7 +4,7 @@ This directory contains the server-side boundary for **AI Interpretation**.
 
 The browser never receives `OPENAI_API_KEY`. SPECTRA PRO sends its compact `spectra-pro-ai-analysis/v1` payload to this Worker; the Worker validates and rate-limits the request, retrieves the OpenAI key from Cloudflare Secrets Store, calls the OpenAI Responses API, validates the structured result, and returns only the interpretation plus compact token-usage metadata.
 
-## Step 6 behavior
+## Current behavior
 
 `POST /api/interpret` now performs the complete server-side interpretation flow:
 
@@ -15,7 +15,7 @@ The browser never receives `OPENAI_API_KEY`. SPECTRA PRO sends its compact `spec
 - SPECTRA PRO schema and array-size validation
 - no request/payload logging
 - `Cache-Control: no-store`
-- scientific prompt contract `spectra-pro-interpretation/v1`
+- context-aware scientific prompt contract `spectra-pro-interpretation/v6`
 - strict response contract `spectra-pro-ai-response/v1`
 - account-level Secrets Store binding `OPENAI_API_KEY` -> secret `SpectraPRO`
 - OpenAI Responses API with Structured Outputs (`text.format` JSON schema)
@@ -23,9 +23,22 @@ The browser never receives `OPENAI_API_KEY`. SPECTRA PRO sends its compact `spec
 - `store: false` for the OpenAI response
 - configurable model/output/timeout limits
 - validated structured result returned to the browser
-- compact token usage returned for Step 7 cost optimization
+- compact token usage returned for client display and cost monitoring
 
-`GET /health` returns a small non-secret health response with stage, model and contract versions. It does not expose or test the secret value.
+The validated payload identifies one of four deterministic scientific contexts:
+`lab-atomic`, `lab-molecular`, `fluorescence`, or `astro`. ASTRO input is bounded to
+compact continuum state, absorption/reference evidence, equivalent widths, radial
+velocity with uncertainty/correction metadata, broad class evidence, quality limits,
+and optional observation text. Prompt rules prohibit invented features, probability
+claims from rankings, unsupported exact stellar classes or abundances, radial-velocity
+overprecision, and use of uncorrected continuum shape as temperature evidence.
+
+Frontend defaults send at most 112 normalized trace points, 28 prioritized hits,
+6 candidates and 600 observation characters. The deterministic dense-input contract
+is capped at 9 kB and approximately 2500 estimated input tokens including instructions
+and response schema. Output is targeted at 100–170 words without repeated conclusions.
+
+`GET /health` returns a small non-secret health response with application, model and contract versions. It does not expose or test the secret value.
 
 ## OpenAI configuration
 
@@ -34,7 +47,7 @@ Production defaults in `wrangler.jsonc`:
 - model: `gpt-5.6-terra`
 - reasoning effort: `low`
 - text verbosity: `low`
-- max output tokens: `900`
+- max output tokens: `700`
 - upstream timeout: `35000 ms`
 - OpenAI response storage: disabled (`store: false`)
 
@@ -75,7 +88,7 @@ Verify:
 https://spectra-pro-ai.<your-workers-subdomain>.workers.dev/health
 ```
 
-The response should report `stage: 6`.
+The response should report `appVersion: "3.0.0"`.
 
 ## Frontend endpoint
 
@@ -130,7 +143,7 @@ A successful response contains approximately:
 ```json
 {
   "ok": true,
-  "stage": 6,
+  "appVersion": "3.0.0",
   "model": "gpt-5.6-terra",
   "result": {
     "language": "sv",

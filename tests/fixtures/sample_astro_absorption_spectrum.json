@@ -1,0 +1,31 @@
+{
+  "synthetic": true,
+  "description": "Parametric calibrated low-resolution absorption spectrum with a sloped continuum. No image asset is used.",
+  "grid": { "startNm": 380, "endNm": 680, "stepNm": 0.5 },
+  "continuum": { "intercept": 1.05, "slopePerNm": 0.0005, "pivotNm": 530 },
+  "noise": { "amplitude": 0.001, "periodSamples": 17 },
+  "features": [
+    { "label": "Ca II K", "centerNm": 393.36614, "depth": 0.24, "sigmaNm": 0.8 },
+    { "label": "H-delta", "centerNm": 410.174, "depth": 0.18, "sigmaNm": 1.0 },
+    { "label": "H-gamma", "centerNm": 434.047, "depth": 0.22, "sigmaNm": 1.1 },
+    { "label": "H-beta", "centerNm": 486.133, "depth": 0.28, "sigmaNm": 1.2 },
+    { "label": "Mg I b", "centerNm": 517.2684, "depth": 0.14, "sigmaNm": 1.0 },
+    { "label": "Na I D blend", "centerNm": 589.25, "depth": 0.2, "sigmaNm": 1.0 },
+    { "label": "H-alpha", "centerNm": 656.281, "depth": 0.32, "sigmaNm": 1.3 }
+  ],
+  "calibration": {
+    "coefficients": [380, 0.5],
+    "points": [
+      { "px": 0, "nm": 380 },
+      { "px": 300, "nm": 530 },
+      { "px": 600, "nm": 680 }
+    ]
+  },
+  "hardware": { "spectrometerResolutionFwhmNm": 1.5, "pixelResolutionNm": 0.5 },
+  "expected": {
+    "continuumMedianAbsErrorMax": 0.025,
+    "featureCentersNm": [393.36614, 410.174, 434.047, 486.133, 517.2684, 589.25, 656.281],
+    "centerToleranceNm": 0.8,
+    "requiredReferenceLabels": ["Ca II K", "Hδ", "Hγ", "Hβ", "Mg I b2", "Na I D2", "Hα"]
+  }
+}

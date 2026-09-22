@@ -3,20 +3,12 @@
 
   const pipeline = root.SPECTRA_PRO_analysisPipeline;
   const catalog = root.SPECTRA_PRO_plasmaProfiles;
-  if (!pipeline || typeof pipeline.analyzeFrame !== 'function' || !catalog || !catalog.profiles) return;
+  const spectrumMath = root.SPECTRA_PRO_spectrumMath;
+  if (!pipeline || typeof pipeline.analyzeFrame !== 'function' || !catalog || !catalog.profiles || !spectrumMath) return;
 
   const originalAnalyzeFrame = pipeline.analyzeFrame;
-
-  function clamp(v, lo, hi) {
-    return Math.max(lo, Math.min(hi, v));
-  }
-
-  function median(values) {
-    const arr = (Array.isArray(values) ? values : []).map(Number).filter(Number.isFinite).sort(function (a, b) { return a - b; });
-    if (!arr.length) return 0;
-    const mid = Math.floor(arr.length / 2);
-    return arr.length % 2 ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
-  }
+  const clamp = spectrumMath.clamp;
+  const median = spectrumMath.median;
 
   function isMolecularSmartPreset(presetId) {
     const id = String(presetId || '').toLowerCase();

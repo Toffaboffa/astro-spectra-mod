@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '2.3.9';
+  const VERSION = '3.0.0';
   const BUTTON_ID = 'spLoadExampleBtn';
   const OVERLAY_ID = 'spExampleChooserOverlay';
   const STYLE_ID = 'spExampleChooserStyle';
@@ -33,6 +33,7 @@
   const EXAMPLES = Object.freeze([
     Object.freeze({
       id: 'n2-spectral-tube',
+      kind: 'image',
       labelEn: 'N₂ spectral tube',
       labelSv: 'N₂ spektralrör',
       descriptionEn: 'Nitrogen discharge-tube spectrum recorded with SPECTRA-1.',
@@ -53,6 +54,7 @@
     }),
     Object.freeze({
       id: 'ne-spectral-tube',
+      kind: 'image',
       labelEn: 'Ne spectral tube',
       labelSv: 'Ne spektralrör',
       descriptionEn: 'Neon discharge-tube spectrum recorded with SPECTRA-1.',
@@ -70,6 +72,27 @@
       calibration: SPECTRA1_CALIBRATION,
       stripe: Object.freeze({ widthPx: 5, yNormalized: 0.546 }),
       recommendedPreset: 'smart-gastube'
+    }),
+    Object.freeze({
+      id: 'solar-tsis1-hsrs',
+      kind: 'numeric',
+      labelEn: 'Solar spectrum',
+      labelSv: 'Solspektrum',
+      descriptionEn: 'Measured TSIS-1 Hybrid Solar Reference Spectrum with an air-wavelength calibration.',
+      descriptionSv: 'Uppmätt TSIS-1 Hybrid Solar Reference Spectrum med kalibrering i luftvåglängd.',
+      sourceLabelEn: 'Solar spectrum — TSIS-1 HSRS (calibrated)',
+      sourceLabelSv: 'Solspektrum — TSIS-1 HSRS (kalibrerat)',
+      icon: SAMPLE_ICONS.cyan,
+      badge: 'TSIS-1 HSRS',
+      metaEn: '388–670 nm · 0.2 nm sampling · calibrated numeric data',
+      metaSv: '388–670 nm · 0,2 nm sampling · kalibrerade numeriska data',
+      numeric: Object.freeze({
+        path: '../data/examples/solar-tsis1-hsrs-visible-0p2nm.json',
+        schema: 'spectra-pro-numeric-example/v1',
+        assetId: 'solar-tsis1-hsrs-visible',
+        count: 1411
+      }),
+      recommendedMode: 'ASTRO'
     })
   ]);
 
@@ -178,15 +201,17 @@
     const cards = EXAMPLES.map(function (sample) {
       const label = swedish ? sample.labelSv : sample.labelEn;
       const desc = swedish ? sample.descriptionSv : sample.descriptionEn;
+      const badge = sample.badge || 'SPECTRA-1';
+      const meta = swedish ? (sample.metaSv || '1280×720 px · 3-punktskalibrering · Gas Tube-förval') : (sample.metaEn || '1280×720 px · 3-point calibration · Gas Tube preset');
       const selected = sample.id === selectedExampleId;
       return [
         '<button type="button" class="sp-example-card' + (selected ? ' is-selected' : '') + '" data-example-id="' + sample.id + '" aria-pressed="' + (selected ? 'true' : 'false') + '">',
         '  <span class="sp-example-card__layout">',
         '    <img class="sp-example-card__icon" src="' + sample.icon + '?v=' + encodeURIComponent(VERSION) + '" alt="" aria-hidden="true">',
         '    <span class="sp-example-card__content">',
-        '      <span class="sp-example-card__top"><span class="sp-example-card__title">' + label + '</span><span class="sp-example-card__badge">SPECTRA-1</span></span>',
+        '      <span class="sp-example-card__top"><span class="sp-example-card__title">' + label + '</span><span class="sp-example-card__badge">' + badge + '</span></span>',
         '      <p>' + desc + '</p>',
-        '      <span class="sp-example-meta">1280×720 px · 3-point calibration · Gas Tube preset</span>',
+        '      <span class="sp-example-meta">' + meta + '</span>',
         '    </span>',
         '  </span>',
         '</button>'
@@ -251,7 +276,8 @@
   }
 
   function assetUrl(sample) {
-    return sample.image.path + '?v=' + encodeURIComponent(VERSION);
+    const asset = sample.kind === 'numeric' ? sample.numeric : sample.image;
+    return asset.path + '?v=' + encodeURIComponent(VERSION);
   }
 
   function dimensionsMatch(sample, image) {
@@ -276,6 +302,33 @@
       probe.onerror = function () { reject(new Error('The bundled example image could not be loaded.')); };
       probe.src = assetUrl(sample);
     });
+  }
+
+  async function loadNumericAsset(sample) {
+    const response = await global.fetch(assetUrl(sample), { cache: 'no-store' });
+    if (!response.ok) throw new Error('The bundled numeric example could not be loaded (HTTP ' + response.status + ').');
+    const asset = await response.json();
+    const wavelengths = asset && asset.wavelengthNm;
+    const intensities = asset && asset.irradianceWm2Nm;
+    if (asset.schema !== sample.numeric.schema || asset.id !== sample.numeric.assetId) {
+      throw new Error('The numeric example schema or identifier is invalid.');
+    }
+    if (!Array.isArray(wavelengths) || !Array.isArray(intensities) ||
+        wavelengths.length !== sample.numeric.count || intensities.length !== wavelengths.length) {
+      throw new Error('The numeric example arrays do not have the expected length.');
+    }
+    for (let i = 0; i < wavelengths.length; i += 1) {
+      if (!Number.isFinite(wavelengths[i]) || !Number.isFinite(intensities[i]) || intensities[i] < 0) {
+        throw new Error('The numeric example contains an invalid sample.');
+      }
+      if (i > 0 && !(wavelengths[i] > wavelengths[i - 1])) {
+        throw new Error('The numeric example wavelength grid is not strictly increasing.');
+      }
+    }
+    if (asset.wavelengthMedium !== 'standard-air' || !asset.provenance || !asset.provenance.primaryReferenceDoi) {
+      throw new Error('The numeric example provenance or wavelength medium is incomplete.');
+    }
+    return asset;
   }
 
   function stopLiveSource() {
@@ -421,6 +474,69 @@
     log((isSwedish() ? sample.labelSv : sample.labelEn) + ' loaded · 1280×720 px · stripe 5 px · Gas Tube preset.');
   }
 
+  function enableAstroAnalysis() {
+    try {
+      const astroTab = global.document && global.document.querySelector('#spTabs .sp-tab[data-tab="astro"]');
+      if (astroTab && typeof astroTab.click === 'function') astroTab.click();
+      if (sp.appMode && typeof sp.appMode.setMode === 'function') {
+        sp.appMode.setMode('ASTRO', { source: 'exampleSpectrum.solar' });
+      } else if (sp.store && typeof sp.store.update === 'function') {
+        sp.store.update('appMode', 'ASTRO', { source: 'exampleSpectrum.solar' });
+      }
+      if (sp.store && typeof sp.store.update === 'function') {
+        sp.store.update('analysis.enabled', true, { source: 'exampleSpectrum.solar' });
+        sp.store.update('worker.mode', 'auto', { source: 'exampleSpectrum.solar' });
+        sp.store.update('worker.enabled', true, { source: 'exampleSpectrum.solar' });
+        sp.store.update('subtraction.mode', 'raw', { source: 'exampleSpectrum.solar' });
+      }
+      const enabled = $('spAstroEnabled');
+      if (enabled) enabled.checked = true;
+      const client = sp.analysisWorkerClient;
+      if (client && typeof client.start === 'function') client.start();
+    } catch (_) {}
+  }
+
+  function finishLoadedNumeric(sample, asset) {
+    const graph = global.SpectraCore && global.SpectraCore.graph;
+    if (!graph || typeof graph.setNumericFrame !== 'function') {
+      throw new Error('Numeric spectrum support is unavailable.');
+    }
+
+    try {
+      if (typeof global.switchLoadedImageSettings === 'function') {
+        global.switchLoadedImageSettings(isSwedish() ? sample.sourceLabelSv : sample.sourceLabelEn);
+      }
+    } catch (_) {}
+    const video = $('videoMain');
+    const image = $('cameraImage');
+    if (video) video.style.display = 'none';
+    if (image) image.style.display = 'none';
+    const pause = $('pauseVideoButton');
+    const play = $('playVideoButton');
+    if (pause) pause.style.visibility = 'hidden';
+    if (play) play.style.visibility = 'visible';
+
+    enableAstroAnalysis();
+    const calibration = applyCalibration({ calibration: asset.calibration });
+    if (!calibration.ok) throw new Error('Solar calibration could not be activated: ' + calibration.reason);
+    selectWavelengthAxis();
+
+    graph.setNumericFrame({
+      px: asset.wavelengthNm.map(function (_, index) { return index; }),
+      nm: asset.wavelengthNm,
+      I: asset.irradianceWm2Nm,
+      calibrated: true,
+      calibration: asset.calibration,
+      hardware: { spectrometerResolutionFwhmNm: asset.grid.stepNm * 2, pixelResolutionNm: asset.grid.stepNm },
+      metadata: { schema: asset.schema, id: asset.id, provenance: asset.provenance, units: asset.units },
+      source: 'solar-example'
+    });
+    global.setTimeout(function () {
+      try { if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage(true); } catch (_) {}
+    }, 300);
+    log((isSwedish() ? sample.labelSv : sample.labelEn) + ' loaded · calibrated 388–670 nm numeric spectrum · ASTRO analysis enabled.');
+  }
+
   async function load(id) {
     const sample = getExample(id || selectedExampleId || EXAMPLES[0].id);
     if (!sample || loading) return false;
@@ -428,6 +544,13 @@
     setBusy(true);
 
     try {
+      if (sample.kind === 'numeric') {
+        const numericAsset = await loadNumericAsset(sample);
+        stopLiveSource();
+        closeChooser();
+        finishLoadedNumeric(sample, numericAsset);
+        return true;
+      }
       const imageUrl = await preloadAsset(sample);
       stopLiveSource();
       closeChooser();

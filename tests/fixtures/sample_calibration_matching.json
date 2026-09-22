@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "description": "Compact calibration and wavelength-matching cases; no image data.",
+  "grid": {
+    "startNm": 496,
+    "endNm": 504,
+    "stepNm": 0.5
+  },
+  "profile": {
+    "baseline": 0.02,
+    "amplitude": 1,
+    "centerNm": 500.4,
+    "sigmaNm": 0.32
+  },
+  "hardware": {
+    "spectrometerResolutionFwhmNm": 1
+  },
+  "goodCalibration": {
+    "coefficients": [496, 0.5],
+    "points": [
+      { "px": 0, "nm": 496 },
+      { "px": 8, "nm": 500 },
+      { "px": 16, "nm": 504 }
+    ]
+  },
+  "poorCalibration": {
+    "coefficients": [497.5, 0.5],
+    "points": [
+      { "px": 0, "nm": 496 },
+      { "px": 8, "nm": 500 },
+      { "px": 16, "nm": 504 }
+    ]
+  },
+  "references": {
+    "nearbyNm": 500.5,
+    "uncertaintySensitiveNm": 503.2,
+    "grosslyInconsistentNm": 504
+  }
+}

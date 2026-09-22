@@ -11,7 +11,7 @@
 
   function createAnalysisWorkerClient(options) {
     const opts = Object.assign({
-      workerUrl: '../workers/analysis.worker.js?v=2.2.10',
+      workerUrl: '../workers/analysis.worker.js?v=3.0.0',
       throttleMs: 300,
       timeoutMs: 3000,
       enabledModes: ['LAB', 'ASTRO']
@@ -114,9 +114,17 @@
       }
       lastAnalyzeAt = now;
       const st = store ? store.getState() : {};
+      const calibration = st.calibration || {};
+      const hardware = st.hardware || {};
+      const comparisonState = st.referenceComparison || {};
+      const referenceCatalog = sp.referenceCatalog;
+      const comparisonReference = comparisonState.enabled && referenceCatalog && typeof referenceCatalog.getLoadedReference === 'function'
+        ? referenceCatalog.getLoadedReference(comparisonState.referenceId)
+        : null;
       const requestId = send(types.MSG && types.MSG.ANALYZE_FRAME || 'ANALYZE_FRAME', {
         frame: frame || null,
         options: {
+          analysisContext: String(st.appMode || 'LAB').toLowerCase(),
           preset: (st.analysis && st.analysis.presetId) ? String(st.analysis.presetId) : null,
           autoTune: !(st.analysis && st.analysis.autoTune === false),
           smartFindEnabled: !!(st.analysis && st.analysis.smartFindEnabled),
@@ -125,7 +133,28 @@
           peakDistancePx: Number(st.analysis && st.analysis.peakDistancePx),
           maxDistanceNm: Number(st.analysis && st.analysis.maxDistanceNm),
           strongPeakLevel: Number(st.analysis && st.analysis.strongPeakLevel),
-          useRgbScore: !!(st.analysis && st.analysis.useRgbScore)
+          useRgbScore: !!(st.analysis && st.analysis.useRgbScore),
+          referenceComparison: {
+            enabled: !!(comparisonState.enabled && comparisonReference),
+            reference: comparisonReference,
+            normalization: String(comparisonState.normalization || 'min-max'),
+            alignmentMode: String(comparisonState.alignmentMode || 'none'),
+            manualShiftNm: Number(comparisonState.manualShiftNm) || 0,
+            maxAutoShiftNm: Number(comparisonState.maxAutoShiftNm) || 2
+          },
+          calibration: {
+            coefficients: Array.isArray(calibration.coefficients) ? calibration.coefficients.slice() : [],
+            points: Array.isArray(calibration.points) ? calibration.points.filter(function (point) {
+              return point && point.px !== null && point.px !== '' && point.nm !== null && point.nm !== '' &&
+                Number.isFinite(Number(point.px)) && Number.isFinite(Number(point.nm));
+            }).map(function (point) {
+              return { px: Number(point && point.px), nm: Number(point && point.nm) };
+            }) : []
+          },
+          hardware: {
+            spectrometerResolutionFwhmNm: hardware.spectrometerResolutionFwhmNm,
+            pixelResolutionNm: hardware.pixelResolutionNm
+          }
         }
       });
       inFlight = { requestId: requestId, startedAt: now };
@@ -327,6 +356,9 @@
               : rawHits.slice();
             analysisNext.rawTopHits = overlayHits;
             analysisNext.elementScores = Array.isArray(msg.payload.elementScores) ? msg.payload.elementScores.slice(0, 8) : [];
+            analysisNext.features = Array.isArray(msg.payload.features)
+              ? msg.payload.features.slice(0, 96).map(function (feature) { return Object.assign({}, feature); })
+              : [];
             analysisNext.winnerBreakdown = (msg.payload.winnerBreakdown && typeof msg.payload.winnerBreakdown === 'object')
               ? msg.payload.winnerBreakdown
               : null;
@@ -420,6 +452,28 @@
 
           if (typeof msg.payload.offsetNm === 'number') analysisNext.offsetNm = msg.payload.offsetNm;
           if (Array.isArray(msg.payload.qcFlags)) analysisNext.qcFlags = msg.payload.qcFlags;
+          analysisNext.calibrationDiagnostics = (msg.payload.calibrationDiagnostics && typeof msg.payload.calibrationDiagnostics === 'object')
+            ? msg.payload.calibrationDiagnostics
+            : null;
+          analysisNext.matchUncertaintyModel = (msg.payload.matchUncertaintyModel && typeof msg.payload.matchUncertaintyModel === 'object')
+            ? msg.payload.matchUncertaintyModel
+            : null;
+          analysisNext.hardMatchCapNm = Number.isFinite(Number(msg.payload.hardMatchCapNm))
+            ? Number(msg.payload.hardMatchCapNm)
+            : null;
+          analysisNext.measurementQuality = (msg.payload.measurementQuality && typeof msg.payload.measurementQuality === 'object')
+            ? msg.payload.measurementQuality
+            : null;
+          analysisNext.preprocessing = (msg.payload.preprocessing && typeof msg.payload.preprocessing === 'object')
+            ? msg.payload.preprocessing
+            : null;
+          analysisNext.referenceComparison = (msg.payload.referenceComparison && typeof msg.payload.referenceComparison === 'object')
+            ? msg.payload.referenceComparison
+            : null;
+          analysisNext.astro = (msg.payload.astro && typeof msg.payload.astro === 'object')
+            ? msg.payload.astro
+            : null;
+          analysisNext.resultContext = String(msg.payload.mode || 'lab').toLowerCase();
         }
 
         if (store) {

@@ -1,7 +1,7 @@
 (function (root) {
   'use strict';
 
-  // Phase 2: simple but useful confidence model.
+  // Compact deterministic confidence model.
   // Goals:
   // - Return overall ~1.0 when QC is OK and the frame is calibrated.
   // - Penalize known QC flags.
@@ -31,7 +31,7 @@
 
   function buildConfidence(matches, qc) {
     const qf = qcFactor(qc);
-    // overall is primarily QC-driven in Phase 2.
+    // Overall confidence is primarily QC-driven.
     // Match-specific confidence is computed in analysisPipeline.
     return {
       ok: qf > 0,

@@ -1,1 +1,24 @@
-{}
+{
+  "synthetic": false,
+  "assetPath": "docs/frontend/data/examples/solar-tsis1-hsrs-visible-0p2nm.json",
+  "sha256": "195a31f7d495a2a236bbb43a44b4c8573fb765703750c0dc66e5c8525aa9854c",
+  "expected": {
+    "schema": "spectra-pro-numeric-example/v1",
+    "assetId": "solar-tsis1-hsrs-visible",
+    "wavelengthMedium": "standard-air",
+    "grid": {
+      "startNm": 388,
+      "endNm": 670,
+      "stepNm": 0.2,
+      "count": 1411
+    },
+    "absorptionFeatures": [
+      { "label": "Ca II K", "centerNm": 393.36614, "maxCenterToShoulderRatio": 0.35 },
+      { "label": "Ca II H", "centerNm": 396.84673, "maxCenterToShoulderRatio": 0.35 },
+      { "label": "Hβ", "centerNm": 486.133, "maxCenterToShoulderRatio": 0.7 },
+      { "label": "Na I D2", "centerNm": 588.995, "maxCenterToShoulderRatio": 0.8 },
+      { "label": "Hα", "centerNm": 656.281, "maxCenterToShoulderRatio": 0.7 }
+    ],
+    "requiredReferenceLabels": ["Ca II K", "Ca II H", "Hβ", "Na I D2", "Hα"]
+  }
+}

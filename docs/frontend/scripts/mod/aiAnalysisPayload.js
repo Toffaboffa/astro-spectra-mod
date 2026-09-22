@@ -3,9 +3,10 @@
 
   const sp = global.SpectraPro = global.SpectraPro || {};
   const SCHEMA_VERSION = 'spectra-pro-ai-analysis/v1';
-  const DEFAULT_MAX_TRACE_POINTS = 240;
-  const DEFAULT_MAX_HITS = 64;
-  const DEFAULT_MAX_CANDIDATES = 8;
+  const DEFAULT_MAX_TRACE_POINTS = 112;
+  const DEFAULT_MAX_HITS = 28;
+  const DEFAULT_MAX_CANDIDATES = 6;
+  const MAX_OBSERVATION_CHARS = 600;
 
   function finiteNumber(value) {
     if (value == null || value === '') return null;
@@ -107,7 +108,7 @@
 
   function compactHit(hit) {
     if (!hit || typeof hit !== 'object') return null;
-    const species = cleanString(hit.element || hit.speciesKey || hit.species || hit.name || '', 96);
+    const species = cleanString(hit.element || hit.speciesKey || hit.species || hit.label || hit.name || '', 96);
     if (!species) return null;
     const out = { species: species };
     const numeric = {
@@ -253,12 +254,185 @@
     const sum = values.reduce(function (a, b) { return a + b; }, 0);
     return {
       qcFlags: Array.isArray(analysis.qcFlags) ? analysis.qcFlags.slice(0, 24).map(function (v) { return cleanString(v, 96); }).filter(Boolean) : [],
+      measurement: compactMeasurementQuality(analysis.measurementQuality),
       offsetNm: rounded(analysis.offsetNm, 4),
       sampleCount: values.length,
       intensityMean: values.length ? rounded(sum / values.length, 4) : null,
       intensityMin: values.length ? rounded(Math.min.apply(null, values), 4) : null,
       intensityMax: values.length ? rounded(Math.max.apply(null, values), 4) : null,
       traceTransmittedSamples: trace && finiteNumber(trace.transmittedSamples) != null ? trace.transmittedSamples : 0
+    };
+  }
+
+  function resolveAnalysisContext(state, analysis) {
+    const mode = cleanString(state && state.appMode, 24).toLowerCase();
+    const resultContext = cleanString(analysis && analysis.resultContext, 24).toLowerCase();
+    const preset = cleanString(analysis && analysis.presetId, 64).toLowerCase();
+    if (mode === 'astro' || resultContext === 'astro' || (analysis && analysis.astro)) return 'astro';
+    if (analysis && analysis.fluorescenceSummary) return 'fluorescence';
+    if (preset.indexOf('fluorescent') !== -1) return 'fluorescence';
+    if (preset.indexOf('molecular') !== -1) return 'lab-molecular';
+    const groups = analysis && Array.isArray(analysis.smartFindGroups) ? analysis.smartFindGroups : [];
+    if (groups.some(function (group) { return /molecular|plasma-diagnostic/i.test(String(group && group.evidenceModel || '')); })) return 'lab-molecular';
+    return 'lab-atomic';
+  }
+
+  function compactFeature(feature) {
+    if (!feature || typeof feature !== 'object') return null;
+    const centerNm = rounded(feature.centerNm, 4);
+    if (centerNm == null && finiteNumber(feature.sampleIndex) == null) return null;
+    return {
+      centerNm: centerNm,
+      centerUncertaintyNm: rounded(feature.centerUncertaintyNm, 4),
+      sampleIndex: rounded(feature.sampleIndex, 0),
+      polarity: cleanString(feature.polarity, 16) || null,
+      depth: rounded(feature.depth, 5),
+      amplitude: rounded(feature.amplitude, 5),
+      prominence: rounded(feature.prominence, 5),
+      fwhmNm: rounded(feature.fwhmNm, 4),
+      equivalentWidthNm: rounded(feature.equivalentWidthNm, 5),
+      snr: rounded(feature.snr, 3),
+      quality: cleanString(feature.quality, 24) || null,
+      qualityFlags: (Array.isArray(feature.qualityFlags) ? feature.qualityFlags : []).slice(0, 8).map(function (value) { return cleanString(value, 64); }).filter(Boolean)
+    };
+  }
+
+  function compactRadialVelocity(value) {
+    if (!value || typeof value !== 'object') return null;
+    return {
+      state: cleanString(value.state, 32) || 'unavailable',
+      velocityKmS: rounded(value.velocityKmS, 3),
+      uncertaintyKmS: rounded(value.uncertaintyKmS, 3),
+      quality: cleanString(value.quality, 24) || null,
+      signConvention: cleanString(value.signConvention, 96) || null,
+      lineCountTotal: rounded(value.lineCountTotal, 0),
+      lineCountUsed: rounded(value.lineCountUsed, 0),
+      excludedLineCount: rounded(value.excludedLineCount, 0),
+      corrections: value.corrections && typeof value.corrections === 'object' ? {
+        barycentric: !!value.corrections.barycentric,
+        heliocentric: !!value.corrections.heliocentric
+      } : null,
+      lines: (Array.isArray(value.lines) ? value.lines : []).slice(0, 16).map(function (line) {
+        return {
+          label: cleanString(line && (line.label || line.speciesKey || line.species), 80) || null,
+          observedNm: rounded(line && line.observedNm, 4),
+          referenceNm: rounded(line && line.referenceNm, 4),
+          wavelengthShiftNm: rounded(line && line.wavelengthShiftNm, 5),
+          velocityKmS: rounded(line && line.velocityKmS, 3),
+          uncertaintyKmS: rounded(line && line.uncertaintyKmS, 3),
+          quality: cleanString(line && line.quality, 24) || null,
+          included: !!(line && line.included),
+          exclusionReason: cleanString(line && line.exclusionReason, 80) || null
+        };
+      }),
+      limitations: (Array.isArray(value.limitations) ? value.limitations : []).slice(0, 8).map(function (item) { return cleanString(item, 96); }).filter(Boolean)
+    };
+  }
+
+  function compactStellarClassification(value) {
+    if (!value || typeof value !== 'object') return null;
+    return {
+      state: cleanString(value.state, 32) || 'insufficient-data',
+      bestClass: cleanString(value.bestClass, 8) || null,
+      compatibleRange: cleanString(value.compatibleRange, 24) || null,
+      evidenceStrength: cleanString(value.evidenceStrength, 24) || null,
+      reasons: (Array.isArray(value.reasons) ? value.reasons : []).slice(0, 8).map(function (item) { return cleanString(item, 120); }).filter(Boolean),
+      conflictingEvidence: (Array.isArray(value.conflictingEvidence) ? value.conflictingEvidence : []).slice(0, 8).map(function (item) { return cleanString(item, 120); }).filter(Boolean),
+      ranking: (Array.isArray(value.ranking) ? value.ranking : []).slice(0, 7).map(function (row) {
+        return { class: cleanString(row && row.class, 8), evidencePoints: rounded(row && row.evidencePoints, 3) };
+      }),
+      limitations: (Array.isArray(value.limitations) ? value.limitations : []).slice(0, 8).map(function (item) { return cleanString(item, 96); }).filter(Boolean)
+    };
+  }
+
+  function compactAstro(astro) {
+    if (!astro || typeof astro !== 'object') return null;
+    const continuum = astro.continuum && typeof astro.continuum === 'object' ? astro.continuum : {};
+    return {
+      model: cleanString(astro.model, 64) || null,
+      continuum: {
+        state: cleanString(continuum.state, 32) || 'unavailable',
+        method: cleanString(continuum.method, 64) || null,
+        sampleCount: Array.isArray(continuum.normalized) ? continuum.normalized.length : 0,
+        windowRadiusPx: rounded(continuum.windowRadiusPx, 0),
+        quantile: rounded(continuum.quantile, 3),
+        warnings: (Array.isArray(continuum.warnings) ? continuum.warnings : []).slice(0, 8).map(function (item) { return cleanString(item, 96); }).filter(Boolean)
+      },
+      absorptionFeatures: (Array.isArray(astro.absorptionFeatures) ? astro.absorptionFeatures : []).slice(0, 24).map(compactFeature).filter(Boolean),
+      referenceMatches: (Array.isArray(astro.referenceMatches) ? astro.referenceMatches : []).slice(0, 32).map(compactHit).filter(Boolean),
+      radialVelocity: compactRadialVelocity(astro.radialVelocity),
+      stellarClassification: compactStellarClassification(astro.stellarClassification),
+      referenceSet: astro.referenceSet && typeof astro.referenceSet === 'object' ? {
+        id: cleanString(astro.referenceSet.id, 96) || null,
+        wavelengthMedium: cleanString(astro.referenceSet.wavelengthMedium, 32) || null,
+        source: cleanString(astro.referenceSet.source, 160) || null,
+        lineCount: rounded(astro.referenceSet.lineCount, 0)
+      } : null,
+      limitations: (Array.isArray(astro.limitations) ? astro.limitations : []).slice(0, 12).map(function (item) { return cleanString(item, 120); }).filter(Boolean)
+    };
+  }
+
+  function compactCalibrationDiagnostics(value) {
+    if (!value || typeof value !== 'object') return null;
+    return {
+      status: cleanString(value.status, 32) || null,
+      pointCount: rounded(value.pointCount, 0),
+      polynomialOrder: rounded(value.polynomialOrder, 0),
+      rmsResidualNm: rounded(value.rmsResidualNm, 5),
+      maxAbsResidualNm: rounded(value.maxAbsResidualNm, 5),
+      samplingNmPerPx: rounded(value.samplingNmPerPx, 5),
+      coverageNm: value.coverageNm && typeof value.coverageNm === 'object' ? {
+        min: rounded(value.coverageNm.min, 3), max: rounded(value.coverageNm.max, 3)
+      } : null,
+      extrapolated: !!value.extrapolated
+    };
+  }
+
+  function compactReferenceComparison(value) {
+    if (!value || typeof value !== 'object') return null;
+    return {
+      state: cleanString(value.state, 24) || 'unavailable',
+      referenceId: cleanString(value.referenceId, 96) || null,
+      referenceLabel: cleanString(value.referenceLabel, 120) || null,
+      normalization: cleanString(value.normalization, 24) || null,
+      alignment: value.alignment && typeof value.alignment === 'object' ? {
+        mode: cleanString(value.alignment.mode, 24) || null,
+        shiftNm: rounded(value.alignment.shiftNm, 5),
+        source: cleanString(value.alignment.source, 64) || null,
+        radialVelocityMeasurement: value.alignment.radialVelocityMeasurement === true
+      } : null,
+      overlap: value.overlap && typeof value.overlap === 'object' ? {
+        minNm: rounded(value.overlap.minNm, 3), maxNm: rounded(value.overlap.maxNm, 3),
+        sampleCount: rounded(value.overlap.sampleCount, 0), fraction: rounded(value.overlap.fraction, 4)
+      } : null,
+      metrics: value.metrics && typeof value.metrics === 'object' ? {
+        correlation: rounded(value.metrics.correlation, 5), mae: rounded(value.metrics.mae, 6), rmse: rounded(value.metrics.rmse, 6)
+      } : null,
+      limitations: (Array.isArray(value.limitations) ? value.limitations : []).slice(0, 8).map(function (item) { return cleanString(item, 96); }).filter(Boolean)
+    };
+  }
+
+  function compactMeasurementQuality(source) {
+    if (!source || typeof source !== 'object') return null;
+    const dimensions = {};
+    Object.keys(source.dimensions || {}).slice(0, 12).forEach(function (key) {
+      const row = source.dimensions[key] || {};
+      dimensions[cleanString(key, 40)] = {
+        status: cleanString(row.status, 24) || 'unavailable',
+        reason: cleanString(row.reason, 96) || null,
+        metrics: compactPrimitiveObject(row.metrics, Object.keys(row.metrics || {}).slice(0, 16))
+      };
+    });
+    const limitation = source.mainLimitation || {};
+    return {
+      model: cleanString(source.model, 64) || null,
+      overallStatus: cleanString(source.overallStatus, 24) || 'unavailable',
+      mainLimitation: limitation.code ? {
+        code: cleanString(limitation.code, 40),
+        status: cleanString(limitation.status, 24),
+        reason: cleanString(limitation.reason, 96)
+      } : null,
+      dimensions: dimensions
     };
   }
 
@@ -291,6 +465,35 @@
     return Object.keys(out).length ? out : null;
   }
 
+  function compactPreprocessing(source) {
+    if (!source || typeof source !== 'object') return null;
+    const stages = (Array.isArray(source.stages) ? source.stages : []).slice(0, 12).map(function (item) {
+      return {
+        id: cleanString(item && item.id, 48),
+        status: cleanString(item && item.status, 24),
+        applied: !!(item && item.applied)
+      };
+    });
+    return {
+      schema: cleanString(source.schema, 64) || null,
+      analysisSignal: cleanString(source.analysisSignal, 32) || null,
+      intensityBasis: cleanString(source.intensityBasis, 64) || 'uncorrected-relative-intensity',
+      effectiveSubtractionMode: cleanString(source.effectiveSubtractionMode, 32) || null,
+      responseCorrection: source.responseCorrection && typeof source.responseCorrection === 'object' ? {
+        enabled: !!source.responseCorrection.enabled,
+        applied: !!source.responseCorrection.applied,
+        profileId: cleanString(source.responseCorrection.profileId, 96) || null,
+        profileLabel: cleanString(source.responseCorrection.profileLabel, 120) || null,
+        maxCorrectionFactor: rounded(source.responseCorrection.maxCorrectionFactor, 3),
+        clampedSampleCount: rounded(source.responseCorrection.clampedSampleCount, 0),
+        extrapolatedSampleCount: rounded(source.responseCorrection.extrapolatedSampleCount, 0)
+      } : null,
+      activeOperations: (Array.isArray(source.activeOperations) ? source.activeOperations : []).slice(0, 12).map(function (value) { return cleanString(value, 48); }).filter(Boolean),
+      warnings: (Array.isArray(source.warnings) ? source.warnings : []).slice(0, 12).map(function (value) { return cleanString(value, 96); }).filter(Boolean),
+      stages: stages
+    };
+  }
+
   function build(options) {
     const opts = options && typeof options === 'object' ? options : {};
     const state = getState(), analysis = state.analysis || {};
@@ -306,36 +509,44 @@
     const narrowHits = Array.isArray(analysis.narrowLineCandidates) ? analysis.narrowLineCandidates.slice(0, 24).map(compactHit).filter(Boolean) : [];
     const trace = buildTrace(frame, maxTracePoints);
     const calibration = buildCalibration(state, frame);
+    const analysisContext = resolveAnalysisContext(state, analysis);
+    const astro = compactAstro(analysis.astro);
 
     return {
       schema: SCHEMA_VERSION,
       generatedAt: new Date().toISOString(),
       app: { name: 'SPECTRA PRO', version: getAppVersion() },
-      observation: cleanString(opts.observation, 1200) || null,
+      observation: cleanString(opts.observation, MAX_OBSERVATION_CHARS) || null,
       context: {
         appMode: cleanString(state.appMode || '', 24) || null,
+        analysisContext: analysisContext,
+        deterministicAnalysis: true,
         frameSource: cleanString((state.frame && state.frame.source) || (frame && frame.source) || '', 48) || null,
         frameTimestamp: frame && frame.timestamp ? frame.timestamp : null,
         workerResultTimestamp: state.worker && state.worker.lastResultAt ? state.worker.lastResultAt : null
       },
       settings: buildSettings(state),
       instrument: buildInstrument(state),
+      preprocessing: compactPreprocessing(analysis.preprocessing),
       calibration: calibration,
       quality: buildQuality(frame, analysis, trace),
       analysis: {
-        scoreSemantics: fluorescence ? 'broadband-fluorescence-shape' : 'relative-score-share-not-probability-or-abundance',
+        scoreSemantics: analysisContext === 'astro' ? 'deterministic-astro-measurements-not-probabilities' : (fluorescence ? 'broadband-fluorescence-shape' : 'relative-score-share-not-probability-or-abundance'),
+        calibrationDiagnostics: compactCalibrationDiagnostics(analysis.calibrationDiagnostics),
         bestMatch: bestMatch,
         candidates: candidates,
         winnerBreakdown: compactWinnerBreakdown(analysis.winnerBreakdown),
         fluorescence: fluorescence,
         narrowLineCandidates: narrowHits,
-        hits: selectHits(rawHits, bestMatch && bestMatch.species, maxHits)
+        hits: selectHits(rawHits, bestMatch && bestMatch.species, maxHits),
+        astro: astro,
+        referenceComparison: compactReferenceComparison(analysis.referenceComparison)
       },
       trace: trace,
       readiness: {
         hasFrame: !!trace,
         calibrated: !!calibration.calibrated,
-        hasAnalysisResult: !!(fluorescence || bestMatch || rawHits.length)
+        hasAnalysisResult: !!(astro || fluorescence || bestMatch || rawHits.length)
       }
     };
   }

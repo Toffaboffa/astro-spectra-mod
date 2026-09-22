@@ -88,5 +88,5 @@
       }
     };
   };
-  mod.version = 'step4-calibration-point-manager-shell+disable+undo';
+  mod.version = '3.0.0';
 })();

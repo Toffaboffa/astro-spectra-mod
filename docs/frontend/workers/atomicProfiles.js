@@ -1,7 +1,7 @@
 (function (root) {
   'use strict';
 
-  // SPECTRA PRO v2.1 atomic fingerprint catalog.
+  // SPECTRA PRO atomic fingerprint catalog.
   // Wavelengths are curated from NIST Handbook strong/persistent neutral-atom lines.
   // `weight` is a diagnostic ranking aid for low-resolution discharge spectra. It is
   // NOT an abundance, transition probability, or quantitative intensity prediction.
@@ -107,7 +107,6 @@
   };
 
   const presetMap = {
-    'lamp-hg': ['Hg', 'Ne', 'Ar', 'Kr', 'Xe'],
     'smart-atomic': ['H', 'He', 'Ne', 'Ar', 'Kr', 'Xe', 'Hg', 'O'],
     'smart-gastube': ['H', 'He', 'Ne', 'Ar', 'Kr', 'Xe', 'Hg', 'O'],
     'smart-fluorescent': ['Hg', 'Ne', 'Ar', 'Kr', 'Xe']

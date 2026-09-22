@@ -6,27 +6,27 @@ const RESPONSE_SCHEMA = {
   properties: {
     language: {
       type: 'string',
-      description: 'Short language tag for the prose fields, normally sv, en, es, de, fr, etc. Use en when the observation language is absent or cannot be identified reliably.'
+      description: 'Short prose-language tag; use en when uncertain.'
     },
     summary: {
       type: 'string',
-      description: 'One or two concise sentences stating the main interpretation. Do not overstate certainty.'
+      description: 'One sentence stating the main interpretation without overstating certainty.'
     },
     interpretation: {
       type: 'string',
-      description: 'Concise scientific explanation of the strongest evidence and relevant secondary candidates. Keep measured data, SPECTRA PRO matches and model interpretation conceptually distinct.'
+      description: 'Strongest evidence and any relevant secondary candidate.'
     },
     dataQuality: {
       type: 'string',
-      description: 'Important calibration, residual, signal-quality, saturation, QC or analysis-setting information that materially affects interpretation. Use an empty string when there is nothing material to add.'
+      description: 'Only quality information that materially affects interpretation; otherwise empty.'
     },
     caveats: {
       type: 'string',
-      description: 'Important ambiguity or limitation, including sparse evidence, overlapping lines or bands, missing calibration, conflicting candidates or unsupported quantitative conclusions. Use an empty string when no material caveat is present.'
+      description: 'Most important ambiguity or unsupported conclusion; otherwise empty.'
     },
     conclusion: {
       type: 'string',
-      description: 'A short final assessment that states what the supplied evidence most reasonably supports without presenting Score Share as probability, concentration or abundance.'
+      description: 'One short final assessment supported by the supplied evidence.'
     }
   },
   required: ['language', 'summary', 'interpretation', 'dataQuality', 'caveats', 'conclusion']
@@ -36,7 +36,7 @@ export function buildResponseFormat() {
   return {
     type: 'json_schema',
     name: 'spectra_pro_interpretation',
-    description: 'Structured, concise scientific interpretation of a validated SPECTRA PRO spectrum analysis.',
+    description: 'Concise interpretation of validated SPECTRA PRO analysis.',
     strict: true,
     schema: RESPONSE_SCHEMA
   };

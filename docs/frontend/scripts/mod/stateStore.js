@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '2.3.9';
+  const AI_ASSET_VERSION = '3.0.0';
 
   const defaultPresetCatalog = {
     groups: [
@@ -63,6 +63,16 @@
       gratingLinesPerMm: null
     },
     reference: { count: 0, hasReference: false, updatedAt: null },
+    referenceComparison: {
+      enabled: false,
+      referenceId: '',
+      normalization: 'min-max',
+      alignmentMode: 'none',
+      manualShiftNm: 0,
+      maxAutoShiftNm: 2,
+      status: 'idle',
+      error: null
+    },
     display: {
       mode: 'normal',
       yAxisMode: 'manual',
@@ -72,6 +82,11 @@
       overlaysEnabled: true
     },
     peaks: { threshold: 20, distance: 7, smoothing: null },
+    preprocessing: {
+      responseCorrection: { enabled: false, profileId: null, profile: null, maxCorrectionFactor: 5 },
+      baselineMode: 'none',
+      normalizationMode: 'none'
+    },
     analysis: {
       enabled: false,
       maxHz: 4,
@@ -79,6 +94,7 @@
       presetCatalog: defaultPresetCatalog,
       topHits: [],
       rawTopHits: [],
+      features: [],
       smartFindEnabled: true,
       autoTune: true,
       useRgbScore: false,
@@ -87,6 +103,14 @@
       smartFindGroups: [],
       elementScores: [],
       winnerBreakdown: null,
+      calibrationDiagnostics: null,
+      matchUncertaintyModel: null,
+      hardMatchCapNm: null,
+      measurementQuality: null,
+      preprocessing: null,
+      referenceComparison: null,
+      astro: null,
+      resultContext: null,
       fluorescenceSummary: null,
       narrowLineCandidates: [],
       narrowLineOverlay: false,
@@ -137,13 +161,14 @@
   }
 
   function createStore(seed) {
-    let state = Object.assign({}, deepClone(defaultState), seed || {});
+    let state = Object.assign({}, deepClone(defaultState), (seed && typeof seed === 'object') ? deepClone(seed) : {});
 
     function getState() { return state; }
 
     function setState(patch, meta) {
-      state = Object.assign({}, state, patch || {});
-      if (bus) bus.emit('state:changed', { state: state, patch: patch || {}, meta: meta || null });
+      const nextPatch = (patch && typeof patch === 'object') ? deepClone(patch) : {};
+      state = Object.assign({}, state, nextPatch);
+      if (bus) bus.emit('state:changed', { state: state, patch: nextPatch, meta: meta || null });
       return state;
     }
 

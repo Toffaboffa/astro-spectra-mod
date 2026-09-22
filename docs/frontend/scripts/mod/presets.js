@@ -56,7 +56,7 @@
           mode: 'atomic',
           discoveryStrategy: 'local-lamp',
           refineStrategy: 'none',
-          description: 'Simplified preset for lamp/discharge lines around Hg/Ar/Ne.'
+          description: 'Simplified local matching for Hg/Ar/Ne discharge-lamp lines.'
         }
       ]
     },

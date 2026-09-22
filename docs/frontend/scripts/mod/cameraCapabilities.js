@@ -139,5 +139,5 @@
     }
   };
 
-  mod.version = 'step4-camera-capabilities+apply';
+  mod.version = '3.0.0';
 })();

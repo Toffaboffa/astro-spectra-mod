@@ -132,6 +132,19 @@
 
   function formatMaybe(value, digits) { return Number.isFinite(value) ? Number(value).toFixed(Number.isFinite(digits) ? digits : 2) : '—'; }
 
+  function qualityTerm(value) {
+    const text = String(value || '');
+    let swedish = false;
+    try { swedish = !!(sp.i18n && sp.i18n.getLanguage && sp.i18n.getLanguage() === 'sv'); } catch (_) {}
+    if (!swedish) return text;
+    const terms = {
+      good: 'bra', moderate: 'måttlig', poor: 'dålig', unavailable: 'saknas',
+      signal: 'signal', noise: 'brus', saturation: 'mättnad', calibration: 'kalibrering',
+      sampling: 'sampling', resolution: 'upplösning', coverage: 'täckning', features: 'spektrala drag'
+    };
+    return terms[text] || text;
+  }
+
   function hasLabAnalysis(state) {
     const st = state || {};
     const hits = (((st.analysis || {}).topHits) || []);
@@ -404,8 +417,12 @@
     const baseline = signalMetrics.baseline;
     const calRmsNm = computeCalibrationRmsNm(st);
     const conf = hasLabAnalysis(st) ? bestAnalysisConfidence(st) : null;
+    const measurementQuality = st.analysis && st.analysis.measurementQuality;
+    const mainLimitation = measurementQuality && measurementQuality.mainLimitation;
 
     const dq = [
+      line('Quality:', `${measurementQuality && measurementQuality.overallStatus ? qualityTerm(measurementQuality.overallStatus) : '—'}`, 'Categorical measurement quality; this is not a percentage or probability.', 'quality'),
+      line('Limit:', `${mainLimitation && mainLimitation.code ? qualityTerm(mainLimitation.code) + ' · ' + qualityTerm(mainLimitation.status) : '—'}`, 'Deterministically selected dominant measurement limitation.', 'quality'),
       line('Signal:', `${formatMaybe(min, 1)}–${formatMaybe(max, 1)}`, 'Minimum and maximum signal intensity in the active stripe.', 'signal'),
       line('Avg/Dyn:', `${formatMaybe(avg, 1)} / ${formatMaybe(dyn, 1)}`, 'Average intensity and dynamic range (max - min).', 'signal'),
       line('Base:', `${formatMaybe(baseline, 1)}`, 'Estimated baseline floor from the lower 5% percentile of the active signal.', 'signal'),
@@ -425,7 +442,7 @@
       line('Eff. R:', `${Number.isFinite(resolvingPower) ? ('R≈' + Math.round(resolvingPower)) : '—'}`, 'Approximate resolving power R ≈ λ/Δλ.', 'hardware')
     ];
 
-    return { status, dq, metrics: { min, max, avg, dyn, validCount, saturation: satText, snr: snrText, peakResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.sn, resolutionNmPerPx, hardwareFwhmNm: hwFwhmNm, resolvingPower, quickPeakCount: quickPeaks.length, strongPeakCount: strongPeaks, baseline: baseline, headroom, coverageMinNm: coverage.min, coverageMaxNm: coverage.max, bestConfidence: conf, calibrationRmsNm: calRmsNm } };
+    return { status, dq, metrics: { min, max, avg, dyn, validCount, saturation: satText, snr: snrText, peakResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.sn, resolutionNmPerPx, hardwareFwhmNm: hwFwhmNm, resolvingPower, quickPeakCount: quickPeaks.length, strongPeakCount: strongPeaks, baseline: baseline, headroom, coverageMinNm: coverage.min, coverageMaxNm: coverage.max, bestConfidence: conf, calibrationRmsNm: calRmsNm, measurementQuality: measurementQuality || null } };
   }
 
   mod.compute = compute;

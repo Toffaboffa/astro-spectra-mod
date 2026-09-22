@@ -29,6 +29,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run main compatibility regressions
+        run: node tests/main_compatibility.test.mjs
+      - name: Run compact scientific analysis regressions
+        run: node tests/analysis_regression.test.js
+      - name: Run AI context regressions
+        run: node tests/ai_context_regression.test.mjs
+      - name: Enforce compact AI token budget
+        run: node tests/ai_token_budget.test.mjs
+      - name: Run UI consolidation regressions
+        run: node tests/ui_consolidation.test.mjs
+      - name: Run export reproducibility regressions
+        run: node tests/export_reproducibility.test.mjs
+      - name: Run PDF report contract regressions
+        run: node tests/pdf_report_contract.test.mjs
+      - name: Run repository contract regressions
+        run: node tests/repository_contract.test.mjs
       - name: Validate script/style paths
         run: |
           set -e
@@ -74,7 +93,8 @@ jobs:
           assert "icon: SAMPLE_ICONS.orange" in ne_block, "Ne sample must use the orange tube icon"
           assert "icon: SAMPLE_ICONS.cyan" not in n2_block + ne_block, "Cyan icon is reserved for future samples"
           assert "chunk-" not in module
-          assert "const VERSION = '2.3.9';" in module
+          assert "const VERSION = '3.0.0';" in module
+          assert "solar-tsis1-hsrs-visible-0p2nm.json" in module
 
           export_ui = Path("docs/frontend/scripts/mod/exportUi.js").read_text(encoding="utf-8")
           assert "const rotatedSourceUrl = croppedSourceUrl ? (await rotateDataUrl90(croppedSourceUrl) || croppedSourceUrl) : '';" in export_ui
@@ -103,6 +123,17 @@ jobs:
               assert (w, h) == (128, 128), f"Unexpected {name} icon dimensions: {(w, h)}"
               icon_digest = hashlib.sha256(icon_data).hexdigest()
               assert icon_digest == expected_digest, f"{name} icon SHA-256 mismatch: {icon_digest}"
+
+          solar = Path("docs/frontend/data/examples/solar-tsis1-hsrs-visible-0p2nm.json")
+          solar_data = solar.read_bytes().replace(b"\r\n", b"\n")
+          assert hashlib.sha256(solar_data).hexdigest() == "195a31f7d495a2a236bbb43a44b4c8573fb765703750c0dc66e5c8525aa9854c"
+          import json
+          solar_json = json.loads(solar_data)
+          assert solar_json["schema"] == "spectra-pro-numeric-example/v1"
+          assert solar_json["wavelengthMedium"] == "standard-air"
+          assert solar_json["grid"] == {"startNm": 388, "endNm": 670, "stepNm": 0.2, "count": 1411}
+          assert len(solar_json["wavelengthNm"]) == len(solar_json["irradianceWm2Nm"]) == 1411
+          assert solar_json["provenance"]["primaryReferenceDoi"] == "10.1029/2020GL091709"
 
           cal_io = Path("docs/frontend/scripts/mod/calibrationIO.js").read_text(encoding="utf-8")
           assert "suppressAxisPromptFor" in cal_io

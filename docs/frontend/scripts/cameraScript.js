@@ -36,6 +36,11 @@ function refreshActiveSourceMetrics() {
     sp.runtime.getVideoElement = function(){ return videoElement; };
     sp.runtime.setVideoElement = function(el){
         if (!el) return videoElement;
+        try {
+            if (window.SpectraCore && window.SpectraCore.graph && typeof window.SpectraCore.graph.clearNumericFrame === 'function') {
+                window.SpectraCore.graph.clearNumericFrame({ redraw: false });
+            }
+        } catch (_) {}
         videoElement = el;
         refreshActiveSourceMetrics();
         return videoElement;
@@ -249,6 +254,16 @@ async function pauseVideo(){
  * Plays the video stream, also accounts for loaded image
  */
 async function playVideo(){
+    try {
+        const numericFrame = window.SpectraCore && window.SpectraCore.graph && typeof window.SpectraCore.graph.getNumericFrame === 'function'
+            ? window.SpectraCore.graph.getNumericFrame()
+            : null;
+        if (numericFrame) {
+            switchLoadedImageSettings();
+            getBackToCameraStream();
+            return;
+        }
+    } catch (_) {}
     if (videoElement instanceof HTMLImageElement) {
         switchLoadedImageSettings();
         getBackToCameraStream();
@@ -263,6 +278,11 @@ async function playVideo(){
  * Changes the videoElement from img to video, so the camera can be used
  */
 function getBackToCameraStream(){
+    try {
+        if (window.SpectraCore && window.SpectraCore.graph && typeof window.SpectraCore.graph.clearNumericFrame === 'function') {
+            window.SpectraCore.graph.clearNumericFrame({ redraw: false });
+        }
+    } catch (_) {}
     videoElement.style.display = 'none';
     videoElement = document.getElementById('videoMain');
     videoElement.style.display = 'block';
@@ -278,6 +298,10 @@ function getBackToCameraStream(){
  * @returns {number}
  */
 function getElementWidth(element) {
+    try {
+        const numericFrame = window.SpectraPro && window.SpectraPro.coreBridge && window.SpectraPro.coreBridge.numericFrame;
+        if (numericFrame && Array.isArray(numericFrame.I) && numericFrame.I.length) return numericFrame.I.length;
+    } catch (_) {}
     if (element instanceof HTMLVideoElement) {
         return element.videoWidth;
     } else if (element instanceof HTMLImageElement) {
@@ -293,6 +317,10 @@ function getElementWidth(element) {
  * @returns {number}
  */
 function getElementHeight(element) {
+    try {
+        const numericFrame = window.SpectraPro && window.SpectraPro.coreBridge && window.SpectraPro.coreBridge.numericFrame;
+        if (numericFrame && Array.isArray(numericFrame.I) && numericFrame.I.length) return 1;
+    } catch (_) {}
     if (element instanceof HTMLVideoElement) {
         return element.videoHeight;
     } else if (element instanceof HTMLImageElement) {
@@ -407,7 +435,7 @@ function noGraphShown() {
     return !checkboxCombined.checked && !checkboxRed.checked && !checkboxGreen.checked && !checkboxBlue.checked
 }
 
-/* SPECTRA-PRO Phase 0 hook patch */
+/* SPECTRA PRO camera bridge */
 
 (function(){
   window.SpectraCore = window.SpectraCore || {};

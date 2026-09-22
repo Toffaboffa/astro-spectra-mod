@@ -1125,7 +1125,7 @@ graphCanvasDivergence.addEventListener("mousemove", (e) => {
 });
 
 
-/* SPECTRA-PRO Phase 0 hook patch */
+/* SPECTRA PRO calibration hook */
 
 (function(){
   const sp = window.SpectraPro || (window.SpectraPro = {});
@@ -1174,7 +1174,7 @@ graphCanvasDivergence.addEventListener("mousemove", (e) => {
 })();
 
 
-/* SPECTRA-PRO Phase 1 calibration bridge enrich patch */
+/* SPECTRA PRO calibration bridge */
 (function(){
   const sp = window.SpectraPro || (window.SpectraPro = {});
   if (window.SpectraCore && window.SpectraCore.calibration && !window.SpectraCore.calibration.getDetailedState) {

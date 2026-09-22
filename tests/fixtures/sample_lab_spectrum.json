@@ -1,1 +1,68 @@
-{}
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "description": "Compact synthetic calibrated emission spectra for deterministic worker regression tests. Intensities are arbitrary relative units, not abundances.",
+  "cases": [
+    {
+      "id": "hydrogen_balmer",
+      "preset": "smart-atomic",
+      "expectedElement": "H",
+      "minimumMatchedPeaks": 4,
+      "frame": {
+        "calibrated": true,
+        "nm": [407.174, 408.174, 409.174, 410.174, 411.174, 412.174, 413.174, 431.046, 432.046, 433.046, 434.046, 435.046, 436.046, 437.046, 483.133, 484.133, 485.133, 486.133, 487.133, 488.133, 489.133, 653.281, 654.281, 655.281, 656.281, 657.281, 658.281, 659.281],
+        "I": [1, 2, 12, 72, 12, 2, 1, 1, 2, 14, 82, 14, 2, 1, 1, 2, 16, 94, 16, 2, 1, 1, 2, 18, 105, 18, 2, 1]
+      },
+      "atomLines": [
+        { "element": "H", "species": "H I", "speciesKey": "H I", "nm": 410.174 },
+        { "element": "H", "species": "H I", "speciesKey": "H I", "nm": 434.046 },
+        { "element": "H", "species": "H I", "speciesKey": "H I", "nm": 486.133 },
+        { "element": "H", "species": "H I", "speciesKey": "H I", "nm": 656.281 },
+        { "element": "He", "species": "He I", "speciesKey": "He I", "nm": 447.148 },
+        { "element": "Ne", "species": "Ne I", "speciesKey": "Ne I", "nm": 640.225 }
+      ]
+    },
+    {
+      "id": "neon_red_cluster",
+      "preset": "smart-atomic",
+      "expectedElement": "Ne",
+      "minimumMatchedPeaks": 6,
+      "frame": {
+        "calibrated": true,
+        "nm": [583.249, 584.249, 585.249, 586.249, 587.249, 601, 602, 603, 604, 605, 612.306, 613.306, 614.306, 615.306, 616.306, 638.225, 639.225, 640.225, 641.225, 642.225, 648.653, 649.653, 650.653, 651.653, 652.653, 690.947, 691.947, 692.947, 693.947, 694.947, 701.241, 702.241, 703.241, 704.241, 705.241],
+        "I": [2, 15, 82, 15, 2, 2, 13, 70, 13, 2, 2, 14, 78, 14, 2, 2, 17, 96, 17, 2, 2, 15, 88, 15, 2, 2, 18, 108, 18, 2, 2, 17, 101, 17, 2]
+      },
+      "atomLines": [
+        { "element": "Ne", "species": "Ne I", "speciesKey": "Ne I", "nm": 585.249 },
+        { "element": "Ne", "species": "Ne I", "speciesKey": "Ne I", "nm": 603 },
+        { "element": "Ne", "species": "Ne I", "speciesKey": "Ne I", "nm": 614.306 },
+        { "element": "Ne", "species": "Ne I", "speciesKey": "Ne I", "nm": 640.225 },
+        { "element": "Ne", "species": "Ne I", "speciesKey": "Ne I", "nm": 650.653 },
+        { "element": "Ne", "species": "Ne I", "speciesKey": "Ne I", "nm": 692.947 },
+        { "element": "Ne", "species": "Ne I", "speciesKey": "Ne I", "nm": 703.241 },
+        { "element": "Ar", "species": "Ar I", "speciesKey": "Ar I", "nm": 696.543 },
+        { "element": "H", "species": "H I", "speciesKey": "H I", "nm": 656.281 }
+      ]
+    },
+    {
+      "id": "mercury_lamp",
+      "preset": "smart-gastube",
+      "expectedElement": "Hg",
+      "minimumMatchedPeaks": 5,
+      "frame": {
+        "calibrated": true,
+        "nm": [402.656, 403.656, 404.656, 405.656, 406.656, 433.833, 434.833, 435.833, 436.833, 437.833, 544.074, 545.074, 546.074, 547.074, 548.074, 574.96, 575.46, 575.96, 576.46, 576.96, 577.46, 577.96, 578.46, 579.066, 579.566, 580.066, 580.566, 581.066],
+        "I": [2, 13, 68, 13, 2, 2, 19, 110, 19, 2, 2, 17, 91, 17, 2, 2, 2, 7, 12, 55, 12, 3, 12, 61, 12, 7, 2, 2]
+      },
+      "atomLines": [
+        { "element": "Hg", "species": "Hg I", "speciesKey": "Hg I", "nm": 404.656 },
+        { "element": "Hg", "species": "Hg I", "speciesKey": "Hg I", "nm": 435.833 },
+        { "element": "Hg", "species": "Hg I", "speciesKey": "Hg I", "nm": 546.074 },
+        { "element": "Hg", "species": "Hg I", "speciesKey": "Hg I", "nm": 576.96 },
+        { "element": "Hg", "species": "Hg I", "speciesKey": "Hg I", "nm": 579.066 },
+        { "element": "Ne", "species": "Ne I", "speciesKey": "Ne I", "nm": 585.249 },
+        { "element": "Ar", "species": "Ar I", "speciesKey": "Ar I", "nm": 696.543 }
+      ]
+    }
+  ]
+}

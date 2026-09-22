@@ -1,0 +1,22 @@
+{
+  "schema": "spectra-pro-instrument-response-fixture/v1",
+  "synthetic": true,
+  "description": "Compact relative-response correction fixture. Values are synthetic and are not a measured SPECTRA profile.",
+  "wavelengthNm": [400, 450, 500, 550, 600],
+  "incidentRelativeIntensity": [100, 100, 100, 100, 100],
+  "observedIntensity": [50, 75, 100, 80, 40],
+  "profile": {
+    "schema": "spectra-pro-response-profile/v1",
+    "id": "synthetic-test-response",
+    "label": "Synthetic test response",
+    "source": "synthetic-test-data",
+    "wavelengthMedium": "air",
+    "wavelengthsNm": [400, 450, 500, 550, 600],
+    "relativeResponse": [0.5, 0.75, 1.0, 0.8, 0.4]
+  },
+  "expected": {
+    "correctedRelativeIntensity": [75, 75, 75, 75, 75],
+    "normalizationResponse": 0.75,
+    "maxAbsError": 0.000000001
+  }
+}

@@ -4,13 +4,17 @@ import { interpretWithOpenAI, OpenAIConnectorError } from './openaiClient.js';
 
 const EXPECTED_SCHEMA = 'spectra-pro-ai-analysis/v1';
 const DEFAULT_MAX_BODY_BYTES = 65536;
-const MAX_OBSERVATION_CHARS = 1200;
+const MAX_OBSERVATION_CHARS = 600;
 const MAX_CANDIDATES = 12;
 const MAX_HITS = 160;
 const MAX_TRACE_POINTS = 512;
 const MAX_CALIBRATION_POINTS = 20;
 const MAX_COEFFICIENTS = 8;
 const MAX_QC_FLAGS = 24;
+const ANALYSIS_CONTEXTS = new Set(['lab-atomic', 'lab-molecular', 'fluorescence', 'astro']);
+const MAX_ASTRO_FEATURES = 24;
+const MAX_ASTRO_MATCHES = 32;
+const MAX_ASTRO_VELOCITY_LINES = 16;
 
 function json(data, status, origin) {
   const headers = new Headers({
@@ -57,7 +61,7 @@ function validatePointPair(point) {
   return Array.isArray(point) && point.length === 2 && finiteNumber(point[0]) && finiteNumber(point[1]) && point[1] >= 0 && point[1] <= 1;
 }
 
-function validatePayload(payload) {
+export function validatePayload(payload) {
   const errors = [];
 
   if (!plainObject(payload)) return ['Body must be a JSON object.'];
@@ -65,7 +69,7 @@ function validatePayload(payload) {
 
   const allowedTopLevel = new Set([
     'schema', 'generatedAt', 'app', 'observation', 'context', 'settings', 'instrument',
-    'calibration', 'quality', 'analysis', 'trace', 'readiness'
+    'calibration', 'preprocessing', 'quality', 'analysis', 'trace', 'readiness'
   ]);
   Object.keys(payload).forEach((key) => {
     if (!allowedTopLevel.has(key)) errors.push('Unexpected top-level field: ' + key);
@@ -73,6 +77,13 @@ function validatePayload(payload) {
 
   if (payload.observation != null && !stringWithin(payload.observation, MAX_OBSERVATION_CHARS)) {
     errors.push('Observation must be a string of at most ' + MAX_OBSERVATION_CHARS + ' characters.');
+  }
+
+  const analysisContext = payload.context && payload.context.analysisContext;
+  if (!plainObject(payload.context) || !ANALYSIS_CONTEXTS.has(analysisContext)) {
+    errors.push('context.analysisContext must identify a supported scientific context.');
+  } else if (payload.context.deterministicAnalysis !== true) {
+    errors.push('context.deterministicAnalysis must be true.');
   }
 
   if (!plainObject(payload.readiness)) {
@@ -93,6 +104,24 @@ function validatePayload(payload) {
     }
     if (!Array.isArray(hits) || hits.length > MAX_HITS) {
       errors.push('analysis.hits must contain at most ' + MAX_HITS + ' items.');
+    }
+    const astro = payload.analysis.astro;
+    if (analysisContext === 'astro' && !plainObject(astro)) {
+      errors.push('analysis.astro is required for astro context.');
+    } else if (analysisContext !== 'astro' && astro != null) {
+      errors.push('analysis.astro is only allowed for astro context.');
+    }
+    if (plainObject(astro)) {
+      if (!Array.isArray(astro.absorptionFeatures) || astro.absorptionFeatures.length > MAX_ASTRO_FEATURES) {
+        errors.push('analysis.astro.absorptionFeatures must contain at most ' + MAX_ASTRO_FEATURES + ' items.');
+      }
+      if (!Array.isArray(astro.referenceMatches) || astro.referenceMatches.length > MAX_ASTRO_MATCHES) {
+        errors.push('analysis.astro.referenceMatches must contain at most ' + MAX_ASTRO_MATCHES + ' items.');
+      }
+      const velocityLines = astro.radialVelocity && astro.radialVelocity.lines;
+      if (velocityLines != null && (!Array.isArray(velocityLines) || velocityLines.length > MAX_ASTRO_VELOCITY_LINES)) {
+        errors.push('analysis.astro.radialVelocity.lines must contain at most ' + MAX_ASTRO_VELOCITY_LINES + ' items.');
+      }
     }
   }
 
@@ -125,8 +154,13 @@ function validatePayload(payload) {
 
   if (!plainObject(payload.quality)) {
     errors.push('Missing quality object.');
-  } else if (!Array.isArray(payload.quality.qcFlags) || payload.quality.qcFlags.length > MAX_QC_FLAGS || !payload.quality.qcFlags.every((flag) => stringWithin(flag, 96))) {
-    errors.push('quality.qcFlags must contain at most ' + MAX_QC_FLAGS + ' short strings.');
+  } else {
+    if (!Array.isArray(payload.quality.qcFlags) || payload.quality.qcFlags.length > MAX_QC_FLAGS || !payload.quality.qcFlags.every((flag) => stringWithin(flag, 96))) {
+      errors.push('quality.qcFlags must contain at most ' + MAX_QC_FLAGS + ' short strings.');
+    }
+    if (!plainObject(payload.quality.measurement) || !stringWithin(payload.quality.measurement.overallStatus, 24)) {
+      errors.push('quality.measurement must include a deterministic overallStatus.');
+    }
   }
 
   return errors.slice(0, 12);
@@ -192,7 +226,7 @@ export default {
       return json({
         ok: true,
         service: 'spectra-pro-ai',
-        stage: 6,
+        appVersion: '3.0.0',
         model: String(env.OPENAI_MODEL || 'gpt-5.6-terra'),
         promptContract: PROMPT_CONTRACT_VERSION,
         responseContract: RESPONSE_CONTRACT_VERSION
@@ -260,7 +294,7 @@ export default {
       const interpreted = await interpretWithOpenAI(promptPackage, env);
       return json({
         ok: true,
-        stage: 6,
+        appVersion: '3.0.0',
         runId,
         startedAt,
         completedAt: new Date().toISOString(),

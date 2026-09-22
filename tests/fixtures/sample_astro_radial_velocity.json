@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "description": "Parametric calibrated absorption spectrum with a known relativistic redshift; no image asset is used.",
+  "velocityKmS": 180,
+  "grid": { "startNm": 388, "endNm": 662, "stepNm": 0.2 },
+  "continuum": { "intercept": 1.02, "slopePerNm": 0.00025, "pivotNm": 525 },
+  "noise": { "amplitude": 0.0006, "periodSamples": 23 },
+  "features": [
+    { "label": "Ca II K", "referenceNm": 393.36614, "depth": 0.24, "sigmaNm": 0.65 },
+    { "label": "H-delta", "referenceNm": 410.174, "depth": 0.2, "sigmaNm": 0.8 },
+    { "label": "H-gamma", "referenceNm": 434.047, "depth": 0.24, "sigmaNm": 0.85 },
+    { "label": "H-beta", "referenceNm": 486.133, "depth": 0.28, "sigmaNm": 0.9 },
+    { "label": "H-alpha", "referenceNm": 656.281, "depth": 0.32, "sigmaNm": 1.0 }
+  ],
+  "calibration": {
+    "coefficients": [388, 0.2],
+    "points": [
+      { "px": 0, "nm": 388 },
+      { "px": 685, "nm": 525 },
+      { "px": 1370, "nm": 662 }
+    ]
+  },
+  "hardware": { "spectrometerResolutionFwhmNm": 0.8, "pixelResolutionNm": 0.2 },
+  "expected": { "velocityToleranceKmS": 45, "minimumLinesUsed": 4 }
+}

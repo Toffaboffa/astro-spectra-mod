@@ -40,5 +40,5 @@
   };
 
   mod.DEFAULTS = DEFAULTS;
-  mod.version = 'step4-peak-controls';
+  mod.version = '3.0.0';
 })();
