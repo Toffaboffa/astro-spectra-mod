@@ -1174,6 +1174,54 @@ if (!document.getElementById('spSubtractionControls')) {
   }
 
 
+function ensureAnalysisModal(triggerId, modalId, title, contentHtml) {
+  const trigger = $(triggerId);
+  if (!trigger) return null;
+  let modal = $(modalId);
+  if (!modal) {
+    modal = el('div', 'sp-modal sp-analysis-modal');
+    modal.id = modalId;
+    modal.setAttribute('aria-hidden', 'true');
+    modal.innerHTML = [
+      '<div class="sp-modal__backdrop" data-analysis-modal-close="1"></div>',
+      '<div class="sp-modal__panel sp-modal__panel--analysis" role="dialog" aria-modal="true" aria-labelledby="' + modalId + 'Title">',
+      '  <div class="sp-modal__head">',
+      '    <div class="sp-modal__title" id="' + modalId + 'Title">' + escapeHtml(title) + '</div>',
+      '    <button type="button" class="sp-modal__close" data-analysis-modal-close="1" aria-label="Close">×</button>',
+      '  </div>',
+      '  <div class="sp-modal__body">' + contentHtml + '</div>',
+      '</div>'
+    ].join('');
+    (document.body || document.documentElement).appendChild(modal);
+  }
+
+  function close() {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    trigger.setAttribute('aria-expanded', 'false');
+    try { trigger.focus(); } catch (_) {}
+  }
+  function open() {
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    trigger.setAttribute('aria-expanded', 'true');
+    const closeButton = modal.querySelector('.sp-modal__close');
+    try { closeButton && closeButton.focus(); } catch (_) {}
+  }
+
+  trigger.setAttribute('aria-controls', modalId);
+  trigger.setAttribute('aria-expanded', 'false');
+  trigger.addEventListener('click', open);
+  modal.addEventListener('click', function (event) {
+    const target = event.target;
+    if (target && target.getAttribute('data-analysis-modal-close') === '1') close();
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && modal.classList.contains('is-open')) close();
+  });
+  return modal;
+}
+
 function ensureAstroPanel() {
   if (!ui || !ui.panels.astro) return;
   const panel = ui.panels.astro;
@@ -1186,7 +1234,10 @@ function ensureAstroPanel() {
     '    <div class="sp-lab-head"><div class="sp-lab-title">ASTRO</div></div>',
     '    <div class="sp-analysis-toolbar">',
     '      <label class="sp-field sp-field--checkbox-row" title="Run continuum normalization and absorption analysis in the shared worker."><span>Analyze</span><input id="spAstroEnabled" type="checkbox"></label>',
-    '      <div id="spAstroActions" class="sp-actions sp-actions--astro"></div>',
+    '      <div class="sp-analysis-actions">',
+    '        <div id="spAstroActions" class="sp-actions sp-actions--astro"></div>',
+    '        <button type="button" id="spAstroAdvancedBtn" class="sp-analysis-advanced-btn">Advanced ASTRO details</button>',
+    '      </div>',
     '    </div>',
     '    <div class="sp-astro-summary-grid">',
     '      <div class="sp-card-sub sp-astro-summary">',
@@ -1215,21 +1266,20 @@ function ensureAstroPanel() {
     '      <div id="spAstroMatches" class="sp-lab-qc"></div>',
     '    </div>',
     '  </div>',
-    '</div>',
-    '<details id="spAstroAdvanced" class="sp-advanced">',
-    '  <summary>Advanced ASTRO details</summary>',
-    '  <div class="sp-advanced__body">',
-    '    <div class="sp-astro-diagnostics">',
-    '      <h4 class="sp-subtitle">Continuum diagnostics</h4>',
-    '      <div id="spAstroContinuumAdvanced" class="sp-note">Unavailable.</div>',
-    '      <div class="sp-note sp-analysis-disclaimer">Educational low-resolution analysis. Broad O/B/A/F/G/K/M evidence is heuristic, not a probability, subclass or luminosity class. Radial velocity is not barycentric/heliocentric corrected.</div>',
-    '    </div>',
-    '    <div id="spAstroReferenceMount" class="sp-reference-mount"></div>',
-    '  </div>',
-    '</details>'
+    '</div>'
   ].join('');
   panel.appendChild(card);
   panel.dataset.built = '1';
+  ensureAnalysisModal('spAstroAdvancedBtn', 'spAstroAdvancedModal', 'Advanced ASTRO details', [
+    '<div id="spAstroAdvanced" class="sp-analysis-modal__content sp-analysis-modal__content--astro">',
+    '  <div class="sp-astro-diagnostics">',
+    '    <h4 class="sp-subtitle">Continuum diagnostics</h4>',
+    '    <div id="spAstroContinuumAdvanced" class="sp-note">Unavailable.</div>',
+    '    <div class="sp-note sp-analysis-disclaimer">Educational low-resolution analysis. Broad O/B/A/F/G/K/M evidence is heuristic, not a probability, subclass or luminosity class. Radial velocity is not barycentric/heliocentric corrected.</div>',
+    '  </div>',
+    '  <div id="spAstroReferenceMount" class="sp-reference-mount"></div>',
+    '</div>'
+  ].join(''));
   ensureReferenceComparisonCard($('spAstroReferenceMount'), 'Astro');
 
   const enabled = $('spAstroEnabled');
@@ -1543,37 +1593,11 @@ function ensureLabPanel() {
 	    '          <option value="absorbance">Absorbance</option>',
 	    '      </select></label>',
 	    '    </div>',
-	    '    <div class="sp-actions sp-actions--lab" aria-label="LAB interpretation actions"></div>',
+	    '    <div class="sp-analysis-actions">',
+	    '      <div class="sp-actions sp-actions--lab" aria-label="LAB interpretation actions"></div>',
+	    '      <button type="button" id="spLabAdvancedBtn" class="sp-analysis-advanced-btn">Advanced analysis settings</button>',
 	    '    </div>',
-	    '    <details id="spLabAdvanced" class="sp-advanced">',
-	    '      <summary>Advanced analysis settings</summary>',
-	    '      <div class="sp-advanced__body">',
-	    '        <div class="sp-lab-fields">',
-	    '          <div class="sp-lab-fields-col">',
-	    '            <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz" title="Maximum analysis update rate per second. Lower values reduce CPU load.">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
-	    '            <label id="spFieldLabShowHits" class="sp-field sp-field--lab-showhits sp-field--checkbox-row"><span>Show hits</span><input id="spLabShowHits" type="checkbox"></label>',
-	    '            <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lower peak threshold, less peak separation, and more total peaks. Affects peak detection only, not any separate smart AI logic."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
-	    '            <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
-	    '          </div>',
-	    '          <div class="sp-lab-fields-col">',
-	    '            <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
-	    '            <label id="spFieldLabAutoTune" class="sp-field sp-field--lab-autotune sp-field--checkbox-row" title="Automatically evaluates supported identification presets across several peak thresholds and wavelength tolerances, then ranks the stable fingerprint consensus."><span>Auto tune</span><input id="spLabAutoTune" type="checkbox"></label>',
-	    '            <label id="spFieldLabRgb" class="sp-field sp-field--lab-rgb sp-field--checkbox-row" title="Use RGB channel support as an extra hidden Smart weighting factor."><span>RGB</span><input id="spLabRgb" type="checkbox"></label>',
-	    '            <label id="spFieldLabStrongPeak" class="sp-field sp-field--lab-strongpeak" title="Adjust how much Smart rewards matches on the strongest observed peaks.">Strong Peak<input id="spLabStrongPeak" class="spctl-input spctl-range spctl-range--lab-strongpeak" type="range" min="1" max="5" step="1" value="3"></label>',
-	    '          </div>',
-	    '          <div class="sp-lab-fields-col">',
-	    '            <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="1.5"></label>',
-	    '            <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="2"></label>',
-	    '            <label id="spFieldLabMaxDist" class="sp-field sp-field--lab-maxdist">Max distance (nm)<input id="spLabMaxDist" class="spctl-input spctl-input--lab-maxdist" type="number" min="0.2" max="50" step="0.1" value="1.8"></label>',
-	    '          </div>',
-	    '        </div>',
-	    '        <div class="sp-actions sp-actions--lab-diagnostics">',
-	    '          <button type="button" id="spLabInitLibBtn" title="Load or reload the active spectral libraries inside the worker.">Init libraries</button>',
-	    '          <button type="button" id="spLabPingBtn" title="Check that the LAB analysis worker is alive and responding.">Ping worker</button>',
-	    '          <button type="button" id="spLabQueryBtn" title="Search the loaded library within a wavelength range or by species name.">Query library</button>',
-	    '        </div>',
-	    '      </div>',
-	    '    </details>',
+	    '    </div>',
 	    '  </div>',
 	    '  <div class="sp-lab-right">',
 	    '    <div class="sp-lab-table">',
@@ -1585,17 +1609,38 @@ function ensureLabPanel() {
 	    '  </div>',
 	    '</div>'
   ].join('');
-  const advanced = card.querySelector('#spLabAdvanced');
-  let referenceMount = null;
-  if (advanced) {
-    referenceMount = el('div', 'sp-reference-mount');
-    referenceMount.id = 'spLabReferenceMount';
-    const advancedBody = advanced.querySelector('.sp-advanced__body');
-    if (advancedBody) advancedBody.appendChild(referenceMount);
-    card.appendChild(advanced);
-  }
   panel.appendChild(card);
   panel.dataset.built = '1';
+  ensureAnalysisModal('spLabAdvancedBtn', 'spLabAdvancedModal', 'Advanced analysis settings', [
+	    '<div id="spLabAdvanced" class="sp-analysis-modal__content sp-analysis-modal__content--lab">',
+	    '  <div class="sp-lab-fields">',
+	    '    <div class="sp-lab-fields-col">',
+	    '            <label id="spFieldLabMaxHz" class="sp-field sp-field--lab-maxhz" title="Maximum analysis update rate per second. Lower values reduce CPU load.">Max Hz<input id="spLabMaxHz" class="spctl-input spctl-input--lab-maxhz" type="number" min="1" max="30" step="1" value="4"></label>',
+	    '            <label id="spFieldLabShowHits" class="sp-field sp-field--lab-showhits sp-field--checkbox-row"><span>Show hits</span><input id="spLabShowHits" type="checkbox"></label>',
+	    '            <label id="spFieldLabWeak" class="sp-field sp-field--lab-weak sp-field--checkbox-row" title="Lower peak threshold, less peak separation, and more total peaks. Affects peak detection only, not any separate smart AI logic."><span>Weak peaks</span><input id="spLabWeak" type="checkbox"></label>',
+	    '            <label id="spFieldLabStable" class="sp-field sp-field--lab-stable sp-field--checkbox-row"><span>Stable hits</span><input id="spLabStable" type="checkbox"></label>',
+	    '    </div>',
+	    '    <div class="sp-lab-fields-col">',
+	    '            <label id="spFieldLabSmart" class="sp-field sp-field--lab-smart sp-field--checkbox-row"><span>Smart find</span><input id="spLabSmart" type="checkbox"></label>',
+	    '            <label id="spFieldLabAutoTune" class="sp-field sp-field--lab-autotune sp-field--checkbox-row" title="Automatically evaluates supported identification presets across several peak thresholds and wavelength tolerances, then ranks the stable fingerprint consensus."><span>Auto tune</span><input id="spLabAutoTune" type="checkbox"></label>',
+	    '            <label id="spFieldLabRgb" class="sp-field sp-field--lab-rgb sp-field--checkbox-row" title="Use RGB channel support as an extra hidden Smart weighting factor."><span>RGB</span><input id="spLabRgb" type="checkbox"></label>',
+	    '            <label id="spFieldLabStrongPeak" class="sp-field sp-field--lab-strongpeak" title="Adjust how much Smart rewards matches on the strongest observed peaks.">Strong Peak<input id="spLabStrongPeak" class="spctl-input spctl-range spctl-range--lab-strongpeak" type="range" min="1" max="5" step="1" value="3"></label>',
+	    '    </div>',
+	    '    <div class="sp-lab-fields-col">',
+	    '            <label id="spFieldLabPeakThr" class="sp-field sp-field--lab-thr">Peak threshold<input id="spLabPeakThr" class="spctl-input spctl-input--lab-thr" type="number" min="0.5" max="50" step="0.5" value="1.5"></label>',
+	    '            <label id="spFieldLabPeakDist" class="sp-field sp-field--lab-dist">Peak distance<input id="spLabPeakDist" class="spctl-input spctl-input--lab-dist" type="number" min="1" max="64" step="1" value="2"></label>',
+	    '            <label id="spFieldLabMaxDist" class="sp-field sp-field--lab-maxdist">Max distance (nm)<input id="spLabMaxDist" class="spctl-input spctl-input--lab-maxdist" type="number" min="0.2" max="50" step="0.1" value="1.8"></label>',
+	    '    </div>',
+	    '  </div>',
+	    '  <div class="sp-actions sp-actions--lab-diagnostics">',
+	    '          <button type="button" id="spLabInitLibBtn" title="Load or reload the active spectral libraries inside the worker.">Init libraries</button>',
+	    '          <button type="button" id="spLabPingBtn" title="Check that the LAB analysis worker is alive and responding.">Ping worker</button>',
+	    '          <button type="button" id="spLabQueryBtn" title="Search the loaded library within a wavelength range or by species name.">Query library</button>',
+	    '  </div>',
+	    '  <div id="spLabReferenceMount" class="sp-reference-mount"></div>',
+	    '</div>'
+  ].join(''));
+  const referenceMount = $('spLabReferenceMount');
   ensureReferenceComparisonCard(referenceMount, 'Lab');
 
   // LAB must log to the *on-page* console (the right-side console panel),

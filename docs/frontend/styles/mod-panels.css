@@ -1508,16 +1508,21 @@ label[for="peakSizeLower"],
   gap:8px;
   align-items:end;
 }
-#SpectraProDockHost .sp-analysis-toolbar > .sp-actions{margin:0 !important;align-self:end;}
+#SpectraProDockHost .sp-analysis-actions{display:flex;align-items:flex-end;gap:6px;align-self:end;}
+#SpectraProDockHost .sp-analysis-actions > .sp-actions{margin:0 !important;align-self:end;}
+#SpectraProDockHost .sp-analysis-advanced-btn{white-space:nowrap;min-height:29px;}
+#spPanel-lab .sp-analysis-toolbar{display:flex;flex-direction:column;align-items:stretch;gap:6px;}
+#spPanel-lab .sp-analysis-actions{align-self:flex-start;}
 #spPanel-lab .sp-analysis-toolbar .sp-lab-primary{
-  grid-template-columns:minmax(72px,.65fr) minmax(105px,1fr);
-  gap:5px 8px;
+  grid-template-columns:auto minmax(100px,.8fr) minmax(135px,1.2fr);
+  gap:5px 7px;
 }
-#spPanel-lab .sp-analysis-toolbar .sp-lab-primary #spFieldLabSubMode{grid-column:1/-1;}
+#spPanel-lab .sp-analysis-toolbar .sp-lab-primary #spFieldLabSubMode{grid-column:auto;}
+#spPanel-lab .sp-analysis-toolbar .sp-field--checkbox-row{gap:5px;align-self:end;min-height:29px;}
 #spPanel-astro .sp-analysis-toolbar{grid-template-columns:auto 1fr;justify-items:start;align-items:center;}
-#spPanel-astro .sp-analysis-toolbar .sp-field--checkbox-row{flex-direction:row;align-items:center;gap:8px;}
+#spPanel-astro .sp-analysis-toolbar .sp-field--checkbox-row{flex-direction:row;align-items:center;gap:5px;}
 
-/* Native white checkboxes looked permanently selected in the dark UI. */
+/* Compact dark checkbox with a clearly visible white check when selected. */
 #SpectraProDockHost input[type="checkbox"]{
   appearance:none;
   -webkit-appearance:none;
@@ -1533,50 +1538,55 @@ label[for="peakSizeLower"],
 }
 #SpectraProDockHost input[type="checkbox"]::before{
   content:"";
-  inline-size:7px;
-  block-size:7px;
-  border-radius:1px;
-  transform:scale(0);
-  background:#071426;
+  inline-size:4px;
+  block-size:8px;
+  border-right:2px solid #fff;
+  border-bottom:2px solid #fff;
+  transform:rotate(45deg) scale(0);
+  transform-origin:center;
 }
-#SpectraProDockHost input[type="checkbox"]:checked{background:#49d7bd;border-color:#72f3da;}
-#SpectraProDockHost input[type="checkbox"]:checked::before{transform:scale(1);}
+#SpectraProDockHost input[type="checkbox"]:checked{background:#2872bd;border-color:#8fc7ff;}
+#SpectraProDockHost input[type="checkbox"]:checked::before{transform:rotate(45deg) scale(1);}
 #SpectraProDockHost input[type="checkbox"]:focus-visible{outline:2px solid #7dd3fc;outline-offset:2px;}
 #SpectraProDockHost input[type="checkbox"]:disabled{opacity:.45;cursor:not-allowed;}
 
-/* Advanced content spans the panel instead of growing only the left column. */
-#spPanel-lab #spLabAdvanced,
-#spPanel-astro #spAstroAdvanced{flex:0 0 auto;}
-#spPanel-lab #spLabAdvanced > .sp-advanced__body{
+/* LAB/ASTRO expert controls live in body-level modals, outside the fixed dock. */
+.sp-modal__panel--analysis{width:min(900px,calc(100vw - 36px));max-height:min(82vh,720px);color:#dbefff;background:#071a38;}
+.sp-analysis-modal .sp-modal__body{max-height:calc(82vh - 58px);padding:12px;}
+.sp-analysis-modal__content--lab{
   display:grid;
   grid-template-columns:minmax(340px,.9fr) minmax(430px,1.1fr);
   grid-template-rows:auto auto;
-  gap:5px 14px;
+  gap:10px 16px;
   align-items:start;
 }
-#spPanel-lab #spLabAdvanced .sp-lab-fields{grid-column:1;grid-row:1;gap:8px;}
-#spPanel-lab #spLabAdvanced .sp-lab-fields-col{gap:5px;margin:0;padding-left:0;}
-#spPanel-lab #spLabAdvanced .sp-lab-fields-col .sp-field:not(.sp-field--checkbox-row){
+.sp-analysis-modal__content--lab .sp-lab-fields{grid-column:1;grid-row:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.sp-analysis-modal__content--lab .sp-lab-fields-col{display:grid;gap:7px;margin:0;padding:0;align-content:start;}
+.sp-analysis-modal .sp-field{display:flex;flex-direction:column;gap:3px;color:#dbefff;font-size:12px;min-width:0;}
+.sp-analysis-modal .sp-field--checkbox-row{flex-direction:row;align-items:center;gap:6px;min-height:27px;}
+.sp-analysis-modal input[type="checkbox"]{inline-size:15px;block-size:15px;margin:0;accent-color:#2872bd;}
+.sp-analysis-modal__content--lab .sp-lab-fields-col .sp-field:not(.sp-field--checkbox-row){
   display:grid !important;
   grid-template-columns:minmax(0,1fr) 72px;
   align-items:center;
   gap:5px;
 }
-#spPanel-lab #spLabAdvanced .sp-lab-fields-col .spctl-input{width:72px !important;min-height:25px;}
-#spPanel-lab #spLabAdvanced .sp-actions--lab-diagnostics{grid-column:1;grid-row:2;margin-top:2px !important;}
-#spPanel-lab #spLabAdvanced .sp-reference-mount{grid-column:2;grid-row:1/3;}
-#spPanel-astro #spAstroAdvanced > .sp-advanced__body{
+.sp-analysis-modal__content--lab .sp-lab-fields-col .spctl-input{width:72px !important;min-height:25px;}
+.sp-analysis-modal__content--lab .sp-actions--lab-diagnostics{grid-column:1;grid-row:2;margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;}
+.sp-analysis-modal__content--lab .sp-reference-mount{grid-column:2;grid-row:1/3;}
+.sp-analysis-modal__content--astro{
   display:grid;
   grid-template-columns:minmax(240px,.7fr) minmax(480px,1.3fr);
   gap:14px;
   align-items:start;
 }
-#spPanel-astro #spAstroAdvanced .sp-astro-diagnostics{min-width:0;}
-#spPanel-astro #spAstroAdvanced .sp-analysis-disclaimer{margin-top:5px !important;}
-#spPanel-lab #spLabCard:has(> #spLabAdvanced[open]) .sp-analysis-layout,
-#spPanel-astro #spAstroCard:has(> #spAstroAdvanced[open]) .sp-analysis-layout{min-height:80px;flex:1 1 80px;}
-#spPanel-lab #spLabCard:has(> #spLabAdvanced[open]) .sp-lab-table,
-#spPanel-astro #spAstroCard:has(> #spAstroAdvanced[open]) .sp-lab-table{min-height:80px;}
+.sp-analysis-modal__content--astro .sp-astro-diagnostics{min-width:0;}
+.sp-analysis-modal__content--astro .sp-analysis-disclaimer{margin-top:5px;}
+.sp-analysis-modal .sp-subtitle{margin:0 0 5px;font-size:12px;line-height:1.2;text-transform:uppercase;letter-spacing:.04em;}
+.sp-analysis-modal .sp-note{margin-top:5px;color:#b8cce8;font-size:11px;line-height:1.3;}
+.sp-analysis-modal .sp-actions button{background:#2f5f9f;color:#fff;border:1px solid #4e7fbf;border-radius:7px;padding:5px 9px;font-size:12px;}
+.sp-analysis-modal .spctl-select,
+.sp-analysis-modal .spctl-input{box-sizing:border-box;width:100%;min-height:27px;background:#0a1836;color:#fff;border:1px solid #3a5f98;border-radius:6px;padding:4px 7px;font-size:12px;}
 
 #SpectraProDockHost .sp-reference-comparison--embedded{
   margin:0 !important;
@@ -1603,6 +1613,18 @@ label[for="peakSizeLower"],
 #SpectraProDockHost .sp-reference-comparison--embedded .spctl-input{min-height:25px !important;padding:3px 6px !important;}
 #SpectraProDockHost .sp-reference-comparison--embedded .sp-actions{margin-top:4px !important;}
 #SpectraProDockHost .sp-reference-comparison--embedded .sp-note:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.sp-analysis-modal .sp-reference-comparison--embedded{margin:0;padding:0;border:0;background:transparent;}
+.sp-analysis-modal .sp-reference-comparison--embedded .sp-subtitle{margin:0 0 5px;}
+.sp-analysis-modal .sp-reference-comparison--embedded > .sp-advanced__body{padding:0;}
+.sp-analysis-modal .sp-reference-comparison--embedded .sp-form-grid{display:grid;grid-template-columns:repeat(2,minmax(150px,1fr));gap:8px;}
+.sp-analysis-modal .sp-reference-comparison--embedded .sp-actions{display:flex;gap:6px;margin-top:7px;}
+
+@media (max-width:760px){
+  .sp-analysis-modal__content--lab,
+  .sp-analysis-modal__content--astro{grid-template-columns:1fr;}
+  .sp-analysis-modal__content--lab .sp-reference-mount{grid-column:1;grid-row:auto;}
+}
 
 /* HARDWARE response settings share a compact row and no longer fall below the dock. */
 #spPanel-hardware #spHardwareCard .sp-hw-response{
