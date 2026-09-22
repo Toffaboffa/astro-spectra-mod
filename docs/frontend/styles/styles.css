@@ -60,6 +60,29 @@ input.darker-slider::-ms-track { background: #32455f; }
   flex-grow:1; display:flex; flex-direction:column; min-height:0;
 }
 #videoMainWindow{ height:auto !important; display:block; }
+#videoMainWindow.sp-numeric-source{
+  height:214px !important;
+  min-height:214px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:linear-gradient(180deg,#03070d 0%,#081322 100%);
+  border-top:1px solid rgba(125,211,252,.12);
+  border-bottom:1px solid rgba(125,211,252,.12);
+}
+#videoMainWindow.sp-numeric-source::after{
+  content:"TSIS-1 HSRS\A 388–670 nm";
+  white-space:pre;
+  color:#7890aa;
+  font-size:11px;
+  line-height:1.45;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  pointer-events:none;
+}
+#videoMainWindow.sp-numeric-source #cameraWindowCanvasRecording,
+#videoMainWindow.sp-numeric-source #spFramePreviewCanvas{display:none !important;}
 #cameraSelect { text-align:center; }
 #miscMeasuringSettings {
   flex-grow:1; overflow-y:auto; min-height:0; margin:.5rem 0; padding:.5rem;

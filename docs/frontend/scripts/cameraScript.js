@@ -57,6 +57,8 @@ function refreshActiveSourceMetrics() {
  * @param deviceId
  */
 async function startStream(deviceId) {
+    const sourceWindow = document.getElementById('videoMainWindow');
+    if (sourceWindow) sourceWindow.classList.remove('sp-numeric-source');
     const constraints = {
         video: {
             deviceId: deviceId ? { exact: deviceId } : undefined,

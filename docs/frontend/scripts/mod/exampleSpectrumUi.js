@@ -442,6 +442,8 @@
   }
 
   function finishLoadedImage(sample, image) {
+    const sourceWindow = $('videoMainWindow');
+    if (sourceWindow) sourceWindow.classList.remove('sp-numeric-source');
     try {
       const rt = sp.runtime || {};
       if (typeof rt.setVideoElement === 'function') rt.setVideoElement(image);
@@ -509,6 +511,8 @@
     } catch (_) {}
     const video = $('videoMain');
     const image = $('cameraImage');
+    const sourceWindow = $('videoMainWindow');
+    if (sourceWindow) sourceWindow.classList.add('sp-numeric-source');
     if (video) video.style.display = 'none';
     if (image) image.style.display = 'none';
     const pause = $('pauseVideoButton');

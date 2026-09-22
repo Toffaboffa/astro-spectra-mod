@@ -1455,3 +1455,40 @@ label[for="peakSizeLower"],
   #SpectraProDockHost .sp-reference-comparison .sp-form-grid{grid-template-columns:1fr!important}
   #spPanel-lab .sp-lab-primary #spFieldLabSubMode{grid-column:auto}
 }
+
+/* Compact desktop panels: match LAB typography and keep primary content in the fixed dock. */
+#spPanel-hardware .sp-subtitle,
+#spPanel-astro .sp-subtitle{
+  margin:0 0 3px !important;
+  color:#dbefff;
+  font-size:12px !important;
+  line-height:1.15 !important;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+#spPanel-astro .sp-lab-head{display:none !important;}
+#spPanel-hardware #spHardwareCard .sp-hw-layout{gap:6px;}
+#spPanel-hardware #spHardwareCard .sp-hw-response{margin-top:4px;}
+#spPanel-hardware #spHardwareCard .sp-hw-response .sp-form-grid{margin-top:0;}
+#spPanel-hardware #spHardwareCard .sp-hw-response .sp-actions{margin-top:5px !important;}
+#spPanel-hardware #spHardwareCard .sp-hw-response .sp-note{margin-top:3px !important;line-height:1.2;}
+
+#spPanel-astro .sp-astro-summary-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px 10px;
+  margin-top:7px;
+}
+#spPanel-astro .sp-astro-summary{min-width:0;margin:0 !important;}
+#spPanel-astro .sp-astro-summary .sp-note{margin:0 !important;font-size:11px !important;line-height:1.25;}
+#spPanel-astro #spAstroCard > .sp-note{margin-top:5px !important;font-size:11px !important;line-height:1.2;}
+
+#spPanel-lab .sp-analysis-layout .sp-lab-table,
+#spPanel-astro .sp-analysis-layout .sp-lab-table{min-height:125px;}
+#SpectraProDockHost .sp-advanced{margin-top:6px;}
+#SpectraProDockHost .sp-advanced > summary{padding:5px 8px;font-size:11px;line-height:1.2;}
+#SpectraProDockHost .sp-advanced__body{padding:6px 8px;}
+#SpectraProDockHost .sp-reference-comparison{margin-top:6px !important;}
+#SpectraProDockHost .sp-reference-comparison .sp-actions{margin-top:5px !important;}
+#SpectraProDockHost .sp-reference-comparison .sp-note{margin-top:3px !important;line-height:1.2;}
