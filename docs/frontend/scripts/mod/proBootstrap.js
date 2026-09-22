@@ -1184,8 +1184,10 @@ function ensureAstroPanel() {
     '<div class="sp-lab-layout sp-analysis-layout">',
     '  <div class="sp-lab-left">',
     '    <div class="sp-lab-head"><div class="sp-lab-title">ASTRO</div></div>',
-    '    <label class="sp-field sp-field--checkbox-row" title="Run continuum normalization and absorption analysis in the shared worker."><span>Analyze</span><input id="spAstroEnabled" type="checkbox"></label>',
-    '    <div id="spAstroActions" class="sp-actions sp-actions--astro"></div>',
+    '    <div class="sp-analysis-toolbar">',
+    '      <label class="sp-field sp-field--checkbox-row" title="Run continuum normalization and absorption analysis in the shared worker."><span>Analyze</span><input id="spAstroEnabled" type="checkbox"></label>',
+    '      <div id="spAstroActions" class="sp-actions sp-actions--astro"></div>',
+    '    </div>',
     '    <div class="sp-astro-summary-grid">',
     '      <div class="sp-card-sub sp-astro-summary">',
     '        <h4 class="sp-subtitle">Continuum</h4>',
@@ -1217,15 +1219,18 @@ function ensureAstroPanel() {
     '<details id="spAstroAdvanced" class="sp-advanced">',
     '  <summary>Advanced ASTRO details</summary>',
     '  <div class="sp-advanced__body">',
-    '    <h4 class="sp-subtitle">Continuum diagnostics</h4>',
-    '    <div id="spAstroContinuumAdvanced" class="sp-note">Unavailable.</div>',
+    '    <div class="sp-astro-diagnostics">',
+    '      <h4 class="sp-subtitle">Continuum diagnostics</h4>',
+    '      <div id="spAstroContinuumAdvanced" class="sp-note">Unavailable.</div>',
+    '      <div class="sp-note sp-analysis-disclaimer">Educational low-resolution analysis. Broad O/B/A/F/G/K/M evidence is heuristic, not a probability, subclass or luminosity class. Radial velocity is not barycentric/heliocentric corrected.</div>',
+    '    </div>',
+    '    <div id="spAstroReferenceMount" class="sp-reference-mount"></div>',
     '  </div>',
-    '</details>',
-    '<div class="sp-note" style="margin-top:10px">Educational low-resolution analysis. Broad O/B/A/F/G/K/M evidence is heuristic, not a probability, subclass or luminosity class. Radial velocity is not barycentric/heliocentric corrected.</div>'
+    '</details>'
   ].join('');
   panel.appendChild(card);
   panel.dataset.built = '1';
-  ensureReferenceComparisonCard(panel, 'Astro');
+  ensureReferenceComparisonCard($('spAstroReferenceMount'), 'Astro');
 
   const enabled = $('spAstroEnabled');
   const state = getStoreState();
@@ -1251,14 +1256,15 @@ function setReferenceComparisonState(patch, source) {
 
 function ensureReferenceComparisonCard(panel, prefix) {
   if (!panel || $("sp" + prefix + "ReferenceComparison")) return;
-  const card = el('details', 'sp-card sp-card--flat sp-advanced sp-reference-comparison');
+  const embedded = panel.classList && panel.classList.contains('sp-reference-mount');
+  const card = el(embedded ? 'section' : 'details', 'sp-card sp-card--flat sp-reference-comparison' + (embedded ? ' sp-reference-comparison--embedded' : ' sp-advanced'));
   card.id = 'sp' + prefix + 'ReferenceComparison';
   const catalog = sp.referenceCatalog && typeof sp.referenceCatalog.list === 'function' ? sp.referenceCatalog.list() : [];
   const options = ['<option value="">None</option>'].concat(catalog.map(function (item) {
     return '<option value="' + escapeAttr(item.id) + '">' + escapeHtml(item.label) + '</option>';
   })).join('');
   card.innerHTML = [
-    '<summary>Advanced: reference spectrum comparison</summary>',
+    embedded ? '<h4 class="sp-subtitle">Reference spectrum comparison</h4>' : '<summary>Advanced: reference spectrum comparison</summary>',
     '<div class="sp-advanced__body">',
     '  <div class="sp-form-grid">',
     '    <label class="sp-field">Reference<select class="spctl-select" data-ref-control="referenceId">' + options + '</select></label>',
@@ -1524,6 +1530,7 @@ function ensureLabPanel() {
 	    '      <div class="sp-lab-title">LAB</div>',
 	    '      <div id="spLabFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
 	    '    </div>',
+	    '    <div class="sp-analysis-toolbar">',
 	    '    <div class="sp-lab-primary" aria-label="Primary LAB controls">',
 	    '      <label id="spFieldLabEnabled" class="sp-field sp-field--lab-enabled sp-field--checkbox-row" title="Turn continuous LAB analysis on or off."><span>Analyze</span><input id="spLabEnabled" type="checkbox"></label>',
 	    '      <label id="spFieldLabPreset" class="sp-field sp-field--lab-preset" title="Choose a tuned library weighting preset for the current type of source.">Preset<select id="spLabPreset" class="spctl-select spctl-select--lab-preset">' + presetOptionsHtml + '</select></label>',
@@ -1537,6 +1544,7 @@ function ensureLabPanel() {
 	    '      </select></label>',
 	    '    </div>',
 	    '    <div class="sp-actions sp-actions--lab" aria-label="LAB interpretation actions"></div>',
+	    '    </div>',
 	    '    <details id="spLabAdvanced" class="sp-advanced">',
 	    '      <summary>Advanced analysis settings</summary>',
 	    '      <div class="sp-advanced__body">',
@@ -1577,9 +1585,18 @@ function ensureLabPanel() {
 	    '  </div>',
 	    '</div>'
   ].join('');
+  const advanced = card.querySelector('#spLabAdvanced');
+  let referenceMount = null;
+  if (advanced) {
+    referenceMount = el('div', 'sp-reference-mount');
+    referenceMount.id = 'spLabReferenceMount';
+    const advancedBody = advanced.querySelector('.sp-advanced__body');
+    if (advancedBody) advancedBody.appendChild(referenceMount);
+    card.appendChild(advanced);
+  }
   panel.appendChild(card);
   panel.dataset.built = '1';
-  ensureReferenceComparisonCard(panel, 'Lab');
+  ensureReferenceComparisonCard(referenceMount, 'Lab');
 
   // LAB must log to the *on-page* console (the right-side console panel),
   // not to an inline LAB div and not to DevTools.

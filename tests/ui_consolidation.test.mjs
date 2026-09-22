@@ -35,13 +35,20 @@ for (const id of ['spAstroEnabled', 'spAstroContinuum', 'spAstroQuality', 'spAst
   assert.ok(position > astroCard && position < astroAdvanced, id + ' must remain in the focused ASTRO view');
 }
 assert.ok(bootstrap.indexOf('id="spAstroContinuumAdvanced"', astroAdvanced) > astroAdvanced, 'continuum diagnostics must use ASTRO Advanced');
-assert.ok(bootstrap.includes("el('details', 'sp-card sp-card--flat sp-advanced sp-reference-comparison')"), 'reference comparison controls must use collapsed progressive disclosure');
+assert.ok(bootstrap.includes("embedded ? 'section' : 'details'"), 'reference comparison must embed inside the single Advanced region');
+assert.ok(bootstrap.includes('id="spAstroReferenceMount"'), 'ASTRO reference controls must share ASTRO Advanced');
+assert.ok(bootstrap.includes("referenceMount.id = 'spLabReferenceMount'"), 'LAB reference controls must share LAB Advanced');
+assert.ok(bootstrap.includes('card.appendChild(advanced)'), 'LAB Advanced must span the full analysis card instead of only its left column');
 assert.ok(bootstrap.includes('class="sp-astro-summary-grid"'), 'ASTRO summaries must use the compact desktop grid');
 assert.ok(bootstrap.includes('class="sp-card-sub sp-hw-response"'), 'instrument response must use the compact hardware section');
+assert.ok((bootstrap.match(/class="sp-analysis-toolbar"/g) || []).length >= 2, 'LAB and ASTRO must use the same toolbar structure');
 
 assert.ok(styles.includes('#spPanel-astro .sp-analysis-layout'), 'LAB/ASTRO must share responsive analysis layout rules');
 assert.ok(styles.includes('#spPanel-astro .sp-subtitle'), 'ASTRO subtitles must use dock typography instead of browser heading defaults');
 assert.ok(styles.includes('#spPanel-astro .sp-lab-head{display:none !important;}'), 'ASTRO must not add a heading that LAB omits');
+assert.ok(styles.includes('#SpectraProDockHost input[type="checkbox"]'), 'dock checkboxes must have an explicit dark-theme state');
+assert.ok(styles.includes('.sp-reference-comparison--embedded'), 'reference controls must not create a second expanding block');
+assert.ok(styles.includes('box-sizing:border-box !important;'), 'fixed-height tab panels must include borders and padding in their measured height');
 assert.ok(styles.includes('min-height:125px'), 'analysis tables must be allowed to shrink inside the fixed desktop dock');
 assert.ok(styles.includes('#SpectraProDockHost .sp-advanced > summary:focus-visible'), 'Advanced summaries must retain keyboard focus visibility');
 assert.ok(styles.includes('@media (max-width: 900px)'), 'normal-width layout must have a compact responsive fallback');
