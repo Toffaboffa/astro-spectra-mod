@@ -277,7 +277,8 @@
       'analysis.elementScores',
       'analysis.winnerBreakdown',
       'analysis.qcFlags',
-      'analysis.offsetNm'
+      'analysis.offsetNm',
+      'analysis.diffractionCandidates'
     ];
 
     let analyzeTimer = null;

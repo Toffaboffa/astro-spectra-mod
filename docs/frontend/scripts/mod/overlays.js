@@ -46,7 +46,10 @@
       smartPadX: readNum('--sp-graph-smart-pad-x', 5),
       smartPadY: readNum('--sp-graph-smart-pad-y', 2),
       smartHeight: readNum('--sp-graph-smart-height', 14),
-      smartRadius: readNum('--sp-graph-smart-radius', 7)
+      smartRadius: readNum('--sp-graph-smart-radius', 7),
+      labelBg: read('--sp-graph-label-bg', 'rgba(255,255,255,0.82)'),
+      labelBorder: read('--sp-graph-label-border', 'rgba(30,41,59,0.22)'),
+      excludedMark: read('--sp-graph-excluded-mark', 'rgba(220,38,38,0.98)')
     };
   }
 
@@ -267,7 +270,8 @@
           observedNm: observedNm,
           referenceNm: referenceNm,
           xCanvas: xCanvas,
-          peakY: isAstro ? calcDipY(pxObserved) : calcPeakY(pxObserved)
+          peakY: isAstro ? calcDipY(pxObserved) : calcPeakY(pxObserved),
+          excludedByDiffraction: !!hit.excludedByDiffraction
         };
         if (isAstro) {
           clustered.push({ xCanvas: xCanvas, items: [item] });
@@ -323,6 +327,33 @@
       const topAnchorY = Math.max(1, Math.round(plotTop + 2));
       const lowPeakThresholdY = 92;
       const peakLabelGap = 4;
+      const occupiedLabelRects = [];
+
+      function rectsOverlap(a, b) {
+        return !(a.right + 2 <= b.left || a.left >= b.right + 2 || a.bottom + 2 <= b.top || a.top >= b.bottom + 2);
+      }
+
+      function placeLabelStack(group, preferredY, stackHeight) {
+        let maxWidth = 0;
+        group.items.forEach(function (item) {
+          maxWidth = Math.max(maxWidth, Math.ceil(ctx.measureText(item.label).width) + theme.smartPadX * 2 + 4);
+        });
+        const left = Math.max(plotLeft + 1, Math.min(plotRight - maxWidth - 1, group.xCanvas + xOffset - theme.smartPadX));
+        const maxTop = Math.max(topAnchorY, plotBottom - stackHeight - 2);
+        const offsets = [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -6, 6];
+        let fallback = null;
+        for (let oi = 0; oi < offsets.length; oi += 1) {
+          const top = Math.max(topAnchorY, Math.min(maxTop, preferredY + offsets[oi] * rowStep));
+          const rect = { left: left, right: left + maxWidth, top: top, bottom: top + stackHeight };
+          if (!fallback) fallback = { top: top, rect: rect };
+          if (!occupiedLabelRects.some(function (used) { return rectsOverlap(rect, used); })) {
+            occupiedLabelRects.push(rect);
+            return top;
+          }
+        }
+        occupiedLabelRects.push(fallback.rect);
+        return fallback.top;
+      }
 
       for (let gi = 0; gi < clustered.length; gi += 1) {
         const group = clustered[gi];
@@ -339,11 +370,12 @@
           return !Number.isFinite(best) ? item.peakY : Math.min(best, item.peakY);
         }, NaN);
         const stackHeight = Math.max(theme.smartHeight, group.items.length * rowStep);
-        const startY = isAstro
+        const preferredStartY = isAstro
           ? Math.max(topAnchorY, Math.min(plotBottom - stackHeight - 2, topAnchorY + (gi % 2) * rowStep))
           : ((Number.isFinite(peakY) && peakY > lowPeakThresholdY)
             ? Math.max(Math.round(plotTop + 2), Math.min(Math.round(plotBottom - stackHeight - 2), Math.round(peakY - stackHeight - peakLabelGap)))
             : topAnchorY);
+        const startY = placeLabelStack(group, preferredStartY, stackHeight);
         const lineTopY = Math.max(plotTop, Math.min(plotBottom, startY + Math.round(theme.smartHeight * 0.5)));
 
         ctx.beginPath();
@@ -369,6 +401,7 @@
           ctx.setLineDash([]);
           const isBestMatchHit = !!(bestHighlightKey && item.speciesKey === bestHighlightKey);
           const isSmartHighlight = !!(
+            !item.excludedByDiffraction &&
             smartEnabled &&
             item.speciesKey &&
             Object.prototype.hasOwnProperty.call(highlightElements, item.speciesKey) &&
@@ -399,12 +432,40 @@
             ctx.quadraticCurveTo(bx, by, bx + radius, by);
             ctx.fill();
             ctx.stroke();
+          } else if (!isAstro) {
+            const metrics = ctx.measureText(label);
+            const padX = 3;
+            const padY = 2;
+            const bw = Math.max(12, Math.ceil(metrics.width + padX * 2));
+            const bh = Math.max(13, theme.smartHeight - 1);
+            const bx = Math.max(2, Math.min(w - bw - 2, tx - padX));
+            const by = Math.max(1, ty - padY);
+            ctx.fillStyle = theme.labelBg;
+            ctx.strokeStyle = theme.labelBorder;
+            ctx.lineWidth = 0.8;
+            ctx.fillRect(bx, by, bw, bh);
+            ctx.strokeRect(bx, by, bw, bh);
           }
           ctx.lineWidth = 3;
           ctx.strokeStyle = textStroke;
           ctx.strokeText(label, tx, ty);
           ctx.fillStyle = isSmartHighlight ? theme.smartTextColor : theme.overlayTextColor;
           ctx.fillText(label, tx, ty);
+
+          if (item.excludedByDiffraction && !isAstro) {
+            const cx = tx + labelWidth * 0.5;
+            const cy = Math.max(plotTop + 5, ty - 5);
+            const arm = 4;
+            ctx.beginPath();
+            ctx.strokeStyle = theme.excludedMark;
+            ctx.lineWidth = 2.3;
+            ctx.setLineDash([]);
+            ctx.moveTo(cx - arm, cy - arm);
+            ctx.lineTo(cx + arm, cy + arm);
+            ctx.moveTo(cx + arm, cy - arm);
+            ctx.lineTo(cx - arm, cy + arm);
+            ctx.stroke();
+          }
           ctx.restore();
           labels += 1;
         }

@@ -1162,6 +1162,24 @@ function buildPixelsFromNumericFrame(frame) {
     return out;
 }
 
+function drawSpectraProAnalysisOverlays(zoomStart, zoomEnd, sampleCount) {
+    try {
+        const sp = window.SpectraPro || {};
+        if (!sp.overlays || typeof sp.overlays.drawOnGraph !== 'function' || typeof graphCtx === 'undefined' || !graphCtx) return;
+        const gc = (typeof graphCanvas !== 'undefined' ? graphCanvas : null);
+        if (!gc) return;
+        const rect = gc.getBoundingClientRect ? gc.getBoundingClientRect() : null;
+        sp.overlays.drawOnGraph(graphCtx, {
+            graphCanvas: gc,
+            zoomStart: Number.isFinite(Number(zoomStart)) ? Number(zoomStart) : 0,
+            zoomEnd: Number.isFinite(Number(zoomEnd)) ? Number(zoomEnd) : Number(sampleCount) || 0,
+            cssWidth: rect ? rect.width : null,
+            cssHeight: rect ? rect.height : null,
+            padding: 30
+        });
+    } catch (_) {}
+}
+
 /**
  * Draws the graph line, graph grid and labels, deals with peaks, zooming and reference graph
  */
@@ -1346,6 +1364,9 @@ function drawGraph() {
         graphCtx.fillStyle = 'rgba(0, 0, 255, 0.2)';
         graphCtx.fillRect(rectX, 30, rectWidth, graphCanvas.getBoundingClientRect().height - 60);
     }
+
+    drawSpectraProAnalysisOverlays(zoomStart, zoomEnd, Math.floor(pixels.length / 4));
+
     if (graphHoverState.active && Number.isFinite(graphHoverState.graphX)) {
         updateGraphHoverDotFromGraphX(graphHoverState.graphX);
     }
@@ -2440,30 +2461,7 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
       const result = origDrawGraph.apply(this, arguments);
       const frame = buildFrame();
       if (frame) emitGraphFrame(frame);
-      if (sp.overlays && sp.overlays.drawOnGraph && typeof graphCtx !== 'undefined') {
-        try {
-          // Provide zoom context to overlays. The legacy app does not expose zoomStart/zoomEnd
-          // globally; they live inside graphScript's zoomList/getZoomRange.
-          let zoomStart = 0, zoomEnd = frame ? frame.pixelWidth : 0;
-          try {
-            if (typeof getZoomRange === 'function' && frame && Number.isFinite(frame.pixelWidth)) {
-              const zr = getZoomRange(frame.pixelWidth);
-              if (Array.isArray(zr) && zr.length === 2) { zoomStart = +zr[0] || 0; zoomEnd = +zr[1] || zoomEnd; }
-            }
-          } catch(_) {}
-          const gc = (typeof graphCanvas !== 'undefined' ? graphCanvas : null);
-          const rect = gc && gc.getBoundingClientRect ? gc.getBoundingClientRect() : null;
-          sp.overlays.drawOnGraph(graphCtx, {
-            graphCanvas: gc,
-            zoomStart: zoomStart,
-            zoomEnd: zoomEnd,
-            cssWidth: rect ? rect.width : null,
-            cssHeight: rect ? rect.height : null,
-            // graphScript draws with a fixed padding of 30 (see drawGrid)
-            padding: 30
-          });
-        } catch(e){}
-      }
+      // Analysis overlays are rendered inside drawGraph() so every redraw path is identical.
       return result;
     };
     wrapped.__spectraProFrameHookWrapped = true;

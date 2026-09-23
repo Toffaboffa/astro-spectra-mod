@@ -31,4 +31,7 @@
     --sp-graph-smart-pad-y: 3;
     --sp-graph-smart-height: 16;
     --sp-graph-smart-radius: 8;
+    --sp-graph-label-bg: rgba(255,255,255,0.82);
+    --sp-graph-label-border: rgba(30,41,59,0.22);
+    --sp-graph-excluded-mark: rgba(220,38,38,0.98);
 }

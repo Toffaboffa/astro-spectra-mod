@@ -192,6 +192,16 @@ function ensureHost() {
       panels[tab] = panel;
     });
 
+    const graphTools = el('div', 'sp-graph-tools');
+    graphTools.id = 'spGraphTools';
+    graphTools.setAttribute('aria-label', 'Graph overlays');
+    graphTools.innerHTML = [
+      '<label class="sp-graph-tool sp-graph-tool--check" title="Highlight locally saturated graph regions."><input id="spToggleSaturationOverlay" type="checkbox"><span>Saturation</span></label>',
+      '<label class="sp-graph-tool sp-graph-tool--check" title="Shade wavelengths outside the calibration-anchor interval."><input id="spToggleCalibrationExtrapolation" type="checkbox"><span>Extrapolation</span></label>',
+      '<label class="sp-graph-tool sp-graph-tool--range" title="Set the tint strength for extrapolated calibration regions."><span>Shade <b id="spCalibrationShadeOpacityValue">12%</b></span><input id="spCalibrationShadeOpacity" type="range" min="0.02" max="0.50" step="0.01" value="0.12"></label>'
+    ].join('');
+    tabs.appendChild(graphTools);
+
     body.appendChild(tabPanels);
     body.appendChild(statusRail);
     shell.appendChild(tabs);
@@ -205,7 +215,7 @@ function ensureHost() {
       syncActiveTabToStore(btn.dataset.tab);
     });
 
-    ui = { host, shell, tabs, body, tabPanels, statusRail, panels };
+    ui = { host, shell, tabs, graphTools, body, tabPanels, statusRail, panels };
     ensurePanelContent();
     return ui;
   }
@@ -741,11 +751,6 @@ if (!document.getElementById('spSubtractionControls')) {
         '    <div class="sp-mini-row sp-mini-row--check"><span>Dark graph</span><input id="spToggleDarkProxy" type="checkbox" disabled></div>',
         '    <div class="sp-mini-row sp-mini-row--check"><span>Reference graph</span><input id="spToggleRefProxy" type="checkbox" disabled></div>',
         '  </div>',
-        '  <div id="spFieldGraphOverlays" class="sp-field sp-field--stackgroup" title="Graph-only scientific warning overlays.">',
-        '    <div class="sp-mini-row sp-mini-row--check" title="Highlight graph regions where the source spectrum reaches the saturation threshold used by data-quality checks."><span>Saturation</span><input id="spToggleSaturationOverlay" type="checkbox"></div>',
-        '    <div class="sp-mini-row sp-mini-row--check" title="Shade graph regions outside the minimum and maximum calibration anchor pixels."><span>Cal. extrapolation</span><input id="spToggleCalibrationExtrapolation" type="checkbox"></div>',
-        '  </div>',
-        '  <label id="spFieldCalibrationShadeOpacity" class="sp-field sp-field--calibration-shade" title="Set how strongly extrapolated calibration regions are shaded."><span>Extrapolation shade <span id="spCalibrationShadeOpacityValue" class="sp-inline-value">12%</span></span><input id="spCalibrationShadeOpacity" class="spctl-input spctl-range" type="range" min="0.02" max="0.50" step="0.01" value="0.12"></label>',
         '  <label id="spFieldToggleNmPeaks" class="sp-field sp-field--checkbox-row" title="Show or hide detected nm peak markers on the graph."><span>Toggle peaks</span><input id="spToggleNmPeaks" type="checkbox"></label>',
         '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold" title="Minimum intensity used by the built-in nm peak detector.">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
         '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance" title="Minimum separation between detected nm peaks.">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
@@ -806,10 +811,10 @@ if (!document.getElementById('spSubtractionControls')) {
       const peakDistanceInput = card.querySelector('#spPeakDistance');
       const peakSmoothingInput = card.querySelector('#spPeakSmoothing');
       const toggleNmPeaksInput = card.querySelector('#spToggleNmPeaks');
-      const saturationOverlayInput = card.querySelector('#spToggleSaturationOverlay');
-      const calibrationExtrapolationInput = card.querySelector('#spToggleCalibrationExtrapolation');
-      const calibrationShadeOpacityInput = card.querySelector('#spCalibrationShadeOpacity');
-      const calibrationShadeOpacityValue = card.querySelector('#spCalibrationShadeOpacityValue');
+      const saturationOverlayInput = $('spToggleSaturationOverlay');
+      const calibrationExtrapolationInput = $('spToggleCalibrationExtrapolation');
+      const calibrationShadeOpacityInput = $('spCalibrationShadeOpacity');
+      const calibrationShadeOpacityValue = $('spCalibrationShadeOpacityValue');
       const combinedProxy = card.querySelector('#spToggleCombinedProxy');
       const rProxy = card.querySelector('#spToggleRProxy');
       const gProxy = card.querySelector('#spToggleGProxy');
