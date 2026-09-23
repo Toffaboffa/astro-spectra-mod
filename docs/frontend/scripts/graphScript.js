@@ -698,11 +698,13 @@ function getHoverSeriesDescriptor() {
 function updateGraphHoverDotFromGraphX(graphX) {
     if (!Number.isFinite(graphX)) {
         hideGraphHoverDot();
+        if (peakInspectorState.locked) releasePeakInspector();
         return;
     }
     const descriptor = getHoverSeriesDescriptor();
     if (!descriptor || !descriptor.pixels) {
         hideGraphHoverDot();
+        if (peakInspectorState.locked) releasePeakInspector();
         return;
     }
     const targetPixels = descriptor.pixels;
@@ -712,6 +714,7 @@ function updateGraphHoverDotFromGraphX(graphX) {
     const [zoomStart, zoomEnd] = getZoomRange(Math.max(1, Math.floor(targetPixels.length / 4)));
     if (!(graphX >= zoomStart && graphX < zoomEnd)) {
         hideGraphHoverDot();
+        if (peakInspectorState.locked) releasePeakInspector();
         return;
     }
     const value = getGraphValueAtX(targetPixels, graphX, descriptor.channelOffset);
