@@ -2581,6 +2581,10 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
         calibration: frame.calibration || null,
         hardware: frame.hardware || null,
         metadata: frame.metadata || null,
+        previewWidth: Number.isFinite(Number(frame.previewWidth)) ? Number(frame.previewWidth) : null,
+        previewHeight: Number.isFinite(Number(frame.previewHeight)) ? Number(frame.previewHeight) : null,
+        sourceWidth: Number.isFinite(Number(frame.sourceWidth)) ? Number(frame.sourceWidth) : null,
+        sourceHeight: Number.isFinite(Number(frame.sourceHeight)) ? Number(frame.sourceHeight) : null,
         source: frame.source || 'numeric-example'
       };
       zoomList = [[0, frame.I.length]];

@@ -597,6 +597,66 @@
     return { R: asset.R.slice(), G: asset.G.slice(), B: asset.B.slice() };
   }
 
+  function configureSampleStripePreview(sample, asset, options) {
+    try {
+      const opts = options || {};
+      const preview = asset && asset.preview ? asset.preview : {};
+      const capture = asset && asset.capture ? asset.capture : {};
+      const width = Math.max(2, Math.round(Number(opts.width || preview.width || capture.sourceWidthPx || 1280)));
+      const height = Math.max(2, Math.round(Number(opts.height || preview.height || capture.sourceHeightPx || 720)));
+      const bandTop = Math.max(1, Math.round(Number(opts.bandTop != null ? opts.bandTop : (preview.bandTopPx != null ? preview.bandTopPx : 1))));
+      const bandHeight = Math.max(1, Math.round(Number(opts.bandHeight != null ? opts.bandHeight : (preview.bandHeightPx != null ? preview.bandHeightPx : height))));
+      const bandBottom = Math.min(height, bandTop + bandHeight - 1);
+      const stripeWidthPx = Math.max(1, Math.round(Number(opts.stripeWidthPx || capture.stripeWidthPx || (sample && sample.stripe && sample.stripe.widthPx) || 1)));
+      const defaultY = Math.max(bandTop, Math.min(bandBottom, Math.round(Number(opts.stripeYpx || capture.stripeYpx || ((bandTop + bandBottom) / 2)))));
+
+      const runtime = sp.runtime || {};
+      if (typeof runtime.setSourceMetrics === 'function') runtime.setSourceMetrics(width, height);
+
+      const overlay = $('cameraWindowCanvasRecording');
+      if (overlay) {
+        overlay.width = width;
+        overlay.height = height;
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+      }
+
+      const widthRange = $('stripeWidthRange');
+      const widthValue = $('stripeWidthValue');
+      const placeRange = $('stripePlacementRange');
+      const placeValue = $('stripePlacementValue');
+
+      if (widthRange) {
+        widthRange.min = '1';
+        widthRange.max = String(Math.max(1, Math.min(height, bandHeight)));
+        widthRange.value = String(Math.min(stripeWidthPx, Number(widthRange.max) || stripeWidthPx));
+      }
+      if (placeRange) {
+        const half = Math.max(0, Math.floor(stripeWidthPx / 2));
+        placeRange.min = String(Math.max(1, bandTop + half));
+        placeRange.max = String(Math.max(Number(placeRange.min) || 1, bandBottom - half));
+        placeRange.value = String(Math.max(Number(placeRange.min) || 1, Math.min(Number(placeRange.max) || height, defaultY)));
+      }
+      if (widthValue && widthRange) widthValue.textContent = String(widthRange.value);
+
+      if (typeof global.changeStripeWidth === 'function') global.changeStripeWidth(0);
+      if (typeof global.changeStripePlacement === 'function') global.changeStripePlacement(0);
+      if (placeValue && typeof global.getStripePositionRangeText === 'function') {
+        placeValue.textContent = global.getStripePositionRangeText();
+      }
+      if (typeof global.drawSelectionLine === 'function') global.drawSelectionLine();
+      if (typeof global.showSelectedStripe === 'function') global.showSelectedStripe();
+    } catch (_) {}
+  }
+
+  function refreshImageSampleStripePreview() {
+    try {
+      if (typeof global.syncCanvasToVideo === 'function') global.syncCanvasToVideo();
+      if (typeof global.drawSelectionLine === 'function') global.drawSelectionLine();
+      if (typeof global.showSelectedStripe === 'function') global.showSelectedStripe();
+    } catch (_) {}
+  }
+
   function enableLabAnalysis(sample) {
     try {
       const labTab = global.document && global.document.querySelector('#spTabs .sp-tab[data-tab="lab"]');
@@ -662,11 +722,24 @@
       calibrated: true,
       calibration: sample.calibration,
       hardware: asset.hardware || { spectrometerResolutionFwhmNm: 1.8, pixelResolutionNm: 0.5 },
-      metadata: { schema: asset.schema, id: asset.id, scientificRole: asset.scientificRole, provenance: asset.provenance },
+      metadata: { schema: asset.schema, id: asset.id, scientificRole: asset.scientificRole, provenance: asset.provenance, capture: asset.capture || null },
+      previewWidth: Number(asset.preview && asset.preview.width) || Number(asset.capture && asset.capture.sourceWidthPx) || 1280,
+      previewHeight: Number(asset.preview && asset.preview.height) || Number(asset.capture && asset.capture.sourceHeightPx) || 720,
+      sourceWidth: Number(asset.capture && asset.capture.sourceWidthPx) || 1280,
+      sourceHeight: Number(asset.capture && asset.capture.sourceHeightPx) || 720,
       source: 'gas-example'
+    });
+    configureSampleStripePreview(sample, asset, {
+      width: Number(asset.preview && asset.preview.width) || 1280,
+      height: Number(asset.preview && asset.preview.height) || 720,
+      bandTop: Number(asset.preview && asset.preview.bandTopPx),
+      bandHeight: Number(asset.preview && asset.preview.bandHeightPx),
+      stripeYpx: Number(asset.capture && asset.capture.stripeYpx),
+      stripeWidthPx: Number(asset.capture && asset.capture.stripeWidthPx)
     });
     global.setTimeout(function () {
       try { if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage(true); } catch (_) {}
+      try { if (typeof global.showSelectedStripe === 'function') global.showSelectedStripe(); } catch (_) {}
     }, 300);
     log((isSwedish() ? sample.labelSv : sample.labelEn) + ' loaded · measured SPECTRA-1 profile · LAB Gas Tube analysis enabled.');
   }
@@ -687,6 +760,7 @@
     selectRecommendedPreset(sample);
     setGraphFillMode('off');
     applyStripe(sample);
+    refreshImageSampleStripePreview();
 
     try {
       const calIo = sp.v15 && sp.v15.calibrationIO;
@@ -777,10 +851,23 @@
       calibration: asset.calibration,
       hardware: { spectrometerResolutionFwhmNm: asset.grid.stepNm * 2, pixelResolutionNm: asset.grid.stepNm },
       metadata: { schema: asset.schema, id: asset.id, provenance: asset.provenance, units: asset.units },
+      previewWidth: 1280,
+      previewHeight: 720,
+      sourceWidth: 1280,
+      sourceHeight: 720,
       source: 'solar-example'
+    });
+    configureSampleStripePreview(sample, asset, {
+      width: 1280,
+      height: 720,
+      bandTop: 110,
+      bandHeight: 500,
+      stripeYpx: 360,
+      stripeWidthPx: 1
     });
     global.setTimeout(function () {
       try { if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage(true); } catch (_) {}
+      try { if (typeof global.showSelectedStripe === 'function') global.showSelectedStripe(); } catch (_) {}
     }, 300);
     log((isSwedish() ? sample.labelSv : sample.labelEn) + ' loaded · calibrated 388–670 nm numeric spectrum · ASTRO analysis enabled.');
   }

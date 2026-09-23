@@ -46,6 +46,21 @@ function refreshActiveSourceMetrics() {
         return videoElement;
     };
     sp.runtime.refreshActiveSourceMetrics = refreshActiveSourceMetrics;
+    sp.runtime.setSourceMetrics = function(width, height){
+        const w = Number(width);
+        const h = Number(height);
+        if (Number.isFinite(w) && w > 0) cameraOutputWidth = w;
+        if (Number.isFinite(h) && h > 0) cameraOutputHeight = h;
+        const widthRange = document.getElementById("stripeWidthRange");
+        const placeRange = document.getElementById("stripePlacementRange");
+        if (widthRange && Number.isFinite(cameraOutputHeight) && cameraOutputHeight > 0) {
+            widthRange.max = String(Math.max(1, Math.round(cameraOutputHeight)));
+        }
+        if (placeRange && Number.isFinite(cameraOutputHeight) && cameraOutputHeight > 0) {
+            placeRange.max = String(Math.max(1, Math.round(cameraOutputHeight)));
+        }
+        return { width: cameraOutputWidth, height: cameraOutputHeight };
+    };
     sp.runtime.isSourceLive = function(){
         try { return !!(videoElement && videoElement.id === 'videoMain' && videoElement.srcObject); } catch(_) { return false; }
     };
@@ -321,7 +336,10 @@ function getElementWidth(element) {
 function getElementHeight(element) {
     try {
         const numericFrame = window.SpectraPro && window.SpectraPro.coreBridge && window.SpectraPro.coreBridge.numericFrame;
-        if (numericFrame && Array.isArray(numericFrame.I) && numericFrame.I.length) return 1;
+        if (numericFrame && Array.isArray(numericFrame.I) && numericFrame.I.length) {
+            const previewHeight = Number(numericFrame.previewHeight || numericFrame.sourceHeight);
+            return Number.isFinite(previewHeight) && previewHeight > 0 ? previewHeight : 1;
+        }
     } catch (_) {}
     if (element instanceof HTMLVideoElement) {
         return element.videoHeight;
