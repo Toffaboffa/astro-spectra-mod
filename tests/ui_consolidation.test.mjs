@@ -9,6 +9,7 @@ const styles = fs.readFileSync(path.join(root, 'docs/frontend/styles/mod-panels.
 const mainStyles = fs.readFileSync(path.join(root, 'docs/frontend/styles/styles.css'), 'utf8');
 const examples = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/exampleSpectrumUi.js'), 'utf8');
 const framePreview = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/framePreview.js'), 'utf8');
+const graphScript = fs.readFileSync(path.join(root, 'docs/frontend/scripts/graphScript.js'), 'utf8');
 const i18n = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/i18nUi.js'), 'utf8');
 
 function markupCount(id) {
@@ -60,11 +61,15 @@ assert.ok(styles.includes('grid-template-rows:auto minmax(0,1fr)'), 'ASTRO resul
 assert.ok(styles.includes('@media (max-width: 900px)'), 'normal-width layout must have a compact responsive fallback');
 assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source'), 'numeric examples must reserve the normal source-view height');
 assert.ok(mainStyles.includes('pointer-events:none'), 'the numeric source placeholder must not block source controls');
+assert.ok(mainStyles.includes('background:#000'), 'numeric examples must use a plain black source preview until a matching preview exists');
+assert.ok(!mainStyles.includes('TSIS-1 HSRS\\A'), 'the black numeric source preview must not contain placeholder text');
 assert.ok(examples.includes("sourceWindow.classList.add('sp-numeric-source')"), 'numeric examples must activate the reserved source view');
 assert.ok(examples.includes("sourceWindow.classList.remove('sp-numeric-source')"), 'image examples must restore the normal source view');
 assert.ok(examples.includes('sp.framePreview.clearSourceImage()'), 'numeric examples must forget a previously loaded source image');
 assert.ok(framePreview.includes('api.clearSourceImage = function()'), 'frame preview must expose a safe source-image reset');
 assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source #cameraImage'), 'numeric examples must forcibly hide stale source images');
+assert.ok(graphScript.includes('&& !numericFrame'), 'static numeric spectra must stop the live camera animation loop');
+assert.ok(!graphScript.includes("resizeCanvasToDisplaySize(graphCtx, graphCanvas, 'Normal');\n      if (typeof window.drawGraph === 'function') window.drawGraph();"), 'numeric spectrum loading must not redraw and emit the same frame twice');
 for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Advanced: reference spectrum comparison', 'Continuum diagnostics']) {
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
 }

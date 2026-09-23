@@ -594,9 +594,15 @@ function plotRGBLineFromCamera() {
 
 function draw() {
     drawGraph();
-    if (!(videoElement instanceof HTMLImageElement)) {
+    // A bundled numeric spectrum is a still source. Keeping the camera loop
+    // alive here redraws the same graph at display speed and repeatedly feeds
+    // an identical frame to the analysis worker (up to analysis.maxHz).
+    const numericFrame = getSpectraProNumericFrame();
+    if (!(videoElement instanceof HTMLImageElement) && !numericFrame) {
         animationId = requestAnimationFrame(draw);
         needToRecalculateMaxima = true;
+    } else {
+        animationId = null;
     }
 }
 
@@ -1964,8 +1970,9 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
       zoomList = [[0, frame.I.length]];
       needToRecalculateMaxima = true;
       generateSpectrumList(frame.I.length);
+      // resizeCanvasToDisplaySize(..., 'Normal') invokes draw(), which also
+      // emits the one graphFrame needed for analysis. Do not draw it twice.
       resizeCanvasToDisplaySize(graphCtx, graphCanvas, 'Normal');
-      if (typeof window.drawGraph === 'function') window.drawGraph();
       return buildFrame();
     },
     clearNumericFrame: function(options){
