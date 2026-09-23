@@ -67,6 +67,7 @@ jobs:
           from pathlib import Path
           import hashlib
           import struct
+          import json
 
           image = Path("docs/frontend/assets/examples/n2-spectral-tube/n2-spectral-tube.png")
           data = image.read_bytes()
@@ -87,11 +88,15 @@ jobs:
           assert "spectral-tube-cyan-128.png" in module
           n2_start = module.index("id: 'n2-spectral-tube'")
           ne_start = module.index("id: 'ne-spectral-tube'")
+          ar_start = module.index("id: 'ar-spectral-tube'")
+          solar_start = module.index("id: 'solar-tsis1-hsrs'")
           n2_block = module[n2_start:ne_start]
-          ne_block = module[ne_start:]
+          ne_block = module[ne_start:ar_start]
+          ar_block = module[ar_start:solar_start]
           assert "icon: SAMPLE_ICONS.purple" in n2_block, "N2 sample must use the purple tube icon"
           assert "icon: SAMPLE_ICONS.orange" in ne_block, "Ne sample must use the orange tube icon"
-          assert "icon: SAMPLE_ICONS.cyan" not in n2_block + ne_block, "Cyan icon is reserved for future samples"
+          assert "icon: SAMPLE_ICONS.cyan" in ar_block, "Ar sample must use the cyan tube icon"
+          assert "icon: SAMPLE_ICONS.cyan" not in n2_block + ne_block, "Cyan icon must remain exclusive to the Argon sample"
           assert "chunk-" not in module
           assert "const VERSION = '3.0.1';" in module
           assert "solar-tsis1-hsrs-visible-0p2nm.json" in module
@@ -124,10 +129,19 @@ jobs:
               icon_digest = hashlib.sha256(icon_data).hexdigest()
               assert icon_digest == expected_digest, f"{name} icon SHA-256 mismatch: {icon_digest}"
 
+          argon = Path("docs/frontend/data/examples/ar-spectral-tube.json")
+          argon_json = json.loads(argon.read_text(encoding="utf-8"))
+          assert argon_json["schema"] == "spectra-pro-rgb-spectrum-example/v1"
+          assert argon_json["id"] == "ar-spectral-tube"
+          assert argon_json["scientificRole"] == "measured-example-spectrum"
+          assert argon_json["sampleCount"] == 1280
+          assert len(argon_json["px"]) == len(argon_json["nm"]) == len(argon_json["R"]) == len(argon_json["G"]) == len(argon_json["B"]) == len(argon_json["I"]) == 1280
+          assert argon_json["calibration"]["points"] == [{"px": 32, "nm": 388.86}, {"px": 515, "nm": 587.57}, {"px": 1110, "nm": 837.76}]
+          assert all(argon_json["nm"][i] < argon_json["nm"][i + 1] for i in range(1279))
+
           solar = Path("docs/frontend/data/examples/solar-tsis1-hsrs-visible-0p2nm.json")
           solar_data = solar.read_bytes().replace(b"\r\n", b"\n")
           assert hashlib.sha256(solar_data).hexdigest() == "195a31f7d495a2a236bbb43a44b4c8573fb765703750c0dc66e5c8525aa9854c"
-          import json
           solar_json = json.loads(solar_data)
           assert solar_json["schema"] == "spectra-pro-numeric-example/v1"
           assert solar_json["wavelengthMedium"] == "standard-air"
