@@ -523,6 +523,104 @@ function getPeakInspectorMatch(peak) {
     }
 }
 
+
+const PEAK_INSPECTOR_ELEMENTS = Object.freeze({
+    H:[1,'Hydrogen'],He:[2,'Helium'],Li:[3,'Lithium'],Be:[4,'Beryllium'],B:[5,'Boron'],C:[6,'Carbon'],N:[7,'Nitrogen'],O:[8,'Oxygen'],F:[9,'Fluorine'],Ne:[10,'Neon'],
+    Na:[11,'Sodium'],Mg:[12,'Magnesium'],Al:[13,'Aluminium'],Si:[14,'Silicon'],P:[15,'Phosphorus'],S:[16,'Sulfur'],Cl:[17,'Chlorine'],Ar:[18,'Argon'],K:[19,'Potassium'],Ca:[20,'Calcium'],
+    Sc:[21,'Scandium'],Ti:[22,'Titanium'],V:[23,'Vanadium'],Cr:[24,'Chromium'],Mn:[25,'Manganese'],Fe:[26,'Iron'],Co:[27,'Cobalt'],Ni:[28,'Nickel'],Cu:[29,'Copper'],Zn:[30,'Zinc'],
+    Ga:[31,'Gallium'],Ge:[32,'Germanium'],As:[33,'Arsenic'],Se:[34,'Selenium'],Br:[35,'Bromine'],Kr:[36,'Krypton'],Rb:[37,'Rubidium'],Sr:[38,'Strontium'],Y:[39,'Yttrium'],Zr:[40,'Zirconium'],
+    Nb:[41,'Niobium'],Mo:[42,'Molybdenum'],Tc:[43,'Technetium'],Ru:[44,'Ruthenium'],Rh:[45,'Rhodium'],Pd:[46,'Palladium'],Ag:[47,'Silver'],Cd:[48,'Cadmium'],In:[49,'Indium'],Sn:[50,'Tin'],
+    Sb:[51,'Antimony'],Te:[52,'Tellurium'],I:[53,'Iodine'],Xe:[54,'Xenon'],Cs:[55,'Caesium'],Ba:[56,'Barium'],La:[57,'Lanthanum'],Ce:[58,'Cerium'],Pr:[59,'Praseodymium'],Nd:[60,'Neodymium'],
+    Pm:[61,'Promethium'],Sm:[62,'Samarium'],Eu:[63,'Europium'],Gd:[64,'Gadolinium'],Tb:[65,'Terbium'],Dy:[66,'Dysprosium'],Ho:[67,'Holmium'],Er:[68,'Erbium'],Tm:[69,'Thulium'],Yb:[70,'Ytterbium'],
+    Lu:[71,'Lutetium'],Hf:[72,'Hafnium'],Ta:[73,'Tantalum'],W:[74,'Tungsten'],Re:[75,'Rhenium'],Os:[76,'Osmium'],Ir:[77,'Iridium'],Pt:[78,'Platinum'],Au:[79,'Gold'],Hg:[80,'Mercury'],
+    Tl:[81,'Thallium'],Pb:[82,'Lead'],Bi:[83,'Bismuth'],Po:[84,'Polonium'],At:[85,'Astatine'],Rn:[86,'Radon'],Fr:[87,'Francium'],Ra:[88,'Radium'],Ac:[89,'Actinium'],Th:[90,'Thorium'],
+    Pa:[91,'Protactinium'],U:[92,'Uranium'],Np:[93,'Neptunium'],Pu:[94,'Plutonium'],Am:[95,'Americium'],Cm:[96,'Curium'],Bk:[97,'Berkelium'],Cf:[98,'Californium'],Es:[99,'Einsteinium'],Fm:[100,'Fermium'],
+    Md:[101,'Mendelevium'],No:[102,'Nobelium'],Lr:[103,'Lawrencium'],Rf:[104,'Rutherfordium'],Db:[105,'Dubnium'],Sg:[106,'Seaborgium'],Bh:[107,'Bohrium'],Hs:[108,'Hassium'],Mt:[109,'Meitnerium'],Ds:[110,'Darmstadtium'],
+    Rg:[111,'Roentgenium'],Cn:[112,'Copernicium'],Nh:[113,'Nihonium'],Fl:[114,'Flerovium'],Mc:[115,'Moscovium'],Lv:[116,'Livermorium'],Ts:[117,'Tennessine'],Og:[118,'Oganesson']
+});
+
+const PEAK_INSPECTOR_ELEMENT_FAMILIES = Object.freeze({
+    alkali: 'Li Na K Rb Cs Fr',
+    alkaline: 'Be Mg Ca Sr Ba Ra',
+    transition: 'Sc Ti V Cr Mn Fe Co Ni Cu Zn Y Zr Nb Mo Tc Ru Rh Pd Ag Cd Hf Ta W Re Os Ir Pt Au Hg Rf Db Sg Bh Hs Mt Ds Rg Cn',
+    post: 'Al Ga In Sn Tl Pb Bi Po Nh Fl Mc Lv',
+    metalloid: 'B Si Ge As Sb Te',
+    nonmetal: 'H C N O P S Se',
+    halogen: 'F Cl Br I At Ts',
+    noble: 'He Ne Ar Kr Xe Rn Og',
+    lanthanide: 'La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu',
+    actinide: 'Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr'
+});
+
+function getPeakInspectorElementFamily(symbol) {
+    const target = String(symbol || '').trim();
+    const families = Object.keys(PEAK_INSPECTOR_ELEMENT_FAMILIES);
+    for (let i = 0; i < families.length; i += 1) {
+        const family = families[i];
+        const symbols = PEAK_INSPECTOR_ELEMENT_FAMILIES[family].split(' ');
+        if (symbols.indexOf(target) !== -1) return family;
+    }
+    return 'unknown';
+}
+
+function getPeakInspectorElementMeta(match) {
+    if (!match) return null;
+    const rawCandidates = [
+        String(match.element || '').trim(),
+        String(match.species || '').trim(),
+        String(match.speciesKey || '').trim(),
+        String(match.name || '').trim()
+    ].filter(Boolean);
+
+    for (let i = 0; i < rawCandidates.length; i += 1) {
+        const tokens = rawCandidates[i].match(/[A-Z][a-z]?/g) || [];
+        for (let j = 0; j < tokens.length; j += 1) {
+            const symbol = tokens[j];
+            const entry = PEAK_INSPECTOR_ELEMENTS[symbol];
+            if (!entry) continue;
+            return {
+                symbol: symbol,
+                atomicNumber: entry[0],
+                name: entry[1],
+                family: getPeakInspectorElementFamily(symbol),
+                species: String(match.species || match.speciesKey || symbol).trim()
+            };
+        }
+    }
+    return null;
+}
+
+function buildPeakInspectorElementCard(match) {
+    const meta = getPeakInspectorElementMeta(match);
+    if (!meta) return '';
+
+    const ref = peakInspectorFormatNumber(match.referenceNm, 2);
+    const delta = peakInspectorFormatNumber(Math.abs(Number(match.deltaNm)), 2);
+    const confidenceRaw = Number(match.confidence);
+    const confidence = Number.isFinite(confidenceRaw)
+        ? Math.round((confidenceRaw <= 1 ? confidenceRaw * 100 : confidenceRaw))
+        : null;
+    const excluded = !!match.excludedByDiffraction;
+
+    return [
+        '<div class="sp-peak-element-card sp-peak-element-card--' + escapePeakInspectorText(meta.family) + (excluded ? ' is-excluded' : '') + '">',
+        '  <div class="sp-peak-element-card__top">',
+        '    <span class="sp-peak-element-card__number">' + escapePeakInspectorText(meta.atomicNumber) + '</span>',
+        '    <span class="sp-peak-element-card__match">MATCH</span>',
+        '  </div>',
+        '  <div class="sp-peak-element-card__symbol">' + escapePeakInspectorText(meta.symbol) + '</div>',
+        '  <div class="sp-peak-element-card__name">' + escapePeakInspectorText(meta.name) + '</div>',
+        '  <div class="sp-peak-element-card__species">' + escapePeakInspectorText(meta.species) + '</div>',
+        '  <div class="sp-peak-element-card__meta">',
+        ref !== null ? ('<div><span>λref</span><b>' + escapePeakInspectorText(ref) + ' nm</b></div>') : '',
+        delta !== null ? ('<div><span>Δ</span><b>' + escapePeakInspectorText(delta) + ' nm</b></div>') : '',
+        confidence !== null ? ('<div><span>Match</span><b>' + escapePeakInspectorText(confidence) + '%</b></div>') : '',
+        '  </div>',
+        excluded ? '<div class="sp-peak-element-card__excluded">Excluded: diffraction candidate</div>' : '',
+        '</div>'
+    ].join('');
+}
+
 function getPeakInspectorDiffraction(peak) {
     if (peak && peak.diffractionCandidate && typeof peak.diffractionCandidate === 'object') {
         return peak.diffractionCandidate;
@@ -568,15 +666,7 @@ function renderPeakInspectorPopup(peak) {
     if (snr !== null) rows.push(['SNR', snr]);
 
     const match = getPeakInspectorMatch(peak);
-    if (match) {
-        const label = String(match.species || match.element || '').trim();
-        const ref = peakInspectorFormatNumber(match.referenceNm, 2);
-        const delta = peakInspectorFormatNumber(Math.abs(Number(match.deltaNm)), 2);
-        let value = label || 'Candidate';
-        if (ref !== null) value += ' · ' + ref + ' nm';
-        if (delta !== null) value += ' · Δ' + delta;
-        rows.push(['Match', value]);
-    }
+    const elementCard = match ? buildPeakInspectorElementCard(match) : '';
 
     const diffraction = getPeakInspectorDiffraction(peak);
     if (diffraction) {
@@ -599,9 +689,11 @@ function renderPeakInspectorPopup(peak) {
     const title = Number.isFinite(wavelength)
         ? ('Peak · ' + peakInspectorFormatNumber(wavelength, 2) + ' nm')
         : ('Peak · px ' + peakInspectorFormatNumber(sampleIndex, 0));
+    popup.classList.toggle('has-element-match', !!elementCard);
     popup.innerHTML =
         '<div class="sp-peak-inspector__title">' + escapePeakInspectorText(title) + '</div>' +
-        '<div class="sp-peak-inspector__rows">' +
+        '<div class="sp-peak-inspector__content">' +
+        '  <div class="sp-peak-inspector__rows">' +
         rows.map(function (row) {
             return '<div class="sp-peak-inspector__row"><span>' +
                 escapePeakInspectorText(row[0]) +
@@ -609,6 +701,8 @@ function renderPeakInspectorPopup(peak) {
                 escapePeakInspectorText(row[1]) +
                 '</b></div>';
         }).join('') +
+        '  </div>' +
+        elementCard +
         '</div>' +
         '<div class="sp-peak-inspector__hint">Click graph to release</div>';
     popup.style.display = 'block';
