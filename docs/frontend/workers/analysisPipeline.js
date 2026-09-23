@@ -30,6 +30,10 @@
         result.astro.referenceMatches = result.topHits.slice();
       }
     }
+    const diffractionArtifacts = root.SPECTRA_PRO_diffractionArtifacts;
+    if (diffractionArtifacts && typeof diffractionArtifacts.analyze === 'function') {
+      result = diffractionArtifacts.analyze(result, frame, options || {});
+    }
     const measurementQuality = root.SPECTRA_PRO_measurementQuality;
     if (measurementQuality && typeof measurementQuality.build === 'function') {
       result.measurementQuality = measurementQuality.build(result, frame, options || {});

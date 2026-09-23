@@ -11,7 +11,7 @@
 
   function createAnalysisWorkerClient(options) {
     const opts = Object.assign({
-      workerUrl: '../workers/analysis.worker.js?v=3.0.1',
+      workerUrl: '../workers/analysis.worker.js?v=3.0.1-diffraction-1',
       throttleMs: 300,
       timeoutMs: 3000,
       enabledModes: ['LAB', 'ASTRO']
@@ -358,6 +358,10 @@
             analysisNext.elementScores = Array.isArray(msg.payload.elementScores) ? msg.payload.elementScores.slice(0, 8) : [];
             analysisNext.features = Array.isArray(msg.payload.features)
               ? msg.payload.features.slice(0, 96).map(function (feature) { return Object.assign({}, feature); })
+              : [];
+            analysisNext.diffractionModel = msg.payload.diffractionModel ? String(msg.payload.diffractionModel) : null;
+            analysisNext.diffractionCandidates = Array.isArray(msg.payload.diffractionCandidates)
+              ? msg.payload.diffractionCandidates.slice(0, 24).map(function (candidate) { return Object.assign({}, candidate); })
               : [];
             analysisNext.winnerBreakdown = (msg.payload.winnerBreakdown && typeof msg.payload.winnerBreakdown === 'object')
               ? msg.payload.winnerBreakdown

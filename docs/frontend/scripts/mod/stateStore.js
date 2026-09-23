@@ -98,6 +98,8 @@
       topHits: [],
       rawTopHits: [],
       features: [],
+      diffractionModel: null,
+      diffractionCandidates: [],
       smartFindEnabled: true,
       autoTune: true,
       useRgbScore: false,

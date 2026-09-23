@@ -45,6 +45,7 @@ function loadWorkerContext() {
     'presetResolver.js',
     'calibrationDiagnostics.js',
     'spectralFeatures.js',
+    'diffractionArtifacts.js',
     'measurementQuality.js',
     'candidateAnalysis.js',
     'astroReferences.js',
@@ -1024,12 +1025,54 @@ function testInstrumentResponseCorrection() {
   assert.ok(uiSource.includes('not absolute irradiance'), 'ASTRO UI must not imply absolute radiometry');
 }
 
+
+function testHigherOrderDiffractionArtifacts() {
+  const engine = worker.SPECTRA_PRO_diffractionArtifacts;
+  assert.ok(engine && typeof engine.analyze === 'function', 'Diffraction artifact detector should be available');
+
+  const result = {
+    ok: true,
+    calibrated: true,
+    features: [
+      { sampleIndex: 10, centerNm: 404.136, polarity: 'emission', amplitude: 125.0, prominence: 125.0, fwhmNm: 2.37, centerUncertaintyNm: 0.12, qualityFlags: [], quality: 'good' },
+      { sampleIndex: 20, centerNm: 436.262, polarity: 'emission', amplitude: 136.7, prominence: 136.7, fwhmNm: 2.76, centerUncertaintyNm: 0.12, qualityFlags: [], quality: 'good' },
+      { sampleIndex: 30, centerNm: 808.876, polarity: 'emission', amplitude: 23.7, prominence: 23.7, fwhmNm: 2.78, centerUncertaintyNm: 0.15, qualityFlags: [], quality: 'good' },
+      { sampleIndex: 40, centerNm: 872.059, polarity: 'emission', amplitude: 50.6, prominence: 50.6, fwhmNm: 2.46, centerUncertaintyNm: 0.15, qualityFlags: [], quality: 'good' }
+    ],
+    qcFlags: [],
+    matchUncertaintyModel: { effectiveToleranceNm: 1.8 }
+  };
+
+  const analyzed = engine.analyze(result, { calibrated: true }, {
+    analysisContext: 'lab',
+    hardware: { spectrometerResolutionFwhmNm: 1.8 }
+  });
+  assert.equal(analyzed.diffractionCandidates.length, 2, 'Expected both visible 2x diffraction candidates');
+  assert.ok(analyzed.diffractionCandidates.every(function (candidate) { return candidate.order === 2; }), 'Visible fluorescent-tube artifacts should be order 2');
+  assert.ok(analyzed.features[2].qualityFlags.includes('POSSIBLE_DIFFRACTION_ORDER_2'), '808.9 nm child should carry an order-2 artifact flag');
+  assert.ok(analyzed.features[3].qualityFlags.includes('POSSIBLE_DIFFRACTION_ORDER_2'), '872.1 nm child should carry an order-2 artifact flag');
+  assert.ok(analyzed.qcFlags.includes('POSSIBLE_HIGHER_ORDER_DIFFRACTION'), 'Result should expose an artifact QC flag');
+
+  const strongerChild = engine.analyze({
+    ok: true,
+    calibrated: true,
+    features: [
+      { sampleIndex: 1, centerNm: 400, polarity: 'emission', amplitude: 20, prominence: 20, fwhmNm: 2, qualityFlags: [] },
+      { sampleIndex: 2, centerNm: 800, polarity: 'emission', amplitude: 30, prominence: 30, fwhmNm: 2, qualityFlags: [] }
+    ],
+    qcFlags: [],
+    matchUncertaintyModel: { effectiveToleranceNm: 1.8 }
+  }, { calibrated: true }, { analysisContext: 'lab', hardware: { spectrometerResolutionFwhmNm: 1.8 } });
+  assert.equal(strongerChild.diffractionCandidates.length, 0, 'A stronger child should not be auto-labelled as higher-order diffraction');
+}
+
 const groups = [
   ['atomic emission', testAtomicEmission],
   ['molecular emission', testMolecularEmission],
   ['fluorescence', testFluorescence],
   ['quality control', testQualityControlAndSafeFailure],
   ['spectral features', testSpectralFeatures],
+  ['higher-order diffraction artifacts', testHigherOrderDiffractionArtifacts],
   ['calibration-aware matching', testCalibrationAwareMatching],
   ['measurement quality', testMeasurementQualityModel],
   ['formal preprocessing', testFormalPreprocessingPipeline],

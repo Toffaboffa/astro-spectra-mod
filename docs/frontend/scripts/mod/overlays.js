@@ -50,6 +50,86 @@
     };
   }
 
+  function drawDiffractionCandidates(ctx, graphState, state, activeMode) {
+    try {
+      if (String(activeMode || '').toUpperCase() !== 'LAB') return 0;
+      const candidates = state && state.analysis && Array.isArray(state.analysis.diffractionCandidates)
+        ? state.analysis.diffractionCandidates
+        : [];
+      if (!candidates.length || !ctx || !ctx.canvas) return 0;
+
+      const calcX = (typeof global.calculateXPosition === 'function') ? global.calculateXPosition : null;
+      const pxFromNm = (typeof global.getPxByWaveLengthBisection === 'function') ? global.getPxByWaveLengthBisection : null;
+      const zoomStart = graphState && Number.isFinite(+graphState.zoomStart) ? +graphState.zoomStart : null;
+      const zoomEnd = graphState && Number.isFinite(+graphState.zoomEnd) ? +graphState.zoomEnd : null;
+      const widthForCalc = graphState && Number.isFinite(+graphState.cssWidth) && +graphState.cssWidth > 0 ? +graphState.cssWidth : null;
+      if (!calcX || !Number.isFinite(zoomStart) || !Number.isFinite(zoomEnd) || !(zoomEnd > zoomStart)) return 0;
+
+      const canvas = ctx.canvas;
+      const w = canvas.width;
+      const wCalc = widthForCalc || w;
+      const plotBounds = (typeof global.getGraphPlotBounds === 'function') ? global.getGraphPlotBounds(canvas) : null;
+      const plotLeft = plotBounds && Number.isFinite(+plotBounds.left) ? +plotBounds.left : 30;
+      const plotRight = plotBounds && Number.isFinite(+plotBounds.right) ? +plotBounds.right : (w - 30);
+      const plotTop = plotBounds && Number.isFinite(+plotBounds.top) ? +plotBounds.top : 30;
+      const plotBottom = plotBounds && Number.isFinite(+plotBounds.bottom) ? +plotBounds.bottom : (canvas.height - 30);
+      let drawn = 0;
+
+      ctx.save();
+      ctx.font = '10px Verdana';
+      ctx.textBaseline = 'middle';
+
+      candidates.slice(0, 12).forEach(function (candidate) {
+        let px = Number(candidate && candidate.childSampleIndex);
+        if (!Number.isFinite(px) && pxFromNm && Number.isFinite(Number(candidate && candidate.observedNm))) {
+          px = Number(pxFromNm(Number(candidate.observedNm)));
+        }
+        if (!Number.isFinite(px) || px < zoomStart || px >= zoomEnd) return;
+
+        const rawX = calcX(px - zoomStart, zoomEnd - zoomStart, wCalc);
+        const x = (wCalc && w && wCalc !== w) ? rawX * (w / wCalc) : rawX;
+        if (!Number.isFinite(x) || x < plotLeft || x > plotRight) return;
+
+        const order = Math.max(2, Math.round(Number(candidate.order) || 2));
+        const observed = Number(candidate.observedNm);
+        const parent = Number(candidate.parentNm);
+        const label = order + '×? ' +
+          (Number.isFinite(observed) ? observed.toFixed(1) : '?') +
+          ' ← ' + (Number.isFinite(parent) ? parent.toFixed(1) : '?');
+
+        const row = drawn % 3;
+        const y = plotTop + 10 + row * 17;
+        const metrics = ctx.measureText(label);
+        const boxW = Math.ceil(metrics.width + 10);
+        const boxH = 14;
+        const boxX = Math.max(plotLeft + 2, Math.min(plotRight - boxW - 2, x + 5));
+        const boxY = Math.max(plotTop + 1, Math.min(plotBottom - boxH - 1, y - boxH / 2));
+
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = 'rgba(126,34,206,0.78)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, plotTop);
+        ctx.lineTo(x, plotBottom);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(126,34,206,0.12)';
+        ctx.strokeStyle = 'rgba(126,34,206,0.78)';
+        ctx.fillRect(boxX, boxY, boxW, boxH);
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+        ctx.fillStyle = 'rgba(88,28,135,0.98)';
+        ctx.fillText(label, boxX + 5, boxY + boxH / 2);
+        drawn += 1;
+      });
+
+      ctx.restore();
+      return drawn;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   function drawOnGraph(ctx, graphState){
     try {
       const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
@@ -60,18 +140,22 @@
       if (!state || !(state.analysis && state.analysis.enabled)) return { ok:true, labels:0, bands:0, graphState: !!graphState };
       const astroLabelSettings = (state.analysis && state.analysis.astroLabels) || {};
       if (isAstro && astroLabelSettings.enabled === false) return { ok:true, labels:0, bands:0, graphState: !!graphState, hidden:true };
-      if (!isAstro && state.analysis && state.analysis.showHits === false) return { ok:true, labels:0, bands:0, graphState: !!graphState, hidden:true };
+      const showLabHits = !isAstro && !(state.analysis && state.analysis.showHits === false);
       const smartEnabled = !isAstro && !!(state.analysis && state.analysis.smartFindEnabled);
       const hits = isAstro
         ? ((state.analysis && state.analysis.astro && Array.isArray(state.analysis.astro.referenceMatches)) ? state.analysis.astro.referenceMatches : [])
-        : ((state.analysis && Array.isArray(state.analysis.rawTopHits) && state.analysis.rawTopHits.length)
-          ? state.analysis.rawTopHits
-          : ((state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : []));
+        : (showLabHits
+          ? ((state.analysis && Array.isArray(state.analysis.rawTopHits) && state.analysis.rawTopHits.length)
+            ? state.analysis.rawTopHits
+            : ((state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : []))
+          : []);
       const smartGroups = !isAstro && state.analysis && Array.isArray(state.analysis.smartFindGroups) ? state.analysis.smartFindGroups : [];
-      if (!hits.length) return { ok:true, labels:0, bands:0, graphState: !!graphState };
 
       const canvas = ctx && ctx.canvas;
       if (!canvas) return { ok:true, labels:0, bands:0, graphState: !!graphState };
+
+      const diffractionMarkers = drawDiffractionCandidates(ctx, graphState, state, activeMode);
+      if (!hits.length) return { ok:true, labels:0, bands:0, diffractionMarkers:diffractionMarkers, graphState: !!graphState, hidden:!showLabHits };
 
       const pxFromNm = (typeof global.getPxByWaveLengthBisection === 'function') ? global.getPxByWaveLengthBisection : null;
       const calcX = (typeof global.calculateXPosition === 'function') ? global.calculateXPosition : null;
