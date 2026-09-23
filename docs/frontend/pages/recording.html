@@ -8,9 +8,9 @@
   <link rel="icon" type="image/png" href="../assets/fav.png">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-  <link rel="stylesheet" href="../styles/styles.css?v=3.0.1-sample-stripe-1">
-  <link rel="stylesheet" href="../styles/mod-panels.css?v=3.0.1-element-card-compact-1">
-  <link rel="stylesheet" href="../styles/overlays.css?v=3.0.1-ui-fixes-1">
+  <link rel="stylesheet" href="../styles/styles.css?v=3.0.2">
+  <link rel="stylesheet" href="../styles/mod-panels.css?v=3.0.2">
+  <link rel="stylesheet" href="../styles/overlays.css?v=3.0.2">
   <link rel="stylesheet" href="../styles/mobile-tweaks.css">
 
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script> <!-- xlsx -->
@@ -345,7 +345,7 @@
             </div>
             <canvas id="graphCanvas" class="withDrawer"></canvas>
             <div id="mouseCoordinates">X: N/A px, Y: N/A</div>
-            <script src="../scripts/graphScript.js?v=3.0.1-sample-stripe-1"></script>
+            <script src="../scripts/graphScript.js?v=3.0.2"></script>
           </div>
 
         </div>
@@ -536,29 +536,29 @@
 </div>
 
 <script src="../scripts/setupScript.js"></script>
-<script src="../scripts/cameraScript.js?v=3.0.1-sample-stripe-1"></script>
-<script src="../scripts/stripeScript.js?v=3.0.1-sample-stripe-1"></script>
-<script src="../scripts/cameraSelection.js?v=3.0.1-sample-stripe-1"></script>
+<script src="../scripts/cameraScript.js?v=3.0.2"></script>
+<script src="../scripts/stripeScript.js?v=3.0.2"></script>
+<script src="../scripts/cameraSelection.js?v=3.0.2"></script>
 <script src="../scripts/calibrationScript.js"></script>
 <script>resetCamera();</script>
 
 
   <!-- SPECTRA PRO runtime bridge -->
   <script src="../scripts/mod/eventBus.js"></script>
-  <script src="../scripts/mod/stateStore.js?v=3.0.1-sample-stripe-1"></script>
-  <script src="../scripts/mod/referenceCatalog.js?v=3.0.1"></script>
+  <script src="../scripts/mod/stateStore.js?v=3.0.2"></script>
+  <script src="../scripts/mod/referenceCatalog.js?v=3.0.2"></script>
   <script src="../scripts/mod/framePreview.js"></script>
   <script src="../scripts/mod/appMode.js"></script>
-  <script src="../scripts/mod/uiPanels.js?v=3.0.1-ui-fixes-1"></script>
+  <script src="../scripts/mod/uiPanels.js?v=3.0.2"></script>
   <script src="../scripts/mod/spectrumFrameAdapter.js"></script>
   <script src="../scripts/mod/subtraction.js"></script>
   <script src="../scripts/mod/quickPeaks.js"></script>
   <script src="../scripts/mod/instrumentResponse.js"></script>
-  <script src="../scripts/mod/responseProfileStore.js?v=3.0.1"></script>
+  <script src="../scripts/mod/responseProfileStore.js?v=3.0.2"></script>
   <script src="../scripts/mod/processingPipeline.js"></script>
   <script src="../scripts/mod/utils.js"></script>
-  <script src="../scripts/mod/overlays.js?v=3.0.1-ui-fixes-1"></script>
-  <script src="../scripts/mod/analysisWorkerClient.js?v=3.0.1-artifact-filter-1"></script>
+  <script src="../scripts/mod/overlays.js?v=3.0.2"></script>
+  <script src="../scripts/mod/analysisWorkerClient.js?v=3.0.2"></script>
   <script>
   (function(){
     const sp = window.SpectraPro || (window.SpectraPro = {});
@@ -569,16 +569,16 @@
     sp.coreHooks.on('referenceChanged', function(ref){ if (sp.coreBridge) sp.coreBridge.reference = Object.assign({}, sp.coreBridge.reference||{}, ref||{}); });
   })();
   </script>
-  <script src="../scripts/mod/displayModes.js?v=3.0.1"></script>
+  <script src="../scripts/mod/displayModes.js?v=3.0.2"></script>
   <script src="../scripts/mod/dataQualityPanel.js"></script>
-  <script src="../scripts/mod/yAxisController.js?v=3.0.1"></script>
-  <script src="../scripts/mod/peakControls.js?v=3.0.1"></script>
-  <script src="../scripts/mod/graphAppearance.js?v=3.0.1"></script>
-  <script src="../scripts/mod/cameraCapabilities.js?v=3.0.1"></script>
-  <script src="../scripts/mod/calibrationIO.js?v=3.0.1"></script>
+  <script src="../scripts/mod/yAxisController.js?v=3.0.2"></script>
+  <script src="../scripts/mod/peakControls.js?v=3.0.2"></script>
+  <script src="../scripts/mod/graphAppearance.js?v=3.0.2"></script>
+  <script src="../scripts/mod/cameraCapabilities.js?v=3.0.2"></script>
+  <script src="../scripts/mod/calibrationIO.js?v=3.0.2"></script>
   <script src="../scripts/mod/calibrationPointManager.js"></script>
   <script src="../scripts/mod/presets.js"></script>
-  <script src="../scripts/mod/proBootstrap.js?v=3.0.1-ui-fixes-1"></script>
+  <script src="../scripts/mod/proBootstrap.js?v=3.0.2"></script>
 
 </body>
 </html>
