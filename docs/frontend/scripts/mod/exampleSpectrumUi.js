@@ -464,22 +464,12 @@
     });
   }
 
-  function renderSolarSourcePreview(asset) {
-    const canvas = $('spFramePreviewCanvas');
-    if (!canvas || !asset || !Array.isArray(asset.wavelengthNm) || !Array.isArray(asset.irradianceWm2Nm)) return false;
-    const width = 1280;
-    const height = 720;
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return false;
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, width, height);
-
+  function buildSolarSourceRgb(asset) {
     const values = asset.irradianceWm2Nm;
     const wavelengths = asset.wavelengthNm;
     const radius = 24;
     const upper = new Array(values.length);
+    const sourceRgb = { R: new Array(values.length), G: new Array(values.length), B: new Array(values.length) };
     for (let i = 0; i < values.length; i += 1) {
       let localMax = 0;
       const start = Math.max(0, i - radius);
@@ -487,19 +477,39 @@
       for (let j = start; j <= end; j += 1) localMax = Math.max(localMax, Number(values[j]) || 0);
       upper[i] = localMax || 1;
     }
+    for (let i = 0; i < values.length; i += 1) {
+      const relative = Math.max(0, Math.min(1, (Number(values[i]) || 0) / upper[i]));
+      const brightness = 0.08 + 0.92 * Math.pow(relative, 2.2);
+      const rgb = solarColorAtNm(Number(wavelengths[i]));
+      sourceRgb.R[i] = Math.round(rgb[0] * brightness);
+      sourceRgb.G[i] = Math.round(rgb[1] * brightness);
+      sourceRgb.B[i] = Math.round(rgb[2] * brightness);
+    }
+    return sourceRgb;
+  }
 
+  function renderSolarSourcePreview(asset) {
+    const canvas = $('spFramePreviewCanvas');
+    if (!canvas || !asset || !Array.isArray(asset.wavelengthNm) || !Array.isArray(asset.irradianceWm2Nm)) return null;
+    const width = 1280;
+    const height = 720;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+
+    const sourceRgb = buildSolarSourceRgb(asset);
     const bandTop = 110;
     const bandHeight = 500;
     for (let x = 0; x < width; x += 1) {
-      const index = Math.min(values.length - 1, Math.round((x / (width - 1)) * (values.length - 1)));
-      const relative = Math.max(0, Math.min(1, (Number(values[index]) || 0) / upper[index]));
-      const brightness = 0.08 + 0.92 * Math.pow(relative, 2.2);
-      const rgb = solarColorAtNm(Number(wavelengths[index]));
-      ctx.fillStyle = 'rgb(' + rgb.map(function (channel) { return Math.round(channel * brightness); }).join(',') + ')';
+      const index = Math.min(asset.wavelengthNm.length - 1, Math.round((x / (width - 1)) * (asset.wavelengthNm.length - 1)));
+      ctx.fillStyle = 'rgb(' + sourceRgb.R[index] + ',' + sourceRgb.G[index] + ',' + sourceRgb.B[index] + ')';
       ctx.fillRect(x, bandTop, 1, bandHeight);
     }
     canvas.style.display = 'block';
-    return true;
+    return sourceRgb;
   }
 
   function setGraphFillMode(mode) {
@@ -597,7 +607,7 @@
     if (sourceWindow) sourceWindow.classList.add('sp-numeric-source');
     if (video) video.style.display = 'none';
     if (image) image.style.display = 'none';
-    renderSolarSourcePreview(asset);
+    const solarSourceRgb = renderSolarSourcePreview(asset);
     const pause = $('pauseVideoButton');
     const play = $('playVideoButton');
     if (pause) pause.style.visibility = 'hidden';
@@ -613,6 +623,7 @@
       px: asset.wavelengthNm.map(function (_, index) { return index; }),
       nm: asset.wavelengthNm,
       I: asset.irradianceWm2Nm,
+      sourceRgb: solarSourceRgb,
       calibrated: true,
       calibration: asset.calibration,
       hardware: { spectrometerResolutionFwhmNm: asset.grid.stepNm * 2, pixelResolutionNm: asset.grid.stepNm },

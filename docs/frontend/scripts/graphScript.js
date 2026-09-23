@@ -1641,7 +1641,8 @@ function drawGradient(graphCtx, pixels, pixelWidth, maxValue) {
     const spFillMode = String(spAppearance.fillMode || 'inherit').toLowerCase();
     const useSyntheticFill = (spFillMode === 'synthetic');
     const numericSource = spFillMode === 'source' ? getSpectraProNumericFrame() : null;
-    const useNumericSourceFill = !!(numericSource && Array.isArray(numericSource.nm) && numericSource.nm.length === pixelWidth);
+    const numericSourceRgb = numericSource && numericSource.sourceRgb;
+    const useNumericSourceFill = !!(numericSourceRgb && Array.isArray(numericSourceRgb.R) && Array.isArray(numericSourceRgb.G) && Array.isArray(numericSourceRgb.B) && numericSourceRgb.R.length === pixelWidth && numericSourceRgb.G.length === pixelWidth && numericSourceRgb.B.length === pixelWidth);
     const effectiveGradientOpacity = getSpectraProEffectiveGradientOpacity();
     const padding = 30;
     const width = graphCanvas.getBoundingClientRect().width;
@@ -1668,7 +1669,7 @@ function drawGradient(graphCtx, pixels, pixelWidth, maxValue) {
             const yUpper = calculateYPosition(maxVal, height, maxValue);
 
             graphCtx.fillStyle = useNumericSourceFill
-                ? spectraSyntheticColorFromNm(Number(numericSource.nm[zoomStart + x]), effectiveGradientOpacity)
+                ? `rgba(${numericSourceRgb.R[zoomStart + x]},${numericSourceRgb.G[zoomStart + x]},${numericSourceRgb.B[zoomStart + x]},${effectiveGradientOpacity})`
                 : (useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity, zoomStart) : `rgba(${255*r/maxValue},${255*g/maxValue},${255*b/maxValue},${effectiveGradientOpacity})`);
             graphCtx.fillRect(leftX, Math.floor(yUpper), rectWidth, Math.ceil(yLower - yUpper));
         }
@@ -1965,6 +1966,9 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
         px: Array.isArray(frame.px) && frame.px.length === frame.I.length ? frame.px.slice() : frame.I.map(function(_, index){ return index; }),
         nm: frame.nm.slice(),
         I: frame.I.slice(),
+        sourceRgb: frame.sourceRgb && Array.isArray(frame.sourceRgb.R) && Array.isArray(frame.sourceRgb.G) && Array.isArray(frame.sourceRgb.B) && frame.sourceRgb.R.length === frame.I.length && frame.sourceRgb.G.length === frame.I.length && frame.sourceRgb.B.length === frame.I.length
+          ? { R: frame.sourceRgb.R.slice(), G: frame.sourceRgb.G.slice(), B: frame.sourceRgb.B.slice() }
+          : null,
         calibrated: frame.calibrated === true,
         calibration: frame.calibration || null,
         hardware: frame.hardware || null,
