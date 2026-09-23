@@ -264,7 +264,8 @@
     ];
     const redrawOnlyKeys = [
       'analysis.showHits',
-      'analysis.smartFindEnabled'
+      'analysis.smartFindEnabled',
+      'display.saturationOverlay'
     ];
     const resultKeys = [
       'analysis.topHits',

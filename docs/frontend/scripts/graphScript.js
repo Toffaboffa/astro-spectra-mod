@@ -51,10 +51,11 @@ function getSpectraProDisplaySettings() {
             mode: String(d.mode || 'normal').toLowerCase(),
             yAxisMode: String(d.yAxisMode || 'auto').toLowerCase(),
             yAxisMax: Number(d.yAxisMax),
-            normalizeYAxis: !!d.normalizeYAxis
+            normalizeYAxis: !!d.normalizeYAxis,
+            saturationOverlay: !!d.saturationOverlay
         };
     } catch (_) {
-        return { mode: 'normal', yAxisMode: 'auto', yAxisMax: 255, normalizeYAxis: false };
+        return { mode: 'normal', yAxisMode: 'auto', yAxisMax: 255, normalizeYAxis: false, saturationOverlay: false };
     }
 }
 
@@ -74,6 +75,83 @@ function getSpectraProStoreState() {
         return (sp.store && typeof sp.store.getState === 'function') ? (sp.store.getState() || {}) : {};
     } catch (_) {
         return {};
+    }
+}
+
+function drawSpectraProSaturationOverlay(ctx, sourcePixels, zoomStart, zoomEnd) {
+    try {
+        const settings = getSpectraProDisplaySettings();
+        if (!settings.saturationOverlay || !ctx || !sourcePixels || sourcePixels.length < 8) return 0;
+
+        const sampleCount = Math.floor(sourcePixels.length / 4);
+        if (sampleCount < 2) return 0;
+
+        const intensity = new Array(sampleCount);
+        let sourceMax = 0;
+        for (let i = 0; i < sampleCount; i += 1) {
+            const base = i * 4;
+            const value = Math.max(
+                Number(sourcePixels[base]) || 0,
+                Number(sourcePixels[base + 1]) || 0,
+                Number(sourcePixels[base + 2]) || 0
+            );
+            intensity[i] = value;
+            if (value > sourceMax) sourceMax = value;
+        }
+
+        // Keep this threshold identical to qcRules.js for 8-bit graph samples.
+        const saturationThreshold = sourceMax >= 250 ? 250 : 254;
+        if (sourceMax < saturationThreshold) return 0;
+
+        const visibleStart = Math.max(0, Math.min(sampleCount - 1, Math.floor(Number(zoomStart) || 0)));
+        const visibleEnd = Math.max(visibleStart + 1, Math.min(sampleCount, Math.ceil(Number(zoomEnd) || sampleCount)));
+        const groups = [];
+        let groupStart = -1;
+
+        for (let i = visibleStart; i < visibleEnd; i += 1) {
+            const saturated = intensity[i] >= saturationThreshold;
+            if (saturated && groupStart < 0) groupStart = i;
+            const closesGroup = groupStart >= 0 && (!saturated || i === visibleEnd - 1);
+            if (closesGroup) {
+                const groupEnd = saturated && i === visibleEnd - 1 ? i : i - 1;
+                groups.push([groupStart, groupEnd]);
+                groupStart = -1;
+            }
+        }
+        if (!groups.length) return 0;
+
+        const bounds = getGraphPlotBounds(graphCanvas);
+        const visibleCount = Math.max(1, visibleEnd - visibleStart);
+        const denom = Math.max(1, visibleCount - 1);
+        const sampleStep = visibleCount > 1 ? bounds.width / denom : bounds.width;
+        const xAt = function (index) {
+            return bounds.left + ((index - visibleStart) / denom) * bounds.width;
+        };
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(bounds.left, bounds.top, bounds.width, bounds.height);
+        ctx.clip();
+        ctx.fillStyle = 'rgba(220, 38, 38, 0.14)';
+        ctx.strokeStyle = 'rgba(220, 38, 38, 0.55)';
+        ctx.lineWidth = 1;
+
+        groups.forEach(function (group) {
+            const left = Math.max(bounds.left, xAt(group[0]) - sampleStep * 0.5);
+            const right = Math.min(bounds.right, xAt(group[1]) + sampleStep * 0.5);
+            const width = Math.max(1, right - left);
+            ctx.fillRect(left, bounds.top, width, bounds.height);
+            ctx.beginPath();
+            ctx.moveTo(left, bounds.top);
+            ctx.lineTo(left, bounds.bottom);
+            ctx.moveTo(right, bounds.top);
+            ctx.lineTo(right, bounds.bottom);
+            ctx.stroke();
+        });
+        ctx.restore();
+        return groups.length;
+    } catch (_) {
+        return 0;
     }
 }
 
@@ -818,6 +896,11 @@ function drawGraph() {
             drawGradient(graphCtx, displayPixels, pixelWidth, maxValue);
         }
     }
+
+    // Highlight only the source samples that meet the same clipping criterion
+    // used by the data-quality model. Draw before traces so the spectrum remains crisp.
+    drawSpectraProSaturationOverlay(graphCtx, pixels, zoomStart, zoomEnd);
+
     let peaksToggled = document.getElementById('togglePeaksCheckbox').checked;
     const shouldHighlightCameraLine = getCheckedComparisonId() === null && comparisonGraph.length !== 0;
 

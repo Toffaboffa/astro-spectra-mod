@@ -79,6 +79,7 @@
       yAxisMax: 255,
       fillMode: 'off',
       fillOpacity: 0.8,
+      saturationOverlay: false,
       overlaysEnabled: true
     },
     peaks: { threshold: 20, distance: 7, smoothing: null },

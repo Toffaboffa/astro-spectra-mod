@@ -741,7 +741,7 @@ if (!document.getElementById('spSubtractionControls')) {
         '    <div class="sp-mini-row sp-mini-row--check"><span>Dark graph</span><input id="spToggleDarkProxy" type="checkbox" disabled></div>',
         '    <div class="sp-mini-row sp-mini-row--check"><span>Reference graph</span><input id="spToggleRefProxy" type="checkbox" disabled></div>',
         '  </div>',
-        '  <div id="spFieldCorePlaceholder11" class="sp-field sp-field--placeholder" aria-hidden="true"></div>',
+        '  <label id="spFieldSaturationOverlay" class="sp-field sp-field--checkbox-row" title="Highlight graph regions where the source spectrum reaches the saturation threshold used by data-quality checks."><span>Saturation overlay</span><input id="spToggleSaturationOverlay" type="checkbox"></label>',
         '  <div id="spFieldCorePlaceholder12" class="sp-field sp-field--placeholder" aria-hidden="true"></div>',
         '  <label id="spFieldToggleNmPeaks" class="sp-field sp-field--checkbox-row" title="Show or hide detected nm peak markers on the graph."><span>Toggle peaks</span><input id="spToggleNmPeaks" type="checkbox"></label>',
         '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold" title="Minimum intensity used by the built-in nm peak detector.">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
@@ -803,6 +803,7 @@ if (!document.getElementById('spSubtractionControls')) {
       const peakDistanceInput = card.querySelector('#spPeakDistance');
       const peakSmoothingInput = card.querySelector('#spPeakSmoothing');
       const toggleNmPeaksInput = card.querySelector('#spToggleNmPeaks');
+      const saturationOverlayInput = card.querySelector('#spToggleSaturationOverlay');
       const combinedProxy = card.querySelector('#spToggleCombinedProxy');
       const rProxy = card.querySelector('#spToggleRProxy');
       const gProxy = card.querySelector('#spToggleGProxy');
@@ -866,6 +867,7 @@ if (!document.getElementById('spSubtractionControls')) {
       const displayStateInit = (getStoreState().display || {});
       if (fillModeSel) fillModeSel.value = String(displayStateInit.fillMode || 'inherit').toLowerCase();
       if (fillOpacityInput) fillOpacityInput.value = String(Number.isFinite(Number(displayStateInit.fillOpacity)) ? Math.max(0, Math.min(1, Number(displayStateInit.fillOpacity))) : 0.7);
+      if (saturationOverlayInput) saturationOverlayInput.checked = !!displayStateInit.saturationOverlay;
       const legacyReferenceToggle = $('referenceGraphCheckbox');
       if (referenceGraphProxy && legacyReferenceToggle) referenceGraphProxy.checked = !!legacyReferenceToggle.checked;
       syncCheckboxProxy(combinedProxy, 'toggleCombined');
@@ -952,6 +954,11 @@ if (!document.getElementById('spSubtractionControls')) {
         target.checked = !!e.target.checked;
         try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
         try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+      });
+      saturationOverlayInput && saturationOverlayInput.addEventListener('change', (e) => {
+        setVal('display.saturationOverlay', !!e.target.checked);
+        try { redrawGraphIfLoadedImage(); } catch (_) {}
+        try { drawGraph(); } catch (_) {}
       });
       referenceGraphProxy && referenceGraphProxy.addEventListener('change', function (e) {
         const target = $('referenceGraphCheckbox');
@@ -2973,6 +2980,7 @@ function renderConsole() {
     const peakSmoothingInput = $('spPeakSmoothing');
     const fillModeSel = $('spFillMode');
     const fillOpacityInput = $('spFillOpacity');
+    const saturationOverlayInput = $('spToggleSaturationOverlay');
     const peaks = state.peaks || {};
     if (fillModeSel && !shouldSkipSyncValue(fillModeSel)) {
       const mode = String((state.display && state.display.fillMode) || 'inherit').toLowerCase();
@@ -2985,6 +2993,9 @@ function renderConsole() {
         const next = String(nextNum);
         if (String(fillOpacityInput.value) !== next) fillOpacityInput.value = next;
       }
+    }
+    if (saturationOverlayInput && !shouldSkipSyncValue(saturationOverlayInput)) {
+      saturationOverlayInput.checked = !!(state.display && state.display.saturationOverlay);
     }
     if (peakThresholdInput && !shouldSkipSyncValue(peakThresholdInput) && Number.isFinite(Number(peaks.threshold))) {
       const next = String(Math.max(0, Math.min(255, Math.round(Number(peaks.threshold)))));
