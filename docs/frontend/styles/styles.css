@@ -82,7 +82,9 @@ input.darker-slider::-ms-track { background: #32455f; }
   pointer-events:none;
 }
 #videoMainWindow.sp-numeric-source #cameraWindowCanvasRecording,
-#videoMainWindow.sp-numeric-source #spFramePreviewCanvas{display:none !important;}
+#videoMainWindow.sp-numeric-source #spFramePreviewCanvas,
+#videoMainWindow.sp-numeric-source #cameraImage,
+#videoMainWindow.sp-numeric-source #videoMain{display:none !important;}
 #cameraSelect { text-align:center; }
 #miscMeasuringSettings {
   flex-grow:1; overflow-y:auto; min-height:0; margin:.5rem 0; padding:.5rem;

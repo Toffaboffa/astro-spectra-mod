@@ -372,8 +372,8 @@ function testReferenceSpectrumComparison() {
   const graphSource = fs.readFileSync(path.join(repoRoot, 'docs', 'frontend', 'scripts', 'graphScript.js'), 'utf8');
   assert.ok(workerEntrySource.includes("'./referenceComparison.js?v=3.0.0'"), 'Browser worker should load reference comparison');
   assert.ok(uiSource.toLowerCase().includes('reference spectrum comparison'), 'LAB/ASTRO UI should expose reference comparison controls');
-  assert.ok(uiSource.includes("ensureReferenceComparisonCard(panel, 'Lab')"), 'LAB should expose the shared comparison card');
-  assert.ok(uiSource.includes("ensureReferenceComparisonCard(panel, 'Astro')"), 'ASTRO should expose the shared comparison card');
+  assert.ok(uiSource.includes("ensureReferenceComparisonCard(referenceMount, 'Lab')"), 'LAB should expose the shared comparison card in its Advanced popup');
+  assert.ok(uiSource.includes("ensureReferenceComparisonCard($('spAstroReferenceMount'), 'Astro')"), 'ASTRO should expose the shared comparison card in its Advanced popup');
   assert.ok(graphSource.includes('drawReferenceComparisonOverlay'), 'The existing graph should render the numeric reference overlay');
 }
 

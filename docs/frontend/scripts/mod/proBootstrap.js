@@ -1243,6 +1243,9 @@ function ensureAstroPanel() {
     '      <div class="sp-card-sub sp-astro-summary">',
     '        <h4 class="sp-subtitle">Continuum</h4>',
     '        <div id="spAstroContinuum" class="sp-note">Waiting for a calibrated spectrum.</div>',
+    '        <div class="sp-astro-diagnostics-label">Continuum diagnostics</div>',
+    '        <div id="spAstroContinuumAdvanced" class="sp-note sp-astro-continuum-diagnostics">Unavailable.</div>',
+    '        <div class="sp-note sp-analysis-disclaimer">Educational low-resolution analysis. Broad O/B/A/F/G/K/M evidence is heuristic, not a probability, subclass or luminosity class. Radial velocity is not barycentric/heliocentric corrected.</div>',
     '      </div>',
     '      <div class="sp-card-sub sp-astro-summary">',
     '        <h4 class="sp-subtitle">Measurement quality</h4>',
@@ -1272,11 +1275,6 @@ function ensureAstroPanel() {
   panel.dataset.built = '1';
   ensureAnalysisModal('spAstroAdvancedBtn', 'spAstroAdvancedModal', 'Advanced ASTRO details', [
     '<div id="spAstroAdvanced" class="sp-analysis-modal__content sp-analysis-modal__content--astro">',
-    '  <div class="sp-astro-diagnostics">',
-    '    <h4 class="sp-subtitle">Continuum diagnostics</h4>',
-    '    <div id="spAstroContinuumAdvanced" class="sp-note">Unavailable.</div>',
-    '    <div class="sp-note sp-analysis-disclaimer">Educational low-resolution analysis. Broad O/B/A/F/G/K/M evidence is heuristic, not a probability, subclass or luminosity class. Radial velocity is not barycentric/heliocentric corrected.</div>',
-    '  </div>',
     '  <div id="spAstroReferenceMount" class="sp-reference-mount"></div>',
     '</div>'
   ].join(''));

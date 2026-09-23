@@ -1482,10 +1482,38 @@ label[for="peakSizeLower"],
 }
 #spPanel-astro .sp-astro-summary{min-width:0;margin:0 !important;}
 #spPanel-astro .sp-astro-summary .sp-note{margin:0 !important;font-size:11px !important;line-height:1.25;}
+#spPanel-astro .sp-astro-diagnostics-label{margin-top:4px;padding-top:4px;border-top:1px solid rgba(120,180,255,.14);color:#b8cce8;font-size:10px;font-weight:700;line-height:1.2;text-transform:uppercase;letter-spacing:.04em;}
+#spPanel-astro .sp-astro-continuum-diagnostics{margin-top:2px !important;}
+#spPanel-astro .sp-analysis-disclaimer{margin-top:4px !important;color:#8faac8 !important;font-size:10px !important;line-height:1.2 !important;}
 #spPanel-astro #spAstroCard > .sp-note{margin-top:5px !important;font-size:11px !important;line-height:1.2;}
 
 #spPanel-lab .sp-analysis-layout .sp-lab-table,
 #spPanel-astro .sp-analysis-layout .sp-lab-table{min-height:125px;}
+#spPanel-astro .sp-analysis-layout{height:100%;max-height:100%;flex:1 1 auto;overflow:hidden;}
+#spPanel-astro #spAstroCard{height:100% !important;max-height:100%;overflow:hidden;box-sizing:border-box;}
+#spPanel-astro .sp-analysis-layout .sp-lab-left,
+#spPanel-astro .sp-analysis-layout .sp-lab-right{height:100%;max-height:100%;overflow:hidden;}
+#spPanel-astro .sp-analysis-layout .sp-lab-table{
+  height:auto;
+  flex:1 1 0;
+  min-height:0;
+  max-height:100%;
+  grid-template-rows:auto minmax(0,1fr);
+}
+#spPanel-astro .sp-analysis-layout .sp-lab-hits,
+#spPanel-astro .sp-analysis-layout .sp-lab-qc{
+  height:100%;
+  min-height:0;
+  max-height:100%;
+  box-sizing:border-box;
+  overflow-x:hidden;
+  overflow-y:auto;
+  font-size:11px;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+#spPanel-astro .sp-analysis-layout .sp-lab-hit,
+#spPanel-astro .sp-analysis-layout .sp-lab-hit strong{font-size:11px;line-height:1.25;}
 #SpectraProDockHost .sp-advanced{margin-top:6px;}
 #SpectraProDockHost .sp-advanced > summary{padding:3px 8px;font-size:11px;line-height:1.2;}
 #SpectraProDockHost .sp-advanced__body{padding:3px 8px;}
@@ -1576,7 +1604,7 @@ label[for="peakSizeLower"],
 .sp-analysis-modal__content--lab .sp-reference-mount{grid-column:2;grid-row:1/3;}
 .sp-analysis-modal__content--astro{
   display:grid;
-  grid-template-columns:minmax(240px,.7fr) minmax(480px,1.3fr);
+  grid-template-columns:1fr;
   gap:14px;
   align-items:start;
 }

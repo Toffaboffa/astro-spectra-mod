@@ -317,6 +317,16 @@
 
   api.setMode = setMode;
   api.getMode = function(){ return mode; };
+  api.clearSourceImage = function(){
+    sourceState.wasImage = false;
+    sourceState.imageSrc = '';
+    const img = $('cameraImage');
+    if (img) {
+      img.onload = null;
+      img.removeAttribute('src');
+      img.style.display = 'none';
+    }
+  };
   api.onStripeChanged = function(){
     saveCurrentSlotStripe();
     if (mode !== 'source') {

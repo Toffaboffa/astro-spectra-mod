@@ -512,6 +512,14 @@
     const video = $('videoMain');
     const image = $('cameraImage');
     const sourceWindow = $('videoMainWindow');
+    try {
+      if (sp.framePreview && typeof sp.framePreview.clearSourceImage === 'function') {
+        sp.framePreview.clearSourceImage();
+      } else if (image) {
+        image.onload = null;
+        image.removeAttribute('src');
+      }
+    } catch (_) {}
     if (sourceWindow) sourceWindow.classList.add('sp-numeric-source');
     if (video) video.style.display = 'none';
     if (image) image.style.display = 'none';
