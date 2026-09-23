@@ -1716,3 +1716,59 @@ label[for="peakSizeLower"],
   min-height:auto;
   margin-top:7px;
 }
+
+
+/* Peak inspector: click near a peak to lock the existing graph hover point. */
+#graphHoverDot.is-locked{
+  width:10px;
+  height:10px;
+  box-shadow:0 0 0 2px rgba(225,29,72,.22),0 0 0 1px rgba(0,0,0,.28);
+}
+
+#spPeakInspectorPopup{
+  position:absolute;
+  z-index:1002;
+  width:min(250px,calc(100% - 24px));
+  padding:9px 10px 8px;
+  border:1px solid rgba(49,78,118,.72);
+  border-radius:8px;
+  background:rgba(8,18,34,.94);
+  color:#eaf2ff;
+  box-shadow:0 8px 22px rgba(0,0,0,.28);
+  backdrop-filter:blur(4px);
+  pointer-events:none;
+  font-size:11px;
+  line-height:1.25;
+}
+#spPeakInspectorPopup .sp-peak-inspector__title{
+  margin-bottom:6px;
+  font-size:12px;
+  font-weight:700;
+  color:#fff;
+}
+#spPeakInspectorPopup .sp-peak-inspector__rows{
+  display:grid;
+  gap:3px;
+}
+#spPeakInspectorPopup .sp-peak-inspector__row{
+  display:grid;
+  grid-template-columns:minmax(70px,.75fr) minmax(0,1.25fr);
+  gap:8px;
+  align-items:baseline;
+}
+#spPeakInspectorPopup .sp-peak-inspector__row span{
+  color:#9fb4d2;
+}
+#spPeakInspectorPopup .sp-peak-inspector__row b{
+  min-width:0;
+  color:#eef6ff;
+  font-weight:600;
+  overflow-wrap:anywhere;
+}
+#spPeakInspectorPopup .sp-peak-inspector__hint{
+  margin-top:7px;
+  padding-top:6px;
+  border-top:1px solid rgba(125,160,205,.18);
+  color:#8299ba;
+  font-size:10px;
+}

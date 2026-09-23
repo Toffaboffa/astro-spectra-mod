@@ -41,6 +41,7 @@ let gradientOpacity = 0.7;
 
 let lowerPeakBound = 1;
 let graphHoverState = { active: false, graphX: null, clientX: null, clientY: null };
+let peakInspectorState = { locked: false, peak: null };
 
 function getSpectraProDisplaySettings() {
     try {
@@ -367,6 +368,303 @@ function hideGraphHoverDot() {
     if (dot) dot.style.display = 'none';
 }
 
+function getPeakInspectorPopupElement() {
+    return document.getElementById('spPeakInspectorPopup');
+}
+
+function ensurePeakInspectorPopup() {
+    let popup = getPeakInspectorPopupElement();
+    if (popup) return popup;
+    const host = document.getElementById('graphCanvasWindow');
+    if (!host) return null;
+    popup = document.createElement('div');
+    popup.id = 'spPeakInspectorPopup';
+    popup.setAttribute('role', 'status');
+    popup.setAttribute('aria-live', 'polite');
+    popup.style.display = 'none';
+    host.appendChild(popup);
+    return popup;
+}
+
+function hidePeakInspectorPopup() {
+    const popup = getPeakInspectorPopupElement();
+    if (popup) popup.style.display = 'none';
+}
+
+function escapePeakInspectorText(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function peakInspectorFormatNumber(value, digits) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return n.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+}
+
+function getPeakInspectorScientificFeatures() {
+    try {
+        const state = getSpectraProStoreState();
+        const features = state && state.analysis && Array.isArray(state.analysis.features)
+            ? state.analysis.features
+            : [];
+        return features.filter(function (feature) {
+            return feature &&
+                String(feature.polarity || 'emission').toLowerCase() === 'emission' &&
+                Number.isFinite(Number(feature.sampleIndex));
+        });
+    } catch (_) {
+        return [];
+    }
+}
+
+function getPeakInspectorFallbackCandidate(targetPixels, channelOffset, centerIndex, maxDistanceSamples) {
+    if (!targetPixels || !Number.isFinite(centerIndex)) return null;
+    const sampleCount = Math.floor(targetPixels.length / 4);
+    if (sampleCount < 3) return null;
+    const radius = Math.max(2, Math.min(32, Math.ceil(Number(maxDistanceSamples) || 4)));
+    const lo = Math.max(1, Math.round(centerIndex) - radius);
+    const hi = Math.min(sampleCount - 2, Math.round(centerIndex) + radius);
+    let best = null;
+
+    for (let index = lo; index <= hi; index += 1) {
+        const value = getGraphValueAtX(targetPixels, index, channelOffset);
+        const left = getGraphValueAtX(targetPixels, index - 1, channelOffset);
+        const right = getGraphValueAtX(targetPixels, index + 1, channelOffset);
+        if (!(value > left && value >= right)) continue;
+
+        let localFloor = value;
+        const windowLo = Math.max(0, index - 5);
+        const windowHi = Math.min(sampleCount - 1, index + 5);
+        for (let sample = windowLo; sample <= windowHi; sample += 1) {
+            if (sample === index) continue;
+            const candidateValue = getGraphValueAtX(targetPixels, sample, channelOffset);
+            if (candidateValue < localFloor) localFloor = candidateValue;
+        }
+        const prominence = Math.max(0, value - localFloor);
+        if (prominence < 2) continue;
+
+        const distance = Math.abs(index - centerIndex);
+        const candidate = {
+            sampleIndex: index,
+            centerNm: (typeof isCalibrated === 'function' && isCalibrated() && typeof getWaveLengthByPx === 'function')
+                ? Number(getWaveLengthByPx(index))
+                : null,
+            amplitude: value,
+            prominence: prominence,
+            polarity: 'emission',
+            qualityFlags: [],
+            quality: 'unavailable',
+            source: 'graph-local'
+        };
+        if (!best || distance < best.distance || (distance === best.distance && prominence > best.peak.prominence)) {
+            best = { distance: distance, peak: candidate };
+        }
+    }
+    return best ? best.peak : null;
+}
+
+function findPeakInspectorCandidate(graphX) {
+    if (!Number.isFinite(graphX)) return null;
+    const descriptor = getHoverSeriesDescriptor();
+    if (!descriptor || !descriptor.pixels) return null;
+    const targetPixels = descriptor.pixels;
+    const rect = graphCanvas.getBoundingClientRect();
+    const bounds = getGraphPlotBounds(graphCanvas);
+    const [zoomStart, zoomEnd] = getZoomRange(Math.max(1, Math.floor(targetPixels.length / 4)));
+    const visibleSamples = Math.max(1, zoomEnd - zoomStart);
+    const maxDistanceSamples = Math.max(2, Math.min(32, Math.ceil((18 / Math.max(1, bounds.width)) * visibleSamples)));
+    const features = getPeakInspectorScientificFeatures();
+
+    let nearest = null;
+    features.forEach(function (feature) {
+        const index = Number(feature.sampleIndex);
+        if (!Number.isFinite(index) || index < zoomStart || index >= zoomEnd) return;
+        const distance = Math.abs(index - graphX);
+        if (distance > maxDistanceSamples) return;
+        const amplitude = Number(feature.amplitude || feature.prominence || 0) || 0;
+        if (!nearest || distance < nearest.distance || (distance === nearest.distance && amplitude > nearest.amplitude)) {
+            nearest = { distance: distance, amplitude: amplitude, peak: feature };
+        }
+    });
+    if (nearest) return Object.assign({ source: 'analysis-feature' }, nearest.peak);
+
+    return getPeakInspectorFallbackCandidate(
+        targetPixels,
+        descriptor.channelOffset,
+        graphX,
+        maxDistanceSamples
+    );
+}
+
+function getPeakInspectorMatch(peak) {
+    try {
+        const state = getSpectraProStoreState();
+        const hits = state && state.analysis && Array.isArray(state.analysis.rawTopHits)
+            ? state.analysis.rawTopHits
+            : [];
+        const sampleIndex = Number(peak && peak.sampleIndex);
+        const centerNm = Number(peak && peak.centerNm);
+        const candidates = hits.filter(function (hit) {
+            const hitIndex = Number(hit && hit.peakIndex);
+            if (Number.isFinite(sampleIndex) && Number.isFinite(hitIndex) && Math.abs(hitIndex - sampleIndex) <= 1) return true;
+            const observedNm = Number(hit && hit.observedNm);
+            return Number.isFinite(centerNm) && Number.isFinite(observedNm) && Math.abs(observedNm - centerNm) <= 1.5;
+        }).sort(function (a, b) {
+            return (Number(b && b.confidence) || 0) - (Number(a && a.confidence) || 0);
+        });
+        return candidates.length ? candidates[0] : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function getPeakInspectorDiffraction(peak) {
+    if (peak && peak.diffractionCandidate && typeof peak.diffractionCandidate === 'object') {
+        return peak.diffractionCandidate;
+    }
+    try {
+        const state = getSpectraProStoreState();
+        const candidates = state && state.analysis && Array.isArray(state.analysis.diffractionCandidates)
+            ? state.analysis.diffractionCandidates
+            : [];
+        const sampleIndex = Number(peak && peak.sampleIndex);
+        return candidates.find(function (candidate) {
+            return Number.isFinite(sampleIndex) &&
+                Number(candidate && candidate.childSampleIndex) === sampleIndex;
+        }) || null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function renderPeakInspectorPopup(peak) {
+    const popup = ensurePeakInspectorPopup();
+    if (!popup || !peak) return;
+
+    const descriptor = getHoverSeriesDescriptor();
+    const sampleIndex = Number(peak.sampleIndex);
+    const intensity = descriptor && descriptor.pixels && Number.isFinite(sampleIndex)
+        ? getGraphValueAtX(descriptor.pixels, sampleIndex, descriptor.channelOffset)
+        : Number(peak.amplitude);
+    let wavelength = Number(peak.centerNm);
+    if (!Number.isFinite(wavelength) && typeof isCalibrated === 'function' && isCalibrated() &&
+        typeof getWaveLengthByPx === 'function' && Number.isFinite(sampleIndex)) {
+        wavelength = Number(getWaveLengthByPx(sampleIndex));
+    }
+
+    const rows = [];
+    if (Number.isFinite(wavelength)) rows.push(['Wavelength', peakInspectorFormatNumber(wavelength, 2) + ' nm']);
+    if (Number.isFinite(sampleIndex)) rows.push(['Pixel', peakInspectorFormatNumber(sampleIndex, 0)]);
+    if (Number.isFinite(intensity)) rows.push(['Intensity', peakInspectorFormatNumber(intensity, 1)]);
+
+    const fwhm = peakInspectorFormatNumber(peak.fwhmNm, 2);
+    if (fwhm !== null) rows.push(['FWHM', fwhm + ' nm']);
+    const snr = peakInspectorFormatNumber(peak.snr, 1);
+    if (snr !== null) rows.push(['SNR', snr]);
+
+    const match = getPeakInspectorMatch(peak);
+    if (match) {
+        const label = String(match.species || match.element || '').trim();
+        const ref = peakInspectorFormatNumber(match.referenceNm, 2);
+        const delta = peakInspectorFormatNumber(Math.abs(Number(match.deltaNm)), 2);
+        let value = label || 'Candidate';
+        if (ref !== null) value += ' · ' + ref + ' nm';
+        if (delta !== null) value += ' · Δ' + delta;
+        rows.push(['Match', value]);
+    }
+
+    const diffraction = getPeakInspectorDiffraction(peak);
+    if (diffraction) {
+        const order = Math.max(2, Math.round(Number(diffraction.order) || 2));
+        const parent = peakInspectorFormatNumber(diffraction.parentNm, 2);
+        const delta = peakInspectorFormatNumber(Math.abs(Number(diffraction.deltaNm)), 2);
+        let value = 'Possible ' + order + '× diffraction';
+        if (parent !== null) value += ' of ' + parent + ' nm';
+        if (delta !== null) value += ' · Δ' + delta;
+        rows.push(['Artifact', value]);
+    }
+
+    const flags = Array.isArray(peak.qualityFlags) ? peak.qualityFlags.filter(Boolean) : [];
+    if (flags.length) {
+        rows.push(['Quality', flags.slice(0, 3).map(function (flag) {
+            return String(flag).replace(/_/g, ' ').toLowerCase();
+        }).join(', ')]);
+    }
+
+    const title = Number.isFinite(wavelength)
+        ? ('Peak · ' + peakInspectorFormatNumber(wavelength, 2) + ' nm')
+        : ('Peak · px ' + peakInspectorFormatNumber(sampleIndex, 0));
+    popup.innerHTML =
+        '<div class="sp-peak-inspector__title">' + escapePeakInspectorText(title) + '</div>' +
+        '<div class="sp-peak-inspector__rows">' +
+        rows.map(function (row) {
+            return '<div class="sp-peak-inspector__row"><span>' +
+                escapePeakInspectorText(row[0]) +
+                '</span><b>' +
+                escapePeakInspectorText(row[1]) +
+                '</b></div>';
+        }).join('') +
+        '</div>' +
+        '<div class="sp-peak-inspector__hint">Click graph to release</div>';
+    popup.style.display = 'block';
+    positionPeakInspectorPopup();
+}
+
+function positionPeakInspectorPopup() {
+    const popup = getPeakInspectorPopupElement();
+    const dot = getGraphHoverDotElement();
+    const host = document.getElementById('graphCanvasWindow');
+    if (!popup || !dot || !host || popup.style.display === 'none') return;
+
+    const hostWidth = host.clientWidth || 0;
+    const hostHeight = host.clientHeight || 0;
+    const dotLeft = parseFloat(dot.style.left) || 0;
+    const dotTop = parseFloat(dot.style.top) || 0;
+    const popupWidth = popup.offsetWidth || 230;
+    const popupHeight = popup.offsetHeight || 150;
+    const gap = 14;
+
+    let left = dotLeft + gap;
+    if (left + popupWidth > hostWidth - 10) left = dotLeft - popupWidth - gap;
+    left = Math.max(10, Math.min(Math.max(10, hostWidth - popupWidth - 10), left));
+
+    let top = dotTop - popupHeight * 0.5;
+    top = Math.max(58, Math.min(Math.max(58, hostHeight - popupHeight - 10), top));
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
+}
+
+function lockPeakInspector(peak) {
+    if (!peak || !Number.isFinite(Number(peak.sampleIndex))) return false;
+    peakInspectorState.locked = true;
+    peakInspectorState.peak = Object.assign({}, peak);
+    graphHoverState.active = true;
+    graphHoverState.graphX = Number(peak.sampleIndex);
+    graphHoverState.clientX = null;
+    graphHoverState.clientY = null;
+    const dot = ensureGraphHoverDot();
+    if (dot) dot.classList.add('is-locked');
+    updateGraphHoverDotFromGraphX(graphHoverState.graphX);
+    renderPeakInspectorPopup(peakInspectorState.peak);
+    return true;
+}
+
+function releasePeakInspector(clientX, clientY) {
+    peakInspectorState.locked = false;
+    peakInspectorState.peak = null;
+    const dot = getGraphHoverDotElement();
+    if (dot) dot.classList.remove('is-locked');
+    hidePeakInspectorPopup();
+    if (Number.isFinite(clientX) && Number.isFinite(clientY)) {
+        updateGraphHoverDotFromPosition(clientX, clientY);
+    }
+}
+
 function getGraphValueAtX(targetPixels, graphX, channelOffset = -1) {
     if (!targetPixels || !Number.isFinite(graphX)) return null;
     const maxIndex = Math.max(0, Math.floor(targetPixels.length / 4) - 1);
@@ -425,9 +723,11 @@ function updateGraphHoverDotFromGraphX(graphX) {
     dot.style.left = (graphCanvas.offsetLeft + dotX) + 'px';
     dot.style.top = (graphCanvas.offsetTop + dotY) + 'px';
     dot.style.display = 'block';
+    if (peakInspectorState.locked) positionPeakInspectorPopup();
 }
 
 function updateGraphHoverDotFromPosition(clientX, clientY) {
+    if (peakInspectorState.locked) return;
     const rect = graphCanvas.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
@@ -1298,6 +1598,7 @@ function setupEventListeners() {
     });
 
     addEventListener(graphCanvas, 'mousedown', (event) => {
+        if (event.button !== 0) return;
         isDragging = true;
         const rect = graphCanvas.getBoundingClientRect();
         const bounds = getGraphPlotBounds(graphCanvas);
@@ -1355,6 +1656,7 @@ function setupEventListeners() {
 
     addEventListener(graphCanvas, 'mouseleave', function() {
         document.getElementById('mouseCoordinates').textContent = 'X: N/A px, Y: N/A';
+        if (peakInspectorState.locked) return;
         graphHoverState.active = false;
         graphHoverState.graphX = null;
         graphHoverState.clientX = null;
@@ -1362,11 +1664,27 @@ function setupEventListeners() {
         hideGraphHoverDot();
     });
 
-    addEventListener(graphCanvas, 'mouseup', () => {
-        if (isDragging) {
-            isDragging = false;
+    addEventListener(graphCanvas, 'mouseup', (event) => {
+        if (!isDragging || event.button !== 0) return;
+        const dragDistance = Math.abs(dragStartX - dragEndX);
+        isDragging = false;
+
+        if (dragDistance > 4) {
+            if (peakInspectorState.locked) releasePeakInspector();
             addZoomRange(dragStartX, dragEndX);
-            redrawGraphIfLoadedImage()
+            redrawGraphIfLoadedImage();
+            return;
+        }
+
+        if (peakInspectorState.locked) {
+            releasePeakInspector(event.clientX, event.clientY);
+            redrawGraphIfLoadedImage(true);
+            return;
+        }
+
+        const candidate = findPeakInspectorCandidate(graphHoverState.graphX);
+        if (candidate && lockPeakInspector(candidate)) {
+            redrawGraphIfLoadedImage(true);
         }
     });
 
@@ -1457,7 +1775,9 @@ function redrawGraphIfLoadedImage(invalidatePeaks = false) {
         }
         generateSpectrumList(width);
         resizeCanvasToDisplaySize(graphCtx, graphCanvas, "Normal");
-        if (graphHoverState.active && Number.isFinite(graphHoverState.clientX) && Number.isFinite(graphHoverState.clientY)) {
+        if (peakInspectorState.locked && Number.isFinite(graphHoverState.graphX)) {
+            updateGraphHoverDotFromGraphX(graphHoverState.graphX);
+        } else if (graphHoverState.active && Number.isFinite(graphHoverState.clientX) && Number.isFinite(graphHoverState.clientY)) {
             updateGraphHoverDotFromPosition(graphHoverState.clientX, graphHoverState.clientY);
         } else {
             hideGraphHoverDot();
