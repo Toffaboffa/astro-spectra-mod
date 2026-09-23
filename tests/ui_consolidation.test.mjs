@@ -89,6 +89,7 @@ assert.ok(graphScript.includes('useNumericSourceFill'), 'SOURCE graph fill must 
 assert.ok(graphScript.includes('numericSourceRgb.R[zoomStart + x]'), 'SOURCE graph fill must use measured-preview RGB instead of the SYNTHETIC palette');
 assert.ok(recording.includes('graphScript.js?v=3.0.1-solar-source-2'), 'published graph code must use a fresh cache key');
 assert.ok(recording.includes('stateStore.js?v=3.0.1-astro-labels-1'), 'dynamic ASTRO label UI loader must use a fresh cache key');
+assert.ok(recording.includes('uiPanels.js?v=3.0.1'), 'version badge UI must use a release cache key');
 assert.ok(recording.includes('styles.css?v=3.0.1-solar-source-2'), 'published Solar preview CSS must use a fresh cache key');
 assert.ok(recording.includes('overlays.js?v=3.0.1-astro-labels-1'), 'published ASTRO overlay must use a fresh cache key');
 assert.ok(recording.includes('proBootstrap.js?v=3.0.1-astro-labels-1'), 'published ASTRO controls must use a fresh cache key');

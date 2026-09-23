@@ -26,12 +26,21 @@ for (const relative of [
   'docs/frontend/workers/analysis.worker.js',
   'docs/frontend/scripts/mod/stateStore.js',
   'docs/frontend/scripts/mod/exportUi.js',
-  'docs/frontend/scripts/mod/helpUi.js'
+  'docs/frontend/scripts/mod/helpUi.js',
+  'docs/frontend/scripts/mod/uiPanels.js',
+  'docs/frontend/scripts/mod/cameraCapabilities.js',
+  'docs/frontend/scripts/mod/displayModes.js',
+  'docs/frontend/scripts/mod/graphAppearance.js',
+  'docs/frontend/scripts/mod/i18nUi.js',
+  'docs/frontend/scripts/mod/peakControls.js',
+  'docs/frontend/scripts/mod/uiTweaksV203.js',
+  'docs/frontend/scripts/mod/yAxisController.js'
 ]) {
   const source = read(relative);
   const previousPublicVersion = ['2', '3', '15'].join('.');
   assert.ok(source.includes('3.0.1'), relative + ' must carry the v3.0.1 release version');
   assert.ok(!source.includes(previousPublicVersion), relative + ' must not retain the previous public version');
+  assert.ok(!source.includes('3.0.0'), relative + ' must not retain stale v3.0.0 runtime version markers');
 }
 const aiWorker = read('backend/ai-worker/src/index.js');
 assert.ok(aiWorker.includes("appVersion: '3.0.1'"), 'AI Worker responses must expose the application release version');
