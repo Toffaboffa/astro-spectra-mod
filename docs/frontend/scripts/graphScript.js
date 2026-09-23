@@ -400,6 +400,70 @@ function escapePeakInspectorText(value) {
         .replace(/'/g, '&#39;');
 }
 
+
+function getPeakInspectorLanguage() {
+    try {
+        const sp = window.SpectraPro || {};
+        if (sp.i18n && typeof sp.i18n.getLanguage === 'function') {
+            return sp.i18n.getLanguage() === 'sv' ? 'sv' : 'en';
+        }
+    } catch (_) {}
+    try {
+        return document.documentElement && document.documentElement.lang === 'sv' ? 'sv' : 'en';
+    } catch (_) {
+        return 'en';
+    }
+}
+
+function peakInspectorText(key, vars) {
+    const sv = getPeakInspectorLanguage() === 'sv';
+    const dictionary = {
+        peak: sv ? 'Topp' : 'Peak',
+        wavelength: sv ? 'Våglängd' : 'Wavelength',
+        pixel: 'Pixel',
+        intensity: sv ? 'Intensitet' : 'Intensity',
+        artifact: sv ? 'Artefakt' : 'Artifact',
+        quality: sv ? 'Kvalitet' : 'Quality',
+        match: sv ? 'TRÄFF' : 'MATCH',
+        matchValue: sv ? 'Träff' : 'Match',
+        possible: sv ? 'Möjlig' : 'Possible',
+        diffraction: sv ? 'diffraktion' : 'diffraction',
+        of: sv ? 'av' : 'of',
+        excludedDiffraction: sv ? 'Exkluderad: diffraktionskandidat' : 'Excluded: diffraction candidate',
+        release: sv ? 'Klicka i grafen för att släppa · ←/→ byt topp' : 'Click graph to release · ←/→ change peak'
+    };
+    let value = Object.prototype.hasOwnProperty.call(dictionary, key) ? dictionary[key] : key;
+    if (vars) {
+        Object.keys(vars).forEach(function (name) {
+            value = value.replace(new RegExp('\\{' + name + '\\}', 'g'), String(vars[name]));
+        });
+    }
+    return value;
+}
+
+const PEAK_INSPECTOR_ELEMENT_NAMES_SV = Object.freeze({
+    H:'Väte',He:'Helium',Li:'Litium',Be:'Beryllium',B:'Bor',C:'Kol',N:'Kväve',O:'Syre',F:'Fluor',Ne:'Neon',
+    Na:'Natrium',Mg:'Magnesium',Al:'Aluminium',Si:'Kisel',P:'Fosfor',S:'Svavel',Cl:'Klor',Ar:'Argon',K:'Kalium',Ca:'Kalcium',
+    Sc:'Skandium',Ti:'Titan',V:'Vanadin',Cr:'Krom',Mn:'Mangan',Fe:'Järn',Co:'Kobolt',Ni:'Nickel',Cu:'Koppar',Zn:'Zink',
+    Ga:'Gallium',Ge:'Germanium',As:'Arsenik',Se:'Selen',Br:'Brom',Kr:'Krypton',Rb:'Rubidium',Sr:'Strontium',Y:'Yttrium',Zr:'Zirkonium',
+    Nb:'Niob',Mo:'Molybden',Tc:'Teknetium',Ru:'Rutenium',Rh:'Rodium',Pd:'Palladium',Ag:'Silver',Cd:'Kadmium',In:'Indium',Sn:'Tenn',
+    Sb:'Antimon',Te:'Tellur',I:'Jod',Xe:'Xenon',Cs:'Cesium',Ba:'Barium',La:'Lantan',Ce:'Cerium',Pr:'Praseodym',Nd:'Neodym',
+    Pm:'Prometium',Sm:'Samarium',Eu:'Europium',Gd:'Gadolinium',Tb:'Terbium',Dy:'Dysprosium',Ho:'Holmium',Er:'Erbium',Tm:'Tulium',Yb:'Ytterbium',
+    Lu:'Lutetium',Hf:'Hafnium',Ta:'Tantal',W:'Volfram',Re:'Rhenium',Os:'Osmium',Ir:'Iridium',Pt:'Platina',Au:'Guld',Hg:'Kvicksilver',
+    Tl:'Tallium',Pb:'Bly',Bi:'Vismut',Po:'Polonium',At:'Astat',Rn:'Radon',Fr:'Francium',Ra:'Radium',Ac:'Aktinium',Th:'Torium',
+    Pa:'Protaktinium',U:'Uran',Np:'Neptunium',Pu:'Plutonium',Am:'Americium',Cm:'Curium',Bk:'Berkelium',Cf:'Californium',Es:'Einsteinium',Fm:'Fermium',
+    Md:'Mendelevium',No:'Nobelium',Lr:'Lawrencium',Rf:'Rutherfordium',Db:'Dubnium',Sg:'Seaborgium',Bh:'Bohrium',Hs:'Hassium',Mt:'Meitnerium',Ds:'Darmstadtium',
+    Rg:'Röntgenium',Cn:'Kopernicium',Nh:'Nihonium',Fl:'Flerovium',Mc:'Moscovium',Lv:'Livermorium',Ts:'Tenness',Og:'Oganesson'
+});
+
+function getPeakInspectorElementDisplayName(meta) {
+    if (!meta) return '';
+    if (getPeakInspectorLanguage() === 'sv' && PEAK_INSPECTOR_ELEMENT_NAMES_SV[meta.symbol]) {
+        return PEAK_INSPECTOR_ELEMENT_NAMES_SV[meta.symbol];
+    }
+    return meta.name;
+}
+
 function peakInspectorFormatNumber(value, digits) {
     const n = Number(value);
     if (!Number.isFinite(n)) return null;
@@ -606,17 +670,17 @@ function buildPeakInspectorElementCard(match) {
         '<div class="sp-peak-element-card sp-peak-element-card--' + escapePeakInspectorText(meta.family) + (excluded ? ' is-excluded' : '') + '">',
         '  <div class="sp-peak-element-card__top">',
         '    <span class="sp-peak-element-card__number">' + escapePeakInspectorText(meta.atomicNumber) + '</span>',
-        '    <span class="sp-peak-element-card__match">MATCH</span>',
+        '    <span class="sp-peak-element-card__match">' + escapePeakInspectorText(peakInspectorText('match')) + '</span>',
         '  </div>',
         '  <div class="sp-peak-element-card__symbol">' + escapePeakInspectorText(meta.symbol) + '</div>',
-        '  <div class="sp-peak-element-card__name">' + escapePeakInspectorText(meta.name) + '</div>',
+        '  <div class="sp-peak-element-card__name">' + escapePeakInspectorText(getPeakInspectorElementDisplayName(meta)) + '</div>',
         '  <div class="sp-peak-element-card__species">' + escapePeakInspectorText(meta.species) + '</div>',
         '  <div class="sp-peak-element-card__meta">',
         ref !== null ? ('<div><span>λref</span><b>' + escapePeakInspectorText(ref) + ' nm</b></div>') : '',
         delta !== null ? ('<div><span>Δ</span><b>' + escapePeakInspectorText(delta) + ' nm</b></div>') : '',
-        confidence !== null ? ('<div><span>Match</span><b>' + escapePeakInspectorText(confidence) + '%</b></div>') : '',
+        confidence !== null ? ('<div><span>' + escapePeakInspectorText(peakInspectorText('matchValue')) + '</span><b>' + escapePeakInspectorText(confidence) + '%</b></div>') : '',
         '  </div>',
-        excluded ? '<div class="sp-peak-element-card__excluded">Excluded: diffraction candidate</div>' : '',
+        excluded ? ('<div class="sp-peak-element-card__excluded">' + escapePeakInspectorText(peakInspectorText('excludedDiffraction')) + '</div>') : '',
         '</div>'
     ].join('');
 }
@@ -656,9 +720,9 @@ function renderPeakInspectorPopup(peak) {
     }
 
     const rows = [];
-    if (Number.isFinite(wavelength)) rows.push(['Wavelength', peakInspectorFormatNumber(wavelength, 2) + ' nm']);
-    if (Number.isFinite(sampleIndex)) rows.push(['Pixel', peakInspectorFormatNumber(sampleIndex, 0)]);
-    if (Number.isFinite(intensity)) rows.push(['Intensity', peakInspectorFormatNumber(intensity, 1)]);
+    if (Number.isFinite(wavelength)) rows.push([peakInspectorText('wavelength'), peakInspectorFormatNumber(wavelength, 2) + ' nm']);
+    if (Number.isFinite(sampleIndex)) rows.push([peakInspectorText('pixel'), peakInspectorFormatNumber(sampleIndex, 0)]);
+    if (Number.isFinite(intensity)) rows.push([peakInspectorText('intensity'), peakInspectorFormatNumber(intensity, 1)]);
 
     const fwhm = peakInspectorFormatNumber(peak.fwhmNm, 2);
     if (fwhm !== null) rows.push(['FWHM', fwhm + ' nm']);
@@ -673,22 +737,22 @@ function renderPeakInspectorPopup(peak) {
         const order = Math.max(2, Math.round(Number(diffraction.order) || 2));
         const parent = peakInspectorFormatNumber(diffraction.parentNm, 2);
         const delta = peakInspectorFormatNumber(Math.abs(Number(diffraction.deltaNm)), 2);
-        let value = 'Possible ' + order + '× diffraction';
-        if (parent !== null) value += ' of ' + parent + ' nm';
+        let value = peakInspectorText('possible') + ' ' + order + '× ' + peakInspectorText('diffraction');
+        if (parent !== null) value += ' ' + peakInspectorText('of') + ' ' + parent + ' nm';
         if (delta !== null) value += ' · Δ' + delta;
-        rows.push(['Artifact', value]);
+        rows.push([peakInspectorText('artifact'), value]);
     }
 
     const flags = Array.isArray(peak.qualityFlags) ? peak.qualityFlags.filter(Boolean) : [];
     if (flags.length) {
-        rows.push(['Quality', flags.slice(0, 3).map(function (flag) {
+        rows.push([peakInspectorText('quality'), flags.slice(0, 3).map(function (flag) {
             return String(flag).replace(/_/g, ' ').toLowerCase();
         }).join(', ')]);
     }
 
     const title = Number.isFinite(wavelength)
-        ? ('Peak · ' + peakInspectorFormatNumber(wavelength, 2) + ' nm')
-        : ('Peak · px ' + peakInspectorFormatNumber(sampleIndex, 0));
+        ? (peakInspectorText('peak') + ' · ' + peakInspectorFormatNumber(wavelength, 2) + ' nm')
+        : (peakInspectorText('peak') + ' · px ' + peakInspectorFormatNumber(sampleIndex, 0));
     popup.classList.toggle('has-element-match', !!elementCard);
     popup.innerHTML =
         '<div class="sp-peak-inspector__title">' + escapePeakInspectorText(title) + '</div>' +
@@ -704,7 +768,7 @@ function renderPeakInspectorPopup(peak) {
         '  </div>' +
         elementCard +
         '</div>' +
-        '<div class="sp-peak-inspector__hint">Click graph to release</div>';
+        '<div class="sp-peak-inspector__hint">' + escapePeakInspectorText(peakInspectorText('release')) + '</div>';
     popup.style.display = 'block';
     positionPeakInspectorPopup();
 }
@@ -733,6 +797,91 @@ function positionPeakInspectorPopup() {
     popup.style.top = top + 'px';
 }
 
+
+function getPeakInspectorNavigationPeaks() {
+    const descriptor = getHoverSeriesDescriptor();
+    if (!descriptor || !descriptor.pixels) return [];
+    const sampleCount = Math.max(1, Math.floor(descriptor.pixels.length / 4));
+    const zoomRange = getZoomRange(sampleCount);
+    const zoomStart = Number(zoomRange[0]) || 0;
+    const zoomEnd = Number(zoomRange[1]) || sampleCount;
+
+    const scientific = getPeakInspectorScientificFeatures()
+        .filter(function (feature) {
+            const index = Number(feature && feature.sampleIndex);
+            return Number.isFinite(index) && index >= zoomStart && index < zoomEnd;
+        })
+        .map(function (feature) { return Object.assign({ source: 'analysis-feature' }, feature); })
+        .sort(function (a, b) { return Number(a.sampleIndex) - Number(b.sampleIndex); });
+
+    if (scientific.length) return scientific;
+
+    const peaks = [];
+    const pixels = descriptor.pixels;
+    const channelOffset = descriptor.channelOffset;
+    const lo = Math.max(1, Math.floor(zoomStart));
+    const hi = Math.min(sampleCount - 2, Math.ceil(zoomEnd) - 1);
+    for (let index = lo; index <= hi; index += 1) {
+        const value = getGraphValueAtX(pixels, index, channelOffset);
+        const left = getGraphValueAtX(pixels, index - 1, channelOffset);
+        const right = getGraphValueAtX(pixels, index + 1, channelOffset);
+        if (!(value > left && value >= right)) continue;
+        const local = getPeakInspectorFallbackCandidate(pixels, channelOffset, index, 1);
+        if (!local || Number(local.sampleIndex) !== index) continue;
+        peaks.push(local);
+    }
+    return peaks;
+}
+
+function navigatePeakInspector(direction) {
+    if (!peakInspectorState.locked || !peakInspectorState.peak) return false;
+    const dir = direction < 0 ? -1 : 1;
+    const currentIndex = Number(peakInspectorState.peak.sampleIndex);
+    if (!Number.isFinite(currentIndex)) return false;
+
+    const peaks = getPeakInspectorNavigationPeaks();
+    if (!peaks.length) return false;
+
+    let target = null;
+    if (dir < 0) {
+        for (let i = peaks.length - 1; i >= 0; i -= 1) {
+            if (Number(peaks[i].sampleIndex) < currentIndex - 0.5) {
+                target = peaks[i];
+                break;
+            }
+        }
+    } else {
+        for (let i = 0; i < peaks.length; i += 1) {
+            if (Number(peaks[i].sampleIndex) > currentIndex + 0.5) {
+                target = peaks[i];
+                break;
+            }
+        }
+    }
+    if (!target) return false;
+    return lockPeakInspector(target);
+}
+
+function isPeakInspectorKeyboardTarget(target) {
+    if (!target || !target.tagName) return false;
+    const tag = String(target.tagName).toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable;
+}
+
+function handlePeakInspectorKeydown(event) {
+    if (!peakInspectorState.locked || !event || isPeakInspectorKeyboardTarget(event.target)) return;
+    const key = String(event.key || '');
+    let direction = 0;
+    if (key === 'ArrowLeft' || key === '<' || key === ',') direction = -1;
+    if (key === 'ArrowRight' || key === '>' || key === '.') direction = 1;
+    if (!direction) return;
+    if (navigatePeakInspector(direction)) {
+        event.preventDefault();
+        event.stopPropagation();
+        try { redrawGraphIfLoadedImage(true); } catch (_) {}
+    }
+}
+
 function lockPeakInspector(peak) {
     if (!peak || !Number.isFinite(Number(peak.sampleIndex))) return false;
     peakInspectorState.locked = true;
@@ -747,6 +896,16 @@ function lockPeakInspector(peak) {
     renderPeakInspectorPopup(peakInspectorState.peak);
     return true;
 }
+
+try {
+    const spPeakI18n = window.SpectraPro || {};
+    if (spPeakI18n.eventBus && typeof spPeakI18n.eventBus.on === 'function' && !spPeakI18n.__peakInspectorLanguageBound) {
+        spPeakI18n.__peakInspectorLanguageBound = true;
+        spPeakI18n.eventBus.on('language:changed', function () {
+            if (peakInspectorState.locked && peakInspectorState.peak) renderPeakInspectorPopup(peakInspectorState.peak);
+        });
+    }
+} catch (_) {}
 
 function releasePeakInspector(clientX, clientY) {
     peakInspectorState.locked = false;
@@ -1714,6 +1873,11 @@ function setupEventListeners() {
         showReferenceGraph = !!(referenceGraphCheckbox && referenceGraphCheckbox.checked);
         redrawGraphIfLoadedImage()
     });
+
+    if (!document.__spPeakInspectorKeyboardBound) {
+        document.__spPeakInspectorKeyboardBound = true;
+        document.addEventListener('keydown', handlePeakInspectorKeydown, false);
+    }
 
     addEventListener(graphCanvas, 'mousedown', (event) => {
         if (event.button !== 0) return;

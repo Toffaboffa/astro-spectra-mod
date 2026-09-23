@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '3.0.4';
+  const VERSION = '3.0.5';
   const BUTTON_ID = 'spLoadExampleBtn';
   const OVERLAY_ID = 'spExampleChooserOverlay';
   const STYLE_ID = 'spExampleChooserStyle';

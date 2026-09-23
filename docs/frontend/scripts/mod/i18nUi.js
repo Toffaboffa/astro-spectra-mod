@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '3.0.1';
+  const VERSION = '3.0.5';
   const SWITCH_ID = 'spLanguageSwitch';
   const STYLE_ID = 'spLanguageSwitchStyle';
   const HIGH_FREQUENCY_SELECTOR = '#spStatusText,#spDataQualityText,#spDQDetailsBody,#spLabHits,#spLabQc,#spAstroContinuum,#spAstroFeatures,#spAstroMatches,#spAstroQuality,#spAstroVelocity,#spResponseStatus,#spResponseCatalogNote,#spSideConsolePre';
@@ -580,11 +580,11 @@
 
     if (next === 'sv') {
       roots().forEach(translateTree);
-      global.document.title = 'SPECTRA PRO';
+      global.document.title = 'SpectraPRO - Spectroscopy';
       startObservers();
     } else {
       roots().forEach(restoreTree);
-      global.document.title = 'SPECTRA PRO';
+      global.document.title = 'SpectraPRO - Spectroscopy';
     }
     updateSwitch();
     try {

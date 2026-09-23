@@ -1995,3 +1995,92 @@ label[for="peakSizeLower"],
     min-height:116px;
   }
 }
+
+
+/* v3.0.5: genuinely compact peak inspector. */
+#spPeakInspectorPopup{
+  box-sizing:border-box;
+  width:min(208px,calc(100% - 16px));
+  padding:5px 6px 4px;
+  font-size:10px;
+  line-height:1.12;
+}
+#spPeakInspectorPopup .sp-peak-inspector__title{
+  margin-bottom:3px;
+  font-size:11px;
+  line-height:1.05;
+}
+#spPeakInspectorPopup .sp-peak-inspector__rows{gap:1px;}
+#spPeakInspectorPopup .sp-peak-inspector__row{
+  grid-template-columns:62px minmax(0,1fr);
+  gap:4px;
+  line-height:1.08;
+}
+#spPeakInspectorPopup .sp-peak-inspector__hint{
+  margin-top:3px;
+  padding-top:3px;
+  font-size:7.5px;
+  line-height:1;
+  white-space:nowrap;
+}
+#spPeakInspectorPopup.has-element-match{
+  box-sizing:border-box;
+  width:min(268px,calc(100% - 16px));
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-inspector__content{
+  grid-template-columns:minmax(104px,1fr) 112px;
+  gap:5px;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-inspector__title{margin-bottom:2px;}
+#spPeakInspectorPopup.has-element-match .sp-peak-inspector__rows{gap:0;}
+#spPeakInspectorPopup .sp-peak-element-card{
+  min-height:104px;
+  padding:4px 5px;
+  border-radius:9px;
+}
+#spPeakInspectorPopup .sp-peak-element-card__top{min-height:14px;}
+#spPeakInspectorPopup .sp-peak-element-card__number{
+  font-size:15px;
+  line-height:.95;
+}
+#spPeakInspectorPopup .sp-peak-element-card__match{
+  font-size:9px;
+  letter-spacing:.06em;
+}
+#spPeakInspectorPopup .sp-peak-element-card__symbol{
+  font-size:31px;
+  line-height:.84;
+}
+#spPeakInspectorPopup .sp-peak-element-card__name{
+  margin-top:1px;
+  font-size:10px;
+  line-height:1;
+}
+#spPeakInspectorPopup .sp-peak-element-card__species{
+  margin-top:0;
+  min-height:7px;
+  font-size:7.5px;
+}
+#spPeakInspectorPopup .sp-peak-element-card__meta{
+  margin-top:2px;
+  padding-top:2px;
+  gap:0;
+}
+#spPeakInspectorPopup .sp-peak-element-card__meta > div{
+  gap:3px;
+  font-size:7.5px;
+  line-height:1.05;
+}
+#spPeakInspectorPopup .sp-peak-element-card__excluded{
+  margin-top:2px;
+  font-size:7px;
+}
+@media (max-width:560px){
+  #spPeakInspectorPopup.has-element-match{
+    width:min(250px,calc(100% - 12px));
+  }
+  #spPeakInspectorPopup.has-element-match .sp-peak-inspector__content{
+    grid-template-columns:minmax(98px,1fr) 108px;
+  }
+  #spPeakInspectorPopup .sp-peak-element-card{min-height:100px;}
+}
