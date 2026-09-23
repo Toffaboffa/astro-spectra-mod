@@ -604,6 +604,7 @@
     const confidenceModel = root.SPECTRA_PRO_confidenceModel;
     const calibrationDiagnostics = root.SPECTRA_PRO_calibrationDiagnostics;
     const spectralFeatures = root.SPECTRA_PRO_spectralFeatures;
+    const diffractionArtifacts = root.SPECTRA_PRO_diffractionArtifacts;
     if (!frame || !frame.I || !peakDetect || !peakScoring || !lineMatcher ||
         !qcRules || !confidenceModel || !spectrumMath || !presetResolver ||
         !calibrationDiagnostics || !spectralFeatures) {
@@ -668,14 +669,38 @@
     const effectiveMatchToleranceNm = matchUncertaintyModel.effectiveToleranceNm;
 
     const nmAvailable = !!(frame && frame.calibrated && Array.isArray(frame.nm));
+    let diffractionCandidates = [];
+    const excludedDiffractionPeakIndices = Object.create(null);
+    const diffractionByPeakIndex = Object.create(null);
+    if (nmAvailable && diffractionArtifacts && typeof diffractionArtifacts.analyze === 'function') {
+      const preview = diffractionArtifacts.analyze({
+        ok: true,
+        calibrated: true,
+        features: features,
+        qcFlags: [],
+        matchUncertaintyModel: matchUncertaintyModel
+      }, frame, opt);
+      diffractionCandidates = Array.isArray(preview && preview.diffractionCandidates)
+        ? preview.diffractionCandidates.slice()
+        : [];
+      diffractionCandidates.forEach(function (candidate) {
+        const index = Number(candidate && candidate.childSampleIndex);
+        if (!Number.isFinite(index)) return;
+        excludedDiffractionPeakIndices[String(index)] = true;
+        diffractionByPeakIndex[String(index)] = candidate;
+      });
+    }
+    const analysisPeaks = peaks.filter(function (peak) {
+      return !excludedDiffractionPeakIndices[String(Number(peak && peak.index))];
+    });
     const range = getObservedRange(frame, peaks);
-    const resolutionNm = guessObservedResolutionNm(peaks);
+    const resolutionNm = guessObservedResolutionNm(analysisPeaks.length ? analysisPeaks : peaks);
     const atomicLines = filterAtomicLines(state && state.atomLines || [], presetCfg, range);
     const molecularBands = filterMolecularBands(state && state.molecularBands || [], presetCfg, range);
 
-    let matches = [];
+    let allMatches = [];
     if (nmAvailable) {
-      matches = lineMatcher.matchLines(peaks, atomicLines, {
+      allMatches = lineMatcher.matchLines(peaks, atomicLines, {
         toleranceNm: presetCfg.toleranceNm,
         hardMaxDistanceNm: effectiveMatchToleranceNm,
         maxMatches: presetCfg.maxMatches,
@@ -686,22 +711,29 @@
       }) || [];
 
       if (presetCfg.type === 'smart' && presetCfg.mode !== 'atomic') {
-        matches = matches.concat(buildMolecularMatches(peaks, molecularBands, effectiveMatchToleranceNm));
+        allMatches = allMatches.concat(buildMolecularMatches(peaks, molecularBands, effectiveMatchToleranceNm));
       }
     }
 
-    matches = matches.filter(function (m) {
+    allMatches = allMatches.filter(function (m) {
       return m && Number.isFinite(Number(m.obsNm)) && Number.isFinite(Number(m.refNm)) && Math.abs(Number(m.deltaNm)) <= effectiveMatchToleranceNm;
     }).sort(function (a, b) {
       return (Number(b.rawScore || 0) - Number(a.rawScore || 0)) || (Number(b.prominence || 0) - Number(a.prominence || 0));
     });
 
     const matchSeen = Object.create(null);
-    matches = matches.filter(function (m) {
+    allMatches = allMatches.filter(function (m) {
       const key = String(m.element || m.speciesKey || m.species || '') + '|' + (Number.isFinite(Number(m.refNm)) ? Number(m.refNm).toFixed(3) : '?') + '|' + (Number.isFinite(Number(m.peakIndex)) ? Number(m.peakIndex) : '?') + '|' + String(m.kind || 'atom');
       if (matchSeen[key]) return false;
       matchSeen[key] = true;
       return true;
+    });
+
+    const excludedDiffractionMatches = allMatches.filter(function (match) {
+      return excludedDiffractionPeakIndices[String(Number(match && match.peakIndex))];
+    });
+    let matches = allMatches.filter(function (match) {
+      return !excludedDiffractionPeakIndices[String(Number(match && match.peakIndex))];
     });
 
     const qc = qcRules.evaluateQC({ frame: frame, state: state });
@@ -709,37 +741,49 @@
     const confidence = confidenceModel.buildConfidence(matches, qc);
 
     let maxPeak = 0;
-    for (let i = 0; i < peaks.length; i += 1) {
-      const v = +peaks[i].prominence || +peaks[i].value || 0;
+    const peakStrengthSource = analysisPeaks.length ? analysisPeaks : peaks;
+    for (let i = 0; i < peakStrengthSource.length; i += 1) {
+      const v = +peakStrengthSource[i].prominence || +peakStrengthSource[i].value || 0;
       if (v > maxPeak) maxPeak = v;
     }
     if (!Number.isFinite(maxPeak) || maxPeak <= 0) maxPeak = 1;
 
-    let topHits = matches.map(function (m) {
+    function matchToHit(m, excludedByDiffraction) {
       const closeness = Math.max(0, Math.min(1.25, +m.rawScore || 0));
       const strength = Math.max(0, Math.min(1, ((+m.prominence || +m.peakValue || 0) / maxPeak)));
       const base = (0.7 * Math.min(1, closeness)) + (0.3 * strength);
       const conf = Math.max(0, Math.min(1, (0.14 + 0.86 * base) * (+confidence.qcFactor || +confidence.overall || 0)));
+      const peakIndex = Number.isFinite(Number(m.peakIndex)) ? Number(m.peakIndex) : null;
+      const diffraction = peakIndex !== null ? diffractionByPeakIndex[String(peakIndex)] : null;
       return {
         species: m.species,
         element: (m.element || (m.speciesKey || m.species || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 3)),
         referenceNm: m.refNm,
         observedNm: m.obsNm,
-        peakIndex: Number.isFinite(Number(m.peakIndex)) ? Number(m.peakIndex) : null,
+        peakIndex: peakIndex,
         deltaNm: m.deltaNm,
         confidence: +conf.toFixed(3),
         score: +((m.rawScore || 0) * 100).toFixed(1),
-        kind: m.kind || 'atom'
+        kind: m.kind || 'atom',
+        excludedByDiffraction: !!excludedByDiffraction,
+        excludedFromScoring: !!excludedByDiffraction,
+        exclusionReason: excludedByDiffraction ? 'possible-higher-order-diffraction' : null,
+        diffractionOrder: diffraction ? Number(diffraction.order) : null,
+        diffractionParentNm: diffraction ? Number(diffraction.parentNm) : null
       };
-    });
-    const rawLineHits = topHits.slice();
+    }
+
+    let topHits = matches.map(function (m) { return matchToHit(m, false); });
+    const rawLineHits = topHits.slice().concat(
+      excludedDiffractionMatches.map(function (m) { return matchToHit(m, true); })
+    );
 
     let elementScores = [];
     let winnerBreakdown = null;
     if (nmAvailable && presetCfg.type === 'smart') {
       elementScores = buildRefinedElementScores({
         matches: matches,
-        peaks: peaks,
+        peaks: analysisPeaks,
         atomLines: atomicLines,
         molecularBands: molecularBands,
         range: range,
@@ -768,6 +812,7 @@
       overlayHits: rawLineHits.slice(0, 160),
       peaks: peaks.slice(0, 96),
       features: features.slice(0, 96),
+      diffractionCandidates: diffractionCandidates.slice(0, 24),
       offsetNm: estimateOffset(matches),
       qcFlags: qc.flags || [],
       confidence: confidence.overall || 0,

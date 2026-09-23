@@ -322,7 +322,14 @@
     const out = originalAnalyzeFrame.call(pipeline, frame, state, options);
     if (!out || !out.ok || !out.calibrated || !isMolecularSmartPreset(out.presetId)) return out;
 
-    const peaks = Array.isArray(out.peaks) ? out.peaks : [];
+    const excludedDiffractionPeakIndices = Object.create(null);
+    (Array.isArray(out.diffractionCandidates) ? out.diffractionCandidates : []).forEach(function (candidate) {
+      const index = Number(candidate && candidate.childSampleIndex);
+      if (Number.isFinite(index)) excludedDiffractionPeakIndices[String(index)] = true;
+    });
+    const peaks = (Array.isArray(out.peaks) ? out.peaks : []).filter(function (peak) {
+      return !excludedDiffractionPeakIndices[String(Number(peak && peak.index))];
+    });
     const diagnostics = [];
     const diagnosticHits = [];
     const autoTuneMolecular = out.autoTune === true &&

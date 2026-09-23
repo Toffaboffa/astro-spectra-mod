@@ -374,7 +374,14 @@
     const profiles = catalog.getForPreset(out.presetId);
     if (!profiles.length) return out;
 
-    const peaks = Array.isArray(out.peaks) ? out.peaks : [];
+    const excludedDiffractionPeakIndices = Object.create(null);
+    (Array.isArray(out.diffractionCandidates) ? out.diffractionCandidates : []).forEach(function (candidate) {
+      const index = Number(candidate && candidate.childSampleIndex);
+      if (Number.isFinite(index)) excludedDiffractionPeakIndices[String(index)] = true;
+    });
+    const peaks = (Array.isArray(out.peaks) ? out.peaks : []).filter(function (peak) {
+      return !excludedDiffractionPeakIndices[String(Number(peak && peak.index))];
+    });
     if (!peaks.length) return out;
     const range = observedRange(frame, peaks);
     const scoredRows = [];

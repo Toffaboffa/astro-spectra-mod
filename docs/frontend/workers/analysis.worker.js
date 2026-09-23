@@ -15,7 +15,7 @@ importScripts(
   './spectralFeatures.js?v=3.0.1',
   './diffractionArtifacts.js?v=3.0.1-diffraction-1',
   './measurementQuality.js?v=3.0.1',
-  './candidateAnalysis.js?v=3.0.1',
+  './candidateAnalysis.js?v=3.0.1-artifact-filter-1',
   './astroReferences.js?v=3.0.1',
   './astroContinuum.js?v=3.0.1',
   './dopplerEstimate.js?v=3.0.1',
@@ -24,9 +24,9 @@ importScripts(
   './referenceComparison.js?v=3.0.1',
   './analysisPipeline.js?v=3.0.1-diffraction-1',
   './plasmaProfiles.js?v=3.0.1',
-  './molecularEvidencePatch.js?v=3.0.1',
+  './molecularEvidencePatch.js?v=3.0.1-artifact-filter-1',
   './atomicProfiles.js?v=3.0.1',
-  './atomicEvidence.js?v=3.0.1',
+  './atomicEvidence.js?v=3.0.1-artifact-filter-1',
   './fluorescenceAnalysis.js?v=3.0.1',
   './workerRouter.js?v=3.0.1'
 );

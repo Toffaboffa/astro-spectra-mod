@@ -11,7 +11,7 @@
 
   function createAnalysisWorkerClient(options) {
     const opts = Object.assign({
-      workerUrl: '../workers/analysis.worker.js?v=3.0.1-diffraction-1',
+      workerUrl: '../workers/analysis.worker.js?v=3.0.1-artifact-filter-1',
       throttleMs: 300,
       timeoutMs: 3000,
       enabledModes: ['LAB', 'ASTRO']

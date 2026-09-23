@@ -1026,6 +1026,44 @@ function testInstrumentResponseCorrection() {
 }
 
 
+function testDiffractionPeaksExcludedFromScoring() {
+  const nm = [];
+  const intensity = [];
+  for (let wavelength = 390; wavelength <= 810; wavelength += 1) {
+    nm.push(wavelength);
+    const parent = 120 * Math.exp(-0.5 * Math.pow((wavelength - 400) / 1.1, 2));
+    const child = 28 * Math.exp(-0.5 * Math.pow((wavelength - 800) / 1.1, 2));
+    intensity.push(1 + parent + child);
+  }
+  const frame = {
+    calibrated: true,
+    nm: nm,
+    px: nm.map(function (_, index) { return index; }),
+    I: intensity
+  };
+  const result = analyze(frame, {
+    preset: 'nearest',
+    autoTune: false,
+    peakThresholdRel: 0.01,
+    peakDistancePx: 3,
+    maxDistanceNm: 1.8,
+    hardware: { spectrometerResolutionFwhmNm: 1.8 }
+  }, {
+    atomLines: [
+      { element: 'P', species: 'P I', speciesKey: 'P I', nm: 400 },
+      { element: 'Q', species: 'Q I', speciesKey: 'Q I', nm: 800 }
+    ]
+  });
+
+  assert.ok(result.diffractionCandidates.some(function (candidate) {
+    return candidate.order === 2 && Math.abs(candidate.parentNm - 400) < 1 && Math.abs(candidate.observedNm - 800) < 1;
+  }), 'Synthetic 800 nm child should be detected as possible second-order diffraction');
+  assert.equal(result.topHits.some(function (hit) { return hit.element === 'Q'; }), false, 'Diffraction child must not contribute to scored top hits');
+  assert.ok(result.overlayHits.some(function (hit) {
+    return hit.element === 'Q' && hit.excludedByDiffraction === true && hit.excludedFromScoring === true;
+  }), 'Excluded diffraction match should remain available for crossed-out graph annotation');
+}
+
 function testHigherOrderDiffractionArtifacts() {
   const engine = worker.SPECTRA_PRO_diffractionArtifacts;
   assert.ok(engine && typeof engine.analyze === 'function', 'Diffraction artifact detector should be available');
@@ -1073,6 +1111,7 @@ const groups = [
   ['quality control', testQualityControlAndSafeFailure],
   ['spectral features', testSpectralFeatures],
   ['higher-order diffraction artifacts', testHigherOrderDiffractionArtifacts],
+  ['diffraction peaks excluded from scoring', testDiffractionPeaksExcludedFromScoring],
   ['calibration-aware matching', testCalibrationAwareMatching],
   ['measurement quality', testMeasurementQualityModel],
   ['formal preprocessing', testFormalPreprocessingPipeline],
