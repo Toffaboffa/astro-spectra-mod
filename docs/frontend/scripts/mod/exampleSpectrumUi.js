@@ -12,7 +12,8 @@
   const SAMPLE_ICONS = Object.freeze({
     purple: '../assets/examples/icons/spectral-tube-purple-128.png',
     orange: '../assets/examples/icons/spectral-tube-orange-128.png',
-    cyan: '../assets/examples/icons/spectral-tube-cyan-128.png'
+    cyan: '../assets/examples/icons/spectral-tube-cyan-128.png',
+    solar: '../assets/examples/icons/solar-spectrum.png'
   });
 
   const SPECTRA1_CALIBRATION = Object.freeze({
@@ -82,7 +83,7 @@
       descriptionSv: 'Uppmätt TSIS-1 Hybrid Solar Reference Spectrum med kalibrering i luftvåglängd.',
       sourceLabelEn: 'Solar spectrum — TSIS-1 HSRS (calibrated)',
       sourceLabelSv: 'Solspektrum — TSIS-1 HSRS (kalibrerat)',
-      icon: SAMPLE_ICONS.cyan,
+      icon: SAMPLE_ICONS.solar,
       badge: 'TSIS-1 HSRS',
       metaEn: '388–670 nm · 0.2 nm sampling · calibrated numeric data',
       metaSv: '388–670 nm · 0,2 nm sampling · kalibrerade numeriska data',
@@ -441,9 +442,81 @@
     } catch (_) {}
   }
 
+  function solarColorAtNm(nm) {
+    const stops = [
+      [380, 20, 0, 35], [400, 80, 0, 120], [430, 60, 0, 220],
+      [460, 0, 90, 255], [490, 0, 210, 255], [530, 0, 255, 90],
+      [575, 235, 255, 0], [590, 255, 220, 0], [610, 255, 120, 0],
+      [650, 255, 0, 0], [700, 170, 0, 0]
+    ];
+    let left = stops[0];
+    let right = stops[stops.length - 1];
+    for (let i = 0; i < stops.length - 1; i += 1) {
+      if (nm >= stops[i][0] && nm <= stops[i + 1][0]) {
+        left = stops[i];
+        right = stops[i + 1];
+        break;
+      }
+    }
+    const amount = Math.max(0, Math.min(1, (nm - left[0]) / Math.max(1, right[0] - left[0])));
+    return [1, 2, 3].map(function (channel) {
+      return Math.round(left[channel] + (right[channel] - left[channel]) * amount);
+    });
+  }
+
+  function renderSolarSourcePreview(asset) {
+    const canvas = $('spFramePreviewCanvas');
+    if (!canvas || !asset || !Array.isArray(asset.wavelengthNm) || !Array.isArray(asset.irradianceWm2Nm)) return false;
+    const width = 1280;
+    const height = 720;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return false;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+
+    const values = asset.irradianceWm2Nm;
+    const wavelengths = asset.wavelengthNm;
+    const radius = 24;
+    const upper = new Array(values.length);
+    for (let i = 0; i < values.length; i += 1) {
+      let localMax = 0;
+      const start = Math.max(0, i - radius);
+      const end = Math.min(values.length - 1, i + radius);
+      for (let j = start; j <= end; j += 1) localMax = Math.max(localMax, Number(values[j]) || 0);
+      upper[i] = localMax || 1;
+    }
+
+    const bandTop = 110;
+    const bandHeight = 500;
+    for (let x = 0; x < width; x += 1) {
+      const index = Math.min(values.length - 1, Math.round((x / (width - 1)) * (values.length - 1)));
+      const relative = Math.max(0, Math.min(1, (Number(values[index]) || 0) / upper[index]));
+      const brightness = 0.08 + 0.92 * Math.pow(relative, 2.2);
+      const rgb = solarColorAtNm(Number(wavelengths[index]));
+      ctx.fillStyle = 'rgb(' + rgb.map(function (channel) { return Math.round(channel * brightness); }).join(',') + ')';
+      ctx.fillRect(x, bandTop, 1, bandHeight);
+    }
+    canvas.style.display = 'block';
+    return true;
+  }
+
+  function setGraphFillMode(mode) {
+    try {
+      if (sp.store && typeof sp.store.update === 'function') {
+        sp.store.update('display.fillMode', mode, { source: 'exampleSpectrum.solarFill' });
+      }
+      const select = $('spFillMode');
+      if (select) select.value = mode;
+    } catch (_) {}
+  }
+
   function finishLoadedImage(sample, image) {
     const sourceWindow = $('videoMainWindow');
     if (sourceWindow) sourceWindow.classList.remove('sp-numeric-source');
+    const previewCanvas = $('spFramePreviewCanvas');
+    if (previewCanvas) previewCanvas.style.display = 'none';
     try {
       const rt = sp.runtime || {};
       if (typeof rt.setVideoElement === 'function') rt.setVideoElement(image);
@@ -453,6 +526,7 @@
     try { if (typeof global.initializeZoomList === 'function') global.initializeZoomList(); } catch (_) {}
 
     selectRecommendedPreset(sample);
+    setGraphFillMode('off');
     applyStripe(sample);
 
     try {
@@ -523,12 +597,14 @@
     if (sourceWindow) sourceWindow.classList.add('sp-numeric-source');
     if (video) video.style.display = 'none';
     if (image) image.style.display = 'none';
+    renderSolarSourcePreview(asset);
     const pause = $('pauseVideoButton');
     const play = $('playVideoButton');
     if (pause) pause.style.visibility = 'hidden';
     if (play) play.style.visibility = 'visible';
 
     enableAstroAnalysis();
+    setGraphFillMode('source');
     const calibration = applyCalibration({ calibration: asset.calibration });
     if (!calibration.ok) throw new Error('Solar calibration could not be activated: ' + calibration.reason);
     selectWavelengthAxis();

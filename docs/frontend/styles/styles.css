@@ -61,11 +61,10 @@ input.darker-slider::-ms-track { background: #32455f; }
 }
 #videoMainWindow{ height:auto !important; display:block; }
 #videoMainWindow.sp-numeric-source{
-  height:214px !important;
-  min-height:214px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  height:auto !important;
+  min-height:0;
+  aspect-ratio:16 / 9;
+  display:block;
   overflow:hidden;
   background:#000;
   border-top:1px solid rgba(125,211,252,.12);
@@ -77,9 +76,16 @@ input.darker-slider::-ms-track { background: #32455f; }
   pointer-events:none;
 }
 #videoMainWindow.sp-numeric-source #cameraWindowCanvasRecording,
-#videoMainWindow.sp-numeric-source #spFramePreviewCanvas,
 #videoMainWindow.sp-numeric-source #cameraImage,
 #videoMainWindow.sp-numeric-source #videoMain{display:none !important;}
+#videoMainWindow.sp-numeric-source #spFramePreviewCanvas{
+  display:block !important;
+  position:relative !important;
+  width:100% !important;
+  height:auto !important;
+  top:auto !important;
+  transform:none;
+}
 #cameraSelect { text-align:center; }
 #miscMeasuringSettings {
   flex-grow:1; overflow-y:auto; min-height:0; margin:.5rem 0; padding:.5rem;

@@ -1640,6 +1640,8 @@ function drawGradient(graphCtx, pixels, pixelWidth, maxValue) {
     const spAppearance = getSpectraProGraphAppearanceSettings();
     const spFillMode = String(spAppearance.fillMode || 'inherit').toLowerCase();
     const useSyntheticFill = (spFillMode === 'synthetic');
+    const numericSource = spFillMode === 'source' ? getSpectraProNumericFrame() : null;
+    const useNumericSourceFill = !!(numericSource && Array.isArray(numericSource.nm) && numericSource.nm.length === pixelWidth);
     const effectiveGradientOpacity = getSpectraProEffectiveGradientOpacity();
     const padding = 30;
     const width = graphCanvas.getBoundingClientRect().width;
@@ -1665,7 +1667,9 @@ function drawGradient(graphCtx, pixels, pixelWidth, maxValue) {
             const yLower = calculateYPosition(0, height, maxValue);
             const yUpper = calculateYPosition(maxVal, height, maxValue);
 
-            graphCtx.fillStyle = useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity, zoomStart) : `rgba(${255*r/maxValue},${255*g/maxValue},${255*b/maxValue},${effectiveGradientOpacity})`;
+            graphCtx.fillStyle = useNumericSourceFill
+                ? spectraSyntheticColorFromNm(Number(numericSource.nm[zoomStart + x]), effectiveGradientOpacity)
+                : (useSyntheticFill ? spectraSyntheticColorAt(x, zoomRange, effectiveGradientOpacity, zoomStart) : `rgba(${255*r/maxValue},${255*g/maxValue},${255*b/maxValue},${effectiveGradientOpacity})`);
             graphCtx.fillRect(leftX, Math.floor(yUpper), rectWidth, Math.ceil(yLower - yUpper));
         }
         return;
@@ -1976,7 +1980,20 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
       return buildFrame();
     },
     clearNumericFrame: function(options){
+      const previous = sp.coreBridge && sp.coreBridge.numericFrame;
       if (sp.coreBridge) delete sp.coreBridge.numericFrame;
+      if (previous && previous.source === 'solar-example') {
+        try {
+          const canvas = document.getElementById('spFramePreviewCanvas');
+          if (canvas) canvas.style.display = 'none';
+          const sourceWindow = document.getElementById('videoMainWindow');
+          if (sourceWindow) sourceWindow.classList.remove('sp-numeric-source');
+          const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
+          if (state && state.display && String(state.display.fillMode || '').toLowerCase() === 'source' && typeof sp.store.update === 'function') {
+            sp.store.update('display.fillMode', 'off', { source: 'graph.clearSolarNumericFrame' });
+          }
+        } catch (_) {}
+      }
       needToRecalculateMaxima = true;
       if ((!options || options.redraw !== false) && typeof window.drawGraph === 'function') window.drawGraph();
     },

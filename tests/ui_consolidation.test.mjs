@@ -11,6 +11,7 @@ const examples = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/exam
 const framePreview = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/framePreview.js'), 'utf8');
 const graphScript = fs.readFileSync(path.join(root, 'docs/frontend/scripts/graphScript.js'), 'utf8');
 const i18n = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/i18nUi.js'), 'utf8');
+const solarIcon = fs.readFileSync(path.join(root, 'docs/frontend/assets/examples/icons/solar-spectrum.png'));
 
 function markupCount(id) {
   return (bootstrap.match(new RegExp('id=["\\\']' + id + '["\\\']', 'g')) || []).length;
@@ -60,14 +61,26 @@ assert.ok(styles.includes('#spPanel-astro .sp-analysis-layout .sp-lab-hit strong
 assert.ok(styles.includes('grid-template-rows:auto minmax(0,1fr)'), 'ASTRO result rows must be constrained to the available panel height');
 assert.ok(styles.includes('@media (max-width: 900px)'), 'normal-width layout must have a compact responsive fallback');
 assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source'), 'numeric examples must reserve the normal source-view height');
+assert.ok(mainStyles.includes('aspect-ratio:16 / 9'), 'numeric source previews must use the same 16:9 geometry as the 1280x720 image examples');
 assert.ok(mainStyles.includes('pointer-events:none'), 'the numeric source placeholder must not block source controls');
 assert.ok(mainStyles.includes('background:#000'), 'numeric examples must use a plain black source preview until a matching preview exists');
 assert.ok(!mainStyles.includes('TSIS-1 HSRS\\A'), 'the black numeric source preview must not contain placeholder text');
 assert.ok(examples.includes("sourceWindow.classList.add('sp-numeric-source')"), 'numeric examples must activate the reserved source view');
 assert.ok(examples.includes("sourceWindow.classList.remove('sp-numeric-source')"), 'image examples must restore the normal source view');
 assert.ok(examples.includes('sp.framePreview.clearSourceImage()'), 'numeric examples must forget a previously loaded source image');
+assert.ok(examples.includes('const width = 1280;') && examples.includes('const height = 720;'), 'solar preview must match the 1280x720 image examples');
+assert.ok(examples.includes("setGraphFillMode('source')"), 'loading Solar must select SOURCE graph fill');
+assert.ok(examples.includes("setGraphFillMode('off')"), 'loading a normal image example must restore the default OFF graph fill');
+assert.ok(examples.includes('asset.irradianceWm2Nm'), 'solar preview must derive its Fraunhofer structure from the bundled numeric measurements');
+assert.ok(examples.includes("solar: '../assets/examples/icons/solar-spectrum.png'"), 'Solar chooser card must use its dedicated spectrum icon');
+assert.deepEqual([...solarIcon.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], 'Solar chooser icon must be a real PNG');
+assert.equal(solarIcon.readUInt32BE(16), 1280, 'Solar chooser icon must preserve the supplied width');
+assert.equal(solarIcon.readUInt32BE(20), 426, 'Solar chooser icon must preserve the supplied height');
+assert.equal(solarIcon[25], 6, 'Solar chooser icon must use RGBA PNG transparency');
 assert.ok(framePreview.includes('api.clearSourceImage = function()'), 'frame preview must expose a safe source-image reset');
 assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source #cameraImage'), 'numeric examples must forcibly hide stale source images');
+assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source #spFramePreviewCanvas'), 'numeric examples must show their matching source preview canvas');
+assert.ok(graphScript.includes('useNumericSourceFill'), 'SOURCE graph fill must use the calibrated numeric wavelength colors');
 assert.ok(graphScript.includes('&& !numericFrame'), 'static numeric spectra must stop the live camera animation loop');
 assert.ok(!graphScript.includes("resizeCanvasToDisplaySize(graphCtx, graphCanvas, 'Normal');\n      if (typeof window.drawGraph === 'function') window.drawGraph();"), 'numeric spectrum loading must not redraw and emit the same frame twice');
 for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Advanced: reference spectrum comparison', 'Continuum diagnostics']) {
