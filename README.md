@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v3.0.1**
+**Current UI version: v3.0.4**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 

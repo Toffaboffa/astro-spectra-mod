@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '3.0.3';
+  const VERSION = '3.0.4';
   const MODAL_ID = 'spExportModal';
   const STYLE_ID = 'spExportUiStyle';
   const MAIN_BUTTON_ID = 'spExportMainBtn';
