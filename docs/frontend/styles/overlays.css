@@ -34,4 +34,8 @@
     --sp-graph-label-bg: rgba(255,255,255,0.82);
     --sp-graph-label-border: rgba(30,41,59,0.22);
     --sp-graph-excluded-mark: rgba(220,38,38,0.98);
+    --sp-graph-diffraction-bg: rgba(248,245,255,0.92);
+    --sp-graph-diffraction-border: rgba(109,40,217,0.46);
+    --sp-graph-diffraction-text: rgba(76,29,149,0.96);
+    --sp-graph-diffraction-line: rgba(109,40,217,0.46);
 }

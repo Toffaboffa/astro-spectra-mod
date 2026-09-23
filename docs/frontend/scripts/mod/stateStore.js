@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '3.0.6';
+  const AI_ASSET_VERSION = '3.0.7';
 
   const defaultPresetCatalog = {
     groups: [
@@ -80,6 +80,7 @@
       fillMode: 'off',
       fillOpacity: 0.8,
       saturationOverlay: false,
+      diffractionOverlay: true,
       calibrationExtrapolationOverlay: true,
       calibrationExtrapolationOpacity: 0.12,
       overlaysEnabled: true

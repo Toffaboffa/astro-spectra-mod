@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '3.0.6';
+  const VERSION = '3.0.7';
   const SWITCH_ID = 'spLanguageSwitch';
   const STYLE_ID = 'spLanguageSwitchStyle';
   const HIGH_FREQUENCY_SELECTOR = '#spStatusText,#spDataQualityText,#spDQDetailsBody,#spLabHits,#spLabQc,#spAstroContinuum,#spAstroFeatures,#spAstroMatches,#spAstroQuality,#spAstroVelocity,#spResponseStatus,#spResponseCatalogNote,#spSideConsolePre';
@@ -57,6 +57,8 @@
     'Step back': 'Stega tillbaka',
     'Long exposure': 'Lång exponering',
     'Export': 'Exportera',
+    'Diffraction': 'Diffraktion',
+    'Show or hide possible higher-order diffraction markers.': 'Visa eller dölj möjliga markeringar för högre diffraktionsordning.',
 
     'CORE': 'CORE',
     'HARDWARE': 'HÅRDVARA',

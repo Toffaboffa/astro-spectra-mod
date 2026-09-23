@@ -266,6 +266,7 @@
       'analysis.showHits',
       'analysis.smartFindEnabled',
       'display.saturationOverlay',
+      'display.diffractionOverlay',
       'display.calibrationExtrapolationOverlay',
       'display.calibrationExtrapolationOpacity'
     ];

@@ -197,6 +197,7 @@ function ensureHost() {
     graphTools.setAttribute('aria-label', 'Graph overlays');
     graphTools.innerHTML = [
       '<label class="sp-graph-tool sp-graph-tool--check" title="Highlight locally saturated graph regions."><input id="spToggleSaturationOverlay" type="checkbox"><span>Saturation</span></label>',
+      '<label class="sp-graph-tool sp-graph-tool--check" title="Show or hide possible higher-order diffraction markers."><input id="spToggleDiffractionOverlay" type="checkbox"><span>Diffraction</span></label>',
       '<label class="sp-graph-tool sp-graph-tool--check" title="Shade wavelengths outside the calibration-anchor interval."><input id="spToggleCalibrationExtrapolation" type="checkbox"><span>Extrapolation</span></label>',
       '<label class="sp-graph-tool sp-graph-tool--range" title="Set the tint strength for extrapolated calibration regions."><span>Shade <b id="spCalibrationShadeOpacityValue">12%</b></span><input id="spCalibrationShadeOpacity" type="range" min="0.02" max="0.50" step="0.01" value="0.12"></label>'
     ].join('');
@@ -237,7 +238,7 @@ function ensureHost() {
         },
         loadedAt: Date.now(),
         scaffold: false,
-        version: '3.0.6'
+        version: '3.0.7'
       };
     } else {
       const mods = v15.registry.modules || (v15.registry.modules = {});
@@ -812,6 +813,7 @@ if (!document.getElementById('spSubtractionControls')) {
       const peakSmoothingInput = card.querySelector('#spPeakSmoothing');
       const toggleNmPeaksInput = card.querySelector('#spToggleNmPeaks');
       const saturationOverlayInput = $('spToggleSaturationOverlay');
+      const diffractionOverlayInput = $('spToggleDiffractionOverlay');
       const calibrationExtrapolationInput = $('spToggleCalibrationExtrapolation');
       const calibrationShadeOpacityInput = $('spCalibrationShadeOpacity');
       const calibrationShadeOpacityValue = $('spCalibrationShadeOpacityValue');
@@ -879,6 +881,7 @@ if (!document.getElementById('spSubtractionControls')) {
       if (fillModeSel) fillModeSel.value = String(displayStateInit.fillMode || 'inherit').toLowerCase();
       if (fillOpacityInput) fillOpacityInput.value = String(Number.isFinite(Number(displayStateInit.fillOpacity)) ? Math.max(0, Math.min(1, Number(displayStateInit.fillOpacity))) : 0.7);
       if (saturationOverlayInput) saturationOverlayInput.checked = !!displayStateInit.saturationOverlay;
+      if (diffractionOverlayInput) diffractionOverlayInput.checked = displayStateInit.diffractionOverlay !== false;
       if (calibrationExtrapolationInput) calibrationExtrapolationInput.checked = displayStateInit.calibrationExtrapolationOverlay !== false;
       if (calibrationShadeOpacityInput) {
         const shade = Number.isFinite(Number(displayStateInit.calibrationExtrapolationOpacity))
@@ -977,6 +980,11 @@ if (!document.getElementById('spSubtractionControls')) {
       });
       saturationOverlayInput && saturationOverlayInput.addEventListener('change', (e) => {
         setVal('display.saturationOverlay', !!e.target.checked);
+        try { redrawGraphIfLoadedImage(); } catch (_) {}
+        try { drawGraph(); } catch (_) {}
+      });
+      diffractionOverlayInput && diffractionOverlayInput.addEventListener('change', (e) => {
+        setVal('display.diffractionOverlay', !!e.target.checked);
         try { redrawGraphIfLoadedImage(); } catch (_) {}
         try { drawGraph(); } catch (_) {}
       });
@@ -3035,6 +3043,9 @@ function renderConsole() {
     }
     if (saturationOverlayInput && !shouldSkipSyncValue(saturationOverlayInput)) {
       saturationOverlayInput.checked = !!(state.display && state.display.saturationOverlay);
+    }
+    if (diffractionOverlayInput && !shouldSkipSyncValue(diffractionOverlayInput)) {
+      diffractionOverlayInput.checked = !!(state.display && state.display.diffractionOverlay !== false);
     }
     if (calibrationExtrapolationInput && !shouldSkipSyncValue(calibrationExtrapolationInput)) {
       calibrationExtrapolationInput.checked = !!(state.display && state.display.calibrationExtrapolationOverlay !== false);

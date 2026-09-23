@@ -49,13 +49,18 @@
       smartRadius: readNum('--sp-graph-smart-radius', 7),
       labelBg: read('--sp-graph-label-bg', 'rgba(255,255,255,0.82)'),
       labelBorder: read('--sp-graph-label-border', 'rgba(30,41,59,0.22)'),
-      excludedMark: read('--sp-graph-excluded-mark', 'rgba(220,38,38,0.98)')
+      excludedMark: read('--sp-graph-excluded-mark', 'rgba(220,38,38,0.98)'),
+      diffractionBg: read('--sp-graph-diffraction-bg', 'rgba(248,245,255,0.92)'),
+      diffractionBorder: read('--sp-graph-diffraction-border', 'rgba(109,40,217,0.46)'),
+      diffractionText: read('--sp-graph-diffraction-text', 'rgba(76,29,149,0.96)'),
+      diffractionLine: read('--sp-graph-diffraction-line', 'rgba(109,40,217,0.46)')
     };
   }
 
   function drawDiffractionCandidates(ctx, graphState, state, activeMode) {
     try {
       if (String(activeMode || '').toUpperCase() !== 'LAB') return 0;
+      if (state && state.display && state.display.diffractionOverlay === false) return 0;
       const candidates = state && state.analysis && Array.isArray(state.analysis.diffractionCandidates)
         ? state.analysis.diffractionCandidates
         : [];
@@ -78,9 +83,25 @@
       const plotBottom = plotBounds && Number.isFinite(+plotBounds.bottom) ? +plotBounds.bottom : (canvas.height - 30);
       let drawn = 0;
 
+      const theme = getCanvasTheme(canvas);
       ctx.save();
-      ctx.font = '10px Verdana';
+      ctx.font = '9px Verdana';
       ctx.textBaseline = 'middle';
+
+      function roundedRectPath(x, y, width, height, radius) {
+        const r = Math.max(0, Math.min(radius, width * 0.5, height * 0.5));
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + width - r, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+        ctx.lineTo(x + width, y + height - r);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+        ctx.lineTo(x + r, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
 
       candidates.slice(0, 12).forEach(function (candidate) {
         let px = Number(candidate && candidate.childSampleIndex);
@@ -100,29 +121,34 @@
           (Number.isFinite(observed) ? observed.toFixed(1) : '?') +
           ' ← ' + (Number.isFinite(parent) ? parent.toFixed(1) : '?');
 
-        const row = drawn % 3;
-        const y = plotTop + 10 + row * 17;
+        const row = drawn % 4;
+        const y = plotTop + 10 + row * 15;
         const metrics = ctx.measureText(label);
-        const boxW = Math.ceil(metrics.width + 10);
-        const boxH = 14;
-        const boxX = Math.max(plotLeft + 2, Math.min(plotRight - boxW - 2, x + 5));
-        const boxY = Math.max(plotTop + 1, Math.min(plotBottom - boxH - 1, y - boxH / 2));
+        const boxW = Math.ceil(metrics.width + 8);
+        const boxH = 13;
+        let boxX = x + 4;
+        if (boxX + boxW > plotRight - 2) boxX = x - boxW - 4;
+        boxX = Math.max(plotLeft + 2, Math.min(plotRight - boxW - 2, boxX));
+        const boxY = Math.max(plotTop + 2, Math.min(plotBottom - boxH - 2, y - boxH / 2));
 
-        ctx.setLineDash([3, 3]);
-        ctx.strokeStyle = 'rgba(126,34,206,0.78)';
-        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.strokeStyle = theme.diffractionLine;
+        ctx.lineWidth = 0.9;
         ctx.beginPath();
-        ctx.moveTo(x, plotTop);
+        ctx.moveTo(x, boxY + boxH);
         ctx.lineTo(x, plotBottom);
         ctx.stroke();
 
         ctx.setLineDash([]);
-        ctx.fillStyle = 'rgba(126,34,206,0.12)';
-        ctx.strokeStyle = 'rgba(126,34,206,0.78)';
-        ctx.fillRect(boxX, boxY, boxW, boxH);
-        ctx.strokeRect(boxX, boxY, boxW, boxH);
-        ctx.fillStyle = 'rgba(88,28,135,0.98)';
-        ctx.fillText(label, boxX + 5, boxY + boxH / 2);
+        roundedRectPath(boxX, boxY, boxW, boxH, 4);
+        ctx.fillStyle = theme.diffractionBg;
+        ctx.fill();
+        ctx.strokeStyle = theme.diffractionBorder;
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        ctx.fillStyle = theme.diffractionText;
+        ctx.fillText(label, boxX + 4, boxY + boxH / 2 + 0.2);
         drawn += 1;
       });
 
