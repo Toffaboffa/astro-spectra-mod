@@ -237,7 +237,7 @@ function ensureHost() {
         },
         loadedAt: Date.now(),
         scaffold: false,
-        version: '3.0.2'
+        version: '3.0.3'
       };
     } else {
       const mods = v15.registry.modules || (v15.registry.modules = {});
