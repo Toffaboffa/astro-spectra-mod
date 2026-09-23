@@ -1608,6 +1608,9 @@ label[for="peakSizeLower"],
   gap:14px;
   align-items:start;
 }
+.sp-analysis-modal__content--astro .sp-astro-label-settings{padding-bottom:12px;border-bottom:1px solid rgba(120,180,255,.18);}
+.sp-analysis-modal__content--astro .sp-form-grid--astro-labels{display:grid;grid-template-columns:minmax(130px,.8fr) repeat(2,minmax(170px,1fr));gap:8px;align-items:end;}
+.sp-analysis-modal__content--astro .sp-form-grid--astro-labels .sp-field--checkbox-row{align-self:end;}
 .sp-analysis-modal__content--astro .sp-astro-diagnostics{min-width:0;}
 .sp-analysis-modal__content--astro .sp-analysis-disclaimer{margin-top:5px;}
 .sp-analysis-modal .sp-subtitle{margin:0 0 5px;font-size:12px;line-height:1.2;text-transform:uppercase;letter-spacing:.04em;}
@@ -1651,6 +1654,7 @@ label[for="peakSizeLower"],
 @media (max-width:760px){
   .sp-analysis-modal__content--lab,
   .sp-analysis-modal__content--astro{grid-template-columns:1fr;}
+  .sp-analysis-modal__content--astro .sp-form-grid--astro-labels{grid-template-columns:1fr;}
   .sp-analysis-modal__content--lab .sp-reference-mount{grid-column:1;grid-row:auto;}
 }
 

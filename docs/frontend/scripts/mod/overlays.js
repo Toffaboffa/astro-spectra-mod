@@ -54,14 +54,20 @@
     try {
       const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
       const mode = sp.appMode && typeof sp.appMode.getMode === 'function' ? sp.appMode.getMode() : 'CORE';
-      if (String(mode || 'CORE').toUpperCase() !== 'LAB') return { ok:true, labels:0, bands:0, graphState: !!graphState };
+      const activeMode = String(mode || 'CORE').toUpperCase();
+      const isAstro = activeMode === 'ASTRO';
+      if (activeMode !== 'LAB' && !isAstro) return { ok:true, labels:0, bands:0, graphState: !!graphState };
       if (!state || !(state.analysis && state.analysis.enabled)) return { ok:true, labels:0, bands:0, graphState: !!graphState };
-      if (state.analysis && state.analysis.showHits === false) return { ok:true, labels:0, bands:0, graphState: !!graphState, hidden:true };
-      const smartEnabled = !!(state.analysis && state.analysis.smartFindEnabled);
-      const hits = (state.analysis && Array.isArray(state.analysis.rawTopHits) && state.analysis.rawTopHits.length)
-        ? state.analysis.rawTopHits
-        : ((state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : []);
-      const smartGroups = (state.analysis && Array.isArray(state.analysis.smartFindGroups)) ? state.analysis.smartFindGroups : [];
+      const astroLabelSettings = (state.analysis && state.analysis.astroLabels) || {};
+      if (isAstro && astroLabelSettings.enabled === false) return { ok:true, labels:0, bands:0, graphState: !!graphState, hidden:true };
+      if (!isAstro && state.analysis && state.analysis.showHits === false) return { ok:true, labels:0, bands:0, graphState: !!graphState, hidden:true };
+      const smartEnabled = !isAstro && !!(state.analysis && state.analysis.smartFindEnabled);
+      const hits = isAstro
+        ? ((state.analysis && state.analysis.astro && Array.isArray(state.analysis.astro.referenceMatches)) ? state.analysis.astro.referenceMatches : [])
+        : ((state.analysis && Array.isArray(state.analysis.rawTopHits) && state.analysis.rawTopHits.length)
+          ? state.analysis.rawTopHits
+          : ((state.analysis && Array.isArray(state.analysis.topHits)) ? state.analysis.topHits : []));
+      const smartGroups = !isAstro && state.analysis && Array.isArray(state.analysis.smartFindGroups) ? state.analysis.smartFindGroups : [];
       if (!hits.length) return { ok:true, labels:0, bands:0, graphState: !!graphState };
 
       const canvas = ctx && ctx.canvas;
@@ -116,6 +122,17 @@
         if (!Number.isFinite(localMax) || localMax <= 0 || !Number.isFinite(latestMaxValue) || latestMaxValue <= 0) return null;
         return plotBottom - (localMax / latestMaxValue) * plotHeight;
       }
+      function calcDipY(pxObserved){
+        if (!latestI || !latestI.length || !Number.isFinite(pxObserved)) return null;
+        const idx = Math.max(0, Math.min(latestI.length - 1, Math.round(pxObserved)));
+        let localMin = Infinity;
+        for (let jj = Math.max(0, idx - 1); jj <= Math.min(latestI.length - 1, idx + 1); jj += 1) {
+          const val = Number(latestI[jj]);
+          if (Number.isFinite(val) && val < localMin) localMin = val;
+        }
+        if (!Number.isFinite(localMin) || !Number.isFinite(latestMaxValue) || latestMaxValue <= 0) return null;
+        return plotBottom - (Math.max(0, localMin) / latestMaxValue) * plotHeight;
+      }
 
       const highlightElements = Object.create(null);
       let bestHighlightKey = '';
@@ -130,9 +147,17 @@
       const highlightedSeen = Object.create(null);
       const clustered = [];
       const clusterTolerancePx = 2.5;
+      const astroMinDepth = Number.isFinite(Number(astroLabelSettings.minDepth))
+        ? Math.max(0.01, Math.min(0.95, Number(astroLabelSettings.minDepth)))
+        : 0.08;
+      const astroMinSpacingPx = Number.isFinite(Number(astroLabelSettings.minSpacingPx))
+        ? Math.max(8, Math.min(240, Number(astroLabelSettings.minSpacingPx)))
+        : 48;
 
       for (let i = 0; i < hits.length; i += 1) {
         const hit = hits[i] || {};
+        const depth = Number(hit.depth);
+        if (isAstro && (!Number.isFinite(depth) || depth < astroMinDepth)) continue;
         const observedNm = Number(hit.observedNm != null ? hit.observedNm : (hit.referenceNm != null ? hit.referenceNm : null));
         const referenceNm = Number(hit.referenceNm != null ? hit.referenceNm : observedNm);
         const peakIndexRaw = Number(hit.peakIndex);
@@ -142,19 +167,28 @@
         const x = calcX(pxObserved - zoomStart, zoomEnd - zoomStart, wCalc);
         const xCanvas = (wCalc && w && wCalc !== w) ? (x * (w / wCalc)) : x;
         if (!Number.isFinite(xCanvas) || xCanvas < plotLeft || xCanvas > plotRight) continue;
-        const name = String(hit.element || hit.species || hit.speciesKey || '').trim();
+        const name = String(isAstro ? (hit.label || hit.species || hit.speciesKey || hit.element || '') : (hit.element || hit.species || hit.speciesKey || '')).trim();
         if (!name) continue;
         const deltaNm = Number.isFinite(referenceNm) ? Math.abs(referenceNm - observedNm) : NaN;
+        const species = String(hit.species || '').trim();
+        const astroLabel = isAstro && species && normalizeSpeciesKey(name).indexOf(normalizeSpeciesKey(species)) !== 0
+          ? (name + ' · ' + species)
+          : name;
         const item = {
           hit: hit,
-          label: formatChemicalLabel(name) + ' ' + formatDeltaNm(deltaNm),
+          label: isAstro ? formatChemicalLabel(astroLabel) : (formatChemicalLabel(name) + ' ' + formatDeltaNm(deltaNm)),
           speciesKey: normalizeSpeciesKey(name),
           deltaNm: deltaNm,
+          depth: depth,
           observedNm: observedNm,
           referenceNm: referenceNm,
           xCanvas: xCanvas,
-          peakY: calcPeakY(pxObserved)
+          peakY: isAstro ? calcDipY(pxObserved) : calcPeakY(pxObserved)
         };
+        if (isAstro) {
+          clustered.push({ xCanvas: xCanvas, items: [item] });
+          continue;
+        }
         let group = null;
         for (let ci = 0; ci < clustered.length; ci += 1) {
           if (Math.abs(clustered[ci].xCanvas - xCanvas) <= clusterTolerancePx) { group = clustered[ci]; break; }
@@ -164,6 +198,27 @@
           clustered.push(group);
         }
         group.items.push(item);
+      }
+
+      if (isAstro && clustered.length > 1) {
+        const strongestFirst = clustered.slice().sort(function (a, b) {
+          const ai = a.items[0];
+          const bi = b.items[0];
+          if (bi.depth !== ai.depth) return bi.depth - ai.depth;
+          const as = Number(ai.hit.score) || 0;
+          const bs = Number(bi.hit.score) || 0;
+          return bs - as;
+        });
+        const selected = [];
+        for (let si = 0; si < strongestFirst.length; si += 1) {
+          const candidate = strongestFirst[si];
+          const isFarEnough = selected.every(function (chosen) {
+            return Math.abs(chosen.xCanvas - candidate.xCanvas) >= astroMinSpacingPx;
+          });
+          if (isFarEnough) selected.push(candidate);
+        }
+        clustered.length = 0;
+        Array.prototype.push.apply(clustered, selected);
       }
 
       clustered.sort(function(a, b){ return a.xCanvas - b.xCanvas; });
@@ -200,14 +255,21 @@
           return !Number.isFinite(best) ? item.peakY : Math.min(best, item.peakY);
         }, NaN);
         const stackHeight = Math.max(theme.smartHeight, group.items.length * rowStep);
-        const startY = (Number.isFinite(peakY) && peakY > lowPeakThresholdY)
-          ? Math.max(Math.round(plotTop + 2), Math.min(Math.round(plotBottom - stackHeight - 2), Math.round(peakY - stackHeight - peakLabelGap)))
-          : topAnchorY;
+        const startY = isAstro
+          ? Math.max(topAnchorY, Math.min(plotBottom - stackHeight - 2, topAnchorY + (gi % 2) * rowStep))
+          : ((Number.isFinite(peakY) && peakY > lowPeakThresholdY)
+            ? Math.max(Math.round(plotTop + 2), Math.min(Math.round(plotBottom - stackHeight - 2), Math.round(peakY - stackHeight - peakLabelGap)))
+            : topAnchorY);
         const lineTopY = Math.max(plotTop, Math.min(plotBottom, startY + Math.round(theme.smartHeight * 0.5)));
 
         ctx.beginPath();
-        ctx.moveTo(xCanvas, plotBottom);
-        ctx.lineTo(xCanvas, lineTopY);
+        if (isAstro) {
+          ctx.moveTo(xCanvas, lineTopY);
+          ctx.lineTo(xCanvas, Number.isFinite(peakY) ? peakY : plotBottom);
+        } else {
+          ctx.moveTo(xCanvas, plotBottom);
+          ctx.lineTo(xCanvas, lineTopY);
+        }
         ctx.save();
         ctx.strokeStyle = markerStroke;
         ctx.stroke();
@@ -216,7 +278,8 @@
         for (let ri = 0; ri < group.items.length; ri += 1) {
           const item = group.items[ri];
           const label = item.label;
-          const tx = Math.max(2, Math.min(w - 26, xCanvas + xOffset));
+          const labelWidth = Math.ceil(ctx.measureText(label).width);
+          const tx = Math.max(2, Math.min(w - labelWidth - 2, xCanvas + xOffset));
           const ty = startY + ri * rowStep;
           ctx.save();
           ctx.setLineDash([]);

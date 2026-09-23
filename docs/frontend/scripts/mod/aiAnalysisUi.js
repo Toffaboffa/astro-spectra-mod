@@ -50,7 +50,6 @@
       '.sp-ai-modal__actions .sp-ai-primary,.sp-ai-action{background:linear-gradient(180deg,rgba(19,137,151,.95),rgba(10,104,121,.95));border-color:rgba(85,235,240,.62);}',
       '.sp-ai-modal__actions button:disabled{opacity:.48;cursor:default;}',
       '.sp-ai-launch{position:relative;display:inline-flex;padding:3px;border:1px solid rgba(255,215,72,.95);border-radius:10px;box-shadow:0 0 0 1px rgba(255,215,72,.12),0 0 12px rgba(255,215,72,.10);}',
-      '.sp-ai-launch__badge{position:absolute;right:7px;top:-9px;z-index:2;padding:1px 6px;border-radius:999px;background:#ffd748;color:#2d2500;border:1px solid rgba(255,242,162,.9);font:800 9px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;letter-spacing:.08em;pointer-events:none;}',
       '.sp-ai-launch .sp-ai-action{margin:0;}',
       '.sp-ai-spinner{display:inline-block;width:12px;height:12px;margin-right:7px;border:2px solid rgba(212,249,252,.28);border-top-color:#d4f9fc;border-radius:50%;vertical-align:-2px;animation:spAiSpin .75s linear infinite;}',
       '@keyframes spAiSpin{to{transform:rotate(360deg);}}',
@@ -393,11 +392,6 @@
     const launch = global.document.createElement('div');
     launch.className = 'sp-ai-launch';
 
-    const badge = global.document.createElement('span');
-    badge.className = 'sp-ai-launch__badge';
-    badge.textContent = 'NEW';
-    badge.setAttribute('aria-hidden', 'true');
-
     const button = global.document.createElement('button');
     button.type = 'button';
     button.id = id;
@@ -407,7 +401,6 @@
     button.addEventListener('click', open);
 
     launch.appendChild(button);
-    launch.appendChild(badge);
     actions.appendChild(launch);
     return true;
   }

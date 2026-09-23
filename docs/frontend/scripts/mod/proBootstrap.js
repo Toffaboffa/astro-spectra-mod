@@ -1275,6 +1275,15 @@ function ensureAstroPanel() {
   panel.dataset.built = '1';
   ensureAnalysisModal('spAstroAdvancedBtn', 'spAstroAdvancedModal', 'Advanced ASTRO details', [
     '<div id="spAstroAdvanced" class="sp-analysis-modal__content sp-analysis-modal__content--astro">',
+    '  <section class="sp-astro-label-settings">',
+    '    <h4 class="sp-subtitle">Absorption line labels</h4>',
+    '    <div class="sp-form-grid sp-form-grid--astro-labels">',
+    '      <label class="sp-field sp-field--checkbox-row" title="Show identified absorption-line labels on the graph."><span>Show labels</span><input id="spAstroShowLabels" type="checkbox"></label>',
+    '      <label class="sp-field">Minimum dip depth<input id="spAstroLabelMinDepth" class="spctl-input" type="number" min="0.01" max="0.95" step="0.01" value="0.08"></label>',
+    '      <label class="sp-field">Minimum label spacing (px)<input id="spAstroLabelSpacing" class="spctl-input" type="number" min="8" max="240" step="2" value="48"></label>',
+    '    </div>',
+    '    <div class="sp-note">Only absorption features with an identified reference line are labelled.</div>',
+    '  </section>',
     '  <div id="spAstroReferenceMount" class="sp-reference-mount"></div>',
     '</div>'
   ].join(''));
@@ -1283,6 +1292,38 @@ function ensureAstroPanel() {
   const enabled = $('spAstroEnabled');
   const state = getStoreState();
   if (enabled) enabled.checked = !!(state.analysis && state.analysis.enabled);
+  const labelSettings = (state.analysis && state.analysis.astroLabels) || {};
+  const showLabels = $('spAstroShowLabels');
+  const minDepth = $('spAstroLabelMinDepth');
+  const labelSpacing = $('spAstroLabelSpacing');
+  if (showLabels) showLabels.checked = labelSettings.enabled !== false;
+  if (minDepth) minDepth.value = String(Number.isFinite(Number(labelSettings.minDepth)) ? Number(labelSettings.minDepth) : 0.08);
+  if (labelSpacing) labelSpacing.value = String(Number.isFinite(Number(labelSettings.minSpacingPx)) ? Number(labelSettings.minSpacingPx) : 48);
+  function redrawAstroLabels() {
+    try {
+      if (sp.uiPanels && typeof sp.uiPanels.redrawLoadedImage === 'function') {
+        sp.uiPanels.redrawLoadedImage(true, false, true);
+      } else if (typeof drawGraph === 'function') drawGraph();
+    } catch (_) {}
+  }
+  showLabels && showLabels.addEventListener('change', function (event) {
+    updateStorePath('analysis.astroLabels.enabled', !!event.target.checked, { source: 'proBootstrap.astroLabels' });
+    redrawAstroLabels();
+  });
+  minDepth && minDepth.addEventListener('change', function (event) {
+    const parsed = Number(event.target.value);
+    const value = Number.isFinite(parsed) ? Math.max(0.01, Math.min(0.95, parsed)) : 0.08;
+    event.target.value = String(value);
+    updateStorePath('analysis.astroLabels.minDepth', value, { source: 'proBootstrap.astroLabels' });
+    redrawAstroLabels();
+  });
+  labelSpacing && labelSpacing.addEventListener('change', function (event) {
+    const parsed = Number(event.target.value);
+    const value = Number.isFinite(parsed) ? Math.max(8, Math.min(240, Math.round(parsed))) : 48;
+    event.target.value = String(value);
+    updateStorePath('analysis.astroLabels.minSpacingPx', value, { source: 'proBootstrap.astroLabels' });
+    redrawAstroLabels();
+  });
   enabled && enabled.addEventListener('change', function (event) {
     const on = !!event.target.checked;
     updateStorePath('analysis.enabled', on, { source: 'proBootstrap.astro' });
@@ -3244,6 +3285,13 @@ function renderAstroPanel() {
   const analysis = state.analysis || {};
   const enabled = $('spAstroEnabled');
   if (enabled) enabled.checked = !!analysis.enabled;
+  const labelSettings = analysis.astroLabels || {};
+  const showLabels = $('spAstroShowLabels');
+  const minDepth = $('spAstroLabelMinDepth');
+  const labelSpacing = $('spAstroLabelSpacing');
+  if (showLabels) showLabels.checked = labelSettings.enabled !== false;
+  if (minDepth && !shouldSkipSyncValue(minDepth)) minDepth.value = String(Number.isFinite(Number(labelSettings.minDepth)) ? Number(labelSettings.minDepth) : 0.08);
+  if (labelSpacing && !shouldSkipSyncValue(labelSpacing)) labelSpacing.value = String(Number.isFinite(Number(labelSettings.minSpacingPx)) ? Number(labelSettings.minSpacingPx) : 48);
 
   if (analysis.resultContext !== 'astro' || !analysis.astro) {
     continuumEl.textContent = analysis.enabled ? 'Waiting for an ASTRO result.' : 'Analysis is off.';
