@@ -52,10 +52,22 @@ function getSpectraProDisplaySettings() {
             yAxisMode: String(d.yAxisMode || 'auto').toLowerCase(),
             yAxisMax: Number(d.yAxisMax),
             normalizeYAxis: !!d.normalizeYAxis,
-            saturationOverlay: !!d.saturationOverlay
+            saturationOverlay: !!d.saturationOverlay,
+            calibrationExtrapolationOverlay: d.calibrationExtrapolationOverlay !== false,
+            calibrationExtrapolationOpacity: Number.isFinite(Number(d.calibrationExtrapolationOpacity))
+                ? Math.max(0.02, Math.min(0.5, Number(d.calibrationExtrapolationOpacity)))
+                : 0.12
         };
     } catch (_) {
-        return { mode: 'normal', yAxisMode: 'auto', yAxisMax: 255, normalizeYAxis: false, saturationOverlay: false };
+        return {
+            mode: 'normal',
+            yAxisMode: 'auto',
+            yAxisMax: 255,
+            normalizeYAxis: false,
+            saturationOverlay: false,
+            calibrationExtrapolationOverlay: true,
+            calibrationExtrapolationOpacity: 0.12
+        };
     }
 }
 
@@ -150,6 +162,89 @@ function drawSpectraProSaturationOverlay(ctx, sourcePixels, zoomStart, zoomEnd) 
         });
         ctx.restore();
         return groups.length;
+    } catch (_) {
+        return 0;
+    }
+}
+
+function drawSpectraProCalibrationExtrapolationOverlay(ctx, zoomStart, zoomEnd, sampleCount) {
+    try {
+        const settings = getSpectraProDisplaySettings();
+        if (!settings.calibrationExtrapolationOverlay || !ctx || !Number.isFinite(sampleCount) || sampleCount < 2) return 0;
+
+        const state = getSpectraProStoreState();
+        const calibration = state.calibration || {};
+        const points = Array.isArray(calibration.points) ? calibration.points : [];
+        const coefficients = Array.isArray(calibration.coefficients) ? calibration.coefficients : [];
+        const calibrated = !!(calibration.isCalibrated || calibration.calibrated || coefficients.length);
+        if (!calibrated || points.length < 2) return 0;
+
+        const anchors = points
+            .map(function (point) { return Number(point && point.px); })
+            .filter(Number.isFinite);
+        if (anchors.length < 2) return 0;
+
+        const anchorMin = Math.min.apply(null, anchors);
+        const anchorMax = Math.max.apply(null, anchors);
+        if (!Number.isFinite(anchorMin) || !Number.isFinite(anchorMax) || !(anchorMax > anchorMin)) return 0;
+
+        const visibleStart = Math.max(0, Math.min(sampleCount - 1, Number(zoomStart) || 0));
+        const visibleEndExclusive = Math.max(visibleStart + 1, Math.min(sampleCount, Number(zoomEnd) || sampleCount));
+        const visibleLast = visibleEndExclusive - 1;
+        const bounds = getGraphPlotBounds(graphCanvas);
+        const visibleSpan = Math.max(1, visibleLast - visibleStart);
+        const xAt = function (pixel) {
+            const t = (Number(pixel) - visibleStart) / visibleSpan;
+            return bounds.left + Math.max(0, Math.min(1, t)) * bounds.width;
+        };
+
+        const opacity = Math.max(0.02, Math.min(0.5, Number(settings.calibrationExtrapolationOpacity) || 0.12));
+        const fill = 'rgba(245, 158, 11, ' + opacity.toFixed(3) + ')';
+        const strokeAlpha = Math.max(0.28, Math.min(0.78, opacity + 0.28));
+        const stroke = 'rgba(217, 119, 6, ' + strokeAlpha.toFixed(3) + ')';
+        let bands = 0;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(bounds.left, bounds.top, bounds.width, bounds.height);
+        ctx.clip();
+        ctx.fillStyle = fill;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 4]);
+
+        if (visibleStart < anchorMin) {
+            const right = anchorMin >= visibleEndExclusive ? bounds.right : xAt(anchorMin);
+            const width = Math.max(0, right - bounds.left);
+            if (width > 0) {
+                ctx.fillRect(bounds.left, bounds.top, width, bounds.height);
+                bands += 1;
+            }
+            if (anchorMin >= visibleStart && anchorMin <= visibleLast) {
+                ctx.beginPath();
+                ctx.moveTo(xAt(anchorMin), bounds.top);
+                ctx.lineTo(xAt(anchorMin), bounds.bottom);
+                ctx.stroke();
+            }
+        }
+
+        if (visibleLast > anchorMax) {
+            const left = anchorMax <= visibleStart ? bounds.left : xAt(anchorMax);
+            const width = Math.max(0, bounds.right - left);
+            if (width > 0) {
+                ctx.fillRect(left, bounds.top, width, bounds.height);
+                bands += 1;
+            }
+            if (anchorMax >= visibleStart && anchorMax <= visibleLast) {
+                ctx.beginPath();
+                ctx.moveTo(xAt(anchorMax), bounds.top);
+                ctx.lineTo(xAt(anchorMax), bounds.bottom);
+                ctx.stroke();
+            }
+        }
+
+        ctx.restore();
+        return bands;
     } catch (_) {
         return 0;
     }
@@ -896,6 +991,10 @@ function drawGraph() {
             drawGradient(graphCtx, displayPixels, pixelWidth, maxValue);
         }
     }
+
+    // Calibration anchors define the interpolation-safe interval. Areas outside
+    // that interval are extrapolated and therefore shown as a configurable tint.
+    drawSpectraProCalibrationExtrapolationOverlay(graphCtx, zoomStart, zoomEnd, Math.floor(pixels.length / 4));
 
     // Highlight only the source samples that meet the same clipping criterion
     // used by the data-quality model. Draw before traces so the spectrum remains crisp.

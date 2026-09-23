@@ -1681,3 +1681,38 @@ label[for="peakSizeLower"],
 #SpectraProDockHost .sp-status-card h4{margin:0 0 3px !important;}
 #SpectraProDockHost .sp-status-lines{font-size:10px !important;line-height:1.08 !important;}
 #SpectraProDockHost .sp-info-line{padding:0 3px !important;margin:0 !important;line-height:1.08 !important;}
+
+
+/* CORE calibration extrapolation overlay controls */
+#SpectraProDockHost #spFieldGraphOverlays{
+  padding:6px 10px;
+}
+#SpectraProDockHost #spFieldGraphOverlays .sp-mini-row{
+  width:max-content;
+  max-width:100%;
+  margin-left:auto;
+}
+#SpectraProDockHost #spFieldCalibrationShadeOpacity{
+  align-self:stretch;
+}
+#SpectraProDockHost #spFieldCalibrationShadeOpacity > span{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+  white-space:nowrap;
+}
+#SpectraProDockHost #spFieldCalibrationShadeOpacity .sp-inline-value{
+  display:inline-block;
+  min-width:3em;
+  text-align:right;
+  color:var(--sp-muted, #bfc6d4);
+  font-variant-numeric:tabular-nums;
+}
+#SpectraProDockHost #spCalibrationShadeOpacity{
+  width:100% !important;
+  max-width:100% !important;
+  padding:0;
+  min-height:auto;
+  margin-top:7px;
+}

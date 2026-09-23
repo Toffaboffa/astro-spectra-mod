@@ -741,8 +741,11 @@ if (!document.getElementById('spSubtractionControls')) {
         '    <div class="sp-mini-row sp-mini-row--check"><span>Dark graph</span><input id="spToggleDarkProxy" type="checkbox" disabled></div>',
         '    <div class="sp-mini-row sp-mini-row--check"><span>Reference graph</span><input id="spToggleRefProxy" type="checkbox" disabled></div>',
         '  </div>',
-        '  <label id="spFieldSaturationOverlay" class="sp-field sp-field--checkbox-row" title="Highlight graph regions where the source spectrum reaches the saturation threshold used by data-quality checks."><span>Saturation overlay</span><input id="spToggleSaturationOverlay" type="checkbox"></label>',
-        '  <div id="spFieldCorePlaceholder12" class="sp-field sp-field--placeholder" aria-hidden="true"></div>',
+        '  <div id="spFieldGraphOverlays" class="sp-field sp-field--stackgroup" title="Graph-only scientific warning overlays.">',
+        '    <div class="sp-mini-row sp-mini-row--check" title="Highlight graph regions where the source spectrum reaches the saturation threshold used by data-quality checks."><span>Saturation</span><input id="spToggleSaturationOverlay" type="checkbox"></div>',
+        '    <div class="sp-mini-row sp-mini-row--check" title="Shade graph regions outside the minimum and maximum calibration anchor pixels."><span>Cal. extrapolation</span><input id="spToggleCalibrationExtrapolation" type="checkbox"></div>',
+        '  </div>',
+        '  <label id="spFieldCalibrationShadeOpacity" class="sp-field sp-field--calibration-shade" title="Set how strongly extrapolated calibration regions are shaded."><span>Extrapolation shade <span id="spCalibrationShadeOpacityValue" class="sp-inline-value">12%</span></span><input id="spCalibrationShadeOpacity" class="spctl-input spctl-range" type="range" min="0.02" max="0.50" step="0.01" value="0.12"></label>',
         '  <label id="spFieldToggleNmPeaks" class="sp-field sp-field--checkbox-row" title="Show or hide detected nm peak markers on the graph."><span>Toggle peaks</span><input id="spToggleNmPeaks" type="checkbox"></label>',
         '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold" title="Minimum intensity used by the built-in nm peak detector.">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
         '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance" title="Minimum separation between detected nm peaks.">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
@@ -804,6 +807,9 @@ if (!document.getElementById('spSubtractionControls')) {
       const peakSmoothingInput = card.querySelector('#spPeakSmoothing');
       const toggleNmPeaksInput = card.querySelector('#spToggleNmPeaks');
       const saturationOverlayInput = card.querySelector('#spToggleSaturationOverlay');
+      const calibrationExtrapolationInput = card.querySelector('#spToggleCalibrationExtrapolation');
+      const calibrationShadeOpacityInput = card.querySelector('#spCalibrationShadeOpacity');
+      const calibrationShadeOpacityValue = card.querySelector('#spCalibrationShadeOpacityValue');
       const combinedProxy = card.querySelector('#spToggleCombinedProxy');
       const rProxy = card.querySelector('#spToggleRProxy');
       const gProxy = card.querySelector('#spToggleGProxy');
@@ -868,6 +874,15 @@ if (!document.getElementById('spSubtractionControls')) {
       if (fillModeSel) fillModeSel.value = String(displayStateInit.fillMode || 'inherit').toLowerCase();
       if (fillOpacityInput) fillOpacityInput.value = String(Number.isFinite(Number(displayStateInit.fillOpacity)) ? Math.max(0, Math.min(1, Number(displayStateInit.fillOpacity))) : 0.7);
       if (saturationOverlayInput) saturationOverlayInput.checked = !!displayStateInit.saturationOverlay;
+      if (calibrationExtrapolationInput) calibrationExtrapolationInput.checked = displayStateInit.calibrationExtrapolationOverlay !== false;
+      if (calibrationShadeOpacityInput) {
+        const shade = Number.isFinite(Number(displayStateInit.calibrationExtrapolationOpacity))
+          ? Math.max(0.02, Math.min(0.5, Number(displayStateInit.calibrationExtrapolationOpacity)))
+          : 0.12;
+        calibrationShadeOpacityInput.value = String(shade);
+        calibrationShadeOpacityInput.disabled = !(displayStateInit.calibrationExtrapolationOverlay !== false);
+        if (calibrationShadeOpacityValue) calibrationShadeOpacityValue.textContent = Math.round(shade * 100) + '%';
+      }
       const legacyReferenceToggle = $('referenceGraphCheckbox');
       if (referenceGraphProxy && legacyReferenceToggle) referenceGraphProxy.checked = !!legacyReferenceToggle.checked;
       syncCheckboxProxy(combinedProxy, 'toggleCombined');
@@ -957,6 +972,22 @@ if (!document.getElementById('spSubtractionControls')) {
       });
       saturationOverlayInput && saturationOverlayInput.addEventListener('change', (e) => {
         setVal('display.saturationOverlay', !!e.target.checked);
+        try { redrawGraphIfLoadedImage(); } catch (_) {}
+        try { drawGraph(); } catch (_) {}
+      });
+      calibrationExtrapolationInput && calibrationExtrapolationInput.addEventListener('change', (e) => {
+        const enabled = !!e.target.checked;
+        setVal('display.calibrationExtrapolationOverlay', enabled);
+        if (calibrationShadeOpacityInput) calibrationShadeOpacityInput.disabled = !enabled;
+        try { redrawGraphIfLoadedImage(); } catch (_) {}
+        try { drawGraph(); } catch (_) {}
+      });
+      calibrationShadeOpacityInput && calibrationShadeOpacityInput.addEventListener('input', (e) => {
+        const raw = Number(e.target.value);
+        if (!Number.isFinite(raw)) return;
+        const opacity = Math.max(0.02, Math.min(0.5, raw));
+        setVal('display.calibrationExtrapolationOpacity', opacity);
+        if (calibrationShadeOpacityValue) calibrationShadeOpacityValue.textContent = Math.round(opacity * 100) + '%';
         try { redrawGraphIfLoadedImage(); } catch (_) {}
         try { drawGraph(); } catch (_) {}
       });
@@ -2981,6 +3012,9 @@ function renderConsole() {
     const fillModeSel = $('spFillMode');
     const fillOpacityInput = $('spFillOpacity');
     const saturationOverlayInput = $('spToggleSaturationOverlay');
+    const calibrationExtrapolationInput = $('spToggleCalibrationExtrapolation');
+    const calibrationShadeOpacityInput = $('spCalibrationShadeOpacity');
+    const calibrationShadeOpacityValue = $('spCalibrationShadeOpacityValue');
     const peaks = state.peaks || {};
     if (fillModeSel && !shouldSkipSyncValue(fillModeSel)) {
       const mode = String((state.display && state.display.fillMode) || 'inherit').toLowerCase();
@@ -2996,6 +3030,16 @@ function renderConsole() {
     }
     if (saturationOverlayInput && !shouldSkipSyncValue(saturationOverlayInput)) {
       saturationOverlayInput.checked = !!(state.display && state.display.saturationOverlay);
+    }
+    if (calibrationExtrapolationInput && !shouldSkipSyncValue(calibrationExtrapolationInput)) {
+      calibrationExtrapolationInput.checked = !!(state.display && state.display.calibrationExtrapolationOverlay !== false);
+    }
+    if (calibrationShadeOpacityInput && !shouldSkipSyncValue(calibrationShadeOpacityInput)) {
+      const opacity = Number(state.display && state.display.calibrationExtrapolationOpacity);
+      const nextOpacity = Number.isFinite(opacity) ? Math.max(0.02, Math.min(0.5, opacity)) : 0.12;
+      if (String(calibrationShadeOpacityInput.value) !== String(nextOpacity)) calibrationShadeOpacityInput.value = String(nextOpacity);
+      calibrationShadeOpacityInput.disabled = !!(state.display && state.display.calibrationExtrapolationOverlay === false);
+      if (calibrationShadeOpacityValue) calibrationShadeOpacityValue.textContent = Math.round(nextOpacity * 100) + '%';
     }
     if (peakThresholdInput && !shouldSkipSyncValue(peakThresholdInput) && Number.isFinite(Number(peaks.threshold))) {
       const next = String(Math.max(0, Math.min(255, Math.round(Number(peaks.threshold)))));

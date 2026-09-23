@@ -80,6 +80,8 @@
       fillMode: 'off',
       fillOpacity: 0.8,
       saturationOverlay: false,
+      calibrationExtrapolationOverlay: true,
+      calibrationExtrapolationOpacity: 0.12,
       overlaysEnabled: true
     },
     peaks: { threshold: 20, distance: 7, smoothing: null },
