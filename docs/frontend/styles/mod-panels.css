@@ -1822,96 +1822,106 @@ label[for="peakSizeLower"],
 
 /* Peak inspector periodic-element match card. */
 #spPeakInspectorPopup.has-element-match{
-  width:min(430px,calc(100% - 24px));
+  width:min(390px,calc(100% - 24px));
 }
 #spPeakInspectorPopup .sp-peak-inspector__content{
   display:block;
 }
 #spPeakInspectorPopup.has-element-match .sp-peak-inspector__content{
   display:grid;
-  grid-template-columns:minmax(150px,1fr) 150px;
-  gap:12px;
+  grid-template-columns:minmax(142px,1fr) 132px;
+  gap:8px;
   align-items:start;
 }
+#spPeakInspectorPopup.has-element-match .sp-peak-inspector__title{
+  margin-bottom:4px;
+}
 #spPeakInspectorPopup.has-element-match .sp-peak-inspector__rows{
-  padding-top:2px;
+  gap:2px;
+  padding-top:1px;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-inspector__hint{
+  margin-top:5px;
+  padding-top:5px;
 }
 #spPeakInspectorPopup .sp-peak-element-card{
   --sp-element-accent:#8fd3ff;
   --sp-element-glow:rgba(143,211,255,.17);
   position:relative;
-  min-height:158px;
-  padding:8px 9px 9px;
+  min-height:134px;
+  padding:6px 7px;
   border:1px solid var(--sp-element-accent);
-  border-radius:12px;
+  border-radius:10px;
   background:
-    radial-gradient(circle at 50% 38%, var(--sp-element-glow), transparent 58%),
+    radial-gradient(circle at 50% 34%, var(--sp-element-glow), transparent 57%),
     rgba(4,13,29,.76);
   box-shadow:
-    0 0 11px var(--sp-element-glow),
-    inset 0 0 14px rgba(255,255,255,.025);
+    0 0 9px var(--sp-element-glow),
+    inset 0 0 11px rgba(255,255,255,.025);
   overflow:hidden;
 }
 #spPeakInspectorPopup .sp-peak-element-card__top{
   display:flex;
   justify-content:space-between;
-  align-items:flex-start;
-  min-height:18px;
+  align-items:center;
+  min-height:17px;
   color:#dcecff;
-  font-size:10px;
   line-height:1;
 }
 #spPeakInspectorPopup .sp-peak-element-card__number{
-  font-weight:800;
-  font-size:12px;
+  font-weight:900;
+  font-size:16px;
+  line-height:1;
   color:#fff;
   font-variant-numeric:tabular-nums;
 }
 #spPeakInspectorPopup .sp-peak-element-card__match{
-  font-size:8px;
-  font-weight:800;
-  letter-spacing:.14em;
+  font-size:10px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.08em;
   color:var(--sp-element-accent);
-  opacity:.86;
+  opacity:.94;
 }
 #spPeakInspectorPopup .sp-peak-element-card__symbol{
-  margin-top:3px;
+  margin-top:0;
   text-align:center;
   color:var(--sp-element-accent);
-  font-size:43px;
-  line-height:.95;
-  font-weight:760;
+  font-size:38px;
+  line-height:.9;
+  font-weight:780;
   letter-spacing:-.035em;
-  text-shadow:0 0 9px var(--sp-element-glow);
+  text-shadow:0 0 8px var(--sp-element-glow);
 }
 #spPeakInspectorPopup .sp-peak-element-card__name{
-  margin-top:4px;
-  text-align:center;
-  color:#f6fbff;
-  font-size:12px;
-  font-weight:700;
-  line-height:1.1;
-}
-#spPeakInspectorPopup .sp-peak-element-card__species{
   margin-top:2px;
   text-align:center;
+  color:#f6fbff;
+  font-size:11px;
+  font-weight:750;
+  line-height:1.05;
+}
+#spPeakInspectorPopup .sp-peak-element-card__species{
+  margin-top:1px;
+  text-align:center;
   color:#9fb4d2;
-  font-size:9px;
-  min-height:11px;
+  font-size:8px;
+  line-height:1;
+  min-height:8px;
 }
 #spPeakInspectorPopup .sp-peak-element-card__meta{
   display:grid;
-  gap:2px;
-  margin-top:7px;
-  padding-top:6px;
+  gap:1px;
+  margin-top:4px;
+  padding-top:4px;
   border-top:1px solid color-mix(in srgb,var(--sp-element-accent) 26%,transparent);
 }
 #spPeakInspectorPopup .sp-peak-element-card__meta > div{
   display:flex;
   justify-content:space-between;
-  gap:6px;
-  font-size:9px;
-  line-height:1.2;
+  gap:5px;
+  font-size:8.5px;
+  line-height:1.12;
 }
 #spPeakInspectorPopup .sp-peak-element-card__meta span{
   color:#88a0c0;
@@ -1922,10 +1932,11 @@ label[for="peakSizeLower"],
   font-variant-numeric:tabular-nums;
 }
 #spPeakInspectorPopup .sp-peak-element-card__excluded{
-  margin-top:5px;
+  margin-top:3px;
   color:#ff9e9e;
   text-align:center;
-  font-size:8px;
+  font-size:7.5px;
+  line-height:1.05;
   font-weight:700;
 }
 #spPeakInspectorPopup .sp-peak-element-card.is-excluded{
