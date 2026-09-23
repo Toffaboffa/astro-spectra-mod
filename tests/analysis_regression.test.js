@@ -244,6 +244,63 @@ function testBundledSolarExample() {
   assert.equal(result.astro.stellarClassification.diagnostics.continuumUsed, false, 'Uncorrected continuum shape must not affect classification');
 }
 
+function testBundledArgonExample() {
+  const assetFile = path.join(repoRoot, 'docs', 'frontend', 'data', 'examples', 'ar-spectral-tube.json');
+  const asset = JSON.parse(fs.readFileSync(assetFile, 'utf8'));
+  assert.equal(asset.schema, 'spectra-pro-rgb-spectrum-example/v1', 'Argon example schema should remain versioned');
+  assert.equal(asset.id, 'ar-spectral-tube', 'Argon asset ID should remain stable');
+  assert.equal(asset.scientificRole, 'measured-example-spectrum', 'Argon example must remain identified as measured data');
+  assert.equal(asset.sampleCount, 1280, 'Argon example should preserve the measured 1280 samples');
+  for (const key of ['px', 'nm', 'R', 'G', 'B', 'I']) {
+    assert.equal(asset[key].length, 1280, 'Argon ' + key + ' sample count should remain stable');
+  }
+  assert.deepEqual(asset.calibration.points, [
+    { px: 32, nm: 388.86 },
+    { px: 515, nm: 587.57 },
+    { px: 1110, nm: 837.76 }
+  ], 'Argon example should use the SPECTRA-1 three-point calibration');
+
+  const exampleContext = vm.createContext({ console: console, setTimeout: function () {} });
+  exampleContext.window = exampleContext;
+  exampleContext.SpectraPro = {};
+  new vm.Script(
+    fs.readFileSync(path.join(repoRoot, 'docs', 'frontend', 'scripts', 'mod', 'exampleSpectrumUi.js'), 'utf8'),
+    { filename: 'exampleSpectrumUi.js' }
+  ).runInContext(exampleContext);
+  const catalog = exampleContext.SpectraPro.exampleSpectrumUi;
+  assert.ok(catalog.getCatalog().includes('ar-spectral-tube'), 'Load Example catalog should expose the Argon sample');
+  const config = catalog.getConfig('ar-spectral-tube');
+  assert.equal(config.kind, 'rgb-spectrum', 'Argon example should use the measured RGB spectrum path');
+  assert.equal(config.recommendedMode, 'LAB', 'Argon example should recommend LAB mode');
+  assert.equal(config.recommendedPreset, 'smart-gastube', 'Argon example should recommend Gas Tube analysis');
+
+  const frame = {
+    calibrated: true,
+    px: asset.px,
+    nm: asset.nm,
+    R: asset.R,
+    G: asset.G,
+    B: asset.B,
+    I: asset.I,
+    calibration: asset.calibration,
+    hardware: asset.hardware
+  };
+  const result = analyze(frame, {
+    analysisContext: 'lab',
+    preset: 'smart-gastube',
+    autoTune: true,
+    smartFindEnabled: true,
+    includeWeakPeaks: false,
+    maxDistanceNm: 1.8,
+    calibration: asset.calibration,
+    hardware: asset.hardware
+  });
+  assert.equal(result.ok, true, 'Bundled Argon spectrum should run through production LAB analysis');
+  assert.ok(result.elementScores.length > 0, 'Bundled Argon spectrum should produce ranked atomic evidence');
+  assert.equal(result.elementScores[0].element, 'Ar', 'Bundled Argon spectrum should rank Ar first');
+  assert.ok(result.elementScores[0].matchedPeaks >= 8, 'Bundled Argon spectrum should retain broad multi-line Ar evidence');
+}
+
 function testStellarClassEvidence() {
   const fixture = readJson('sample_stellar_class_evidence.json');
   assert.equal(fixture.synthetic, true, 'Stellar-class fixture must identify itself as synthetic');
@@ -978,6 +1035,7 @@ const groups = [
   ['formal preprocessing', testFormalPreprocessingPipeline],
   ['ASTRO continuum and absorption', testAstroContinuumAndAbsorption],
   ['bundled solar ASTRO example', testBundledSolarExample],
+  ['bundled Argon LAB example', testBundledArgonExample],
   ['stellar spectral-class evidence', testStellarClassEvidence],
   ['reference spectrum comparison', testReferenceSpectrumComparison],
   ['instrument-response correction', testInstrumentResponseCorrection],

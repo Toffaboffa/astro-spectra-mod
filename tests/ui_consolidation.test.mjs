@@ -13,6 +13,7 @@ const graphScript = fs.readFileSync(path.join(root, 'docs/frontend/scripts/graph
 const i18n = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/i18nUi.js'), 'utf8');
 const recording = fs.readFileSync(path.join(root, 'docs/frontend/pages/recording.html'), 'utf8');
 const solarIcon = fs.readFileSync(path.join(root, 'docs/frontend/assets/examples/icons/solar-spectrum.png'));
+const argonAsset = JSON.parse(fs.readFileSync(path.join(root, 'docs/frontend/data/examples/ar-spectral-tube.json'), 'utf8'));
 
 function markupCount(id) {
   return (bootstrap.match(new RegExp('id=["\\\']' + id + '["\\\']', 'g')) || []).length;
@@ -77,6 +78,11 @@ assert.ok(examples.includes('const width = 1280;') && examples.includes('const h
 assert.ok(examples.includes("setGraphFillMode('source')"), 'loading Solar must select SOURCE graph fill');
 assert.ok(examples.includes("setGraphFillMode('off')"), 'loading a normal image example must restore the default OFF graph fill');
 assert.ok(examples.includes('asset.irradianceWm2Nm'), 'solar preview must derive its Fraunhofer structure from the bundled numeric measurements');
+assert.ok(examples.includes("id: 'ar-spectral-tube'"), 'Load Example chooser must expose the Argon spectral-tube sample');
+assert.ok(examples.includes("kind: 'rgb-spectrum'"), 'Argon chooser sample must use the measured RGB spectrum loader');
+assert.equal(argonAsset.schema, 'spectra-pro-rgb-spectrum-example/v1', 'Argon measured example must keep its versioned schema');
+assert.equal(argonAsset.sampleCount, 1280, 'Argon measured example must keep all 1280 samples');
+assert.ok(graphScript.includes('Array.isArray(numeric.R) ? numeric.R.slice() : null'), 'numeric LAB frames must preserve measured RGB channels');
 assert.ok(examples.includes("solar: '../assets/examples/icons/solar-spectrum.png'"), 'Solar chooser card must use its dedicated spectrum icon');
 assert.deepEqual([...solarIcon.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], 'Solar chooser icon must be a real PNG');
 assert.equal(solarIcon.readUInt32BE(16), 1280, 'Solar chooser icon must preserve the supplied width');
@@ -87,8 +93,8 @@ assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source #cameraImage')
 assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source #spFramePreviewCanvas'), 'numeric examples must show their matching source preview canvas');
 assert.ok(graphScript.includes('useNumericSourceFill'), 'SOURCE graph fill must use the calibrated numeric wavelength colors');
 assert.ok(graphScript.includes('numericSourceRgb.R[zoomStart + x]'), 'SOURCE graph fill must use measured-preview RGB instead of the SYNTHETIC palette');
-assert.ok(recording.includes('graphScript.js?v=3.0.1-solar-source-2'), 'published graph code must use a fresh cache key');
-assert.ok(recording.includes('stateStore.js?v=3.0.1-astro-labels-1'), 'dynamic ASTRO label UI loader must use a fresh cache key');
+assert.ok(recording.includes('graphScript.js?v=3.0.1-argon-example-1'), 'published graph code must use a fresh cache key');
+assert.ok(recording.includes('stateStore.js?v=3.0.1-argon-example-1'), 'dynamic ASTRO label UI loader must use a fresh cache key');
 assert.ok(recording.includes('uiPanels.js?v=3.0.1'), 'version badge UI must use a release cache key');
 assert.ok(recording.includes('styles.css?v=3.0.1-solar-source-2'), 'published Solar preview CSS must use a fresh cache key');
 assert.ok(recording.includes('overlays.js?v=3.0.1-astro-labels-1'), 'published ASTRO overlay must use a fresh cache key');

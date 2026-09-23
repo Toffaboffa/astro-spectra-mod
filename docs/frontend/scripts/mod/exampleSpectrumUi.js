@@ -75,6 +75,29 @@
       recommendedPreset: 'smart-gastube'
     }),
     Object.freeze({
+      id: 'ar-spectral-tube',
+      kind: 'rgb-spectrum',
+      labelEn: 'Ar spectral tube',
+      labelSv: 'Ar spektralrör',
+      descriptionEn: 'Measured argon discharge-tube spectrum recorded with SPECTRA-1.',
+      descriptionSv: 'Uppmätt argonspektrum från spektralrör, registrerat med SPECTRA-1.',
+      sourceLabelEn: 'Ar spectral tube (calibrated profile)',
+      sourceLabelSv: 'Ar spektralrör (kalibrerad profil)',
+      icon: SAMPLE_ICONS.cyan,
+      badge: 'SPECTRA-1',
+      metaEn: '1280 measured samples · 3-point calibration · Gas Tube preset',
+      metaSv: '1280 uppmätta provpunkter · 3-punktskalibrering · Gas Tube-förval',
+      spectrum: Object.freeze({
+        path: '../data/examples/ar-spectral-tube.json',
+        schema: 'spectra-pro-rgb-spectrum-example/v1',
+        assetId: 'ar-spectral-tube',
+        count: 1280
+      }),
+      calibration: SPECTRA1_CALIBRATION,
+      recommendedPreset: 'smart-gastube',
+      recommendedMode: 'LAB'
+    }),
+    Object.freeze({
       id: 'solar-tsis1-hsrs',
       kind: 'numeric',
       labelEn: 'Solar spectrum',
@@ -277,7 +300,9 @@
   }
 
   function assetUrl(sample) {
-    const asset = sample.kind === 'numeric' ? sample.numeric : sample.image;
+    const asset = sample.kind === 'numeric'
+      ? sample.numeric
+      : (sample.kind === 'rgb-spectrum' ? sample.spectrum : sample.image);
     return asset.path + '?v=' + encodeURIComponent(VERSION);
   }
 
@@ -328,6 +353,31 @@
     }
     if (asset.wavelengthMedium !== 'standard-air' || !asset.provenance || !asset.provenance.primaryReferenceDoi) {
       throw new Error('The numeric example provenance or wavelength medium is incomplete.');
+    }
+    return asset;
+  }
+
+  async function loadRgbSpectrumAsset(sample) {
+    const response = await global.fetch(assetUrl(sample), { cache: 'no-store' });
+    if (!response.ok) throw new Error('The bundled measured spectrum could not be loaded (HTTP ' + response.status + ').');
+    const asset = await response.json();
+    if (!asset || asset.schema !== sample.spectrum.schema || asset.id !== sample.spectrum.assetId) {
+      throw new Error('The measured-spectrum example schema or identifier is invalid.');
+    }
+    const keys = ['px', 'nm', 'R', 'G', 'B', 'I'];
+    keys.forEach(function (key) {
+      if (!Array.isArray(asset[key]) || asset[key].length !== sample.spectrum.count) {
+        throw new Error('The measured-spectrum example has an invalid ' + key + ' array.');
+      }
+    });
+    for (let i = 0; i < sample.spectrum.count; i += 1) {
+      if (!Number.isFinite(asset.nm[i]) || !Number.isFinite(asset.I[i]) ||
+          !Number.isFinite(asset.R[i]) || !Number.isFinite(asset.G[i]) || !Number.isFinite(asset.B[i])) {
+        throw new Error('The measured-spectrum example contains an invalid sample.');
+      }
+      if (i > 0 && !(asset.nm[i] > asset.nm[i - 1])) {
+        throw new Error('The measured-spectrum wavelength grid is not strictly increasing.');
+      }
     }
     return asset;
   }
@@ -522,6 +572,105 @@
     } catch (_) {}
   }
 
+  function renderRgbSpectrumPreview(asset) {
+    const canvas = $('spFramePreviewCanvas');
+    if (!canvas || !asset) return null;
+    const width = Number(asset.preview && asset.preview.width) || 1280;
+    const height = Number(asset.preview && asset.preview.height) || 720;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+    const top = Number.isFinite(Number(asset.preview && asset.preview.bandTopPx)) ? Number(asset.preview.bandTopPx) : Math.round(height * 0.375);
+    const h = Number.isFinite(Number(asset.preview && asset.preview.bandHeightPx)) ? Number(asset.preview.bandHeightPx) : Math.round(height * 0.25);
+    for (let x = 0; x < width; x += 1) {
+      const index = Math.min(asset.I.length - 1, Math.round((x / Math.max(1, width - 1)) * (asset.I.length - 1)));
+      const r = Math.max(0, Math.min(255, Math.round(Number(asset.R[index]) || 0)));
+      const g = Math.max(0, Math.min(255, Math.round(Number(asset.G[index]) || 0)));
+      const b = Math.max(0, Math.min(255, Math.round(Number(asset.B[index]) || 0)));
+      ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+      ctx.fillRect(x, top, 1, h);
+    }
+    canvas.style.display = 'block';
+    return { R: asset.R.slice(), G: asset.G.slice(), B: asset.B.slice() };
+  }
+
+  function enableLabAnalysis(sample) {
+    try {
+      const labTab = global.document && global.document.querySelector('#spTabs .sp-tab[data-tab="lab"]');
+      if (labTab && typeof labTab.click === 'function') labTab.click();
+      if (sp.appMode && typeof sp.appMode.setMode === 'function') {
+        sp.appMode.setMode('LAB', { source: 'exampleSpectrum.argon' });
+      } else if (sp.store && typeof sp.store.update === 'function') {
+        sp.store.update('appMode', 'LAB', { source: 'exampleSpectrum.argon' });
+      }
+      if (sp.store && typeof sp.store.update === 'function') {
+        sp.store.update('analysis.enabled', true, { source: 'exampleSpectrum.argon' });
+        sp.store.update('worker.mode', 'auto', { source: 'exampleSpectrum.argon' });
+        sp.store.update('worker.enabled', true, { source: 'exampleSpectrum.argon' });
+        sp.store.update('subtraction.mode', 'raw', { source: 'exampleSpectrum.argon' });
+      }
+      selectRecommendedPreset(sample);
+      const client = sp.analysisWorkerClient;
+      if (client && typeof client.start === 'function') client.start();
+    } catch (_) {}
+  }
+
+  function finishLoadedRgbSpectrum(sample, asset) {
+    const graph = global.SpectraCore && global.SpectraCore.graph;
+    if (!graph || typeof graph.setNumericFrame !== 'function') {
+      throw new Error('Measured-spectrum example support is unavailable.');
+    }
+    try {
+      if (typeof global.switchLoadedImageSettings === 'function') {
+        global.switchLoadedImageSettings(isSwedish() ? sample.sourceLabelSv : sample.sourceLabelEn);
+      }
+    } catch (_) {}
+    const video = $('videoMain');
+    const image = $('cameraImage');
+    const sourceWindow = $('videoMainWindow');
+    try {
+      if (sp.framePreview && typeof sp.framePreview.clearSourceImage === 'function') sp.framePreview.clearSourceImage();
+      else if (image) { image.onload = null; image.removeAttribute('src'); }
+    } catch (_) {}
+    if (sourceWindow) sourceWindow.classList.add('sp-numeric-source');
+    if (video) video.style.display = 'none';
+    if (image) image.style.display = 'none';
+    const pause = $('pauseVideoButton');
+    const play = $('playVideoButton');
+    if (pause) pause.style.visibility = 'hidden';
+    if (play) play.style.visibility = 'visible';
+
+    const sourceRgb = renderRgbSpectrumPreview(asset);
+    enableLabAnalysis(sample);
+    setGraphFillMode('off');
+
+    const cal = applyCalibration(sample);
+    if (!cal.ok) throw new Error('Argon example calibration could not be activated: ' + cal.reason);
+    selectWavelengthAxis();
+
+    graph.setNumericFrame({
+      px: asset.px,
+      nm: asset.nm,
+      R: asset.R,
+      G: asset.G,
+      B: asset.B,
+      I: asset.I,
+      sourceRgb: sourceRgb,
+      calibrated: true,
+      calibration: sample.calibration,
+      hardware: asset.hardware || { spectrometerResolutionFwhmNm: 1.8, pixelResolutionNm: 0.5 },
+      metadata: { schema: asset.schema, id: asset.id, scientificRole: asset.scientificRole, provenance: asset.provenance },
+      source: 'gas-example'
+    });
+    global.setTimeout(function () {
+      try { if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage(true); } catch (_) {}
+    }, 300);
+    log((isSwedish() ? sample.labelSv : sample.labelEn) + ' loaded · measured SPECTRA-1 profile · LAB Gas Tube analysis enabled.');
+  }
+
   function finishLoadedImage(sample, image) {
     const sourceWindow = $('videoMainWindow');
     if (sourceWindow) sourceWindow.classList.remove('sp-numeric-source');
@@ -643,6 +792,13 @@
     setBusy(true);
 
     try {
+      if (sample.kind === 'rgb-spectrum') {
+        const spectrumAsset = await loadRgbSpectrumAsset(sample);
+        stopLiveSource();
+        closeChooser();
+        finishLoadedRgbSpectrum(sample, spectrumAsset);
+        return true;
+      }
       if (sample.kind === 'numeric') {
         const numericAsset = await loadNumericAsset(sample);
         stopLiveSource();

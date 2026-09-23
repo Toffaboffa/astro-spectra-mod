@@ -667,12 +667,20 @@ function buildPixelsFromNumericFrame(frame) {
     }
     if (!(maxValue > 0)) return null;
     const out = new Uint8ClampedArray(values.length * 4);
+    const hasRgb = Array.isArray(frame.R) && Array.isArray(frame.G) && Array.isArray(frame.B) &&
+        frame.R.length === values.length && frame.G.length === values.length && frame.B.length === values.length;
     for (let i = 0; i < values.length; i += 1) {
-        const value = Math.max(0, Number(values[i]) || 0);
-        const scaled = Math.max(0, Math.min(255, Math.round(245 * value / maxValue)));
-        out[i * 4] = scaled;
-        out[i * 4 + 1] = scaled;
-        out[i * 4 + 2] = scaled;
+        if (hasRgb) {
+            out[i * 4] = Math.max(0, Math.min(255, Math.round(Number(frame.R[i]) || 0)));
+            out[i * 4 + 1] = Math.max(0, Math.min(255, Math.round(Number(frame.G[i]) || 0)));
+            out[i * 4 + 2] = Math.max(0, Math.min(255, Math.round(Number(frame.B[i]) || 0)));
+        } else {
+            const value = Math.max(0, Number(values[i]) || 0);
+            const scaled = Math.max(0, Math.min(255, Math.round(245 * value / maxValue)));
+            out[i * 4] = scaled;
+            out[i * 4 + 1] = scaled;
+            out[i * 4 + 2] = scaled;
+        }
         out[i * 4 + 3] = 255;
     }
     return out;
@@ -1887,9 +1895,9 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
         return {
           px: Array.isArray(numeric.px) ? numeric.px.slice() : numeric.I.map(function(_, index){ return index; }),
           nm: Array.isArray(numeric.nm) ? numeric.nm.slice() : null,
-          R: null,
-          G: null,
-          B: null,
+          R: Array.isArray(numeric.R) ? numeric.R.slice() : null,
+          G: Array.isArray(numeric.G) ? numeric.G.slice() : null,
+          B: Array.isArray(numeric.B) ? numeric.B.slice() : null,
           I: numeric.I.slice(),
           pixelWidth: numeric.I.length,
           calibrated: numeric.calibrated === true,
@@ -1965,6 +1973,9 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
       sp.coreBridge.numericFrame = {
         px: Array.isArray(frame.px) && frame.px.length === frame.I.length ? frame.px.slice() : frame.I.map(function(_, index){ return index; }),
         nm: frame.nm.slice(),
+        R: Array.isArray(frame.R) && frame.R.length === frame.I.length ? frame.R.slice() : null,
+        G: Array.isArray(frame.G) && frame.G.length === frame.I.length ? frame.G.slice() : null,
+        B: Array.isArray(frame.B) && frame.B.length === frame.I.length ? frame.B.slice() : null,
         I: frame.I.slice(),
         sourceRgb: frame.sourceRgb && Array.isArray(frame.sourceRgb.R) && Array.isArray(frame.sourceRgb.G) && Array.isArray(frame.sourceRgb.B) && frame.sourceRgb.R.length === frame.I.length && frame.sourceRgb.G.length === frame.I.length && frame.sourceRgb.B.length === frame.I.length
           ? { R: frame.sourceRgb.R.slice(), G: frame.sourceRgb.G.slice(), B: frame.sourceRgb.B.slice() }
@@ -1986,15 +1997,17 @@ function resizeCanvasToDisplaySize(ctx, canvas, redraw) {
     clearNumericFrame: function(options){
       const previous = sp.coreBridge && sp.coreBridge.numericFrame;
       if (sp.coreBridge) delete sp.coreBridge.numericFrame;
-      if (previous && previous.source === 'solar-example') {
+      if (previous) {
         try {
           const canvas = document.getElementById('spFramePreviewCanvas');
           if (canvas) canvas.style.display = 'none';
           const sourceWindow = document.getElementById('videoMainWindow');
           if (sourceWindow) sourceWindow.classList.remove('sp-numeric-source');
-          const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
-          if (state && state.display && String(state.display.fillMode || '').toLowerCase() === 'source' && typeof sp.store.update === 'function') {
-            sp.store.update('display.fillMode', 'off', { source: 'graph.clearSolarNumericFrame' });
+          if (previous.source === 'solar-example') {
+            const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
+            if (state && state.display && String(state.display.fillMode || '').toLowerCase() === 'source' && typeof sp.store.update === 'function') {
+              sp.store.update('display.fillMode', 'off', { source: 'graph.clearSolarNumericFrame' });
+            }
           }
         } catch (_) {}
       }
