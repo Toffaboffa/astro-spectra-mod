@@ -227,7 +227,7 @@ function ensureHost() {
         },
         loadedAt: Date.now(),
         scaffold: false,
-        version: '3.0.0'
+        version: '3.0.1'
       };
     } else {
       const mods = v15.registry.modules || (v15.registry.modules = {});
@@ -236,7 +236,7 @@ function ensureHost() {
       });
       v15.registry.loadedAt = v15.registry.loadedAt || Date.now();
       v15.registry.scaffold = false;
-      v15.registry.version = '3.0.0';
+      v15.registry.version = '3.0.1';
     }
     return v15.registry;
   }

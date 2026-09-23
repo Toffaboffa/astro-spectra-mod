@@ -69,7 +69,7 @@
           if (root.SPECTRA_PRO_analysisPipeline && typeof root.SPECTRA_PRO_analysisPipeline.finalizeResult === 'function') {
             out = root.SPECTRA_PRO_analysisPipeline.finalizeResult(out, frame, options);
           }
-          if (out && out.ok) out.analysisVersion = '3.0.0';
+          if (out && out.ok) out.analysisVersion = '3.0.1';
           STATE.lastAnalysis = out;
           return { type: TYPES.ANALYZE_RESULT, requestId: requestId, payload: out };
         }

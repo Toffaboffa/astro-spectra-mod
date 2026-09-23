@@ -66,7 +66,7 @@ const state = {
 
 const context = { window: null, console, Date, Math, JSON, setTimeout, clearTimeout };
 context.window = context;
-context.SpectraPro = { version: 'v3.0.0', store: { getState: () => state } };
+context.SpectraPro = { version: 'v3.0.1', store: { getState: () => state } };
 vm.createContext(context);
 vm.runInContext(
   fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/aiAnalysisPayload.js'), 'utf8'),

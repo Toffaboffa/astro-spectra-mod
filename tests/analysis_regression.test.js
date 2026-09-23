@@ -250,7 +250,7 @@ function testStellarClassEvidence() {
   const classifier = worker.SPECTRA_PRO_stellarClassification;
   const astroUiSource = fs.readFileSync(path.join(repoRoot, 'docs', 'frontend', 'scripts', 'mod', 'proBootstrap.js'), 'utf8');
   const workerEntrySource = fs.readFileSync(path.join(workerDir, 'analysis.worker.js'), 'utf8');
-  assert.ok(workerEntrySource.includes("'./stellarClassification.js?v=3.0.0'"), 'Browser worker should load the stellar-class module');
+  assert.ok(workerEntrySource.includes("'./stellarClassification.js?v=3.0.1'"), 'Browser worker should load the stellar-class module');
   assert.ok(astroUiSource.includes('spAstroClassification'), 'ASTRO panel should expose stellar-class evidence');
   assert.ok(astroUiSource.includes('Compatible range:'), 'ASTRO panel should render a compatible class range');
   assert.ok(astroUiSource.includes('Insufficient class evidence'), 'ASTRO panel should render a cautious insufficient-data state');
@@ -370,7 +370,7 @@ function testReferenceSpectrumComparison() {
   const workerEntrySource = fs.readFileSync(path.join(workerDir, 'analysis.worker.js'), 'utf8');
   const uiSource = fs.readFileSync(path.join(repoRoot, 'docs', 'frontend', 'scripts', 'mod', 'proBootstrap.js'), 'utf8');
   const graphSource = fs.readFileSync(path.join(repoRoot, 'docs', 'frontend', 'scripts', 'graphScript.js'), 'utf8');
-  assert.ok(workerEntrySource.includes("'./referenceComparison.js?v=3.0.0'"), 'Browser worker should load reference comparison');
+  assert.ok(workerEntrySource.includes("'./referenceComparison.js?v=3.0.1'"), 'Browser worker should load reference comparison');
   assert.ok(uiSource.toLowerCase().includes('reference spectrum comparison'), 'LAB/ASTRO UI should expose reference comparison controls');
   assert.ok(uiSource.includes("ensureReferenceComparisonCard(referenceMount, 'Lab')"), 'LAB should expose the shared comparison card in its Advanced popup');
   assert.ok(uiSource.includes("ensureReferenceComparisonCard($('spAstroReferenceMount'), 'Astro')"), 'ASTRO should expose the shared comparison card in its Advanced popup');
@@ -791,6 +791,35 @@ function testFormalPreprocessingPipeline() {
   assert.equal(result.preprocessing.schema, 'spectra-pro-preprocessing/v1', 'Analysis result should preserve preprocessing metadata');
 }
 
+function testAtomicAutoTuneDiagnosticAnchor() {
+  const profiles = worker.SPECTRA_PRO_atomicProfiles.profiles;
+  const evidence = worker.SPECTRA_PRO_atomicEvidence;
+  const helium = profiles.He;
+  const range = { min: 376, max: 900 };
+  const peaks = [
+    { index: 100, nm: 587.330, prominence: 180, value: 180 },
+    { index: 200, nm: 666.001, prominence: 250, value: 250 },
+    { index: 300, nm: 704.149, prominence: 100, value: 100 }
+  ];
+
+  assert.equal(
+    evidence.scoreProfile(helium, peaks, 1.8, range),
+    null,
+    'A single narrow-pass helium hit should remain insufficient for a positive full-profile score'
+  );
+
+  const auto = evidence.scoreProfileAuto(helium, peaks, range);
+  assert.ok(auto && auto.row, 'A strong diagnostic helium anchor should unlock the confirmation pass');
+  const confirm = auto.passes.find(function (pass) { return pass.id === 'confirm'; });
+  assert.ok(confirm, 'Auto tune should run the 3 nm confirmation pass after a strong diagnostic anchor');
+  assert.equal(confirm.matched, 3, 'Confirmation should recover the three helium lines in the regression case');
+  assert.equal(auto.row.autoTuneBestPass, 'confirm', 'Recovered multi-line helium evidence should become the best pass');
+  assert.ok(
+    auto.hits.some(function (hit) { return hit.element === 'He' && Math.abs(hit.referenceNm - 706.519) < 0.01; }),
+    'Confirmation should recover He I 706.519 nm even though it lies outside the narrow 1.8 nm gate'
+  );
+}
+
 function testSharedAnalysisInfrastructure() {
   const math = worker.SPECTRA_PRO_spectrumMath;
   const presets = worker.SPECTRA_PRO_presetResolver;
@@ -953,7 +982,8 @@ const groups = [
   ['reference spectrum comparison', testReferenceSpectrumComparison],
   ['instrument-response correction', testInstrumentResponseCorrection],
   ['ASTRO radial velocity', testRadialVelocity],
-  ['shared analysis infrastructure', testSharedAnalysisInfrastructure]
+  ['shared analysis infrastructure', testSharedAnalysisInfrastructure],
+  ['atomic auto-tune diagnostic anchor', testAtomicAutoTuneDiagnosticAnchor]
 ];
 
 groups.forEach(function (entry) {

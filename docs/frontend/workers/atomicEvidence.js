@@ -180,6 +180,23 @@
     return arr.filter(function (p) { return getProminence(p) >= minProm; });
   }
 
+  function hasDiagnosticAnchor(profile, peaks, toleranceNm, range) {
+    const peakArr = (Array.isArray(peaks) ? peaks : []).filter(function (p) {
+      return Number.isFinite(Number(p && p.nm));
+    });
+    if (!peakArr.length) return false;
+    const tolerance = clamp(Number(toleranceNm) || 1, 0.2, 5.0);
+    const lines = activeLines(profile, range).filter(function (ln) {
+      return ln && ln.diagnostic !== false && Math.max(0.1, Number(ln.weight) || 1) >= 0.6;
+    });
+    return lines.some(function (ln) {
+      const refNm = Number(ln.nm);
+      return peakArr.some(function (peak) {
+        return Math.abs(Number(peak.nm) - refNm) <= tolerance;
+      });
+    });
+  }
+
   function scoreProfileAuto(profile, peaks, range) {
     const configs = [
       { id: 'strict', threshold: 0.055, tolerance: 1.0, weight: 1.15 },
@@ -192,9 +209,10 @@
 
     configs.forEach(function (cfg) {
       const subset = filterPeaksByRelativeThreshold(peaks, cfg.threshold);
+      const anchor = subset.length ? hasDiagnosticAnchor(profile, subset, cfg.tolerance, range) : false;
+      if (anchor) anchored = true;
       const scored = subset.length ? scoreProfile(profile, subset, cfg.tolerance, range) : null;
-      if (scored && scored.row && Number(scored.row.diagnosticMatchedPeaks || 0) > 0) anchored = true;
-      passes.push({ cfg: cfg, scored: scored, subsetCount: subset.length });
+      passes.push({ cfg: cfg, scored: scored, subsetCount: subset.length, anchor: anchor });
     });
 
     // A broad pass is confirmation only. It is never allowed to create a
@@ -277,6 +295,7 @@
           thresholdPct: +(p.cfg.threshold * 100).toFixed(1),
           toleranceNm: p.cfg.tolerance,
           peakCount: p.subsetCount,
+          anchor: !!p.anchor,
           matched: r ? Number(r.matchedCount || 0) : 0,
           diagnosticMatched: r ? Number(r.diagnosticMatchedPeaks || 0) : 0,
           diagnosticExpected: r ? Number(r.diagnosticExpected || 0) : 0

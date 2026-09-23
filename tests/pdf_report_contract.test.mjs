@@ -27,7 +27,7 @@ const longAiText = 'AI evidence sentence. '.repeat(180).trim();
 const context = { console, setTimeout, clearTimeout };
 context.window = context;
 context.SpectraPro = {
-  version: '3.0.0',
+  version: '3.0.1',
   store: { getState: () => state },
   aiAnalysisUi: {
     getLastResultText: () => longAiText,

@@ -13,8 +13,8 @@ for (const status of ['IMPLEMENTED', 'EXPERIMENTAL', 'PLANNED']) {
   assert.ok(readme.includes(status), 'README must expose ' + status);
 }
 assert.ok(spec.includes('spectra-pro-export/v2'));
-assert.ok(spec.includes('Current UI version: **3.0.0**'));
-assert.ok(readme.includes('Current UI version: v3.0.0'));
+assert.ok(spec.includes('Current UI version: **3.0.1**'));
+assert.ok(readme.includes('Current UI version: v3.0.1'));
 
 const archivedRoadmap = read('docs/archive/CODEX_ANALYSIS_ASTRO_ROADMAP_COMPLETED.md');
 assert.ok(archivedRoadmap.includes('Status: **COMPLETE**'), 'The completed stages 1–16 roadmap must remain archived');
@@ -30,11 +30,11 @@ for (const relative of [
 ]) {
   const source = read(relative);
   const previousPublicVersion = ['2', '3', '15'].join('.');
-  assert.ok(source.includes('3.0.0'), relative + ' must carry the v3.0.0 release version');
+  assert.ok(source.includes('3.0.1'), relative + ' must carry the v3.0.1 release version');
   assert.ok(!source.includes(previousPublicVersion), relative + ' must not retain the previous public version');
 }
 const aiWorker = read('backend/ai-worker/src/index.js');
-assert.ok(aiWorker.includes("appVersion: '3.0.0'"), 'AI Worker responses must expose the application release version');
+assert.ok(aiWorker.includes("appVersion: '3.0.1'"), 'AI Worker responses must expose the application release version');
 assert.ok(!aiWorker.includes('stage: 6'), 'AI Worker responses must not expose a temporary roadmap-stage label');
 
 const removedPlaceholders = [
