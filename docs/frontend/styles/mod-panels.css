@@ -2084,3 +2084,105 @@ label[for="peakSizeLower"],
   }
   #spPeakInspectorPopup .sp-peak-element-card{min-height:100px;}
 }
+
+
+/* v3.0.6: square periodic-element card and larger detail text. */
+#spPeakInspectorPopup.has-element-match{
+  position:absolute;
+  width:min(300px,calc(100% - 16px));
+  min-height:136px;
+  padding:5px 6px;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-inspector__title{
+  margin-right:132px;
+  margin-bottom:3px;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-inspector__content{
+  display:block;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-inspector__rows{
+  margin-right:132px;
+  padding-top:0;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-inspector__hint{
+  width:calc(100% - 132px);
+  margin-right:132px;
+  box-sizing:border-box;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card{
+  position:absolute;
+  top:5px;
+  right:6px;
+  width:126px;
+  height:126px;
+  min-height:0;
+  aspect-ratio:1 / 1;
+  box-sizing:border-box;
+  padding:5px 6px;
+  border-radius:10px;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__top{
+  min-height:15px;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__number{
+  font-size:16px;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__match{
+  font-size:9.5px;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__symbol{
+  margin-top:1px;
+  font-size:34px;
+  line-height:.86;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__name{
+  margin-top:2px;
+  font-size:11px;
+  line-height:1.05;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__species{
+  margin-top:1px;
+  min-height:9px;
+  font-size:9px;
+  line-height:1.05;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__meta{
+  margin-top:4px;
+  padding-top:4px;
+  gap:1px;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__meta > div{
+  gap:4px;
+  font-size:9.5px;
+  line-height:1.08;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__meta span{
+  font-size:9px;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__meta b{
+  font-size:10px;
+  font-weight:800;
+}
+#spPeakInspectorPopup.has-element-match .sp-peak-element-card__excluded{
+  margin-top:3px;
+  font-size:8px;
+  line-height:1;
+}
+@media (max-width:560px){
+  #spPeakInspectorPopup.has-element-match{
+    width:min(286px,calc(100% - 12px));
+    min-height:132px;
+  }
+  #spPeakInspectorPopup.has-element-match .sp-peak-element-card{
+    width:122px;
+    height:122px;
+  }
+  #spPeakInspectorPopup.has-element-match .sp-peak-inspector__title,
+  #spPeakInspectorPopup.has-element-match .sp-peak-inspector__rows{
+    margin-right:128px;
+  }
+  #spPeakInspectorPopup.has-element-match .sp-peak-inspector__hint{
+    width:calc(100% - 128px);
+    margin-right:128px;
+  }
+}
