@@ -2368,3 +2368,190 @@ label[for="peakSizeLower"],
     margin-right:128px;
   }
 }
+
+
+/* === v3.1.5 UI layout correction 2026-09-24 === */
+/*
+   Keep the persistent graph toolbar aligned with the main CORE card,
+   keep language/help on the same tab row, and restore a deliberate CORE grid.
+*/
+@media (min-width:1201px){
+  #SpectraProDockHost #spTabs{
+    display:grid !important;
+    grid-template-columns:
+      repeat(5,max-content)
+      minmax(0,1fr)
+      minmax(250px,360px)
+      max-content !important;
+    grid-template-rows:auto !important;
+    column-gap:0 !important;
+    align-items:center !important;
+    flex-wrap:nowrap !important;
+  }
+
+  #SpectraProDockHost #spTabs > .sp-graph-tools{
+    grid-column:6 !important;
+    grid-row:1 !important;
+    justify-self:stretch !important;
+    width:100% !important;
+    min-width:0 !important;
+    margin-left:0 !important;
+    padding-left:18px !important;
+    padding-right:0 !important;
+    display:grid !important;
+    grid-template-columns:max-content max-content max-content max-content minmax(72px,1fr) !important;
+    gap:12px !important;
+    align-items:center !important;
+  }
+
+  #SpectraProDockHost #spTabs > .sp-graph-tools > :last-child{
+    justify-self:end !important;
+  }
+
+  #SpectraProDockHost #spTabs #spLanguageSwitch{
+    grid-column:7 !important;
+    grid-row:1 !important;
+    justify-self:end !important;
+    margin-left:0 !important;
+  }
+
+  body #SpectraProDockHost #spTabs #spHelpLaunch.sp-help-launch{
+    grid-column:8 !important;
+    grid-row:1 !important;
+    justify-self:end !important;
+    margin-left:5px !important;
+    white-space:nowrap !important;
+  }
+
+  #SpectraProDockHost .sp-core-settings{
+    display:grid !important;
+    grid-template-columns:
+      minmax(105px,1.05fr)
+      minmax(100px,1fr)
+      minmax(82px,.72fr)
+      minmax(105px,1fr)
+      minmax(145px,1.38fr) !important;
+    grid-template-rows:auto auto !important;
+    column-gap:12px !important;
+    row-gap:12px !important;
+    align-items:end !important;
+  }
+
+  #SpectraProDockHost .sp-core-settings-row--display,
+  #SpectraProDockHost .sp-core-settings-row--peaks{
+    display:contents !important;
+  }
+
+  #SpectraProDockHost #spFieldAppMode{grid-column:1;grid-row:1;}
+  #SpectraProDockHost #spFieldWorkerMode{grid-column:2;grid-row:1;}
+  #SpectraProDockHost #spYAxisMaxWrap{grid-column:3;grid-row:1;}
+  #SpectraProDockHost #spFieldFillMode{grid-column:4;grid-row:1;}
+  #SpectraProDockHost #spFieldFillOpacity{grid-column:5;grid-row:1;}
+
+  #SpectraProDockHost #spFieldPeakThreshold{grid-column:1;grid-row:2;}
+  #SpectraProDockHost #spFieldPeakDistance{grid-column:2;grid-row:2;}
+  #SpectraProDockHost #spFieldPeakSmoothing{grid-column:3;grid-row:2;}
+
+  #SpectraProDockHost .sp-core-settings #spFieldAppMode,
+  #SpectraProDockHost .sp-core-settings #spFieldWorkerMode,
+  #SpectraProDockHost .sp-core-settings #spYAxisMaxWrap,
+  #SpectraProDockHost .sp-core-settings #spFieldFillMode,
+  #SpectraProDockHost .sp-core-settings #spFieldFillOpacity,
+  #SpectraProDockHost .sp-core-settings #spFieldPeakThreshold,
+  #SpectraProDockHost .sp-core-settings #spFieldPeakDistance,
+  #SpectraProDockHost .sp-core-settings #spFieldPeakSmoothing{
+    min-width:0 !important;
+    width:100% !important;
+  }
+
+  #SpectraProDockHost .sp-core-settings #spAppMode,
+  #SpectraProDockHost .sp-core-settings #spWorkerMode,
+  #SpectraProDockHost .sp-core-settings #spYAxisMax,
+  #SpectraProDockHost .sp-core-settings #spFillMode,
+  #SpectraProDockHost .sp-core-settings #spFillOpacity,
+  #SpectraProDockHost .sp-core-settings #spPeakThreshold,
+  #SpectraProDockHost .sp-core-settings #spPeakDistance,
+  #SpectraProDockHost .sp-core-settings #spPeakSmoothing{
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+  #SpectraProDockHost .sp-core-traces{
+    grid-column:4 / 6 !important;
+    grid-row:2 !important;
+    display:grid !important;
+    grid-template-columns:minmax(92px,.85fr) minmax(132px,1.15fr) !important;
+    gap:18px !important;
+    align-items:start !important;
+    align-self:end !important;
+    min-width:0 !important;
+    width:100% !important;
+    padding:0 2px 1px !important;
+  }
+
+  #SpectraProDockHost .sp-core-traces .sp-field--stackgroup{
+    justify-content:flex-end !important;
+  }
+
+  #SpectraProDockHost .sp-core-bottom-split{
+    grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr) !important;
+    gap:14px !important;
+    margin-top:12px !important;
+  }
+
+  #spPanel-core .sp-actions--core-zoom{
+    display:grid !important;
+    grid-template-columns:max-content max-content 34px 34px minmax(130px,1fr) !important;
+    gap:8px !important;
+    align-items:end !important;
+    margin:0 0 10px !important;
+  }
+
+  #spPanel-core .sp-field--zoom-scroller-inline{
+    width:100% !important;
+    min-width:0 !important;
+    margin-left:0 !important;
+  }
+
+  #spPanel-core #spZoomScrollerProxy{
+    width:100% !important;
+    max-width:none !important;
+  }
+
+  #spPanel-core .sp-actions--core-main,
+  #spPanel-core .sp-actions--reference{
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    gap:8px !important;
+  }
+
+  #spPanel-core .sp-actions--core-main{
+    margin-top:0 !important;
+  }
+
+  #spPanel-core .sp-reference-toprow{
+    grid-template-columns:minmax(145px,.85fr) minmax(185px,1.15fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+}
+
+/* Overlay popup: label left, checkbox explicitly on the right. */
+#SpectraProDockHost .sp-graph-overlays__panel .sp-graph-tool--check{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto !important;
+  align-items:center !important;
+  gap:12px !important;
+  width:100% !important;
+}
+#SpectraProDockHost .sp-graph-overlays__panel .sp-graph-tool--check > span{
+  grid-column:1 !important;
+  grid-row:1 !important;
+}
+#SpectraProDockHost .sp-graph-overlays__panel .sp-graph-tool--check > input[type="checkbox"]{
+  grid-column:2 !important;
+  grid-row:1 !important;
+  justify-self:end !important;
+  margin:0 !important;
+}
