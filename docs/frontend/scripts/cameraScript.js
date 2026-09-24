@@ -12,6 +12,116 @@ let cameraUsed = "";
 const exposureSlider = document.getElementById('exposure');
 let exposureValues = [];
 
+const AUTO_PAUSE_TARGET_INTENSITY = 240;
+const AUTO_PAUSE_MIN_INTENSITY = 238;
+const AUTO_PAUSE_MAX_INTENSITY = 248;
+const AUTO_PAUSE_REQUIRED_FRAMES = 2;
+let autoPauseArmed = false;
+let autoPauseStableFrames = 0;
+let autoPauseLastPeak = null;
+
+function appendCameraConsole(message) {
+    const text = String(message || '');
+    try {
+        const sp = window.SpectraPro || {};
+        if (sp.consoleLog && typeof sp.consoleLog.append === 'function') {
+            sp.consoleLog.append(text);
+            return;
+        }
+    } catch (_) {}
+    try { console.log(text); } catch (_) {}
+}
+
+function setCameraPlaybackUi(isLivePlaying) {
+    const pause = document.getElementById('pauseVideoButton');
+    const live = document.getElementById('liveVideoButton');
+    const legacyPlay = document.getElementById('playVideoButton');
+    if (pause) {
+        pause.style.visibility = 'visible';
+        pause.disabled = !isLivePlaying;
+    }
+    if (live) live.setAttribute('aria-pressed', isLivePlaying ? 'true' : 'false');
+    if (legacyPlay) {
+        legacyPlay.style.display = 'none';
+        legacyPlay.style.visibility = 'hidden';
+    }
+}
+
+function updateAutoPauseUi() {
+    const button = document.getElementById('autoPauseButton');
+    if (!button) return;
+    button.setAttribute('aria-pressed', autoPauseArmed ? 'true' : 'false');
+    button.textContent = autoPauseArmed ? 'Auto Pause ●' : 'Auto Pause';
+    button.title = autoPauseArmed
+        ? 'Armed: pauses after a stable live peak reaches 238–248.'
+        : 'Arm one-shot auto pause near peak intensity 240, before clipping.';
+}
+
+function disarmAutoPause(reason) {
+    const wasArmed = autoPauseArmed;
+    autoPauseArmed = false;
+    autoPauseStableFrames = 0;
+    autoPauseLastPeak = null;
+    updateAutoPauseUi();
+    if (wasArmed && reason) appendCameraConsole('[AUTO PAUSE] ' + reason);
+}
+
+function isLiveCameraPlaying() {
+    try {
+        const live = document.getElementById('videoMain');
+        return !!(live && videoElement === live && live.srcObject && !live.paused && !live.ended);
+    } catch (_) {
+        return false;
+    }
+}
+
+function handleAutoPauseFrame(frame) {
+    if (!autoPauseArmed || !isLiveCameraPlaying()) return;
+    const values = frame && Array.isArray(frame.I) ? frame.I : [];
+    if (!values.length) return;
+
+    let peak = 0;
+    for (let i = 0; i < values.length; i += 1) {
+        const value = Number(values[i]);
+        if (Number.isFinite(value) && value > peak) peak = value;
+    }
+    autoPauseLastPeak = peak;
+
+    if (peak >= AUTO_PAUSE_MIN_INTENSITY && peak <= AUTO_PAUSE_MAX_INTENSITY) {
+        autoPauseStableFrames += 1;
+    } else {
+        autoPauseStableFrames = 0;
+    }
+
+    if (autoPauseStableFrames >= AUTO_PAUSE_REQUIRED_FRAMES) {
+        const capturedPeak = Math.round(peak);
+        autoPauseArmed = false;
+        autoPauseStableFrames = 0;
+        updateAutoPauseUi();
+        appendCameraConsole('[AUTO PAUSE] Captured · peak ' + capturedPeak + ' / 255');
+        pauseVideo({ autoPause: true });
+    }
+}
+
+async function toggleAutoPause() {
+    if (autoPauseArmed) {
+        disarmAutoPause('Disarmed.');
+        return;
+    }
+    if (!isLiveCameraPlaying()) {
+        await goLiveCamera();
+    }
+    if (!isLiveCameraPlaying()) {
+        appendCameraConsole('[AUTO PAUSE] Could not arm: live camera is unavailable.');
+        return;
+    }
+    autoPauseArmed = true;
+    autoPauseStableFrames = 0;
+    autoPauseLastPeak = null;
+    updateAutoPauseUi();
+    appendCameraConsole('[AUTO PAUSE] Armed · target ' + AUTO_PAUSE_TARGET_INTENSITY + ' / 255');
+}
+
 let cameraOutputHeight;
 let cameraOutputWidth;
 
@@ -73,7 +183,10 @@ function refreshActiveSourceMetrics() {
  */
 async function startStream(deviceId) {
     const sourceWindow = document.getElementById('videoMainWindow');
+    const liveVideo = document.getElementById('videoMain');
+    if (!liveVideo) return false;
     if (sourceWindow) sourceWindow.classList.remove('sp-numeric-source');
+
     const constraints = {
         video: {
             deviceId: deviceId ? { exact: deviceId } : undefined,
@@ -81,54 +194,65 @@ async function startStream(deviceId) {
             height: { ideal: 720 }
         }
     };
+
     try {
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        videoElement.srcObject = stream;
+        try {
+            const previous = liveVideo.srcObject;
+            if (previous && previous !== stream && typeof previous.getTracks === 'function') {
+                previous.getTracks().forEach(track => track.stop());
+            }
+        } catch (_) {}
+
+        liveVideo.srcObject = stream;
+        if (deviceId) cameraUsed = deviceId;
 
         const videoTrack = stream.getVideoTracks()[0];
-        const capabilities = videoTrack.getCapabilities();
+        const capabilities = videoTrack && typeof videoTrack.getCapabilities === 'function'
+            ? videoTrack.getCapabilities()
+            : {};
 
-        if ('exposureMode' in capabilities) {
-            await videoTrack.applyConstraints({
-                advanced: [{ exposureMode: 'manual' }]
-            });
+        if (videoTrack && 'exposureMode' in capabilities) {
+            await videoTrack.applyConstraints({ advanced: [{ exposureMode: 'manual' }] });
 
             if ('exposureTime' in capabilities) {
                 const { min, max, step } = capabilities.exposureTime;
-
                 updateExposureSlider(min, max, step);
-
                 await videoTrack.applyConstraints({
                     advanced: [{ exposureTime: exposureValues[exposureSlider.value] }]
                 });
             }
-            exposureSlider.addEventListener('change', () => {
-                videoTrack.applyConstraints({
-                    advanced: [{ exposureTime: parseFloat(exposureValues[exposureSlider.value]) }]
-                });
-            });
+            exposureSlider.onchange = () => {
+                if ('exposureTime' in capabilities) {
+                    videoTrack.applyConstraints({
+                        advanced: [{ exposureTime: parseFloat(exposureValues[exposureSlider.value]) }]
+                    });
+                }
+            };
         } else {
             const exposureElement = document.getElementById('cameraExposure');
-            if (exposureElement) { exposureElement.remove(); }
-
+            if (exposureElement) exposureElement.remove();
             showInfoPopup("exposureUnsupportedBrowser", "acknowledge");
         }
 
-        videoElement.onloadedmetadata = () => {
-            cameraOutputWidth = videoElement.videoWidth;
-            cameraOutputHeight = videoElement.videoHeight;
+        liveVideo.onloadedmetadata = () => {
+            cameraOutputWidth = liveVideo.videoWidth;
+            cameraOutputHeight = liveVideo.videoHeight;
             document.getElementById("stripeWidthRange").max = cameraOutputHeight;
             document.getElementById("stripePlacementRange").max = cameraOutputHeight;
             document.getElementById("stripePlacementRange").value = cameraOutputHeight * yPercentage;
             document.getElementById("stripePlacementValue").textContent = getStripePositionRangeText();
 
-            if (videoElement.videoWidth === 1280) {
+            if (liveVideo.videoWidth === 1280) {
                 document.getElementById("videoMainWindow").style.height = "214px";
             }
-            plotRGBLineFromCamera();
+            if (videoElement === liveVideo) plotRGBLineFromCamera();
         };
+
+        return true;
     } catch (error) {
         callError("cameraNotFoundError");
+        return false;
     }
 }
 
@@ -137,6 +261,7 @@ async function startStream(deviceId) {
  */
 async function getCameras() {
     try {
+        const previousDevice = (cameraSelect && cameraSelect.value) || cameraUsed || '';
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
 
@@ -151,14 +276,14 @@ async function getCameras() {
         }
 
         if (videoDevices.length > 0) {
-            await startStream(videoDevices[0].deviceId);
-            cameraUsed = videoDevices[0].deviceId;
+            const preferred = videoDevices.find(device => device.deviceId === previousDevice) || videoDevices[0];
+            cameraUsed = preferred.deviceId;
+            if (cameraSelect) cameraSelect.value = cameraUsed;
+            await goLiveCamera({ restartStream: true, keepAutoPause: true });
         }
     } catch (error) {
         console.error('Error fetching devices: ', error);
     }
-    resetCamera();
-    getBackToCameraStream();
 }
 
 /**
@@ -166,10 +291,15 @@ async function getCameras() {
  */
 async function requestCameraAccess() {
     try {
-        await navigator.mediaDevices.getUserMedia({ video: {
+        const permissionStream = await navigator.mediaDevices.getUserMedia({ video: {
                 width: { ideal: 1280 },
                 height: { ideal: 720 }
             } });
+        try {
+            if (permissionStream && typeof permissionStream.getTracks === 'function') {
+                permissionStream.getTracks().forEach(track => track.stop());
+            }
+        } catch (_) {}
         await getCameras();
     } catch (error) {
         callError("cameraAccessDeniedError");
@@ -177,21 +307,31 @@ async function requestCameraAccess() {
 }
 
 /**
- * Resets the camera stream with the current camera
+ * Resets the camera stream with the currently selected camera.
  */
 async function resetCamera() {
-    document.getElementById("pauseVideoButton").style.visibility = "visible";
-    document.getElementById("playVideoButton").style.visibility = "hidden";
-    await startStream(cameraUsed);
+    const selected = cameraSelect && cameraSelect.value ? cameraSelect.value : cameraUsed;
+    if (selected) cameraUsed = selected;
+
+    const liveVideo = document.getElementById('videoMain');
+    if (liveVideo) videoElement = liveVideo;
+
+    const started = await startStream(cameraUsed);
+    if (started && liveVideo) {
+        try { await liveVideo.play(); } catch (_) {}
+    }
+    setCameraPlaybackUi(!!started);
+    return !!started;
 }
 
 /**
- * Event listener to switch between cameras
+ * Event listener to switch between cameras. Selecting a camera also returns
+ * from images/examples to a live source, which keeps the source model explicit.
  */
 if (cameraSelect != null) {
     cameraSelect.addEventListener('change', () => {
-        startStream(cameraSelect.value);
         cameraUsed = cameraSelect.value;
+        goLiveCamera({ restartStream: true });
     });
 }
 
@@ -260,35 +400,64 @@ function updateExposureValue(value) {
 /**
  * Pauses the video stream
  */
-async function pauseVideo(){
-    videoElement.pause();
-    document.getElementById("pauseVideoButton").style.visibility = "hidden";
-    document.getElementById("playVideoButton").style.visibility = "visible";
-
+async function pauseVideo(options = {}) {
+    const liveVideo = document.getElementById('videoMain');
+    if (!liveVideo || videoElement !== liveVideo || !liveVideo.srcObject) {
+        setCameraPlaybackUi(false);
+        return false;
+    }
+    if (!options.autoPause && autoPauseArmed) disarmAutoPause('Disarmed by manual pause.');
+    try { liveVideo.pause(); } catch (_) {}
+    setCameraPlaybackUi(false);
+    return true;
 }
 
 /**
- * Plays the video stream, also accounts for loaded image
+ * Explicitly returns to the selected live camera from Pause, images or bundled
+ * examples. Manual calibration is preserved; sample-owned calibration is reset
+ * by getBackToCameraStream().
  */
-async function playVideo(){
+async function goLiveCamera(options = {}) {
+    if (!options.keepAutoPause && autoPauseArmed) disarmAutoPause('Disarmed by Live.');
+
+    const selected = cameraSelect && cameraSelect.value ? cameraSelect.value : cameraUsed;
+    if (selected) cameraUsed = selected;
+
     try {
-        const numericFrame = window.SpectraCore && window.SpectraCore.graph && typeof window.SpectraCore.graph.getNumericFrame === 'function'
+        if (typeof switchLoadedImageSettings === 'function') switchLoadedImageSettings();
+    } catch (_) {}
+
+    let numericFrame = null;
+    try {
+        numericFrame = window.SpectraCore && window.SpectraCore.graph && typeof window.SpectraCore.graph.getNumericFrame === 'function'
             ? window.SpectraCore.graph.getNumericFrame()
             : null;
-        if (numericFrame) {
-            switchLoadedImageSettings();
-            getBackToCameraStream();
-            return;
-        }
     } catch (_) {}
-    if (videoElement instanceof HTMLImageElement) {
-        switchLoadedImageSettings();
-        getBackToCameraStream();
-    } else {
-        videoElement.play();
-        document.getElementById("pauseVideoButton").style.visibility = "visible";
-        document.getElementById("playVideoButton").style.visibility = "hidden";
+
+    const liveVideo = document.getElementById('videoMain');
+    const needsSourceTransition = !!numericFrame || videoElement !== liveVideo ||
+        (typeof HTMLImageElement !== 'undefined' && videoElement instanceof HTMLImageElement);
+
+    if (needsSourceTransition) return await getBackToCameraStream();
+
+    if (options.restartStream || !liveVideo || !liveVideo.srcObject) {
+        return await resetCamera();
     }
+
+    try {
+        await liveVideo.play();
+        setCameraPlaybackUi(true);
+        return true;
+    } catch (_) {
+        return await resetCamera();
+    }
+}
+
+/**
+ * Legacy play API now maps to the explicit Live action.
+ */
+async function playVideo(){
+    return await goLiveCamera();
 }
 
 function resetBundledExampleStateForCamera() {
@@ -341,26 +510,32 @@ function resetBundledExampleStateForCamera() {
 /**
  * Changes the videoElement from img to video, so the camera can be used
  */
-function getBackToCameraStream(){
+async function getBackToCameraStream(){
     const returnedFromBundledExample = resetBundledExampleStateForCamera();
     try {
         if (window.SpectraCore && window.SpectraCore.graph && typeof window.SpectraCore.graph.clearNumericFrame === 'function') {
             window.SpectraCore.graph.clearNumericFrame({ redraw: false });
         }
     } catch (_) {}
-    videoElement.style.display = 'none';
+
+    if (videoElement) videoElement.style.display = 'none';
     videoElement = document.getElementById('videoMain');
+    if (!videoElement) return false;
     videoElement.style.display = 'block';
-    document.getElementById("pauseVideoButton").style.visibility = "visible";
-    document.getElementById("playVideoButton").style.visibility = "hidden";
-    resetCamera();
-    syncCanvasToVideo();
+
+    const selected = cameraSelect && cameraSelect.value ? cameraSelect.value : cameraUsed;
+    if (selected) cameraUsed = selected;
+
+    const started = await resetCamera();
+    try { syncCanvasToVideo(); } catch (_) {}
+
     if (returnedFromBundledExample) {
         try {
             needToRecalculateMaxima = true;
             if (typeof redrawGraphIfLoadedImage === 'function') redrawGraphIfLoadedImage(true);
         } catch (_) {}
     }
+    return started;
 }
 
 /**
@@ -512,11 +687,30 @@ function noGraphShown() {
 /* SPECTRA PRO camera bridge */
 
 (function(){
+  const sp = window.SpectraPro || (window.SpectraPro = {});
+  sp.runtime = sp.runtime || {};
+
+  if (sp.coreHooks && typeof sp.coreHooks.on === 'function' && !sp.runtime.autoPauseFrameHookInstalled) {
+    sp.runtime.autoPauseFrameHookInstalled = true;
+    sp.coreHooks.on('graphFrame', handleAutoPauseFrame);
+  }
+
   window.SpectraCore = window.SpectraCore || {};
   window.SpectraCore.camera = Object.assign(window.SpectraCore.camera || {}, {
     startCamera: window.getCameras || window.startCamera || function(){},
+    live: window.goLiveCamera || function(){},
     resetCamera: window.resetCamera || function(){},
     pause: window.pauseVideo || function(){},
-    play: window.playVideo || function(){}
+    play: window.playVideo || function(){},
+    autoPause: {
+      toggle: window.toggleAutoPause || function(){},
+      disarm: disarmAutoPause,
+      target: AUTO_PAUSE_TARGET_INTENSITY,
+      min: AUTO_PAUSE_MIN_INTENSITY,
+      max: AUTO_PAUSE_MAX_INTENSITY
+    }
   });
+
+  setCameraPlaybackUi(isLiveCameraPlaying());
+  updateAutoPauseUi();
 })();
