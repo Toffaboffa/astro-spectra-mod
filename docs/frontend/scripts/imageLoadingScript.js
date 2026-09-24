@@ -38,6 +38,8 @@ function loadImageIntoCamera() {
                 switchLoadedImageSettings(file.name);
 
                 if (currentSource) currentSource.style.display = 'none';
+                if (typeof disarmAutoPause === 'function') disarmAutoPause('Disarmed by source change.');
+                window.videoPaused = true;
                 if (typeof setCameraPlaybackUi === 'function') {
                     setCameraPlaybackUi(false);
                 }
