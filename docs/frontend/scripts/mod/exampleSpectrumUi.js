@@ -738,10 +738,7 @@
     if (sourceWindow) sourceWindow.classList.add('sp-numeric-source');
     if (video) video.style.display = 'none';
     if (image) image.style.display = 'none';
-    const pause = $('pauseVideoButton');
-    const play = $('playVideoButton');
-    if (pause) pause.style.visibility = 'hidden';
-    if (play) play.style.visibility = 'visible';
+    if (typeof global.setCameraPlaybackUi === 'function') global.setCameraPlaybackUi(false);
 
     const sourceRgb = renderRgbSpectrumPreview(asset);
     enableLabAnalysis(sample);
@@ -873,10 +870,7 @@
     if (video) video.style.display = 'none';
     if (image) image.style.display = 'none';
     const solarSourceRgb = renderSolarSourcePreview(asset);
-    const pause = $('pauseVideoButton');
-    const play = $('playVideoButton');
-    if (pause) pause.style.visibility = 'hidden';
-    if (play) play.style.visibility = 'visible';
+    if (typeof global.setCameraPlaybackUi === 'function') global.setCameraPlaybackUi(false);
 
     enableAstroAnalysis();
     setGraphFillMode('source');
@@ -952,10 +946,7 @@
       const video = $('videoMain');
       if (video) video.style.display = 'none';
 
-      const pause = $('pauseVideoButton');
-      const play = $('playVideoButton');
-      if (pause) pause.style.visibility = 'hidden';
-      if (play) play.style.visibility = 'visible';
+      if (typeof global.setCameraPlaybackUi === 'function') global.setCameraPlaybackUi(false);
 
       const image = $('cameraImage');
       if (!image) throw new Error('Source image element is unavailable.');
