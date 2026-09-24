@@ -100,7 +100,7 @@ jobs:
           assert "icon: SAMPLE_ICONS.cyan" in ar_block, "Ar sample must use the cyan tube icon"
           assert "icon: SAMPLE_ICONS.cyan" not in n2_block + ne_block, "Cyan icon must remain exclusive to the Argon sample"
           assert "chunk-" not in module
-          assert "const VERSION = '3.1.4';" in module
+          assert "const VERSION = '3.1.5';" in module
           assert "solar-tsis1-hsrs-visible-0p2nm.json" in module
 
           export_ui = Path("docs/frontend/scripts/mod/exportUi.js").read_text(encoding="utf-8")
