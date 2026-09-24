@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '3.0.8';
+  const AI_ASSET_VERSION = '3.0.9';
 
   const defaultPresetCatalog = {
     groups: [
@@ -50,7 +50,9 @@
       coefficients: [],
       points: [],
       residualStatus: 'unknown',
-      shellPointCount: 0
+      shellPointCount: 0,
+      origin: 'none',
+      sampleId: ''
     },
     hardware: {
       profileId: '',
@@ -254,7 +256,7 @@
   if (global.document && !global.document.getElementById('spExampleSpectrumUiLoader')) {
     const script = global.document.createElement('script');
     script.id = 'spExampleSpectrumUiLoader';
-    script.src = '../scripts/mod/exampleSpectrumUi.js?v=' + AI_ASSET_VERSION + '-sample-calibration-1';
+    script.src = '../scripts/mod/exampleSpectrumUi.js?v=' + AI_ASSET_VERSION;
     script.defer = true;
     (global.document.head || global.document.documentElement).appendChild(script);
   }

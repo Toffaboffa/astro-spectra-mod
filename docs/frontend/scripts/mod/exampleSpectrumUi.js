@@ -408,105 +408,34 @@
     if (a.length !== e.length) return false;
     for (let i = 0; i < e.length; i += 1) {
       if (Number(a[i] && a[i].px) !== Number(e[i] && e[i].px) ||
-          Number(a[i] && a[i].nm) !== Number(e[i] && e[i].nm)) {
-        return false;
-      }
+          Number(a[i] && a[i].nm) !== Number(e[i] && e[i].nm)) return false;
     }
     return true;
-  }
-
-  function syncCalibrationShell(points) {
-    try {
-      const mgrMod = sp.v15 && sp.v15.calibrationPointManager;
-      if (!sp.calibrationPointManager && mgrMod && typeof mgrMod.create === 'function') {
-        sp.calibrationPointManager = mgrMod.create();
-      }
-      const mgr = sp.calibrationPointManager;
-      if (mgr && typeof mgr.getPoints === 'function' && typeof mgr.setPoints === 'function') {
-        const current = mgr.getPoints();
-        if (!calibrationPointsEqual(current, points)) mgr.setPoints(points);
-      }
-      if (sp.store && typeof sp.store.update === 'function') {
-        sp.store.update('calibration.shellPointCount', points.length, { source: 'exampleSpectrum.calibration.shell' });
-      }
-      const shell = sp.calibrationShellUI;
-      if (shell && typeof shell.renderShellPointsTable === 'function') shell.renderShellPointsTable();
-      if (shell && typeof shell.updateShellCountsAndValidation === 'function') shell.updateShellCountsAndValidation();
-      if (shell && typeof shell.renderMiniGraph === 'function') shell.renderMiniGraph();
-    } catch (_) {}
   }
 
   function applyCalibration(sample) {
     const points = sample && sample.calibration && Array.isArray(sample.calibration.points)
       ? sample.calibration.points
       : [];
-    if (points.length < 2) {
-      return { ok: false, reason: 'Sample calibration has too few points.' };
-    }
-    if (typeof global.resetCalibrationPoints !== 'function' ||
-        typeof global.addInputPair !== 'function' ||
-        typeof global.setCalibrationPoints !== 'function') {
-      return { ok: false, reason: 'Calibration controls are unavailable.' };
-    }
+    if (points.length < 2) return { ok: false, reason: 'Sample calibration has too few points.' };
 
     try {
-      global.resetCalibrationPoints();
-      let guard = 0;
-      while (!$('point' + points.length + 'px') && guard < 8) {
-        global.addInputPair();
-        guard += 1;
+      const calibration = global.SpectraCore && global.SpectraCore.calibration;
+      if (!calibration || typeof calibration.applyPoints !== 'function') {
+        return { ok: false, reason: 'Canonical calibration API is unavailable.' };
       }
-
-      points.forEach(function (point, i) {
-        const index = i + 1;
-        const px = $('point' + index + 'px');
-        const nm = $('point' + index + 'nm');
-        if (!px || !nm) throw new Error('Calibration input #' + index + ' is unavailable.');
-        px.value = String(point.px);
-        nm.value = String(point.nm);
+      const state = calibration.applyPoints(points, {
+        origin: 'sample',
+        sampleId: String(sample && sample.id || ''),
+        source: 'example-spectrum'
       });
-
-      global.setCalibrationPoints();
-
-      let calibrationState = null;
-      try {
-        if (global.SpectraCore && global.SpectraCore.calibration) {
-          if (typeof global.SpectraCore.calibration.emitCalibrationState === 'function') {
-            calibrationState = global.SpectraCore.calibration.emitCalibrationState();
-          }
-          if (!calibrationState && typeof global.SpectraCore.calibration.getState === 'function') {
-            calibrationState = global.SpectraCore.calibration.getState();
-          }
-        }
-      } catch (_) {}
-
-      const activePoints = calibrationState && Array.isArray(calibrationState.points)
-        ? calibrationState.points
-        : [];
-      const calibrated = typeof global.isCalibrated === 'function'
-        ? !!global.isCalibrated()
-        : !!(calibrationState && calibrationState.calibrated);
-      const pointsLoaded = calibrationPointsEqual(activePoints, points);
-
-      if (!calibrated || !pointsLoaded) {
-        return {
-          ok: false,
-          count: activePoints.length,
-          reason: !pointsLoaded
-            ? ('Calibration points did not activate (expected ' + points.length + ', got ' + activePoints.length + ').')
-            : 'Calibration did not activate.'
-        };
-      }
-
-      syncCalibrationShell(points);
-      try {
-        if (sp.store && typeof sp.store.update === 'function') {
-          sp.store.update('calibration.origin', 'sample', { source: 'exampleSpectrum.calibration' });
-          sp.store.update('calibration.sampleId', String(sample && sample.id || ''), { source: 'exampleSpectrum.calibration' });
-        }
-      } catch (_) {}
-
-      return { ok: true, count: points.length, reason: '' };
+      const activePoints = state && Array.isArray(state.points) ? state.points : [];
+      const ok = !!(state && state.calibrated && calibrationPointsEqual(activePoints, points));
+      return {
+        ok,
+        count: activePoints.length,
+        reason: ok ? '' : ('Calibration points did not activate (expected ' + points.length + ', got ' + activePoints.length + ').')
+      };
     } catch (error) {
       return { ok: false, reason: String(error && error.message || error) };
     }
@@ -951,7 +880,7 @@
 
     enableAstroAnalysis();
     setGraphFillMode('source');
-    const calibration = applyCalibration({ calibration: asset.calibration });
+    const calibration = applyCalibration({ id: sample.id, calibration: asset.calibration });
     if (!calibration.ok) throw new Error('Solar calibration could not be activated: ' + calibration.reason);
     selectWavelengthAxis();
 

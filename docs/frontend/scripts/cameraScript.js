@@ -299,10 +299,11 @@ function resetBundledExampleStateForCamera() {
     if (!exampleId) return false;
 
     try {
-        if (typeof resetCalibrationPoints === 'function') resetCalibrationPoints();
-        if (window.SpectraCore && window.SpectraCore.calibration &&
-            typeof window.SpectraCore.calibration.emitCalibrationState === 'function') {
-            window.SpectraCore.calibration.emitCalibrationState();
+        const calibration = window.SpectraCore && window.SpectraCore.calibration;
+        if (calibration && typeof calibration.reset === 'function') {
+            calibration.reset({ source: 'sample-exit' });
+        } else if (typeof resetCalibrationPoints === 'function') {
+            resetCalibrationPoints({ source: 'sample-exit' });
         }
     } catch (_) {}
 

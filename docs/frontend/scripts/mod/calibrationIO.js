@@ -134,7 +134,7 @@
     };
   };
 
-  mod.version = '3.0.1';
+  mod.version = '3.0.9';
 })();
 
 /* SPECTRA PRO startup calibration UX */
@@ -142,34 +142,34 @@
   'use strict';
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
-  const UI_VERSION = 'v3.0.1';
+  const UI_VERSION = 'v3.0.9';
   let wasCalibrated = false;
   let loadPromptDismissed = false;
   let axisPromptShown = false;
   let suppressAxisPromptUntil = 0;
 
+  function isUsableCalibration(state) {
+    const cal = state && typeof state === 'object' ? state : {};
+    const points = Array.isArray(cal.points) ? cal.points.filter(function (point) {
+      return point && Number.isFinite(Number(point.px)) && Number.isFinite(Number(point.nm));
+    }) : [];
+    const coefficients = Array.isArray(cal.coefficients) ? cal.coefficients.map(Number).filter(Number.isFinite) : [];
+    const explicit = cal.isCalibrated != null ? !!cal.isCalibrated : (cal.calibrated != null ? !!cal.calibrated : true);
+    return explicit && points.length >= 2 && coefficients.length >= 2;
+  }
+
   function isCalibratedNow() {
     try {
-      if (window.SpectraCore && window.SpectraCore.calibration && typeof window.SpectraCore.calibration.getState === 'function') {
-        const state = window.SpectraCore.calibration.getState() || {};
-        if (state.calibrated != null) return !!state.calibrated;
-        if (Array.isArray(state.coefficients)) return state.coefficients.length > 0;
-      }
-    } catch (_) {}
-    try {
-      if (typeof window.isCalibrated === 'function') return !!window.isCalibrated();
+      const core = window.SpectraCore && window.SpectraCore.calibration;
+      if (core && typeof core.getState === 'function') return isUsableCalibration(core.getState());
     } catch (_) {}
     try {
       const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
-      const cal = state && state.calibration ? state.calibration : null;
-      if (cal) {
-        if (cal.isCalibrated != null) return !!cal.isCalibrated;
-        if (cal.calibrated != null) return !!cal.calibrated;
-        if (Array.isArray(cal.coefficients)) return cal.coefficients.length > 0;
-      }
+      return isUsableCalibration(state && state.calibration);
     } catch (_) {}
     return false;
   }
+
 
   function installPromptCss() {
     if (document.getElementById('spCalibrationPromptStyle')) return;
@@ -339,14 +339,9 @@
   }
 
   function onCalibrationChanged(payload) {
-    let calibrated = null;
-    const data = payload && typeof payload === 'object' ? payload : null;
-    if (data) {
-      if (data.calibrated != null) calibrated = !!data.calibrated;
-      else if (data.isCalibrated != null) calibrated = !!data.isCalibrated;
-      else if (Array.isArray(data.coefficients)) calibrated = data.coefficients.length > 0;
-    }
-    if (calibrated == null) calibrated = isCalibratedNow();
+    const calibrated = payload && typeof payload === 'object'
+      ? isUsableCalibration(payload)
+      : isCalibratedNow();
 
     if (calibrated && !wasCalibrated) {
       wasCalibrated = true;
@@ -363,6 +358,7 @@
       axisPromptShown = false;
     }
   }
+
 
   function showInitialCalibrationQuestion() {
     if (loadPromptDismissed || isCalibratedNow()) return;
@@ -384,16 +380,6 @@
         sp.coreHooks.on('calibrationChanged', onCalibrationChanged);
       }
     } catch (_) {}
-
-    const fileInput = document.getElementById('my-file');
-    if (fileInput && !fileInput.__spectraPromptBound) {
-      fileInput.__spectraPromptBound = true;
-      fileInput.addEventListener('change', function () {
-        window.setTimeout(function () {
-          onCalibrationChanged({ calibrated: isCalibratedNow() });
-        }, 120);
-      });
-    }
 
     // The logo badge is created by uiPanels at DOM ready. Run once more after it.
     window.setTimeout(updateVersionBadge, 0);
