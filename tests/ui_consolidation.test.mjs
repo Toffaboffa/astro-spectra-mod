@@ -10,6 +10,8 @@ const mainStyles = fs.readFileSync(path.join(root, 'docs/frontend/styles/styles.
 const examples = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/exampleSpectrumUi.js'), 'utf8');
 const framePreview = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/framePreview.js'), 'utf8');
 const graphScript = fs.readFileSync(path.join(root, 'docs/frontend/scripts/graphScript.js'), 'utf8');
+const imageLoading = fs.readFileSync(path.join(root, 'docs/frontend/scripts/imageLoadingScript.js'), 'utf8');
+const spectrapro = fs.readFileSync(path.join(root, 'docs/frontend/pages/spectrapro.html'), 'utf8');
 const i18n = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/i18nUi.js'), 'utf8');
 const recording = fs.readFileSync(path.join(root, 'docs/frontend/pages/recording.html'), 'utf8');
 const solarIcon = fs.readFileSync(path.join(root, 'docs/frontend/assets/examples/icons/solar-spectrum.png'));
@@ -102,6 +104,12 @@ assert.ok(recording.includes('proBootstrap.js?v=3.0.1-astro-labels-1'), 'publish
 assert.ok(recording.includes('mod-panels.css?v=3.0.1-astro-labels-1'), 'published ASTRO control styles must use a fresh cache key');
 assert.ok(!fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/aiAnalysisUi.js'), 'utf8').includes('sp-ai-launch__badge'), 'AI Interpretation must not show a NEW badge');
 assert.ok(graphScript.includes('&& !numericFrame'), 'static numeric spectra must stop the live camera animation loop');
+assert.ok(imageLoading.includes('resetBundledExampleStateForCamera()'), 'loading an external image must leave bundled-example calibration and preview state');
+assert.ok(imageLoading.includes('runtime.setVideoElement(imageElement)'), 'external images must switch source through the runtime bridge so numeric frames are cleared');
+assert.ok(imageLoading.includes('runtime.refreshActiveSourceMetrics()'), 'external image dimensions must refresh after decode');
+assert.ok(imageLoading.includes("if (typeof syncCanvasToVideo === 'function') syncCanvasToVideo();"), 'external images must resync the source overlay geometry');
+assert.ok(!imageLoading.includes("videoElement = document.getElementById('cameraImage')"), 'external images must not bypass the runtime source transition with the legacy direct assignment');
+assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.0.8-external-image-1'), 'published external-image loader must use a fresh cache key');
 assert.ok(!graphScript.includes("resizeCanvasToDisplaySize(graphCtx, graphCanvas, 'Normal');\n      if (typeof window.drawGraph === 'function') window.drawGraph();"), 'numeric spectrum loading must not redraw and emit the same frame twice');
 for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Advanced: reference spectrum comparison', 'Continuum diagnostics']) {
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
