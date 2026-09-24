@@ -200,8 +200,8 @@ function ensureHost() {
       '<details id="spGraphOverlaysMenu" class="sp-graph-overlays">',
       '  <summary title="Open diffraction and calibration-overlay controls.">Overlays</summary>',
       '  <div class="sp-graph-overlays__panel">',
-      '    <label class="sp-graph-tool sp-graph-tool--check" title="Show or hide possible higher-order diffraction markers."><input id="spToggleDiffractionOverlay" type="checkbox"><span>Diffraction</span></label>',
-      '    <label class="sp-graph-tool sp-graph-tool--check" title="Shade wavelengths outside the calibration-anchor interval."><input id="spToggleCalibrationExtrapolation" type="checkbox"><span>Extrapolation</span></label>',
+      '    <label class="sp-graph-tool sp-graph-tool--check" title="Show or hide possible higher-order diffraction markers."><span>Diffraction</span><input id="spToggleDiffractionOverlay" type="checkbox"></label>',
+      '    <label class="sp-graph-tool sp-graph-tool--check" title="Shade wavelengths outside the calibration-anchor interval."><span>Extrapolation</span><input id="spToggleCalibrationExtrapolation" type="checkbox"></label>',
       '    <label class="sp-graph-tool sp-graph-tool--range" title="Set the tint strength for extrapolated calibration regions."><span>Shade <b id="spCalibrationShadeOpacityValue">12%</b></span><input id="spCalibrationShadeOpacity" type="range" min="0.02" max="0.50" step="0.01" value="0.12"></label>',
       '  </div>',
       '</details>',
@@ -246,7 +246,7 @@ function ensureHost() {
         },
         loadedAt: Date.now(),
         scaffold: false,
-        version: '3.1.4'
+        version: '3.1.5'
       };
     } else {
       const mods = v15.registry.modules || (v15.registry.modules = {});
@@ -255,7 +255,7 @@ function ensureHost() {
       });
       v15.registry.loadedAt = v15.registry.loadedAt || Date.now();
       v15.registry.scaffold = false;
-      v15.registry.version = '3.1.4';
+      v15.registry.version = '3.1.5';
     }
     return v15.registry;
   }
@@ -759,28 +759,33 @@ if (!document.getElementById('spSubtractionControls')) {
         : ['INHERIT','OFF','SYNTHETIC','SOURCE']).map(function (m) { return `<option value="${String(m).toLowerCase()}">${m}</option>`; }).join('');
 
       card.innerHTML = [
-        '<div class="sp-form-grid sp-form-grid--core-8">',
-        '  <label id="spFieldAppMode" class="sp-field sp-field--app-mode" title="Choose the active analysis workspace. LAB and ASTRO enable analysis-specific behavior.">App mode<select id="spAppMode" class="spctl-select spctl-select--app-mode"><option value="CORE">CORE</option><option value="LAB">LAB</option><option value="ASTRO">ASTRO</option></select></label>',
-        '  <label id="spFieldWorkerMode" class="sp-field sp-field--worker-mode" title="Control whether the analysis worker is used automatically, forced on, or forced off.">Worker<select id="spWorkerMode" class="spctl-select spctl-select--worker-mode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>',
-        '  <div id="spFieldCorePlaceholder" class="sp-field sp-field--placeholder" aria-hidden="true"></div>',
-        '  <label id="spYAxisMaxWrap" class="sp-field sp-field--y-axis-max" title="Manual upper limit for the Y-axis when manual scaling is active.">Y max<input id="spYAxisMax" class="spctl-input spctl-input--y-axis-max" type="number" min="1" max="4096" step="1" value="255"></label>',
-        '  <label id="spFieldFillMode" class="sp-field sp-field--fill-mode" title="Control how the graph fill is rendered.">Fill mode<select id="spFillMode" class="spctl-select spctl-select--fill-mode">' + fillModeOptions + '</select></label>',
-        '  <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity" title="Set the graph fill opacity.">Fill opacity<input id="spFillOpacity" class="spctl-input spctl-range" type="range" min="0" max="1" step="0.05" value="0.7"></label>',
-        '  <div id="spFieldCombinedStack" class="sp-field sp-field--stackgroup" title="Show or hide the combined and per-channel traces.">',
-        '    <div id="spFieldCombined" class="sp-mini-row sp-mini-row--check" title="Show or hide the combined signal trace."><span>Combined</span><input id="spToggleCombinedProxy" type="checkbox"></div>',
-        '    <div id="spFieldRgbStack" class="sp-field--rgb-stack" title="Show or hide the per-channel traces.">',
-        '      <div class="sp-mini-row sp-mini-row--check"><span>Red</span><input id="spToggleRProxy" type="checkbox"></div>',
-        '      <div class="sp-mini-row sp-mini-row--check"><span>Green</span><input id="spToggleGProxy" type="checkbox"></div>',
-        '      <div class="sp-mini-row sp-mini-row--check"><span>Blue</span><input id="spToggleBProxy" type="checkbox"></div>',
+        '<div class="sp-core-settings">',
+        '  <div class="sp-core-settings-row sp-core-settings-row--display">',
+        '    <label id="spFieldAppMode" class="sp-field sp-field--app-mode" title="Choose the active analysis workspace. LAB and ASTRO enable analysis-specific behavior.">App mode<select id="spAppMode" class="spctl-select spctl-select--app-mode"><option value="CORE">CORE</option><option value="LAB">LAB</option><option value="ASTRO">ASTRO</option></select></label>',
+        '    <label id="spFieldWorkerMode" class="sp-field sp-field--worker-mode" title="Control whether the analysis worker is used automatically, forced on, or forced off.">Worker<select id="spWorkerMode" class="spctl-select spctl-select--worker-mode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>',
+        '    <label id="spYAxisMaxWrap" class="sp-field sp-field--y-axis-max" title="Manual upper limit for the Y-axis when manual scaling is active.">Y max<input id="spYAxisMax" class="spctl-input spctl-input--y-axis-max" type="number" min="1" max="4096" step="1" value="255"></label>',
+        '    <label id="spFieldFillMode" class="sp-field sp-field--fill-mode" title="Control how the graph fill is rendered.">Fill mode<select id="spFillMode" class="spctl-select spctl-select--fill-mode">' + fillModeOptions + '</select></label>',
+        '    <label id="spFieldFillOpacity" class="sp-field sp-field--fill-opacity" title="Set the graph fill opacity.">Fill opacity<input id="spFillOpacity" class="spctl-input spctl-range" type="range" min="0" max="1" step="0.05" value="0.7"></label>',
+        '    <div class="sp-core-traces" aria-label="Graph traces">',
+        '      <div id="spFieldCombinedStack" class="sp-field sp-field--stackgroup" title="Show or hide the combined and per-channel traces.">',
+        '        <div id="spFieldCombined" class="sp-mini-row sp-mini-row--check" title="Show or hide the combined signal trace."><span>Combined</span><input id="spToggleCombinedProxy" type="checkbox"></div>',
+        '        <div id="spFieldRgbStack" class="sp-field--rgb-stack" title="Show or hide the per-channel traces.">',
+        '          <div class="sp-mini-row sp-mini-row--check"><span>Red</span><input id="spToggleRProxy" type="checkbox"></div>',
+        '          <div class="sp-mini-row sp-mini-row--check"><span>Green</span><input id="spToggleGProxy" type="checkbox"></div>',
+        '          <div class="sp-mini-row sp-mini-row--check"><span>Blue</span><input id="spToggleBProxy" type="checkbox"></div>',
+        '        </div>',
+        '      </div>',
+        '      <div id="spFieldSubGraphs" class="sp-field sp-field--stackgroup" title="Show or hide the stored subtraction traces.">',
+        '        <div class="sp-mini-row sp-mini-row--check"><span>Dark graph</span><input id="spToggleDarkProxy" type="checkbox" disabled></div>',
+        '        <div class="sp-mini-row sp-mini-row--check"><span>Reference graph</span><input id="spToggleRefProxy" type="checkbox" disabled></div>',
+        '      </div>',
         '    </div>',
         '  </div>',
-        '  <div id="spFieldSubGraphs" class="sp-field sp-field--stackgroup" title="Show or hide the stored subtraction traces.">',
-        '    <div class="sp-mini-row sp-mini-row--check"><span>Dark graph</span><input id="spToggleDarkProxy" type="checkbox" disabled></div>',
-        '    <div class="sp-mini-row sp-mini-row--check"><span>Reference graph</span><input id="spToggleRefProxy" type="checkbox" disabled></div>',
+        '  <div class="sp-core-settings-row sp-core-settings-row--peaks">',
+        '    <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold" title="Minimum intensity used by the built-in nm peak detector.">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
+        '    <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance" title="Minimum separation between detected nm peaks.">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
+        '    <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing" title="Simple smoothing amount used before peak detection.">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
         '  </div>',
-        '  <label id="spFieldPeakThreshold" class="sp-field sp-field--peak-threshold" title="Minimum intensity used by the built-in nm peak detector.">Peak threshold<input id="spPeakThreshold" class="spctl-input spctl-input--peak-threshold" type="number" min="0" max="255" step="1" value="1"></label>',
-        '  <label id="spFieldPeakDistance" class="sp-field sp-field--peak-distance" title="Minimum separation between detected nm peaks.">Peak distance<input id="spPeakDistance" class="spctl-input spctl-input--peak-distance" type="number" min="1" max="512" step="1" value="1"></label>',
-        '  <label id="spFieldPeakSmoothing" class="sp-field sp-field--peak-smoothing" title="Simple smoothing amount used before peak detection.">Peak smoothing<input id="spPeakSmoothing" class="spctl-input spctl-input--peak-smoothing" type="number" min="0" max="8" step="1" value="0"></label>',
         '</div>',
         '<div class="sp-core-bottom-split">',
         '  <div id="spCoreZoomBox" class="sp-card-sub sp-card-sub--zoom sp-core-bottom-card">',
