@@ -1780,7 +1780,7 @@ label[for="peakSizeLower"],
 #SpectraProDockHost .sp-graph-tools{
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:8px;
   margin-left:auto;
   padding-left:14px;
   min-width:0;
@@ -1811,13 +1811,57 @@ label[for="peakSizeLower"],
 }
 #SpectraProDockHost #spGraphXAxisMode{width:60px;}
 #SpectraProDockHost #spGraphYAxisMode{width:104px;}
-#SpectraProDockHost #spGraphFillMode{width:98px;}
-#SpectraProDockHost .sp-graph-tool--analyze{
-  padding-left:2px;
-  color:#dff7ef;
+#SpectraProDockHost .sp-graph-overlays{
+  position:relative;
+  margin:0;
+  padding:0;
 }
-#SpectraProDockHost .sp-graph-tool--analyze input:disabled + span{
-  opacity:.48;
+#SpectraProDockHost .sp-graph-overlays > summary{
+  list-style:none;
+  height:22px;
+  display:inline-flex;
+  align-items:center;
+  padding:0 8px;
+  border:1px solid #365675;
+  border-radius:5px;
+  background:#0d1a2b;
+  color:#dcecff;
+  cursor:pointer;
+  user-select:none;
+  white-space:nowrap;
+}
+#SpectraProDockHost .sp-graph-overlays > summary::-webkit-details-marker{display:none;}
+#SpectraProDockHost .sp-graph-overlays > summary::after{
+  content:'▾';
+  margin-left:5px;
+  font-size:9px;
+  opacity:.75;
+}
+#SpectraProDockHost .sp-graph-overlays[open] > summary{
+  border-color:#4d789e;
+  background:#14263d;
+}
+#SpectraProDockHost .sp-graph-overlays__panel{
+  position:absolute;
+  z-index:40;
+  top:27px;
+  right:0;
+  min-width:190px;
+  display:grid;
+  gap:8px;
+  padding:9px 10px;
+  border:1px solid #365675;
+  border-radius:7px;
+  background:#0a1627;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);
+}
+#SpectraProDockHost .sp-graph-overlays__panel .sp-graph-tool{
+  justify-content:space-between;
+}
+#SpectraProDockHost .sp-graph-overlays__panel .sp-graph-tool--range{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  align-items:center;
 }
 #SpectraProDockHost .sp-graph-tool--range b{
   min-width:28px;
