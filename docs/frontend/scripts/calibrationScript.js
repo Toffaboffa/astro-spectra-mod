@@ -315,6 +315,73 @@ function getCalibrationStateSnapshot() {
     };
 }
 
+function calibrationPointSetsEqual(a, b) {
+    const left = Array.isArray(a) ? a : [];
+    const right = Array.isArray(b) ? b : [];
+    if (left.length !== right.length) return false;
+    for (let i = 0; i < left.length; i++) {
+        if (Number(left[i] && left[i].px) !== Number(right[i] && right[i].px) ||
+            Number(left[i] && left[i].nm) !== Number(right[i] && right[i].nm)) return false;
+    }
+    return true;
+}
+
+function commitCalibrationStateToSpectraPro(snapshot, source) {
+    const sp = window.SpectraPro || (window.SpectraPro = {});
+    const points = Array.isArray(snapshot && snapshot.points)
+        ? snapshot.points.map(point => ({ px: Number(point.px), nm: Number(point.nm) }))
+        : [];
+    const coefficients = Array.isArray(snapshot && snapshot.coefficients)
+        ? snapshot.coefficients.map(Number).filter(Number.isFinite)
+        : [];
+    const calibrated = !!(snapshot && snapshot.calibrated && points.length >= minInputBoxNumber && coefficients.length >= 2);
+    const canonical = {
+        isCalibrated: calibrated,
+        calibrated,
+        coefficients,
+        points,
+        residualStatus: snapshot && snapshot.residualStatus ? snapshot.residualStatus : (calibrated ? 'available' : 'uncalibrated'),
+        pointCount: points.length,
+        shellPointCount: points.length,
+        shellEnabledCount: points.length,
+        origin: String(snapshot && snapshot.origin || (calibrated ? 'user' : 'none')),
+        sampleId: String(snapshot && snapshot.sampleId || ''),
+        timestamp: snapshot && snapshot.timestamp ? snapshot.timestamp : Date.now()
+    };
+
+    sp.coreBridge = sp.coreBridge || {};
+    sp.coreBridge.calibration = canonical;
+
+    // Critical state is committed synchronously. coreHooks is notification only.
+    try {
+        if (sp.store && typeof sp.store.update === 'function') {
+            sp.store.update('calibration', canonical, { source: 'calibrationScript.' + String(source || 'commit') });
+        }
+    } catch (_) {}
+
+    try {
+        let manager = sp.calibrationPointManager || null;
+        const managerModule = sp.v15 && sp.v15.calibrationPointManager;
+        if (!manager && managerModule && typeof managerModule.create === 'function') {
+            manager = managerModule.create();
+            sp.calibrationPointManager = manager;
+        }
+        if (manager && typeof manager.getPoints === 'function' && typeof manager.setPoints === 'function') {
+            const current = manager.getPoints();
+            if (!calibrationPointSetsEqual(current, points)) manager.setPoints(points);
+        }
+    } catch (_) {}
+
+    try {
+        const shell = sp.calibrationShellUI;
+        if (shell && typeof shell.renderShellPointsTable === 'function') shell.renderShellPointsTable();
+        if (shell && typeof shell.updateShellCountsAndValidation === 'function') shell.updateShellCountsAndValidation();
+        if (shell && typeof shell.renderMiniGraph === 'function') shell.renderMiniGraph();
+    } catch (_) {}
+
+    return canonical;
+}
+
 function publishCalibrationState(meta) {
     const options = meta && typeof meta === 'object' ? meta : {};
     if (Object.prototype.hasOwnProperty.call(options, 'origin')) {
@@ -328,12 +395,12 @@ function publishCalibrationState(meta) {
         calibrationSampleId = '';
     }
 
-    const data = getCalibrationStateSnapshot();
+    const snapshot = getCalibrationStateSnapshot();
+    const data = commitCalibrationStateToSpectraPro(snapshot, options.source || 'publish');
     if (options.source) data.source = String(options.source);
+
     try {
         const sp = window.SpectraPro || (window.SpectraPro = {});
-        sp.coreBridge = sp.coreBridge || {};
-        sp.coreBridge.calibration = data;
         if (sp.coreHooks && typeof sp.coreHooks.emit === 'function') {
             sp.coreHooks.emit('calibrationChanged', data);
         }

@@ -29,6 +29,7 @@ for (const relative of releaseSources) {
 }
 const spectraproPage = read('docs/frontend/pages/spectrapro.html');
 assert.ok(spectraproPage.includes('?v=3.0.9'), 'canonical application page must publish 3.0.9 cache keys');
+assert.ok(spectraproPage.includes('calibrationScript.js?v=3.0.9-calibration-2'), 'canonical calibration engine must use the post-3.0.9 calibration cache key');
 assert.ok(!spectraproPage.includes('phase1-bridge'), 'duplicate calibration bridge must not return');
 
 const lateUiVersionSources = [
@@ -41,6 +42,11 @@ for (const relative of lateUiVersionSources) {
   assert.ok(source.includes('3.0.9'), relative + ' must carry the v3.0.9 app version');
   assert.ok(!source.includes('3.0.8'), relative + ' must not downgrade the runtime app version to v3.0.8');
 }
+const calibrationEngine = read('docs/frontend/scripts/calibrationScript.js');
+assert.ok(calibrationEngine.includes('commitCalibrationStateToSpectraPro'), 'calibration engine must directly commit canonical PRO state');
+assert.ok(calibrationEngine.includes("sp.store.update('calibration', canonical"), 'calibration engine must not depend on an event listener to populate PRO store');
+assert.ok(calibrationEngine.includes('sp.calibrationPointManager = manager'), 'calibration engine must synchronize CALIBRATE points directly');
+
 const uiTweaks = read('docs/frontend/scripts/mod/uiTweaksV203.js');
 assert.ok(uiTweaks.includes("const VERSION = 'v3.0.9';"), 'late UI tweaks must publish the v3.0.9 badge');
 assert.ok(uiTweaks.includes('badge.textContent = VERSION;'), 'version badge write must remain tied to the release version');

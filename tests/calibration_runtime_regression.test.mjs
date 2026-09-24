@@ -82,6 +82,8 @@ const context = {
     },
     querySelector(){ return null; },
     activeElement: { blur(){} },
+    head: { appendChild(){}, removeChild(){} },
+    documentElement: { appendChild(){}, removeChild(){} },
     body: { appendChild(){}, removeChild(){} }
   },
   updateTextContent(){},
@@ -94,17 +96,25 @@ const context = {
   FileReader: class {
     readAsText(file){ if (typeof this.onload === 'function') this.onload({ target: { result: String(file && file.text || '') } }); }
   },
-  SpectraPro: {
-    coreBridge: {},
-    coreHooks: { emit(name,payload){ events.push({name,payload}); } }
-  }
+  SpectraPro: {}
+};
+context.Event = class Event {
+  constructor(type, options){ this.type = type; this.bubbles = !!(options && options.bubbles); }
 };
 context.window = context;
 context.self = context;
 vm.createContext(context);
 
+vm.runInContext(read('docs/frontend/scripts/mod/coreHooks.js'), context, { filename: 'coreHooks.js' });
+context.SpectraPro.coreHooks.on('calibrationChanged', function(payload){ events.push({ name: 'calibrationChanged', payload }); });
 vm.runInContext(read('docs/frontend/scripts/polynomialRegressionScript.js'), context, { filename: 'polynomialRegressionScript.js' });
+
+// Match the real page order: the calibration engine loads before PRO store/modules.
 vm.runInContext(read('docs/frontend/scripts/calibrationScript.js'), context, { filename: 'calibrationScript.js' });
+vm.runInContext(read('docs/frontend/scripts/mod/eventBus.js'), context, { filename: 'eventBus.js' });
+vm.runInContext(read('docs/frontend/scripts/mod/stateStore.js'), context, { filename: 'stateStore.js' });
+vm.runInContext(read('docs/frontend/scripts/mod/calibrationPointManager.js'), context, { filename: 'calibrationPointManager.js' });
+vm.runInContext(read('docs/frontend/scripts/mod/spectrumFrameAdapter.js'), context, { filename: 'spectrumFrameAdapter.js' });
 
 assert.ok(context.SpectraCore && context.SpectraCore.calibration, 'canonical calibration API must be exposed');
 assert.equal(typeof context.SpectraCore.calibration.applyPoints, 'function');
@@ -120,6 +130,23 @@ assert.equal(state.pointCount, 3);
 assert.deepEqual(Array.from(state.points, (p) => [p.px,p.nm]), [[32,388.86],[515,587.57],[1110,837.76]]);
 assert.ok(state.coefficients.length >= 2, 'file import must expose fit coefficients');
 assert.ok(events.some((evt) => evt.name === 'calibrationChanged' && evt.payload && evt.payload.pointCount === 3), 'file import must publish calibrationChanged');
+
+const storeCalibration = context.SpectraPro.store.getState().calibration;
+assert.equal(storeCalibration.calibrated, true, 'file import must synchronously commit calibration into the PRO store');
+assert.equal(storeCalibration.pointCount, 3, 'PRO store must receive all imported calibration points');
+assert.deepEqual(Array.from(storeCalibration.points, (p) => [p.px,p.nm]), [[32,388.86],[515,587.57],[1110,837.76]]);
+
+assert.ok(context.SpectraPro.calibrationPointManager, 'file import must create/synchronize the CALIBRATE point manager without proBootstrap');
+const shellPoints = context.SpectraPro.calibrationPointManager.getPoints();
+assert.equal(shellPoints.length, 3, 'CALIBRATE manager must receive imported points directly');
+assert.deepEqual(Array.from(shellPoints, (p) => [p.px,p.nm]), [[32,388.86],[515,587.57],[1110,837.76]]);
+
+const adapted = context.SpectraPro.spectrumFrameAdapter.adapt(
+  { px:[0,1,2,3], I:[10,20,30,40], source:'image' },
+  context.SpectraPro.store.getState().calibration
+);
+assert.equal(adapted.calibrated, true, 'Analyze frame adapter must see the committed calibration');
+assert.ok(Array.isArray(adapted.nm) && adapted.nm.length === 4, 'Analyze frame adapter must build a wavelength axis from the committed calibration');
 
 failRedraw = true;
 const redrawSafe = context.SpectraCore.calibration.applyPoints(
@@ -143,6 +170,8 @@ assert.equal(reset.calibrated, false);
 assert.equal(reset.pointCount, 0);
 assert.equal(reset.origin, 'none');
 assert.equal(reset.sampleId, '');
+assert.equal(context.SpectraPro.store.getState().calibration.calibrated, false, 'canonical reset must synchronously clear PRO store calibration');
+assert.equal(context.SpectraPro.calibrationPointManager.getPoints().length, 0, 'canonical reset must synchronously clear CALIBRATE points');
 
 const manual = context.SpectraCore.calibration.applyPoints(
   [{px:0,nm:400},{px:640,nm:600},{px:1279,nm:800}],
