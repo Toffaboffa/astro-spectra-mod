@@ -291,10 +291,57 @@ async function playVideo(){
     }
 }
 
+function resetBundledExampleStateForCamera() {
+    const sourceWindow = document.getElementById('videoMainWindow');
+    const exampleId = sourceWindow && sourceWindow.dataset
+        ? String(sourceWindow.dataset.spectraExampleId || '')
+        : '';
+    if (!exampleId) return false;
+
+    try {
+        if (typeof resetCalibrationPoints === 'function') resetCalibrationPoints();
+        if (window.SpectraCore && window.SpectraCore.calibration &&
+            typeof window.SpectraCore.calibration.emitCalibrationState === 'function') {
+            window.SpectraCore.calibration.emitCalibrationState();
+        }
+    } catch (_) {}
+
+    try {
+        const px = document.getElementById('toggleXLabelsPx');
+        const nm = document.getElementById('toggleXLabelsNm');
+        if (px) px.checked = true;
+        if (nm) nm.checked = false;
+        if (px) px.dispatchEvent(new Event('change', { bubbles: true }));
+        const proxy = document.getElementById('spXAxisMode');
+        if (proxy) proxy.value = 'px';
+    } catch (_) {}
+
+    try {
+        if (sourceWindow) sourceWindow.classList.remove('sp-numeric-source');
+        if (sourceWindow && sourceWindow.dataset) delete sourceWindow.dataset.spectraExampleId;
+        const preview = document.getElementById('spFramePreviewCanvas');
+        if (preview) preview.style.display = 'none';
+        const sp = window.SpectraPro || {};
+        if (sp.exampleSpectrumUi && typeof sp.exampleSpectrumUi.clearActiveMarker === 'function') {
+            sp.exampleSpectrumUi.clearActiveMarker();
+        }
+    } catch (_) {}
+
+    try {
+        const sp = window.SpectraPro || {};
+        if (sp.store && typeof sp.store.update === 'function') {
+            sp.store.update('display.xAxisMode', 'px', { source: 'camera.returnFromExample' });
+        }
+    } catch (_) {}
+
+    return true;
+}
+
 /**
  * Changes the videoElement from img to video, so the camera can be used
  */
 function getBackToCameraStream(){
+    const returnedFromBundledExample = resetBundledExampleStateForCamera();
     try {
         if (window.SpectraCore && window.SpectraCore.graph && typeof window.SpectraCore.graph.clearNumericFrame === 'function') {
             window.SpectraCore.graph.clearNumericFrame({ redraw: false });
@@ -307,6 +354,12 @@ function getBackToCameraStream(){
     document.getElementById("playVideoButton").style.visibility = "hidden";
     resetCamera();
     syncCanvasToVideo();
+    if (returnedFromBundledExample) {
+        try {
+            needToRecalculateMaxima = true;
+            if (typeof redrawGraphIfLoadedImage === 'function') redrawGraphIfLoadedImage(true);
+        } catch (_) {}
+    }
 }
 
 /**

@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '3.0.7';
+  const AI_ASSET_VERSION = '3.0.8';
 
   const defaultPresetCatalog = {
     groups: [

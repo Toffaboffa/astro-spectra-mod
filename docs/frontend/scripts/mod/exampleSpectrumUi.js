@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '3.0.7';
+  const VERSION = '3.0.8';
   const BUTTON_ID = 'spLoadExampleBtn';
   const OVERLAY_ID = 'spExampleChooserOverlay';
   const STYLE_ID = 'spExampleChooserStyle';
@@ -657,6 +657,32 @@
     } catch (_) {}
   }
 
+  function markExampleActive(sample) {
+    try {
+      const sourceWindow = $('videoMainWindow');
+      if (!sourceWindow || !sourceWindow.dataset) return;
+      sourceWindow.dataset.spectraExampleId = String(sample && sample.id || '');
+    } catch (_) {}
+  }
+
+  function clearExampleActiveMarker() {
+    try {
+      const sourceWindow = $('videoMainWindow');
+      if (sourceWindow && sourceWindow.dataset) delete sourceWindow.dataset.spectraExampleId;
+    } catch (_) {}
+  }
+
+  function getActiveExampleId() {
+    try {
+      const sourceWindow = $('videoMainWindow');
+      return sourceWindow && sourceWindow.dataset
+        ? String(sourceWindow.dataset.spectraExampleId || '')
+        : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
   function enableLabAnalysis(sample) {
     try {
       const labTab = global.document && global.document.querySelector('#spTabs .sp-tab[data-tab="lab"]');
@@ -737,6 +763,7 @@
       stripeYpx: Number(asset.capture && asset.capture.stripeYpx),
       stripeWidthPx: Number(asset.capture && asset.capture.stripeWidthPx)
     });
+    markExampleActive(sample);
     global.setTimeout(function () {
       try { if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage(true); } catch (_) {}
       try { if (typeof global.showSelectedStripe === 'function') global.showSelectedStripe(); } catch (_) {}
@@ -775,6 +802,7 @@
       log('Example image loaded, but calibration could not be applied: ' + calibration.reason);
     }
 
+    markExampleActive(sample);
     try {
       if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage(true);
       else if (typeof global.drawGraph === 'function') global.drawGraph();
@@ -865,6 +893,7 @@
       stripeYpx: 360,
       stripeWidthPx: 1
     });
+    markExampleActive(sample);
     global.setTimeout(function () {
       try { if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage(true); } catch (_) {}
       try { if (typeof global.showSelectedStripe === 'function') global.showSelectedStripe(); } catch (_) {}
@@ -973,6 +1002,9 @@
       return true;
     },
     getSelectedId: function () { return selectedExampleId; },
+    getActiveId: getActiveExampleId,
+    isActive: function () { return !!getActiveExampleId(); },
+    clearActiveMarker: clearExampleActiveMarker,
     getCatalog: function () { return EXAMPLES.map(function (item) { return item.id; }); },
     getConfig: function (id) {
       const sample = getExample(id || selectedExampleId || EXAMPLES[0].id);
