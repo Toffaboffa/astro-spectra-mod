@@ -97,6 +97,64 @@ input.darker-slider::-ms-track { background: #32455f; }
   cursor:crosshair;
 }
 #cameraSelect { text-align:center; }
+
+#cameraImageSourceControlButtons{
+  --sp-source-primary-bg:#244a78;
+  --sp-source-primary-border:#4f7fb7;
+  --sp-source-primary-hover:#2d5f9c;
+  --sp-source-secondary-bg:#173d47;
+  --sp-source-secondary-border:#2d6f7a;
+  --sp-source-secondary-hover:#20515d;
+}
+#cameraPrimaryControlRow .btn,
+#cameraSecondaryControlRow .btn{
+  height:30px !important;
+  min-height:30px !important;
+  padding-top:0 !important;
+  padding-bottom:0 !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1 !important;
+  border-radius:8px;
+  font-weight:600;
+}
+#cameraPrimaryControlRow .btn{
+  background:var(--sp-source-primary-bg) !important;
+  border-color:var(--sp-source-primary-border) !important;
+  color:#f2f7ff !important;
+}
+#cameraPrimaryControlRow .btn:hover,
+#cameraPrimaryControlRow .btn:focus-visible{
+  background:var(--sp-source-primary-hover) !important;
+  border-color:#6d9ed4 !important;
+}
+#cameraPrimaryControlRow .btn[aria-pressed="true"]{
+  box-shadow:inset 0 0 0 1px rgba(185,213,255,.34),0 0 0 1px rgba(79,127,183,.22);
+}
+#cameraPrimaryControlRow #autoPauseButton[aria-pressed="true"]{
+  border-color:#68f0bf !important;
+  box-shadow:inset 0 0 0 1px rgba(104,240,191,.34),0 0 0 1px rgba(104,240,191,.16);
+}
+#cameraSecondaryControlRow .btn{
+  background:var(--sp-source-secondary-bg) !important;
+  border-color:var(--sp-source-secondary-border) !important;
+  color:#eaf7fa !important;
+}
+#cameraSecondaryControlRow .btn:hover,
+#cameraSecondaryControlRow .btn:focus-visible{
+  background:var(--sp-source-secondary-hover) !important;
+  border-color:#438a95 !important;
+}
+#cameraPrimaryControlRow .btn:disabled,
+#cameraSecondaryControlRow .btn:disabled{
+  opacity:.52;
+  cursor:not-allowed;
+}
+#cameraSecondaryControlRow > div{
+  height:30px !important;
+  min-height:30px !important;
+}
 #miscMeasuringSettings {
   flex-grow:1; overflow-y:auto; min-height:0; margin:.5rem 0; padding:.5rem;
   background: rgba(255,255,255,.02); border-radius:8px;
