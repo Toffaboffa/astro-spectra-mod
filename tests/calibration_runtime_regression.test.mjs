@@ -50,7 +50,7 @@ class FakeElement {
   removeChild(child){ const i=this.children.indexOf(child); if(i>=0)this.children.splice(i,1); child.parentNode=null; return child; }
   get lastElementChild(){ return this.children.length ? this.children[this.children.length-1] : null; }
   querySelectorAll(selector){
-    if (selector === 'input[type="number"]') return this.children.filter((child) => child.tagName === 'INPUT' && child.type === 'number');
+    if (String(selector).startsWith('input[type=')) return this.children.filter((child) => child.tagName === 'INPUT' && child.type === 'number');
     return [];
   }
   addEventListener(name, handler){ (this.listeners[name] ||= []).push(handler); }
@@ -85,6 +85,11 @@ const context = {
   document: {
     getElementById(id){ return elements.get(id) || null; },
     createElement(tag){ return new FakeElement(tag); },
+    querySelectorAll(selector){
+      if (selector === '.input-pair') return (elements.get('input-container')?.children || []).filter((child) => child.classList.contains('input-pair'));
+      return [];
+    },
+    querySelector(){ return null; },
     activeElement: { blur(){} },
     body: { appendChild(){}, removeChild(){} }
   },
