@@ -31,6 +31,20 @@ const spectraproPage = read('docs/frontend/pages/spectrapro.html');
 assert.ok(spectraproPage.includes('?v=3.0.9'), 'canonical application page must publish 3.0.9 cache keys');
 assert.ok(!spectraproPage.includes('phase1-bridge'), 'duplicate calibration bridge must not return');
 
+const lateUiVersionSources = [
+  'docs/frontend/scripts/mod/uiTweaksV203.js',
+  'docs/frontend/scripts/mod/exportUi.js',
+  'docs/frontend/scripts/mod/i18nUi.js'
+];
+for (const relative of lateUiVersionSources) {
+  const source = read(relative);
+  assert.ok(source.includes('3.0.9'), relative + ' must carry the v3.0.9 app version');
+  assert.ok(!source.includes('3.0.8'), relative + ' must not downgrade the runtime app version to v3.0.8');
+}
+const uiTweaks = read('docs/frontend/scripts/mod/uiTweaksV203.js');
+assert.ok(uiTweaks.includes("const VERSION = 'v3.0.9';"), 'late UI tweaks must publish the v3.0.9 badge');
+assert.ok(uiTweaks.includes('badge.textContent = VERSION;'), 'version badge write must remain tied to the release version');
+
 const aiWorker = read('backend/ai-worker/src/index.js');
 assert.ok(aiWorker.includes("appVersion: '3.0.9'"), 'AI Worker responses must expose application release 3.0.9');
 assert.ok(!aiWorker.includes('stage: 6'), 'AI Worker responses must not expose a temporary roadmap-stage label');
