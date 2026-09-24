@@ -319,6 +319,7 @@ async function resetCamera() {
     const started = await startStream(cameraUsed);
     if (started && liveVideo) {
         try { await liveVideo.play(); } catch (_) {}
+        window.videoPaused = false;
     }
     setCameraPlaybackUi(!!started);
     return !!started;
@@ -408,6 +409,7 @@ async function pauseVideo(options = {}) {
     }
     if (!options.autoPause && autoPauseArmed) disarmAutoPause('Disarmed by manual pause.');
     try { liveVideo.pause(); } catch (_) {}
+    window.videoPaused = true;
     setCameraPlaybackUi(false);
     return true;
 }
@@ -446,6 +448,7 @@ async function goLiveCamera(options = {}) {
 
     try {
         await liveVideo.play();
+        window.videoPaused = false;
         setCameraPlaybackUi(true);
         return true;
     } catch (_) {
