@@ -21,7 +21,7 @@
   <script src="../scripts/languageScript.js"></script>
   <script src="../scripts/dataSavingScript.js"></script>
   <script src="../scripts/referenceGraphScript.js"></script>
-  <script src="../scripts/imageLoadingScript.js?v=3.0.9"></script>
+  <script src="../scripts/imageLoadingScript.js?v=3.0.9-auto-pause-1"></script>
 
 </head>
 <body>
@@ -75,52 +75,71 @@
           </div>
 
           <div id="cameraImageSourceControlButtons"
-               class="d-flex flex-row flex-wrap justify-content-center gap-1">
+               class="d-flex flex-column align-items-center gap-1 px-1">
 
-            <button class="btn btn-sm btn-secondary p-1" onclick="getCameras()" data-translate="refresh-button" data-translate-title="refresh-button-tooltip">Refresh</button>
+            <div id="cameraPrimaryControlRow"
+                 class="d-flex flex-row flex-wrap justify-content-center gap-1 w-100">
+              <button id="liveVideoButton"
+                      type="button"
+                      class="btn btn-sm btn-secondary p-1"
+                      onclick="goLiveCamera()"
+                      title="Return to the selected camera and start the live feed.">Live</button>
 
-            <div style="position: relative; width: 80px; height: 30px;">
               <button id="pauseVideoButton"
-                      class="btn btn-sm btn-secondary position-absolute top-0 start-0 w-100 h-100 p-1"
+                      type="button"
+                      class="btn btn-sm btn-secondary p-1"
                       onclick="pauseVideo()"
                       data-translate="pause-button"
                       data-translate-title="pause-button-tooltip">Pause</button>
 
-              <button id="playVideoButton"
-                      class="btn btn-sm btn-secondary position-absolute top-0 start-0 w-100 h-100 p-1"
-                      style="visibility: hidden;"
-                      onclick="playVideo()"
-                      data-translate="play-button"
-                      data-translate-title="play-button-tooltip">Play</button>
+              <button id="autoPauseButton"
+                      type="button"
+                      class="btn btn-sm btn-secondary p-1"
+                      onclick="toggleAutoPause()"
+                      aria-pressed="false"
+                      title="Arm one-shot auto pause near peak intensity 240, before clipping.">Auto Pause</button>
+
+              <button class="btn btn-sm btn-secondary p-1"
+                      onclick="getCameras()"
+                      data-translate="refresh-button"
+                      data-translate-title="refresh-button-tooltip">Refresh</button>
             </div>
 
-            <button class="btn btn-sm btn-secondary p-1"
-                    onclick="loadImageIntoCamera()"
-                    data-translate="load-image"
-                    data-translate-title="load-image-tooltip">Load Image</button>
+            <div id="cameraSecondaryControlRow"
+                 class="d-flex flex-row flex-wrap justify-content-center gap-1 w-100">
+              <button class="btn btn-sm btn-secondary p-1"
+                      onclick="loadImageIntoCamera()"
+                      data-translate="load-image"
+                      data-translate-title="load-image-tooltip">Load Image</button>
 
-            <div style="position: relative; width: 140px; height: 30px;">
-              <button id="loadMultipleImagesButton"
-                      class="btn btn-sm btn-secondary position-absolute top-0 start-0 w-100 h-100 p-1"
-                      onclick="loadMultipleImages()"
-                      data-translate="compare-multiple-images-button"
-                      data-translate-title="compare-multiple-images-button-tooltip">Compare images</button>
+              <div style="position: relative; width: 140px; height: 30px;">
+                <button id="loadMultipleImagesButton"
+                        class="btn btn-sm btn-secondary position-absolute top-0 start-0 w-100 h-100 p-1"
+                        onclick="loadMultipleImages()"
+                        data-translate="compare-multiple-images-button"
+                        data-translate-title="compare-multiple-images-button-tooltip">Compare images</button>
 
-              <button id="removeMultipleImagesButton"
-                      class="btn btn-sm btn-secondary position-absolute top-0 start-0 w-100 h-100 p-1"
-                      style="visibility: hidden;"
-                      onclick="removeLoadedImages()"
-                      data-translate="stop-comparison-button"
-                      data-translate-title="stop-comparison-button-tooltip">Stop comparison</button>
+                <button id="removeMultipleImagesButton"
+                        class="btn btn-sm btn-secondary position-absolute top-0 start-0 w-100 h-100 p-1"
+                        style="visibility: hidden;"
+                        onclick="removeLoadedImages()"
+                        data-translate="stop-comparison-button"
+                        data-translate-title="stop-comparison-button-tooltip">Stop comparison</button>
+              </div>
+
+              <button id="spLoadExampleBtn"
+                      type="button"
+                      class="btn btn-sm btn-secondary px-3 p-1"
+                      style="height:30px; min-height:30px;"
+                      title="Choose a bundled calibrated example measurement.">Load Example</button>
             </div>
-          </div>
 
-          <div class="d-flex justify-content-center px-2 pt-1">
-            <button id="spLoadExampleBtn"
+            <button id="playVideoButton"
                     type="button"
-                    class="btn btn-sm btn-secondary px-3 p-1"
-                    style="height:30px; min-height:30px;"
-                    title="Choose a bundled calibrated example measurement.">Load Example</button>
+                    style="display:none"
+                    tabindex="-1"
+                    aria-hidden="true"
+                    onclick="playVideo()">Play</button>
           </div>
 
           <div id="miscMeasuringSettings" class="flex-grow-1 overflow-auto p-2">
@@ -536,7 +555,7 @@
 </div>
 
 <script src="../scripts/setupScript.js"></script>
-<script src="../scripts/cameraScript.js?v=3.0.9"></script>
+<script src="../scripts/cameraScript.js?v=3.0.9-auto-pause-1"></script>
 <script src="../scripts/stripeScript.js?v=3.0.9"></script>
 <script src="../scripts/cameraSelection.js?v=3.0.9"></script>
 <script src="../scripts/calibrationScript.js?v=3.0.9-calibration-2"></script>
