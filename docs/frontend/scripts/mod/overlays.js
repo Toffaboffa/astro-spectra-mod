@@ -50,11 +50,40 @@
       labelBg: read('--sp-graph-label-bg', 'rgba(255,255,255,0.82)'),
       labelBorder: read('--sp-graph-label-border', 'rgba(30,41,59,0.22)'),
       excludedMark: read('--sp-graph-excluded-mark', 'rgba(220,38,38,0.98)'),
-      diffractionBg: read('--sp-graph-diffraction-bg', 'rgba(248,245,255,0.92)'),
-      diffractionBorder: read('--sp-graph-diffraction-border', 'rgba(109,40,217,0.46)'),
-      diffractionText: read('--sp-graph-diffraction-text', 'rgba(76,29,149,0.96)'),
-      diffractionLine: read('--sp-graph-diffraction-line', 'rgba(109,40,217,0.46)')
+      diffractionBg: read('--sp-graph-diffraction-bg', 'rgba(254,226,226,0.94)'),
+      diffractionBorder: read('--sp-graph-diffraction-border', 'rgba(220,38,38,0.82)'),
+      diffractionText: read('--sp-graph-diffraction-text', 'rgba(153,27,27,0.98)'),
+      diffractionLine: read('--sp-graph-diffraction-line', 'rgba(220,38,38,0.88)')
     };
+  }
+
+  function getMouseCoordinateReservedRect(canvas) {
+    try {
+      const doc = global.document;
+      const indicator = doc && doc.getElementById ? doc.getElementById('mouseCoordinates') : null;
+      if (!indicator || !canvas || typeof indicator.getBoundingClientRect !== 'function' ||
+          typeof canvas.getBoundingClientRect !== 'function') return null;
+
+      const canvasRect = canvas.getBoundingClientRect();
+      const indicatorRect = indicator.getBoundingClientRect();
+      if (!(canvasRect.width > 0) || !(canvasRect.height > 0) ||
+          !(indicatorRect.width > 0) || !(indicatorRect.height > 0)) return null;
+
+      if (indicatorRect.right <= canvasRect.left || indicatorRect.left >= canvasRect.right ||
+          indicatorRect.bottom <= canvasRect.top || indicatorRect.top >= canvasRect.bottom) return null;
+
+      const sx = canvas.width / canvasRect.width;
+      const sy = canvas.height / canvasRect.height;
+      const pad = 6;
+      return {
+        left: Math.max(0, (indicatorRect.left - canvasRect.left) * sx - pad),
+        right: Math.min(canvas.width, (indicatorRect.right - canvasRect.left) * sx + pad),
+        top: Math.max(0, (indicatorRect.top - canvasRect.top) * sy - pad),
+        bottom: Math.min(canvas.height, (indicatorRect.bottom - canvasRect.top) * sy + pad)
+      };
+    } catch (_) {
+      return null;
+    }
   }
 
   function drawDiffractionCandidates(ctx, graphState, state, activeMode) {
@@ -81,6 +110,7 @@
       const plotRight = plotBounds && Number.isFinite(+plotBounds.right) ? +plotBounds.right : (w - 30);
       const plotTop = plotBounds && Number.isFinite(+plotBounds.top) ? +plotBounds.top : 30;
       const plotBottom = plotBounds && Number.isFinite(+plotBounds.bottom) ? +plotBounds.bottom : (canvas.height - 30);
+      const mouseCoordinateRect = getMouseCoordinateReservedRect(canvas);
       let drawn = 0;
 
       const theme = getCanvasTheme(canvas);
@@ -129,11 +159,27 @@
         let boxX = x + 4;
         if (boxX + boxW > plotRight - 2) boxX = x - boxW - 4;
         boxX = Math.max(plotLeft + 2, Math.min(plotRight - boxW - 2, boxX));
-        const boxY = Math.max(plotTop + 2, Math.min(plotBottom - boxH - 2, y - boxH / 2));
+        let boxY = Math.max(plotTop + 2, Math.min(plotBottom - boxH - 2, y - boxH / 2));
 
-        ctx.setLineDash([3, 4]);
+        if (mouseCoordinateRect) {
+          const overlapsMouseCoordinates =
+            boxX < mouseCoordinateRect.right &&
+            boxX + boxW > mouseCoordinateRect.left &&
+            boxY < mouseCoordinateRect.bottom &&
+            boxY + boxH > mouseCoordinateRect.top;
+          if (overlapsMouseCoordinates) {
+            const below = mouseCoordinateRect.bottom + 4;
+            const above = mouseCoordinateRect.top - boxH - 4;
+            const leftOf = mouseCoordinateRect.left - boxW - 4;
+            if (below + boxH <= plotBottom - 2) boxY = below;
+            else if (above >= plotTop + 2) boxY = above;
+            else if (leftOf >= plotLeft + 2) boxX = leftOf;
+          }
+        }
+
+        ctx.setLineDash([4, 3]);
         ctx.strokeStyle = theme.diffractionLine;
-        ctx.lineWidth = 0.9;
+        ctx.lineWidth = 1.3;
         ctx.beginPath();
         ctx.moveTo(x, boxY + boxH);
         ctx.lineTo(x, plotBottom);
@@ -144,7 +190,7 @@
         ctx.fillStyle = theme.diffractionBg;
         ctx.fill();
         ctx.strokeStyle = theme.diffractionBorder;
-        ctx.lineWidth = 0.8;
+        ctx.lineWidth = 1.0;
         ctx.stroke();
 
         ctx.fillStyle = theme.diffractionText;
@@ -354,6 +400,8 @@
       const lowPeakThresholdY = 92;
       const peakLabelGap = 4;
       const occupiedLabelRects = [];
+      const mouseCoordinateRect = getMouseCoordinateReservedRect(canvas);
+      if (mouseCoordinateRect) occupiedLabelRects.push(mouseCoordinateRect);
 
       function rectsOverlap(a, b) {
         return !(a.right + 2 <= b.left || a.left >= b.right + 2 || a.bottom + 2 <= b.top || a.top >= b.bottom + 2);
