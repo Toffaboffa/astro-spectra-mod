@@ -3637,7 +3637,7 @@ function autoCloseInfoPopupIfDefault() {
           const nextPts = Array.isArray(normalized.points) ? normalized.points : [];
           const curPts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
           const same = JSON.stringify(curPts.map(function (p) { return [Number(p.px), Number(p.nm), p.enabled === false ? 0 : 1]; })) === JSON.stringify(nextPts.map(function (p) { return [Number(p.px), Number(p.nm), 1]; }));
-          if (mgr && typeof mgr.setPoints === 'function' && nextPts.length && !same) {
+          if (mgr && typeof mgr.setPoints === 'function' && !same) {
             mgr.setPoints(nextPts);
             updateStorePath('calibration.shellPointCount', nextPts.length, { source: 'proBootstrap.calibrationSync.shell' });
             try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.renderShellPointsTable === 'function') sp.calibrationShellUI.renderShellPointsTable(); } catch (_) {}
