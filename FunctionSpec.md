@@ -7,7 +7,7 @@ a promise that roadmap ideas are already functional. Status labels are:
 - **EXPERIMENTAL** — functional, but scientifically or operationally limited.
 - **PLANNED** — intentionally absent; no result should imply that it exists.
 
-Current UI version: **3.1.1**.
+Current UI version: **3.1.2**.
 
 ## Architecture
 
