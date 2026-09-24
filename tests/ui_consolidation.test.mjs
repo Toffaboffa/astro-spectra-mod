@@ -106,6 +106,12 @@ assert.ok(spectrapro.includes('uiPanels.js?v=3.0.9'), 'version badge UI must use
 assert.ok(spectrapro.includes('styles.css?v=3.0.9'), 'published Solar preview CSS must use a fresh cache key');
 assert.ok(spectrapro.includes('overlays.js?v=3.0.9'), 'published ASTRO overlay must use a fresh cache key');
 assert.ok(spectrapro.includes('proBootstrap.js?v=3.0.9'), 'published ASTRO controls must use a fresh cache key');
+const renderStatusStart = bootstrap.indexOf('function renderStatus()');
+const renderStatusEnd = bootstrap.indexOf('function syncDarkRefAvailability', renderStatusStart);
+const renderStatusSource = bootstrap.slice(renderStatusStart, renderStatusEnd);
+assert.ok(renderStatusSource.includes("const diffractionOverlayInput = $('spToggleDiffractionOverlay');"), 'STATUS rendering must declare the diffraction overlay control in its own scope');
+assert.ok(bootstrap.includes('Initial UI render failed; analysis listeners will still be registered.'), 'a UI render failure must not abort LAB/ASTRO listener registration');
+assert.ok(spectrapro.includes('proBootstrap.js?v=3.0.9-lab-init-1'), 'published bootstrap must use a cache key that includes the LAB init fix');
 assert.ok(spectrapro.includes('mod-panels.css?v=3.0.9'), 'published ASTRO control styles must use a fresh cache key');
 assert.ok(!fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/aiAnalysisUi.js'), 'utf8').includes('sp-ai-launch__badge'), 'AI Interpretation must not show a NEW badge');
 assert.ok(graphScript.includes('&& !numericFrame'), 'static numeric spectra must stop the live camera animation loop');
