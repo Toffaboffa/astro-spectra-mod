@@ -951,7 +951,7 @@ select, input[type="number"], input[type="text"], textarea{
   display:grid;
   grid-template-columns:1fr 1fr;
   grid-auto-rows:auto;
-  gap:10px;
+  gap:7px;
   align-items:stretch;
 }
 
@@ -1801,7 +1801,7 @@ label[for="peakSizeLower"],
 #SpectraProDockHost .sp-graph-tool--select select{
   height:22px;
   min-height:22px;
-  padding:1px 20px 1px 6px;
+  padding:1px 18px 1px 6px;
   border:1px solid #365675;
   border-radius:5px;
   background:#0d1a2b;
@@ -1809,8 +1809,9 @@ label[for="peakSizeLower"],
   font-size:10px;
   line-height:18px;
 }
-#SpectraProDockHost #spGraphXAxisMode{width:54px;}
-#SpectraProDockHost #spGraphYAxisMode{width:86px;}
+#SpectraProDockHost #spGraphXAxisMode{width:60px;}
+#SpectraProDockHost #spGraphYAxisMode{width:104px;}
+#SpectraProDockHost #spGraphFillMode{width:98px;}
 #SpectraProDockHost .sp-graph-tool--analyze{
   padding-left:2px;
   color:#dff7ef;
