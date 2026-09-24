@@ -38,8 +38,9 @@ function loadImageIntoCamera() {
                 switchLoadedImageSettings(file.name);
 
                 if (currentSource) currentSource.style.display = 'none';
-                document.getElementById("pauseVideoButton").style.visibility = "hidden";
-                document.getElementById("playVideoButton").style.visibility = "visible";
+                if (typeof setCameraPlaybackUi === 'function') {
+                    setCameraPlaybackUi(false);
+                }
 
                 const imageElement = document.getElementById('cameraImage');
                 if (!imageElement) return;
