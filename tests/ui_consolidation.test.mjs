@@ -121,6 +121,27 @@ assert.ok(imageLoading.includes('runtime.refreshActiveSourceMetrics()'), 'extern
 assert.ok(imageLoading.includes("if (typeof syncCanvasToVideo === 'function') syncCanvasToVideo();"), 'external images must resync the source overlay geometry');
 assert.ok(!imageLoading.includes("videoElement = document.getElementById('cameraImage')"), 'external images must not bypass the runtime source transition with the legacy direct assignment');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.0.9'), 'published external-image loader must use a fresh cache key');
+const primaryRow = spectrapro.indexOf('id="cameraPrimaryControlRow"');
+const secondaryRow = spectrapro.indexOf('id="cameraSecondaryControlRow"');
+assert.ok(primaryRow >= 0 && secondaryRow > primaryRow, 'camera controls must use explicit primary and secondary rows');
+for (const id of ['liveVideoButton', 'pauseVideoButton', 'autoPauseButton']) {
+  const position = spectrapro.indexOf('id="' + id + '"');
+  assert.ok(position > primaryRow && position < secondaryRow, id + ' must remain on the top camera-control row');
+}
+for (const id of ['loadMultipleImagesButton', 'spLoadExampleBtn']) {
+  assert.ok(spectrapro.indexOf('id="' + id + '"', secondaryRow) > secondaryRow, id + ' must remain on the lower source row');
+}
+assert.ok(spectrapro.indexOf('onclick="loadImageIntoCamera()"', secondaryRow) > secondaryRow, 'Load Image must remain on the lower source row');
+assert.ok(spectrapro.indexOf('id="liveVideoButton"') < spectrapro.indexOf('id="pauseVideoButton"'), 'Live must appear before Pause');
+assert.ok(spectrapro.indexOf('id="pauseVideoButton"') < spectrapro.indexOf('id="autoPauseButton"'), 'Pause must appear before Auto Pause');
+assert.ok(cameraScript.includes('async function goLiveCamera(options = {})'), 'Live must explicitly restore the selected camera');
+assert.ok(cameraScript.includes("sp.coreHooks.on('graphFrame', handleAutoPauseFrame)"), 'Auto Pause must monitor the real graph-frame stream');
+assert.ok(cameraScript.includes('AUTO_PAUSE_TARGET_INTENSITY = 240'), 'Auto Pause target must default to 240');
+assert.ok(cameraScript.includes('AUTO_PAUSE_MAX_INTENSITY = 248'), 'Auto Pause must stop below the existing saturation threshold');
+assert.ok(cameraScript.includes('AUTO_PAUSE_REQUIRED_FRAMES = 2'), 'Auto Pause must require a stable target across frames');
+assert.ok(cameraScript.includes("pauseVideo({ autoPause: true })"), 'Auto Pause must freeze through the normal Pause path');
+assert.ok(spectrapro.includes('cameraScript.js?v=3.0.9-auto-pause-1'), 'published camera controller must use the Auto Pause cache key');
+assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.0.9-auto-pause-1'), 'published image loader must use the stable source-control cache key');
 assert.ok(examples.includes('calibrationPointsEqual(activePoints, points)'), 'sample calibration must verify that the configured points actually became active');
 assert.ok(!examples.includes('syncCalibrationShell(points)'), 'samples must not maintain a private CALIBRATE synchronization path');
 assert.ok(examples.includes("typeof calibration.applyPoints !== 'function'"), 'samples must use the canonical calibration API');
