@@ -61,16 +61,18 @@ assert.ok(bootstrap.includes('class="sp-astro-summary-grid"'), 'ASTRO summaries 
 assert.ok(bootstrap.includes('class="sp-card-sub sp-hw-response"'), 'instrument response must use the compact hardware section');
 assert.ok((bootstrap.match(/class="sp-analysis-toolbar"/g) || []).length >= 2, 'LAB and ASTRO must use the same toolbar structure');
 assert.ok(styles.includes('#spPanel-lab .sp-analysis-toolbar{display:flex;flex-direction:column'), 'LAB actions must stay on their own compact row without colliding with Preset and Mode');
-for (const id of ['spGraphXAxisMode', 'spGraphYAxisMode', 'spGraphPeaks', 'spGraphAnalyze']) {
+for (const id of ['spGraphXAxisMode', 'spGraphYAxisMode', 'spGraphFillMode', 'spGraphPeaks', 'spGraphAnalyze']) {
   assert.equal(markupCount(id), 1, id + ' persistent graph control markup must remain unique');
 }
 assert.ok(bootstrap.includes("graphXAxisSel && graphXAxisSel.addEventListener('change'"), 'persistent X-axis must proxy the CORE X-axis control');
 assert.ok(bootstrap.includes("graphYAxisSel && graphYAxisSel.addEventListener('change'"), 'persistent Y-axis must proxy the CORE Y-axis control');
+assert.ok(bootstrap.includes("graphFillModeSel && graphFillModeSel.addEventListener('change'"), 'persistent Fill mode must proxy the CORE Fill mode control');
 assert.ok(bootstrap.includes("graphPeaksInput && graphPeaksInput.addEventListener('change'"), 'persistent Peaks must proxy the existing peak toggle');
 assert.ok(bootstrap.includes("const target = currentMode === 'ASTRO' ? $('spAstroEnabled') : $('spLabEnabled');"), 'persistent Analyze must proxy the active analysis workspace control');
 assert.ok(bootstrap.includes("graphAnalyzeInput.disabled = (analysisMode !== 'LAB' && analysisMode !== 'ASTRO')"), 'persistent Analyze must be disabled in non-analysis workspaces');
-assert.ok(styles.includes('#SpectraProDockHost #spGraphXAxisMode{width:54px;}'), 'persistent X-axis select must stay compact');
-assert.ok(styles.includes('#SpectraProDockHost #spGraphYAxisMode{width:86px;}'), 'persistent Y-axis select must stay compact');
+assert.ok(styles.includes('#SpectraProDockHost #spGraphXAxisMode{width:60px;}'), 'persistent X-axis select must leave room for its option labels');
+assert.ok(styles.includes('#SpectraProDockHost #spGraphYAxisMode{width:104px;}'), 'persistent Y-axis select must fit NORMALIZE without clipping');
+assert.ok(styles.includes('#SpectraProDockHost #spGraphFillMode{width:98px;}'), 'persistent Fill mode select must fit SYNTHETIC without clipping');
 
 assert.ok(styles.includes('#spPanel-astro .sp-analysis-layout'), 'LAB/ASTRO must share responsive analysis layout rules');
 assert.ok(styles.includes('#spPanel-astro .sp-subtitle'), 'ASTRO subtitles must use dock typography instead of browser heading defaults');
@@ -113,19 +115,19 @@ assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source #cameraImage')
 assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source #spFramePreviewCanvas'), 'numeric examples must show their matching source preview canvas');
 assert.ok(graphScript.includes('useNumericSourceFill'), 'SOURCE graph fill must use the calibrated numeric wavelength colors');
 assert.ok(graphScript.includes('numericSourceRgb.R[zoomStart + x]'), 'SOURCE graph fill must use measured-preview RGB instead of the SYNTHETIC palette');
-assert.ok(spectrapro.includes('graphScript.js?v=3.1.2'), 'published graph code must use a fresh cache key');
-assert.ok(spectrapro.includes('stateStore.js?v=3.1.2'), 'dynamic ASTRO label UI loader must use a fresh cache key');
-assert.ok(spectrapro.includes('uiPanels.js?v=3.1.2'), 'version badge UI must use a release cache key');
-assert.ok(spectrapro.includes('styles.css?v=3.1.2'), 'published Solar preview CSS must use a fresh cache key');
-assert.ok(spectrapro.includes('overlays.js?v=3.1.2'), 'published ASTRO overlay must use a fresh cache key');
-assert.ok(spectrapro.includes('proBootstrap.js?v=3.1.2'), 'published ASTRO controls must use a fresh cache key');
+assert.ok(spectrapro.includes('graphScript.js?v=3.1.3'), 'published graph code must use a fresh cache key');
+assert.ok(spectrapro.includes('stateStore.js?v=3.1.3'), 'dynamic ASTRO label UI loader must use a fresh cache key');
+assert.ok(spectrapro.includes('uiPanels.js?v=3.1.3'), 'version badge UI must use a release cache key');
+assert.ok(spectrapro.includes('styles.css?v=3.1.3'), 'published Solar preview CSS must use a fresh cache key');
+assert.ok(spectrapro.includes('overlays.js?v=3.1.3'), 'published ASTRO overlay must use a fresh cache key');
+assert.ok(spectrapro.includes('proBootstrap.js?v=3.1.3'), 'published ASTRO controls must use a fresh cache key');
 const renderStatusStart = bootstrap.indexOf('function renderStatus()');
 const renderStatusEnd = bootstrap.indexOf('function syncDarkRefAvailability', renderStatusStart);
 const renderStatusSource = bootstrap.slice(renderStatusStart, renderStatusEnd);
 assert.ok(renderStatusSource.includes("const diffractionOverlayInput = $('spToggleDiffractionOverlay');"), 'STATUS rendering must declare the diffraction overlay control in its own scope');
 assert.ok(bootstrap.includes('Initial UI render failed; analysis listeners will still be registered.'), 'a UI render failure must not abort LAB/ASTRO listener registration');
-assert.ok(spectrapro.includes('proBootstrap.js?v=3.1.2'), 'published bootstrap must use a cache key that includes the LAB init fix');
-assert.ok(spectrapro.includes('mod-panels.css?v=3.1.2'), 'published ASTRO control styles must use a fresh cache key');
+assert.ok(spectrapro.includes('proBootstrap.js?v=3.1.3'), 'published bootstrap must use a cache key that includes the LAB init fix');
+assert.ok(spectrapro.includes('mod-panels.css?v=3.1.3'), 'published ASTRO control styles must use a fresh cache key');
 assert.ok(!fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/aiAnalysisUi.js'), 'utf8').includes('sp-ai-launch__badge'), 'AI Interpretation must not show a NEW badge');
 assert.ok(graphScript.includes('&& !numericFrame'), 'static numeric spectra must stop the live camera animation loop');
 assert.ok(imageLoading.includes('resetBundledExampleStateForCamera()'), 'loading an external image must leave bundled-example calibration and preview state');
@@ -133,7 +135,7 @@ assert.ok(imageLoading.includes('runtime.setVideoElement(imageElement)'), 'exter
 assert.ok(imageLoading.includes('runtime.refreshActiveSourceMetrics()'), 'external image dimensions must refresh after decode');
 assert.ok(imageLoading.includes("if (typeof syncCanvasToVideo === 'function') syncCanvasToVideo();"), 'external images must resync the source overlay geometry');
 assert.ok(!imageLoading.includes("videoElement = document.getElementById('cameraImage')"), 'external images must not bypass the runtime source transition with the legacy direct assignment');
-assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.1.2'), 'published external-image loader must use a fresh cache key');
+assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.1.3'), 'published external-image loader must use a fresh cache key');
 const primaryRow = spectrapro.indexOf('id="cameraPrimaryControlRow"');
 const secondaryRow = spectrapro.indexOf('id="cameraSecondaryControlRow"');
 assert.ok(primaryRow >= 0 && secondaryRow > primaryRow, 'camera controls must use explicit primary and secondary rows');
@@ -154,8 +156,8 @@ assert.ok(cameraScript.includes('AUTO_PAUSE_TRIGGER_INTENSITY = 238'), 'Auto Pau
 assert.ok(!cameraScript.includes('AUTO_PAUSE_MAX_INTENSITY'), 'Auto Pause must not ignore frames that overshoot the target');
 assert.ok(cameraScript.includes('if (peak >= AUTO_PAUSE_TRIGGER_INTENSITY)'), 'Auto Pause must treat every threshold crossing, including saturation, as a capture condition');
 assert.ok(cameraScript.includes("pauseVideo({ autoPause: true })"), 'Auto Pause must freeze through the normal Pause path');
-assert.ok(spectrapro.includes('cameraScript.js?v=3.1.2'), 'published camera controller must use the Auto Pause cache key');
-assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.1.2'), 'published image loader must use the stable source-control cache key');
+assert.ok(spectrapro.includes('cameraScript.js?v=3.1.3'), 'published camera controller must use the Auto Pause cache key');
+assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.1.3'), 'published image loader must use the stable source-control cache key');
 assert.ok(examples.includes('calibrationPointsEqual(activePoints, points)'), 'sample calibration must verify that the configured points actually became active');
 assert.ok(!examples.includes('syncCalibrationShell(points)'), 'samples must not maintain a private CALIBRATE synchronization path');
 assert.ok(examples.includes("typeof calibration.applyPoints !== 'function'"), 'samples must use the canonical calibration API');
@@ -171,10 +173,10 @@ assert.ok(calibrationIo.includes('function isUsableCalibration(state)'), 'nm han
 assert.ok(!calibrationIo.includes('__spectraPromptBound'), 'calibration file import must not use the old timing guess');
 assert.ok(uiPanels.includes("'calibration',"), 'root calibration state updates must reanalyze static images');
 assert.ok(stateStore.includes("exampleSpectrumUi.js?v=' + AI_ASSET_VERSION"), 'dynamic sample loader must use the release cache key');
-assert.ok(spectrapro.includes('calibrationScript.js?v=3.1.2'), 'canonical calibration engine must be cache-versioned');
-assert.ok(spectrapro.includes('calibrationPointManager.js?v=3.1.2'), 'CALIBRATE point manager must be cache-versioned');
-assert.ok(spectrapro.includes('stateStore.js?v=3.1.2'), 'published state store must use the 3.1.2 cache key');
-assert.ok(spectrapro.includes('proBootstrap.js?v=3.1.2'), 'published PRO synchronization must use the 3.1.2 cache key');
+assert.ok(spectrapro.includes('calibrationScript.js?v=3.1.3'), 'canonical calibration engine must be cache-versioned');
+assert.ok(spectrapro.includes('calibrationPointManager.js?v=3.1.3'), 'CALIBRATE point manager must be cache-versioned');
+assert.ok(spectrapro.includes('stateStore.js?v=3.1.3'), 'published state store must use the 3.1.3 cache key');
+assert.ok(spectrapro.includes('proBootstrap.js?v=3.1.3'), 'published PRO synchronization must use the 3.1.3 cache key');
 assert.ok(!graphScript.includes("resizeCanvasToDisplaySize(graphCtx, graphCanvas, 'Normal');\n      if (typeof window.drawGraph === 'function') window.drawGraph();"), 'numeric spectrum loading must not redraw and emit the same frame twice');
 for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Advanced: reference spectrum comparison', 'Continuum diagnostics']) {
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
