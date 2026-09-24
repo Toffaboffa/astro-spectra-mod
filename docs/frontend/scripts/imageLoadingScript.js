@@ -18,27 +18,65 @@ function loadImageIntoCamera() {
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                const stream = videoElement.srcObject;
-                if (stream) {
+                const currentSource = videoElement;
+                const stream = currentSource && currentSource.srcObject;
+                if (stream && typeof stream.getTracks === 'function') {
                     const tracks = stream.getTracks();
                     tracks.forEach(track => track.stop());
-                    videoElement.srcObject = null;
+                    currentSource.srcObject = null;
                     console.log('Camera stream stopped');
                 }
 
+                // A bundled example may own calibration, preview and/or a numeric
+                // graph frame. Leave that state before switching to a user image.
+                try {
+                    if (typeof resetBundledExampleStateForCamera === 'function') {
+                        resetBundledExampleStateForCamera();
+                    }
+                } catch (_) {}
+
                 switchLoadedImageSettings(file.name);
 
-                videoElement.style.display = 'none';
+                if (currentSource) currentSource.style.display = 'none';
                 document.getElementById("pauseVideoButton").style.visibility = "hidden";
                 document.getElementById("playVideoButton").style.visibility = "visible";
-                videoElement = document.getElementById('cameraImage');
-                videoElement.onload = () => {
+
+                const imageElement = document.getElementById('cameraImage');
+                if (!imageElement) return;
+
+                const sp = window.SpectraPro || {};
+                const runtime = sp.runtime || {};
+                try {
+                    if (typeof runtime.setVideoElement === 'function') {
+                        // This also clears an active numeric sample frame.
+                        runtime.setVideoElement(imageElement);
+                    } else {
+                        const graph = window.SpectraCore && window.SpectraCore.graph;
+                        if (graph && typeof graph.clearNumericFrame === 'function') {
+                            graph.clearNumericFrame({ redraw: false });
+                        }
+                        videoElement = imageElement;
+                    }
+                } catch (_) {
+                    videoElement = imageElement;
+                }
+
+                imageElement.onload = () => {
                     console.log('Loaded image into camera window');
+                    try {
+                        if (typeof runtime.refreshActiveSourceMetrics === 'function') {
+                            runtime.refreshActiveSourceMetrics();
+                        }
+                    } catch (_) {}
+                    try {
+                        if (typeof syncCanvasToVideo === 'function') syncCanvasToVideo();
+                    } catch (_) {}
                     initializeZoomList();
+                    needToRecalculateMaxima = true;
                     redrawGraphIfLoadedImage(true);
                 };
-                videoElement.src = e.target.result;
-                videoElement.style.display = 'block';
+                imageElement.src = e.target.result;
+                imageElement.style.display = 'block';
             };
             reader.readAsDataURL(file);
         }
