@@ -202,6 +202,7 @@ function ensureHost() {
       '<label class="sp-graph-tool sp-graph-tool--range" title="Set the tint strength for extrapolated calibration regions."><span>Shade <b id="spCalibrationShadeOpacityValue">12%</b></span><input id="spCalibrationShadeOpacity" type="range" min="0.02" max="0.50" step="0.01" value="0.12"></label>',
       '<label class="sp-graph-tool sp-graph-tool--select" title="Choose whether the graph uses raw pixels or calibrated wavelength."><span>X-axis</span><select id="spGraphXAxisMode"><option value="px">px</option><option value="nm">nm</option></select></label>',
       '<label class="sp-graph-tool sp-graph-tool--select" title="Choose automatic, manual, or normalized Y-axis scaling."><span>Y-axis</span><select id="spGraphYAxisMode"><option value="auto">AUTO</option><option value="manual">MANUAL</option><option value="normalize">NORMALIZE</option></select></label>',
+      '<label class="sp-graph-tool sp-graph-tool--select" title="Choose how the spectrum graph fill is rendered."><span>Fill</span><select id="spGraphFillMode"><option value="inherit">INHERIT</option><option value="off">OFF</option><option value="synthetic">SYNTHETIC</option><option value="source">SOURCE</option></select></label>',
       '<label class="sp-graph-tool sp-graph-tool--check" title="Show or hide detected peak markers."><input id="spGraphPeaks" type="checkbox"><span>Peaks</span></label>',
       '<label class="sp-graph-tool sp-graph-tool--check sp-graph-tool--analyze" title="Mirror the LAB/ASTRO Analyze control. Available only in LAB or ASTRO."><input id="spGraphAnalyze" type="checkbox"><span>Analyze</span></label>'
     ].join('');
@@ -242,7 +243,7 @@ function ensureHost() {
         },
         loadedAt: Date.now(),
         scaffold: false,
-        version: '3.1.2'
+        version: '3.1.3'
       };
     } else {
       const mods = v15.registry.modules || (v15.registry.modules = {});
@@ -251,7 +252,7 @@ function ensureHost() {
       });
       v15.registry.loadedAt = v15.registry.loadedAt || Date.now();
       v15.registry.scaffold = false;
-      v15.registry.version = '3.1.2';
+      v15.registry.version = '3.1.3';
     }
     return v15.registry;
   }
@@ -849,6 +850,7 @@ if (!document.getElementById('spSubtractionControls')) {
       const calibrationShadeOpacityValue = $('spCalibrationShadeOpacityValue');
       const graphXAxisSel = $('spGraphXAxisMode');
       const graphYAxisSel = $('spGraphYAxisMode');
+      const graphFillModeSel = $('spGraphFillMode');
       const graphPeaksInput = $('spGraphPeaks');
       const graphAnalyzeInput = $('spGraphAnalyze');
       const combinedProxy = card.querySelector('#spToggleCombinedProxy');
@@ -948,6 +950,7 @@ if (!document.getElementById('spSubtractionControls')) {
         const initialNormalize = !!displayStateInit.normalizeYAxis;
         graphYAxisSel.value = initialNormalize ? 'normalize' : String(displayStateInit.yAxisMode || 'auto').toLowerCase();
       }
+      if (graphFillModeSel) graphFillModeSel.value = String(displayStateInit.fillMode || 'inherit').toLowerCase();
       if (graphAnalyzeInput) {
         const initialState = getStoreState();
         const initialMode = String(initialState.appMode || 'CORE').toUpperCase();
@@ -1041,6 +1044,11 @@ if (!document.getElementById('spSubtractionControls')) {
         if (!yAxisSel) return;
         yAxisSel.value = String(e.target.value || 'auto').toLowerCase();
         try { yAxisSel.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+      });
+      graphFillModeSel && graphFillModeSel.addEventListener('change', function (e) {
+        if (!fillModeSel) return;
+        fillModeSel.value = String(e.target.value || 'inherit').toLowerCase();
+        try { fillModeSel.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
       });
       graphPeaksInput && graphPeaksInput.addEventListener('change', function (e) {
         if (!toggleNmPeaksInput) return;
@@ -3078,6 +3086,7 @@ function renderConsole() {
     const yAxisSel = $('spYAxisMode');
     const yAxisMaxInput = $('spYAxisMax');
     const graphYAxisSel = $('spGraphYAxisMode');
+    const graphFillModeSel = $('spGraphFillMode');
     const graphAnalyzeInput = $('spGraphAnalyze');
     if (yAxisSel && !shouldSkipSyncValue(yAxisSel)) {
       const normalized = !!(state.display && state.display.normalizeYAxis);
@@ -3114,6 +3123,7 @@ function renderConsole() {
     if (fillModeSel && !shouldSkipSyncValue(fillModeSel)) {
       const mode = String((state.display && state.display.fillMode) || 'inherit').toLowerCase();
       if (fillModeSel.value !== mode) fillModeSel.value = mode;
+      if (graphFillModeSel && !shouldSkipSyncValue(graphFillModeSel) && graphFillModeSel.value !== mode) graphFillModeSel.value = mode;
     }
     if (fillOpacityInput && !shouldSkipSyncValue(fillOpacityInput)) {
       const fo = Number(state.display && state.display.fillOpacity);
