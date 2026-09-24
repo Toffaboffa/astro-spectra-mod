@@ -194,12 +194,16 @@ function ensureHost() {
 
     const graphTools = el('div', 'sp-graph-tools');
     graphTools.id = 'spGraphTools';
-    graphTools.setAttribute('aria-label', 'Graph overlays');
+    graphTools.setAttribute('aria-label', 'Persistent graph controls');
     graphTools.innerHTML = [
       '<label class="sp-graph-tool sp-graph-tool--check" title="Highlight locally saturated graph regions."><input id="spToggleSaturationOverlay" type="checkbox"><span>Saturation</span></label>',
       '<label class="sp-graph-tool sp-graph-tool--check" title="Show or hide possible higher-order diffraction markers."><input id="spToggleDiffractionOverlay" type="checkbox"><span>Diffraction</span></label>',
       '<label class="sp-graph-tool sp-graph-tool--check" title="Shade wavelengths outside the calibration-anchor interval."><input id="spToggleCalibrationExtrapolation" type="checkbox"><span>Extrapolation</span></label>',
-      '<label class="sp-graph-tool sp-graph-tool--range" title="Set the tint strength for extrapolated calibration regions."><span>Shade <b id="spCalibrationShadeOpacityValue">12%</b></span><input id="spCalibrationShadeOpacity" type="range" min="0.02" max="0.50" step="0.01" value="0.12"></label>'
+      '<label class="sp-graph-tool sp-graph-tool--range" title="Set the tint strength for extrapolated calibration regions."><span>Shade <b id="spCalibrationShadeOpacityValue">12%</b></span><input id="spCalibrationShadeOpacity" type="range" min="0.02" max="0.50" step="0.01" value="0.12"></label>',
+      '<label class="sp-graph-tool sp-graph-tool--select" title="Choose whether the graph uses raw pixels or calibrated wavelength."><span>X-axis</span><select id="spGraphXAxisMode"><option value="px">px</option><option value="nm">nm</option></select></label>',
+      '<label class="sp-graph-tool sp-graph-tool--select" title="Choose automatic, manual, or normalized Y-axis scaling."><span>Y-axis</span><select id="spGraphYAxisMode"><option value="auto">AUTO</option><option value="manual">MANUAL</option><option value="normalize">NORMALIZE</option></select></label>',
+      '<label class="sp-graph-tool sp-graph-tool--check" title="Show or hide detected peak markers."><input id="spGraphPeaks" type="checkbox"><span>Peaks</span></label>',
+      '<label class="sp-graph-tool sp-graph-tool--check sp-graph-tool--analyze" title="Mirror the LAB/ASTRO Analyze control. Available only in LAB or ASTRO."><input id="spGraphAnalyze" type="checkbox"><span>Analyze</span></label>'
     ].join('');
     tabs.appendChild(graphTools);
 
@@ -843,6 +847,10 @@ if (!document.getElementById('spSubtractionControls')) {
       const calibrationExtrapolationInput = $('spToggleCalibrationExtrapolation');
       const calibrationShadeOpacityInput = $('spCalibrationShadeOpacity');
       const calibrationShadeOpacityValue = $('spCalibrationShadeOpacityValue');
+      const graphXAxisSel = $('spGraphXAxisMode');
+      const graphYAxisSel = $('spGraphYAxisMode');
+      const graphPeaksInput = $('spGraphPeaks');
+      const graphAnalyzeInput = $('spGraphAnalyze');
       const combinedProxy = card.querySelector('#spToggleCombinedProxy');
       const rProxy = card.querySelector('#spToggleRProxy');
       const gProxy = card.querySelector('#spToggleGProxy');
@@ -884,7 +892,15 @@ if (!document.getElementById('spSubtractionControls')) {
       const syncXAxisProxy = function () {
         if (!xAxisSel) return;
         const nm = $('toggleXLabelsNm');
-        xAxisSel.value = (nm && nm.checked) ? 'nm' : 'px';
+        const mode = (nm && nm.checked) ? 'nm' : 'px';
+        xAxisSel.value = mode;
+        if (graphXAxisSel && !shouldSkipSyncValue(graphXAxisSel)) graphXAxisSel.value = mode;
+      };
+      const syncPeaksProxy = function () {
+        const target = $('togglePeaksCheckbox');
+        const checked = !!(target && target.checked);
+        if (toggleNmPeaksInput && !shouldSkipSyncValue(toggleNmPeaksInput)) toggleNmPeaksInput.checked = checked;
+        if (graphPeaksInput && !shouldSkipSyncValue(graphPeaksInput)) graphPeaksInput.checked = checked;
       };
       const syncZoomScrollerProxy = function () {
         const target = $('zoomScroller');
@@ -903,6 +919,7 @@ if (!document.getElementById('spSubtractionControls')) {
       if (toggleNmPeaksInput && legacyTogglePeaks) {
         toggleNmPeaksInput.checked = !!legacyTogglePeaks.checked;
       }
+      syncPeaksProxy();
       const displayStateInit = (getStoreState().display || {});
       if (fillModeSel) fillModeSel.value = String(displayStateInit.fillMode || 'inherit').toLowerCase();
       if (fillOpacityInput) fillOpacityInput.value = String(Number.isFinite(Number(displayStateInit.fillOpacity)) ? Math.max(0, Math.min(1, Number(displayStateInit.fillOpacity))) : 0.7);
@@ -927,6 +944,16 @@ if (!document.getElementById('spSubtractionControls')) {
       syncCheckboxProxy(refProxy, 'toggleRef');
       syncXAxisProxy();
       syncZoomScrollerProxy();
+      if (graphYAxisSel) {
+        const initialNormalize = !!displayStateInit.normalizeYAxis;
+        graphYAxisSel.value = initialNormalize ? 'normalize' : String(displayStateInit.yAxisMode || 'auto').toLowerCase();
+      }
+      if (graphAnalyzeInput) {
+        const initialState = getStoreState();
+        const initialMode = String(initialState.appMode || 'CORE').toUpperCase();
+        graphAnalyzeInput.checked = !!(initialState.analysis && initialState.analysis.enabled);
+        graphAnalyzeInput.disabled = (initialMode !== 'LAB' && initialMode !== 'ASTRO');
+      }
 
       modeSel && modeSel.addEventListener('change', (e) => {
         const mode = String(e.target.value || 'CORE').toUpperCase();
@@ -1003,6 +1030,39 @@ if (!document.getElementById('spSubtractionControls')) {
         target.checked = !!e.target.checked;
         try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
         try { target.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+        syncPeaksProxy();
+      });
+      graphXAxisSel && graphXAxisSel.addEventListener('change', function (e) {
+        if (!xAxisSel) return;
+        xAxisSel.value = String(e.target.value || 'px').toLowerCase();
+        try { xAxisSel.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+      });
+      graphYAxisSel && graphYAxisSel.addEventListener('change', function (e) {
+        if (!yAxisSel) return;
+        yAxisSel.value = String(e.target.value || 'auto').toLowerCase();
+        try { yAxisSel.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+      });
+      graphPeaksInput && graphPeaksInput.addEventListener('change', function (e) {
+        if (!toggleNmPeaksInput) return;
+        toggleNmPeaksInput.checked = !!e.target.checked;
+        try { toggleNmPeaksInput.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+      });
+      graphAnalyzeInput && graphAnalyzeInput.addEventListener('change', function (e) {
+        const current = getStoreState();
+        const currentMode = String(current.appMode || 'CORE').toUpperCase();
+        if (currentMode !== 'LAB' && currentMode !== 'ASTRO') {
+          e.target.checked = !!(current.analysis && current.analysis.enabled);
+          return;
+        }
+        const on = !!e.target.checked;
+        updateStorePath('analysis.enabled', on, { source: 'proBootstrap.graphTools' });
+        if (on) {
+          try { setCoreWorkerMode('auto'); } catch (_) {}
+          try {
+            const client = ensureWorkerClient();
+            if (client && typeof client.start === 'function') client.start();
+          } catch (_) {}
+        }
       });
       saturationOverlayInput && saturationOverlayInput.addEventListener('change', (e) => {
         setVal('display.saturationOverlay', !!e.target.checked);
@@ -1106,12 +1166,18 @@ if (!document.getElementById('spSubtractionControls')) {
         try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
         try { syncZoomScrollerProxy(); } catch (_) {}
       });
-      ['toggleCombined','toggleR','toggleG','toggleB','toggleXLabelsPx','toggleXLabelsNm','zoomScroller','referenceGraphCheckbox'].forEach(function (id) {
+      ['toggleCombined','toggleR','toggleG','toggleB','toggleXLabelsPx','toggleXLabelsNm','togglePeaksCheckbox','zoomScroller','referenceGraphCheckbox'].forEach(function (id) {
         const target = $(id);
         if (!target) return;
-        target.addEventListener('change', function () { syncXAxisProxy(); syncZoomScrollerProxy(); if (referenceGraphProxy && id === 'referenceGraphCheckbox') referenceGraphProxy.checked = !!target.checked; });
-        target.addEventListener('input', function () { syncXAxisProxy(); syncZoomScrollerProxy(); if (referenceGraphProxy && id === 'referenceGraphCheckbox') referenceGraphProxy.checked = !!target.checked; });
-        target.addEventListener('sp-sync', function () { syncXAxisProxy(); syncZoomScrollerProxy(); if (referenceGraphProxy && id === 'referenceGraphCheckbox') referenceGraphProxy.checked = !!target.checked; });
+        const syncPersistent = function () {
+          syncXAxisProxy();
+          syncPeaksProxy();
+          syncZoomScrollerProxy();
+          if (referenceGraphProxy && id === 'referenceGraphCheckbox') referenceGraphProxy.checked = !!target.checked;
+        };
+        target.addEventListener('change', syncPersistent);
+        target.addEventListener('input', syncPersistent);
+        target.addEventListener('sp-sync', syncPersistent);
       });
       // Camera controls (optional) — apply constraints only if supported.
       const applyCamSetting = function (key, val) {
@@ -3005,12 +3071,23 @@ function renderConsole() {
     syncReferenceLineControls(state);
     const yAxisSel = $('spYAxisMode');
     const yAxisMaxInput = $('spYAxisMax');
+    const graphYAxisSel = $('spGraphYAxisMode');
+    const graphAnalyzeInput = $('spGraphAnalyze');
     if (yAxisSel && !shouldSkipSyncValue(yAxisSel)) {
       const normalized = !!(state.display && state.display.normalizeYAxis);
       const ym = String((state.display && state.display.yAxisMode) || 'auto').toLowerCase();
       const nextMode = normalized ? 'normalize' : ym;
       if (yAxisSel.value !== nextMode) yAxisSel.value = nextMode;
+      if (graphYAxisSel && !shouldSkipSyncValue(graphYAxisSel) && graphYAxisSel.value !== nextMode) graphYAxisSel.value = nextMode;
       if (yAxisMaxInput) yAxisMaxInput.disabled = (nextMode !== 'manual');
+    }
+    if (graphAnalyzeInput && !shouldSkipSyncValue(graphAnalyzeInput)) {
+      const analysisMode = String(state.appMode || 'CORE').toUpperCase();
+      graphAnalyzeInput.checked = !!(state.analysis && state.analysis.enabled);
+      graphAnalyzeInput.disabled = (analysisMode !== 'LAB' && analysisMode !== 'ASTRO');
+      graphAnalyzeInput.title = graphAnalyzeInput.disabled
+        ? 'Analyze is available when LAB or ASTRO is active.'
+        : 'Mirror the Analyze control for the active analysis workspace.';
     }
     if (yAxisMaxInput && !shouldSkipSyncValue(yAxisMaxInput)) {
       const v = Number((state.display && state.display.yAxisMax));
