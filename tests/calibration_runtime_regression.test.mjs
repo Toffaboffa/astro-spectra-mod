@@ -72,15 +72,6 @@ let failRedraw = false;
 
 const context = {
   console,
-  Date,
-  Math,
-  JSON,
-  Number,
-  Array,
-  Object,
-  String,
-  Set,
-  Blob,
   URL: { createObjectURL(){ return 'blob:test'; }, revokeObjectURL(){} },
   document: {
     getElementById(id){ return elements.get(id) || null; },
