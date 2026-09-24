@@ -13,8 +13,8 @@ for (const status of ['IMPLEMENTED', 'EXPERIMENTAL', 'PLANNED']) {
   assert.ok(readme.includes(status), 'README must expose ' + status);
 }
 assert.ok(spec.includes('spectra-pro-export/v2'));
-assert.ok(spec.includes('Current UI version: **3.1.0**'));
-assert.ok(readme.includes('Current UI version: v3.1.0'));
+assert.ok(spec.includes('Current UI version: **3.1.1**'));
+assert.ok(readme.includes('Current UI version: v3.1.1'));
 
 const releaseSources = [
   'docs/frontend/scripts/mod/uiPanels.js',
@@ -25,11 +25,11 @@ const releaseSources = [
   'docs/frontend/scripts/mod/proBootstrap.js'
 ];
 for (const relative of releaseSources) {
-  assert.ok(read(relative).includes('3.1.0'), relative + ' must carry the v3.1.0 release version');
+  assert.ok(read(relative).includes('3.1.1'), relative + ' must carry the v3.1.1 release version');
 }
 const spectraproPage = read('docs/frontend/pages/spectrapro.html');
-assert.ok(spectraproPage.includes('?v=3.1.0'), 'canonical application page must publish 3.1.0 cache keys');
-assert.ok(spectraproPage.includes('calibrationScript.js?v=3.1.0'), 'canonical calibration engine must use the v3.1.0 release cache key');
+assert.ok(spectraproPage.includes('?v=3.1.1'), 'canonical application page must publish 3.1.1 cache keys');
+assert.ok(spectraproPage.includes('calibrationScript.js?v=3.1.1'), 'canonical calibration engine must use the v3.1.1 release cache key');
 assert.ok(!spectraproPage.includes('phase1-bridge'), 'duplicate calibration bridge must not return');
 
 const lateUiVersionSources = [
@@ -39,7 +39,7 @@ const lateUiVersionSources = [
 ];
 for (const relative of lateUiVersionSources) {
   const source = read(relative);
-  assert.ok(source.includes('3.1.0'), relative + ' must carry the v3.1.0 app version');
+  assert.ok(source.includes('3.1.1'), relative + ' must carry the v3.1.1 app version');
   assert.ok(!source.includes('3.0.8'), relative + ' must not downgrade the runtime app version to v3.0.8');
 }
 const calibrationEngine = read('docs/frontend/scripts/calibrationScript.js');
@@ -48,11 +48,11 @@ assert.ok(calibrationEngine.includes("sp.store.update('calibration', canonical")
 assert.ok(calibrationEngine.includes('sp.calibrationPointManager = manager'), 'calibration engine must synchronize CALIBRATE points directly');
 
 const uiTweaks = read('docs/frontend/scripts/mod/uiTweaksV203.js');
-assert.ok(uiTweaks.includes("const VERSION = 'v3.1.0';"), 'late UI tweaks must publish the v3.1.0 badge');
+assert.ok(uiTweaks.includes("const VERSION = 'v3.1.1';"), 'late UI tweaks must publish the v3.1.1 badge');
 assert.ok(uiTweaks.includes('badge.textContent = VERSION;'), 'version badge write must remain tied to the release version');
 
 const aiWorker = read('backend/ai-worker/src/index.js');
-assert.ok(aiWorker.includes("appVersion: '3.1.0'"), 'AI Worker responses must expose application release 3.1.0');
+assert.ok(aiWorker.includes("appVersion: '3.1.1'"), 'AI Worker responses must expose application release 3.1.1');
 assert.ok(!aiWorker.includes('stage: 6'), 'AI Worker responses must not expose a temporary roadmap-stage label');
 
 const removedPlaceholders = [

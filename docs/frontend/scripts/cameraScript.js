@@ -13,11 +13,8 @@ const exposureSlider = document.getElementById('exposure');
 let exposureValues = [];
 
 const AUTO_PAUSE_TARGET_INTENSITY = 240;
-const AUTO_PAUSE_MIN_INTENSITY = 238;
-const AUTO_PAUSE_MAX_INTENSITY = 248;
-const AUTO_PAUSE_REQUIRED_FRAMES = 2;
+const AUTO_PAUSE_TRIGGER_INTENSITY = 238;
 let autoPauseArmed = false;
-let autoPauseStableFrames = 0;
 let autoPauseLastPeak = null;
 
 function appendCameraConsole(message) {
@@ -53,14 +50,13 @@ function updateAutoPauseUi() {
     button.setAttribute('aria-pressed', autoPauseArmed ? 'true' : 'false');
     button.textContent = autoPauseArmed ? 'Auto Pause ●' : 'Auto Pause';
     button.title = autoPauseArmed
-        ? 'Armed: pauses after a stable live peak reaches 238–248.'
+        ? 'Armed: pauses as soon as the live spectrum peak reaches 238 or higher.'
         : 'Arm one-shot auto pause near peak intensity 240, before clipping.';
 }
 
 function disarmAutoPause(reason) {
     const wasArmed = autoPauseArmed;
     autoPauseArmed = false;
-    autoPauseStableFrames = 0;
     autoPauseLastPeak = null;
     updateAutoPauseUi();
     if (wasArmed && reason) appendCameraConsole('[AUTO PAUSE] ' + reason);
@@ -87,16 +83,11 @@ function handleAutoPauseFrame(frame) {
     }
     autoPauseLastPeak = peak;
 
-    if (peak >= AUTO_PAUSE_MIN_INTENSITY && peak <= AUTO_PAUSE_MAX_INTENSITY) {
-        autoPauseStableFrames += 1;
-    } else {
-        autoPauseStableFrames = 0;
-    }
-
-    if (autoPauseStableFrames >= AUTO_PAUSE_REQUIRED_FRAMES) {
+    // Crossing the target is enough. Values above the target, including clipped
+    // frames, must pause rather than resetting the trigger and running forever.
+    if (peak >= AUTO_PAUSE_TRIGGER_INTENSITY) {
         const capturedPeak = Math.round(peak);
         autoPauseArmed = false;
-        autoPauseStableFrames = 0;
         updateAutoPauseUi();
         appendCameraConsole('[AUTO PAUSE] Captured · peak ' + capturedPeak + ' / 255');
         pauseVideo({ autoPause: true });
@@ -116,7 +107,6 @@ async function toggleAutoPause() {
         return;
     }
     autoPauseArmed = true;
-    autoPauseStableFrames = 0;
     autoPauseLastPeak = null;
     updateAutoPauseUi();
     appendCameraConsole('[AUTO PAUSE] Armed · target ' + AUTO_PAUSE_TARGET_INTENSITY + ' / 255');
@@ -709,8 +699,7 @@ function noGraphShown() {
       toggle: window.toggleAutoPause || function(){},
       disarm: disarmAutoPause,
       target: AUTO_PAUSE_TARGET_INTENSITY,
-      min: AUTO_PAUSE_MIN_INTENSITY,
-      max: AUTO_PAUSE_MAX_INTENSITY
+      trigger: AUTO_PAUSE_TRIGGER_INTENSITY
     }
   });
 
