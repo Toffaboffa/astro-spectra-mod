@@ -402,8 +402,47 @@
     } catch (_) {}
   }
 
+  function calibrationPointsEqual(actual, expected) {
+    const a = Array.isArray(actual) ? actual : [];
+    const e = Array.isArray(expected) ? expected : [];
+    if (a.length !== e.length) return false;
+    for (let i = 0; i < e.length; i += 1) {
+      if (Number(a[i] && a[i].px) !== Number(e[i] && e[i].px) ||
+          Number(a[i] && a[i].nm) !== Number(e[i] && e[i].nm)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function syncCalibrationShell(points) {
+    try {
+      const mgrMod = sp.v15 && sp.v15.calibrationPointManager;
+      if (!sp.calibrationPointManager && mgrMod && typeof mgrMod.create === 'function') {
+        sp.calibrationPointManager = mgrMod.create();
+      }
+      const mgr = sp.calibrationPointManager;
+      if (mgr && typeof mgr.getPoints === 'function' && typeof mgr.setPoints === 'function') {
+        const current = mgr.getPoints();
+        if (!calibrationPointsEqual(current, points)) mgr.setPoints(points);
+      }
+      if (sp.store && typeof sp.store.update === 'function') {
+        sp.store.update('calibration.shellPointCount', points.length, { source: 'exampleSpectrum.calibration.shell' });
+      }
+      const shell = sp.calibrationShellUI;
+      if (shell && typeof shell.renderShellPointsTable === 'function') shell.renderShellPointsTable();
+      if (shell && typeof shell.updateShellCountsAndValidation === 'function') shell.updateShellCountsAndValidation();
+      if (shell && typeof shell.renderMiniGraph === 'function') shell.renderMiniGraph();
+    } catch (_) {}
+  }
+
   function applyCalibration(sample) {
-    const points = sample.calibration.points;
+    const points = sample && sample.calibration && Array.isArray(sample.calibration.points)
+      ? sample.calibration.points
+      : [];
+    if (points.length < 2) {
+      return { ok: false, reason: 'Sample calibration has too few points.' };
+    }
     if (typeof global.resetCalibrationPoints !== 'function' ||
         typeof global.addInputPair !== 'function' ||
         typeof global.setCalibrationPoints !== 'function') {
@@ -429,15 +468,45 @@
 
       global.setCalibrationPoints();
 
+      let calibrationState = null;
       try {
-        if (global.SpectraCore && global.SpectraCore.calibration &&
-            typeof global.SpectraCore.calibration.emitCalibrationState === 'function') {
-          global.SpectraCore.calibration.emitCalibrationState();
+        if (global.SpectraCore && global.SpectraCore.calibration) {
+          if (typeof global.SpectraCore.calibration.emitCalibrationState === 'function') {
+            calibrationState = global.SpectraCore.calibration.emitCalibrationState();
+          }
+          if (!calibrationState && typeof global.SpectraCore.calibration.getState === 'function') {
+            calibrationState = global.SpectraCore.calibration.getState();
+          }
         }
       } catch (_) {}
 
-      const calibrated = typeof global.isCalibrated === 'function' ? !!global.isCalibrated() : true;
-      return { ok: calibrated, count: points.length, reason: calibrated ? '' : 'Calibration did not activate.' };
+      const activePoints = calibrationState && Array.isArray(calibrationState.points)
+        ? calibrationState.points
+        : [];
+      const calibrated = typeof global.isCalibrated === 'function'
+        ? !!global.isCalibrated()
+        : !!(calibrationState && calibrationState.calibrated);
+      const pointsLoaded = calibrationPointsEqual(activePoints, points);
+
+      if (!calibrated || !pointsLoaded) {
+        return {
+          ok: false,
+          count: activePoints.length,
+          reason: !pointsLoaded
+            ? ('Calibration points did not activate (expected ' + points.length + ', got ' + activePoints.length + ').')
+            : 'Calibration did not activate.'
+        };
+      }
+
+      syncCalibrationShell(points);
+      try {
+        if (sp.store && typeof sp.store.update === 'function') {
+          sp.store.update('calibration.origin', 'sample', { source: 'exampleSpectrum.calibration' });
+          sp.store.update('calibration.sampleId', String(sample && sample.id || ''), { source: 'exampleSpectrum.calibration' });
+        }
+      } catch (_) {}
+
+      return { ok: true, count: points.length, reason: '' };
     } catch (error) {
       return { ok: false, reason: String(error && error.message || error) };
     }
@@ -655,6 +724,22 @@
       if (typeof global.drawSelectionLine === 'function') global.drawSelectionLine();
       if (typeof global.showSelectedStripe === 'function') global.showSelectedStripe();
     } catch (_) {}
+  }
+
+  function resetActiveExampleBeforeLoad() {
+    if (!getActiveExampleId()) return false;
+    try {
+      if (typeof global.resetBundledExampleStateForCamera === 'function') {
+        global.resetBundledExampleStateForCamera();
+      }
+    } catch (_) {}
+    try {
+      const graph = global.SpectraCore && global.SpectraCore.graph;
+      if (graph && typeof graph.clearNumericFrame === 'function') {
+        graph.clearNumericFrame({ redraw: false });
+      }
+    } catch (_) {}
+    return true;
   }
 
   function markExampleActive(sample) {
@@ -910,6 +995,7 @@
     try {
       if (sample.kind === 'rgb-spectrum') {
         const spectrumAsset = await loadRgbSpectrumAsset(sample);
+        resetActiveExampleBeforeLoad();
         stopLiveSource();
         closeChooser();
         finishLoadedRgbSpectrum(sample, spectrumAsset);
@@ -917,12 +1003,14 @@
       }
       if (sample.kind === 'numeric') {
         const numericAsset = await loadNumericAsset(sample);
+        resetActiveExampleBeforeLoad();
         stopLiveSource();
         closeChooser();
         finishLoadedNumeric(sample, numericAsset);
         return true;
       }
       const imageUrl = await preloadAsset(sample);
+      resetActiveExampleBeforeLoad();
       stopLiveSource();
       closeChooser();
 
