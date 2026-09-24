@@ -3023,6 +3023,7 @@ function renderConsole() {
     const fillModeSel = $('spFillMode');
     const fillOpacityInput = $('spFillOpacity');
     const saturationOverlayInput = $('spToggleSaturationOverlay');
+    const diffractionOverlayInput = $('spToggleDiffractionOverlay');
     const calibrationExtrapolationInput = $('spToggleCalibrationExtrapolation');
     const calibrationShadeOpacityInput = $('spCalibrationShadeOpacity');
     const calibrationShadeOpacityValue = $('spCalibrationShadeOpacityValue');
@@ -3510,7 +3511,11 @@ function autoCloseInfoPopupIfDefault() {
       }
     } catch (_) {}
 
-    render();
+    try {
+      render();
+    } catch (error) {
+      try { console.error('[SPECTRA-PRO] Initial UI render failed; analysis listeners will still be registered.', error); } catch (_) {}
+    }
     // Create a singleton worker client if available; worker startup remains lazy.
     ensureWorkerClient();
     setTimeout(function () { probeCameraCapabilitiesIntoStore(); }, 0);
