@@ -1876,6 +1876,21 @@ label[for="peakSizeLower"],
   padding:0 !important;
 }
 #SpectraProDockHost #spCalibrationShadeOpacity:disabled{opacity:.42;cursor:not-allowed;}
+@media (min-width:1101px){
+  #SpectraProDockHost #spTabs{
+    display:grid !important;
+    grid-template-columns:repeat(5,max-content) minmax(0,1fr) minmax(320px,28%) !important;
+    column-gap:0 !important;
+    align-items:center !important;
+  }
+  #SpectraProDockHost #spTabs > .sp-graph-tools{
+    grid-column:6;
+    justify-self:end;
+    margin-left:0;
+    padding-left:12px;
+    width:auto;
+  }
+}
 @media (max-width:1100px){
   #SpectraProDockHost .sp-graph-tools{
     width:100%;
@@ -1883,6 +1898,107 @@ label[for="peakSizeLower"],
     padding-left:0;
     padding-top:4px;
     flex-wrap:wrap;
+  }
+}
+
+/* CORE v3.1.5: ordered rows after persistent X/Y/Peaks moved to the toolbar. */
+#SpectraProDockHost .sp-core-settings{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+#SpectraProDockHost .sp-core-settings-row{
+  min-width:0;
+}
+#SpectraProDockHost .sp-core-settings-row--display{
+  display:grid;
+  grid-template-columns:1fr 1fr .72fr 1fr 1.18fr 1.7fr;
+  gap:10px;
+  align-items:end;
+}
+#SpectraProDockHost .sp-core-settings-row--display > .sp-field,
+#SpectraProDockHost .sp-core-settings-row--peaks > .sp-field{
+  min-width:0 !important;
+}
+#SpectraProDockHost .sp-core-settings-row--display .sp-field select,
+#SpectraProDockHost .sp-core-settings-row--display .sp-field input[type=number],
+#SpectraProDockHost .sp-core-settings-row--display .sp-field input[type=range],
+#SpectraProDockHost .sp-core-settings-row--peaks .sp-field input[type=number]{
+  width:100% !important;
+  max-width:100% !important;
+}
+#SpectraProDockHost .sp-core-settings-row--display #spFieldFillMode,
+#SpectraProDockHost .sp-core-settings-row--display #spFieldFillOpacity{
+  min-width:0 !important;
+}
+#SpectraProDockHost .sp-core-settings-row--display #spFillOpacity{
+  width:100% !important;
+}
+#SpectraProDockHost .sp-core-settings-row--peaks{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  width:min(430px,100%);
+  align-items:end;
+}
+#SpectraProDockHost .sp-core-traces{
+  display:grid;
+  grid-template-columns:minmax(88px,.85fr) minmax(128px,1.15fr);
+  gap:12px;
+  align-items:center;
+  min-width:0;
+  align-self:stretch;
+}
+#SpectraProDockHost .sp-core-traces .sp-field--stackgroup{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:0;
+  min-width:0;
+  padding:0 2px;
+}
+#SpectraProDockHost .sp-core-traces .sp-mini-row{
+  display:grid;
+  grid-template-columns:max-content 16px;
+  align-items:center;
+  justify-content:end;
+  gap:4px;
+  margin:0;
+  padding:0;
+  line-height:1.05;
+}
+#SpectraProDockHost .sp-core-traces .sp-mini-row span{
+  white-space:nowrap;
+  text-align:right;
+  font-size:12px;
+}
+#SpectraProDockHost .sp-core-traces .sp-mini-row input{
+  margin:0;
+  justify-self:end;
+}
+#SpectraProDockHost .sp-core-traces #spFieldCombined{
+  min-height:auto;
+  padding-top:0;
+}
+@media (max-width:1350px){
+  #SpectraProDockHost .sp-core-settings-row--display{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+  }
+  #SpectraProDockHost .sp-core-traces{
+    grid-column:1 / -1;
+    width:min(360px,100%);
+  }
+}
+@media (max-width:900px){
+  #SpectraProDockHost .sp-core-settings-row--display{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  #SpectraProDockHost .sp-core-settings-row--peaks{
+    grid-template-columns:1fr;
+    width:100%;
+  }
+  #SpectraProDockHost .sp-core-traces{
+    grid-column:1 / -1;
   }
 }
 
