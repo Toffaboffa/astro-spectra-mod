@@ -12,6 +12,8 @@ const framePreview = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/
 const graphScript = fs.readFileSync(path.join(root, 'docs/frontend/scripts/graphScript.js'), 'utf8');
 const imageLoading = fs.readFileSync(path.join(root, 'docs/frontend/scripts/imageLoadingScript.js'), 'utf8');
 const spectrapro = fs.readFileSync(path.join(root, 'docs/frontend/pages/spectrapro.html'), 'utf8');
+const cameraScript = fs.readFileSync(path.join(root, 'docs/frontend/scripts/cameraScript.js'), 'utf8');
+const stateStore = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/stateStore.js'), 'utf8');
 const i18n = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/i18nUi.js'), 'utf8');
 const recording = fs.readFileSync(path.join(root, 'docs/frontend/pages/recording.html'), 'utf8');
 const solarIcon = fs.readFileSync(path.join(root, 'docs/frontend/assets/examples/icons/solar-spectrum.png'));
@@ -110,6 +112,16 @@ assert.ok(imageLoading.includes('runtime.refreshActiveSourceMetrics()'), 'extern
 assert.ok(imageLoading.includes("if (typeof syncCanvasToVideo === 'function') syncCanvasToVideo();"), 'external images must resync the source overlay geometry');
 assert.ok(!imageLoading.includes("videoElement = document.getElementById('cameraImage')"), 'external images must not bypass the runtime source transition with the legacy direct assignment');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.0.8-external-image-1'), 'published external-image loader must use a fresh cache key');
+assert.ok(examples.includes('calibrationPointsEqual(activePoints, points)'), 'sample calibration must verify that the configured points actually became active');
+assert.ok(examples.includes('syncCalibrationShell(points)'), 'sample calibration must synchronize the visible CALIBRATE point manager');
+assert.ok((examples.match(/resetActiveExampleBeforeLoad\(\);/g) || []).length >= 3, 'every bundled sample source type must clear the previous sample state before switching');
+assert.ok(bootstrap.includes("if (mgr && typeof mgr.setPoints === 'function' && !same)"), 'calibration shell sync must accept an empty point set so sample reset visibly reaches zero');
+assert.ok(!bootstrap.includes("nextPts.length && !same"), 'calibration shell must not ignore zero-point calibration resets');
+assert.ok(cameraScript.includes("if (!exampleId) return false;"), 'automatic calibration reset must be guarded by an active bundled-example marker');
+assert.ok(imageLoading.includes("resetBundledExampleStateForCamera()"), 'external images must clear calibration only through the bundled-example guard');
+assert.ok(stateStore.includes("exampleSpectrumUi.js?v=' + AI_ASSET_VERSION + '-sample-calibration-1'"), 'dynamic sample loader must use the calibration-fix cache key');
+assert.ok(spectrapro.includes('stateStore.js?v=3.0.8-sample-calibration-1'), 'published state store must use a fresh sample-calibration cache key');
+assert.ok(spectrapro.includes('proBootstrap.js?v=3.0.8-sample-calibration-1'), 'published calibration shell sync must use a fresh cache key');
 assert.ok(!graphScript.includes("resizeCanvasToDisplaySize(graphCtx, graphCanvas, 'Normal');\n      if (typeof window.drawGraph === 'function') window.drawGraph();"), 'numeric spectrum loading must not redraw and emit the same frame twice');
 for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Advanced: reference spectrum comparison', 'Continuum diagnostics']) {
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
