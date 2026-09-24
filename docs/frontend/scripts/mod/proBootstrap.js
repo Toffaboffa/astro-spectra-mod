@@ -1054,8 +1054,14 @@ if (!document.getElementById('spSubtractionControls')) {
           e.target.checked = !!(current.analysis && current.analysis.enabled);
           return;
         }
+        const target = currentMode === 'ASTRO' ? $('spAstroEnabled') : $('spLabEnabled');
+        if (target) {
+          target.checked = !!e.target.checked;
+          try { target.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+          return;
+        }
         const on = !!e.target.checked;
-        updateStorePath('analysis.enabled', on, { source: 'proBootstrap.graphTools' });
+        updateStorePath('analysis.enabled', on, { source: 'proBootstrap.graphToolsFallback' });
         if (on) {
           try { setCoreWorkerMode('auto'); } catch (_) {}
           try {
