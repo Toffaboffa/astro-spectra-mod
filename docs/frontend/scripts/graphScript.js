@@ -680,7 +680,6 @@ function buildPeakInspectorElementCard(match) {
         delta !== null ? ('<div><span>Δ</span><b>' + escapePeakInspectorText(delta) + ' nm</b></div>') : '',
         confidence !== null ? ('<div><span>' + escapePeakInspectorText(peakInspectorText('matchValue')) + '</span><b>' + escapePeakInspectorText(confidence) + '%</b></div>') : '',
         '  </div>',
-        excluded ? ('<div class="sp-peak-element-card__excluded">' + escapePeakInspectorText(peakInspectorText('excludedDiffraction')) + '</div>') : '',
         '</div>'
     ].join('');
 }
