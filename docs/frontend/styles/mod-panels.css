@@ -2396,16 +2396,17 @@ label[for="peakSizeLower"],
     width:100% !important;
     min-width:0 !important;
     margin-left:0 !important;
-    padding-left:18px !important;
+    padding-left:24px !important;
     padding-right:0 !important;
     display:grid !important;
-    grid-template-columns:max-content max-content max-content max-content minmax(72px,1fr) !important;
+    grid-template-columns:repeat(5,max-content) !important;
+    justify-content:start !important;
     gap:12px !important;
     align-items:center !important;
   }
 
   #SpectraProDockHost #spTabs > .sp-graph-tools > :last-child{
-    justify-self:end !important;
+    justify-self:start !important;
   }
 
   #SpectraProDockHost #spTabs #spLanguageSwitch{
