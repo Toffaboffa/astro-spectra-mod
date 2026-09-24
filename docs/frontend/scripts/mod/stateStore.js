@@ -254,7 +254,7 @@
   if (global.document && !global.document.getElementById('spExampleSpectrumUiLoader')) {
     const script = global.document.createElement('script');
     script.id = 'spExampleSpectrumUiLoader';
-    script.src = '../scripts/mod/exampleSpectrumUi.js?v=' + AI_ASSET_VERSION;
+    script.src = '../scripts/mod/exampleSpectrumUi.js?v=' + AI_ASSET_VERSION + '-sample-calibration-1';
     script.defer = true;
     (global.document.head || global.document.documentElement).appendChild(script);
   }
