@@ -738,6 +738,8 @@
     if (sourceWindow) sourceWindow.classList.add('sp-numeric-source');
     if (video) video.style.display = 'none';
     if (image) image.style.display = 'none';
+    if (typeof global.disarmAutoPause === 'function') global.disarmAutoPause('Disarmed by source change.');
+    global.videoPaused = true;
     if (typeof global.setCameraPlaybackUi === 'function') global.setCameraPlaybackUi(false);
 
     const sourceRgb = renderRgbSpectrumPreview(asset);
@@ -870,6 +872,8 @@
     if (video) video.style.display = 'none';
     if (image) image.style.display = 'none';
     const solarSourceRgb = renderSolarSourcePreview(asset);
+    if (typeof global.disarmAutoPause === 'function') global.disarmAutoPause('Disarmed by source change.');
+    global.videoPaused = true;
     if (typeof global.setCameraPlaybackUi === 'function') global.setCameraPlaybackUi(false);
 
     enableAstroAnalysis();
@@ -946,7 +950,9 @@
       const video = $('videoMain');
       if (video) video.style.display = 'none';
 
-      if (typeof global.setCameraPlaybackUi === 'function') global.setCameraPlaybackUi(false);
+      if (typeof global.disarmAutoPause === 'function') global.disarmAutoPause('Disarmed by source change.');
+    global.videoPaused = true;
+    if (typeof global.setCameraPlaybackUi === 'function') global.setCameraPlaybackUi(false);
 
       const image = $('cameraImage');
       if (!image) throw new Error('Source image element is unavailable.');
