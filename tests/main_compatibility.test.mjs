@@ -67,15 +67,22 @@ const safeMissingReference = subtraction.process(raw, null, dark, 'ratio');
 assert.deepEqual(Array.from(safeMissingReference.values), raw, 'invalid reference input must preserve measured data');
 assert.ok(safeMissingReference.warnings.includes('reference-unavailable-or-length-mismatch'));
 
-const recording = read('docs/frontend/pages/recording.html');
+const spectrapro = read('docs/frontend/pages/spectrapro.html');
 [
   '../scripts/setupScript.js', '../scripts/cameraScript.js', '../scripts/stripeScript.js',
   '../scripts/cameraSelection.js', '../scripts/calibrationScript.js', '../scripts/graphScript.js'
-].forEach((source) => assert.ok(recording.includes(source), `main runtime script must remain loaded: ${source}`));
+].forEach((source) => assert.ok(spectrapro.includes(source), `main runtime script must remain loaded: ${source}`));
 
 const calibrationIo = read('docs/frontend/scripts/mod/calibrationIO.js');
+const calibrationScript = read('docs/frontend/scripts/calibrationScript.js');
+const proBootstrap = read('docs/frontend/scripts/mod/proBootstrap.js');
 assert.ok(calibrationIo.includes('function isWavelengthAxisSelected()'));
 assert.ok(calibrationIo.includes('if (isWavelengthAxisSelected())'), 'calibration must not re-prompt when nm is already selected');
+assert.ok(calibrationIo.includes('function isUsableCalibration(state)'), 'axis prompt must require a verified canonical calibration');
+assert.ok(!calibrationIo.includes('__spectraPromptBound'), 'legacy 120 ms file-import calibration guess must stay removed');
+assert.ok(calibrationScript.includes('applyPoints: applyCalibrationPoints'), 'core calibration must expose one canonical apply API');
+assert.ok(calibrationScript.includes('reset: resetCalibrationPoints'), 'core calibration must expose one canonical reset API');
+assert.ok(proBootstrap.includes('syncCanonicalCalibration'), 'PRO must synchronize from the canonical calibration engine');
 
 const exportUi = read('docs/frontend/scripts/mod/exportUi.js');
 ['source', 'csv', 'graph', 'json', 'pdf'].forEach((kind) => {

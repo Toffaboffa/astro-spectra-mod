@@ -238,7 +238,7 @@ function ensureHost() {
         },
         loadedAt: Date.now(),
         scaffold: false,
-        version: '3.0.8'
+        version: '3.0.9'
       };
     } else {
       const mods = v15.registry.modules || (v15.registry.modules = {});
@@ -247,7 +247,7 @@ function ensureHost() {
       });
       v15.registry.loadedAt = v15.registry.loadedAt || Date.now();
       v15.registry.scaffold = false;
-      v15.registry.version = '3.0.6';
+      v15.registry.version = '3.0.9';
     }
     return v15.registry;
   }
@@ -422,18 +422,44 @@ function maybeRunAnalysis(frameNormalized) {
 
   function normalizeCalibrationState(payload) {
     const p = payload || {};
-    const points = Array.isArray(p.points) ? p.points.slice() : [];
-    const coefficients = Array.isArray(p.coefficients) ? p.coefficients.slice() : [];
-    const isCalibrated = !!(p.isCalibrated || p.calibrated || coefficients.length);
+    const points = Array.isArray(p.points) ? p.points.filter(function (point) {
+      return point && Number.isFinite(Number(point.px)) && Number.isFinite(Number(point.nm));
+    }).map(function (point) { return { px: Number(point.px), nm: Number(point.nm) }; }) : [];
+    const coefficients = Array.isArray(p.coefficients) ? p.coefficients.map(Number).filter(Number.isFinite) : [];
+    const isCalibrated = points.length >= 2 && coefficients.length >= 2 && !!(p.isCalibrated !== false && p.calibrated !== false);
     return {
       isCalibrated,
+      calibrated: isCalibrated,
       coefficients,
       points,
       residualStatus: p.residualStatus || (isCalibrated ? 'available' : 'uncalibrated'),
-      pointCount: Number.isFinite(p.pointCount) ? p.pointCount : points.length,
+      pointCount: Number.isFinite(p.pointCount) ? Number(p.pointCount) : points.length,
+      shellPointCount: points.length,
+      origin: String(p.origin || (isCalibrated ? 'user' : 'none')),
+      sampleId: String(p.sampleId || ''),
       timestamp: p.timestamp || Date.now()
     };
   }
+
+  function syncCanonicalCalibration(payload, source) {
+    const normalized = normalizeCalibrationState(payload);
+    updateStorePath('calibration', normalized, { source: source || 'proBootstrap.calibrationSync' });
+
+    try {
+      const mgr = getCalibrationShellManager();
+      const nextPts = normalized.points;
+      const curPts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
+      const currentKey = JSON.stringify(curPts.map(function (p) { return [Number(p.px), Number(p.nm), p.enabled === false ? 0 : 1]; }));
+      const nextKey = JSON.stringify(nextPts.map(function (p) { return [Number(p.px), Number(p.nm), 1]; }));
+      if (mgr && typeof mgr.setPoints === 'function' && currentKey !== nextKey) mgr.setPoints(nextPts);
+    } catch (_) {}
+
+    try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.renderShellPointsTable === 'function') sp.calibrationShellUI.renderShellPointsTable(); } catch (_) {}
+    try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.updateShellCountsAndValidation === 'function') sp.calibrationShellUI.updateShellCountsAndValidation(); } catch (_) {}
+    try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.renderMiniGraph === 'function') sp.calibrationShellUI.renderMiniGraph(); } catch (_) {}
+    return normalized;
+  }
+
 
   function normalizeReferenceState(payload) {
     const p = payload || {};
@@ -1590,57 +1616,29 @@ function applyShellCalibrationPointsToOriginal() {
   if (!normalized || !normalized.ok) {
     return { ok: false, reason: (normalized && normalized.message) || 'No valid shell points' };
   }
-  const pts = normalized.points;
   try {
-    if (typeof window.resetCalibrationPoints !== 'function' || typeof window.setCalibrationPoints !== 'function') {
-      return { ok: false, reason: 'Original calibration functions unavailable' };
+    const calibration = window.SpectraCore && window.SpectraCore.calibration;
+    if (!calibration || typeof calibration.applyPoints !== 'function') {
+      return { ok: false, reason: 'Canonical calibration API unavailable' };
     }
-
-    // Save a rollback backup (best-effort) before overwriting inputs.
-    try {
-      const st = getStoreState();
-      const cur = (st.calibration && Array.isArray(st.calibration.points)) ? st.calibration.points : [];
-      updateStorePath('calibration.lastApplyBackup', Array.isArray(cur) ? cur.slice() : cur, { source: 'proBootstrap.calIO.apply' });
-      updateStorePath('calibration.lastApplyBackupAt', Date.now(), { source: 'proBootstrap.calIO.apply' });
-    } catch (_) {}
-
-    window.resetCalibrationPoints();
-    while (true) {
-      const nextIndex = document.getElementById('point' + (pts.length) + 'px') ? pts.length : null;
-      if (nextIndex != null) break;
-      if (typeof window.addInputPair !== 'function') return { ok: false, reason: 'Cannot create calibration input pairs' };
-      const before = document.querySelectorAll('#input-container .input-pair').length;
-      window.addInputPair();
-      const after = document.querySelectorAll('#input-container .input-pair').length;
-      if (after <= before) break;
+    const state = calibration.applyPoints(normalized.points, {
+      origin: 'user',
+      sampleId: '',
+      source: 'calibrate-shell'
+    });
+    if (!state || !state.calibrated) {
+      return { ok: false, reason: (state && state.reason) || 'Calibration fit did not activate' };
     }
-    for (let i = 0; i < pts.length; i += 1) {
-      const idx = i + 1;
-      const pxEl = document.getElementById('point' + idx + 'px');
-      const nmEl = document.getElementById('point' + idx + 'nm');
-      if (!pxEl || !nmEl) return { ok: false, reason: 'Calibration input pair #' + idx + ' missing' };
-      pxEl.value = String(pts[i].px);
-      nmEl.value = String(pts[i].nm);
-    }
-    try { window.setCalibrationPoints(); } catch (err) { return { ok: false, reason: String(err && err.message || err) }; }
-
-    let detailed = null;
-    try {
-      if (window.SpectraCore && window.SpectraCore.calibration) {
-        if (typeof window.SpectraCore.calibration.emitCalibrationState === 'function') window.SpectraCore.calibration.emitCalibrationState();
-        if (typeof window.SpectraCore.calibration.getDetailedState === 'function') detailed = window.SpectraCore.calibration.getDetailedState();
-        else if (typeof window.SpectraCore.calibration.getState === 'function') detailed = window.SpectraCore.calibration.getState();
-      }
-    } catch (_) {}
-    if (detailed) {
-      updateStorePath('calibration', normalizeCalibrationState(detailed), { source: 'proBootstrap.calIO.apply' });
-    } else {
-      updateStorePath('calibration.shellPointCount', pts.length, { source: 'proBootstrap.calIO.apply' });
-    }
-    return { ok: true, count: pts.length, truncated: !!normalized.truncated, calibrated: !!(detailed && (detailed.calibrated || (detailed.coefficients && detailed.coefficients.length))) };
+    return {
+      ok: true,
+      count: state.pointCount || normalized.points.length,
+      truncated: !!normalized.truncated,
+      calibrated: true
+    };
   } catch (err) {
     return { ok: false, reason: String(err && err.message || err) };
   }
+
 }
 
 function ensureLabPanel() {
@@ -3502,6 +3500,16 @@ function autoCloseInfoPopupIfDefault() {
     if (booted) return;
     booted = true;
     wrapShowInfoPopup();
+
+    // The initial calibration event may have fired before PRO's DOM-ready listener.
+    // Hydrate the canonical engine state explicitly before the shell is rendered.
+    try {
+      const coreCalibration = window.SpectraCore && window.SpectraCore.calibration;
+      if (coreCalibration && typeof coreCalibration.getState === 'function') {
+        syncCanonicalCalibration(coreCalibration.getState(), 'proBootstrap.calibrationInitial');
+      }
+    } catch (_) {}
+
     render();
     // Create a singleton worker client if available; worker startup remains lazy.
     ensureWorkerClient();
@@ -3630,23 +3638,10 @@ function autoCloseInfoPopupIfDefault() {
         }
       });
       window.SpectraPro.coreHooks.on('calibrationChanged', function (payload) {
-        const normalized = normalizeCalibrationState(payload);
-        updateStorePath('calibration', normalized, { source: 'proBootstrap.calibrationSync' });
-        try {
-          const mgr = getCalibrationShellManager();
-          const nextPts = Array.isArray(normalized.points) ? normalized.points : [];
-          const curPts = (mgr && typeof mgr.getPoints === 'function') ? mgr.getPoints() : [];
-          const same = JSON.stringify(curPts.map(function (p) { return [Number(p.px), Number(p.nm), p.enabled === false ? 0 : 1]; })) === JSON.stringify(nextPts.map(function (p) { return [Number(p.px), Number(p.nm), 1]; }));
-          if (mgr && typeof mgr.setPoints === 'function' && !same) {
-            mgr.setPoints(nextPts);
-            updateStorePath('calibration.shellPointCount', nextPts.length, { source: 'proBootstrap.calibrationSync.shell' });
-            try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.renderShellPointsTable === 'function') sp.calibrationShellUI.renderShellPointsTable(); } catch (_) {}
-            try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.updateShellCountsAndValidation === 'function') sp.calibrationShellUI.updateShellCountsAndValidation(); } catch (_) {}
-            try { if (sp.calibrationShellUI && typeof sp.calibrationShellUI.renderMiniGraph === 'function') sp.calibrationShellUI.renderMiniGraph(); } catch (_) {}
-          }
-        } catch (_) {}
+        syncCanonicalCalibration(payload, 'proBootstrap.calibrationSync');
         queueStatusRender();
       });
+
       window.SpectraPro.coreHooks.on('referenceChanged', function (payload) {
         const normalized = normalizeReferenceState(payload);
         updateStorePath('reference', normalized, { source: 'proBootstrap.referenceSync' });

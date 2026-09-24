@@ -1,7 +1,7 @@
 (function (global) {
   'use strict';
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = 'v3.0.1';
+  const VERSION = 'v3.0.9';
   sp.version = VERSION;
 
   function createModeTabs(container) {
@@ -258,6 +258,7 @@
       'peaks.threshold',
       'peaks.distance',
       'peaks.smoothing',
+      'calibration',
       'calibration.coefficients',
       'calibration.points',
       'calibration.isCalibrated'

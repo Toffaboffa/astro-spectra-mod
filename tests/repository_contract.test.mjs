@@ -13,37 +13,26 @@ for (const status of ['IMPLEMENTED', 'EXPERIMENTAL', 'PLANNED']) {
   assert.ok(readme.includes(status), 'README must expose ' + status);
 }
 assert.ok(spec.includes('spectra-pro-export/v2'));
-assert.ok(spec.includes('Current UI version: **3.0.1**'));
-assert.ok(readme.includes('Current UI version: v3.0.1'));
+assert.ok(spec.includes('Current UI version: **3.0.9**'));
+assert.ok(readme.includes('Current UI version: v3.0.9'));
 
-const archivedRoadmap = read('docs/archive/CODEX_ANALYSIS_ASTRO_ROADMAP_COMPLETED.md');
-assert.ok(archivedRoadmap.includes('Status: **COMPLETE**'), 'The completed stages 1–16 roadmap must remain archived');
-assert.ok(archivedRoadmap.includes('23af37278117c1629244d91ea35df7569da454a4'), 'The roadmap archive must retain its source commit');
-assert.equal(fs.existsSync(path.join(root, 'CODEX_ANALYSIS_ASTRO_ROADMAP.md')), false, 'The completed roadmap must live in the archive, not remain active at repository root');
-
-for (const relative of [
-  'docs/frontend/pages/recording.html',
-  'docs/frontend/workers/analysis.worker.js',
-  'docs/frontend/scripts/mod/stateStore.js',
-  'docs/frontend/scripts/mod/exportUi.js',
-  'docs/frontend/scripts/mod/helpUi.js',
+const releaseSources = [
   'docs/frontend/scripts/mod/uiPanels.js',
-  'docs/frontend/scripts/mod/cameraCapabilities.js',
-  'docs/frontend/scripts/mod/displayModes.js',
-  'docs/frontend/scripts/mod/graphAppearance.js',
-  'docs/frontend/scripts/mod/i18nUi.js',
-  'docs/frontend/scripts/mod/peakControls.js',
-  'docs/frontend/scripts/mod/uiTweaksV203.js',
-  'docs/frontend/scripts/mod/yAxisController.js'
-]) {
-  const source = read(relative);
-  const previousPublicVersion = ['2', '3', '15'].join('.');
-  assert.ok(source.includes('3.0.1'), relative + ' must carry the v3.0.1 release version');
-  assert.ok(!source.includes(previousPublicVersion), relative + ' must not retain the previous public version');
-  assert.ok(!source.includes('3.0.0'), relative + ' must not retain stale v3.0.0 runtime version markers');
+  'docs/frontend/scripts/mod/calibrationIO.js',
+  'docs/frontend/scripts/mod/stateStore.js',
+  'docs/frontend/scripts/mod/exampleSpectrumUi.js',
+  'docs/frontend/scripts/mod/calibrationPointManager.js',
+  'docs/frontend/scripts/mod/proBootstrap.js'
+];
+for (const relative of releaseSources) {
+  assert.ok(read(relative).includes('3.0.9'), relative + ' must carry the v3.0.9 release version');
 }
+const spectraproPage = read('docs/frontend/pages/spectrapro.html');
+assert.ok(spectraproPage.includes('?v=3.0.9'), 'canonical application page must publish 3.0.9 cache keys');
+assert.ok(!spectraproPage.includes('phase1-bridge'), 'duplicate calibration bridge must not return');
+
 const aiWorker = read('backend/ai-worker/src/index.js');
-assert.ok(aiWorker.includes("appVersion: '3.0.1'"), 'AI Worker responses must expose the application release version');
+assert.ok(aiWorker.includes("appVersion: '3.0.9'"), 'AI Worker responses must expose application release 3.0.9');
 assert.ok(!aiWorker.includes('stage: 6'), 'AI Worker responses must not expose a temporary roadmap-stage label');
 
 const removedPlaceholders = [

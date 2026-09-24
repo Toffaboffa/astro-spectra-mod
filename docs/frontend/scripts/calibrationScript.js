@@ -13,6 +13,8 @@ let pixelCalPoints = [];
 let nmCalPoints = [];
 let nMAxis = []
 let divergencePoints = [];
+let calibrationOrigin = 'none';
+let calibrationSampleId = '';
 
 let calLineColor = '#0000ff';
 let calPointsColor = '#ff0000';
@@ -191,12 +193,30 @@ function clearInputBoxes() {
  * Removes all the additional boxes that were already added by the user
  */
 function deleteAllAdditionalInputPairs() {
-    if (inputBoxCounter !== minInputBoxNumber) {
-        for (let i = inputBoxCounter; i > minInputBoxNumber; i--) {
-            removeLastInputPair();
-        }
+    const inputContainer = document.getElementById("input-container");
+    while (inputBoxCounter > minInputBoxNumber && inputContainer && inputContainer.lastElementChild) {
+        inputContainer.removeChild(inputContainer.lastElementChild);
+        inputBoxCounter--;
     }
+    disablePairRemoveButtons();
 }
+
+function setCalibrationInputValues(points) {
+    const list = Array.isArray(points) ? points : [];
+    const targetCount = Math.max(minInputBoxNumber, Math.min(maxInputBoxNumber, list.length));
+    deleteAllAdditionalInputPairs();
+    while (inputBoxCounter < targetCount) addInputPair();
+    clearInputBoxes();
+    for (let i = 0; i < list.length && i < inputBoxCounter; i++) {
+        const pxInput = document.getElementById(`point${i + 1}px`);
+        const nmInput = document.getElementById(`point${i + 1}nm`);
+        if (pxInput) pxInput.value = String(list[i].px);
+        if (nmInput) nmInput.value = String(list[i].nm);
+    }
+    if (inputBoxCounter > minInputBoxNumber) enablePairRemoveButtons();
+    else disablePairRemoveButtons();
+}
+
 
 /**
  * Disables the [X] removal buttons for all input pairs
@@ -266,13 +286,97 @@ function sortCalibrationInputPairs() {
         highlightInputPair(permanentCalPoint.px, permanentCalPoint.nm, true);
     }
 
-    redrawCalibrationGraphs();
+    setCalibrationPoints({ origin: 'user', source: 'sort' });
+}
+
+/**
+ * Returns a detached snapshot of the calibration engine state.
+ */
+function getCalibrationStateSnapshot() {
+    const points = (Array.isArray(calibrationData) ? calibrationData : [])
+        .filter(point => point && Number.isFinite(Number(point.px)) && Number.isFinite(Number(point.nm)))
+        .map(point => ({ px: Number(point.px), nm: Number(point.nm) }));
+    const coefficients = (Array.isArray(polyFitCoefficientsArray) ? polyFitCoefficientsArray : [])
+        .map(Number)
+        .filter(Number.isFinite);
+    const calibrated = points.length >= minInputBoxNumber &&
+        coefficients.length >= 2 &&
+        coefficients.every(Number.isFinite);
+    return {
+        isCalibrated: calibrated,
+        calibrated,
+        coefficients,
+        pointCount: points.length,
+        points,
+        residualStatus: calibrated ? 'available' : 'uncalibrated',
+        origin: calibrationOrigin,
+        sampleId: calibrationOrigin === 'sample' ? calibrationSampleId : '',
+        timestamp: Date.now()
+    };
+}
+
+function publishCalibrationState(meta) {
+    const options = meta && typeof meta === 'object' ? meta : {};
+    if (Object.prototype.hasOwnProperty.call(options, 'origin')) {
+        calibrationOrigin = String(options.origin || 'none');
+    }
+    if (calibrationOrigin === 'sample') {
+        if (Object.prototype.hasOwnProperty.call(options, 'sampleId')) {
+            calibrationSampleId = String(options.sampleId || '');
+        }
+    } else {
+        calibrationSampleId = '';
+    }
+
+    const data = getCalibrationStateSnapshot();
+    if (options.source) data.source = String(options.source);
+    try {
+        const sp = window.SpectraPro || (window.SpectraPro = {});
+        sp.coreBridge = sp.coreBridge || {};
+        sp.coreBridge.calibration = data;
+        if (sp.coreHooks && typeof sp.coreHooks.emit === 'function') {
+            sp.coreHooks.emit('calibrationChanged', data);
+        }
+    } catch (_) {}
+    return data;
+}
+
+function normalizeCalibrationPointList(points) {
+    const raw = Array.isArray(points) ? points : [];
+    if (raw.length < minInputBoxNumber || raw.length > maxInputBoxNumber) {
+        return { ok: false, reason: `Calibration requires ${minInputBoxNumber}–${maxInputBoxNumber} points.`, points: [] };
+    }
+    const normalized = [];
+    const seenPx = new Set();
+    for (let i = 0; i < raw.length; i++) {
+        const px = Number(raw[i] && raw[i].px);
+        const nm = Number(raw[i] && raw[i].nm);
+        if (!Number.isFinite(px) || !Number.isFinite(nm)) {
+            return { ok: false, reason: `Invalid calibration point #${i + 1}.`, points: [] };
+        }
+        if (seenPx.has(px)) {
+            return { ok: false, reason: `Duplicate calibration pixel ${px}.`, points: [] };
+        }
+        seenPx.add(px);
+        normalized.push({ px, nm });
+    }
+    return { ok: true, points: normalized };
+}
+
+function applyCalibrationPoints(points, meta) {
+    const normalized = normalizeCalibrationPointList(points);
+    if (!normalized.ok) return { ok: false, calibrated: false, reason: normalized.reason, points: [] };
+    setCalibrationInputValues(normalized.points);
+    const options = Object.assign({ origin: 'user', sampleId: '', source: 'apply-points' }, meta || {});
+    const state = setCalibrationPoints(options);
+    return Object.assign({ ok: !!state.calibrated, reason: state.calibrated ? '' : 'Calibration fit did not activate.' }, state);
 }
 
 /**
  * Saves the calibration points from the input boxes
  */
-function setCalibrationPoints() {
+function setCalibrationPoints(meta) {
+    const options = meta && typeof meta === 'object' ? meta : {};
     resetCalValues();
     removeHighlightInputPair(true);
     for (let i = 1; i < inputBoxCounter + 1; i++) {
@@ -280,15 +384,9 @@ function setCalibrationPoints() {
         const nmInput = document.getElementById(`point${i}nm`);
 
         if (pxInput && nmInput) {
-            const rawPx = pxInput.value.trim();
-            const rawNm = nmInput.value.trim();
-
-            const pxValue = parseFloat(rawPx);
-            const nmValue = parseFloat(rawNm);
-
-            if (!isNaN(pxValue) &&
-                !isNaN(nmValue)
-            ) {
+            const pxValue = parseFloat(pxInput.value.trim());
+            const nmValue = parseFloat(nmInput.value.trim());
+            if (!isNaN(pxValue) && !isNaN(nmValue)) {
                 calibrationData.push({ px: pxValue, nm: nmValue });
             }
         }
@@ -297,10 +395,23 @@ function setCalibrationPoints() {
     if (calibrationData.length >= minInputBoxNumber) {
         calibrate();
     }
-    clearGraph(graphCtxCalibration, graphCanvasCalibration);
 
-    redrawCalibrationGraphs();
+    // Commit the canonical state before any canvas rendering. A hidden/invalid
+    // calibration canvas must never prevent CALIBRATE/Analyze from receiving it.
+    const state = publishCalibrationState({
+        origin: options.origin || 'user',
+        sampleId: options.sampleId || '',
+        source: options.source || 'manual-input'
+    });
+
+    try {
+        redrawCalibrationGraphs();
+    } catch (error) {
+        try { console.warn('[SPECTRA calibration] redraw failed after state commit', error); } catch (_) {}
+    }
+    return state;
 }
+
 
 /**
  * Creates an array of coefficients with the help of the Polynomial Regression located in polynomialReggressionScript.js
@@ -327,7 +438,8 @@ function calibrate() {
  * Returns true if there is an active calibration, false otherwise
  */
 function isCalibrated() {
-    return nmCalPoints.length !== 0;
+    return getCalibrationStateSnapshot().calibrated;
+
 }
 
 /**
@@ -421,65 +533,45 @@ function exportCalibrationFile() {
  * Lets the user choose a file and then automatically fill out input boxes with the calibration points from the file
  */
 function importCalibrationFile() {
-
     const fileInput = document.getElementById("my-file");
-    const file = fileInput.files[0];
-
-    if (!file) {
-        return;
-    }
-
-    resetInputBoxes();
+    const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+    if (!file) return;
 
     const reader = new FileReader();
-
-    const validFormatRegex = /^(\d+(?:[.,]\d+)?);(\d+(?:[.,]\d+)?)(?:\n|$)/;
+    const validFormatRegex = /^(\d+(?:[.,]\d+)?);(\d+(?:[.,]\d+)?)(?:\r?\n|$)/;
 
     reader.onload = function(event) {
-        const fileContent = event.target.result;
-
-        const lines = fileContent.trim().split("\n").map(line => line.trim()).filter(line => line.length > 0);
+        const fileContent = String(event && event.target ? event.target.result : '');
+        const lines = fileContent.trim().split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 
         if (lines.length < minInputBoxNumber || lines.length > maxInputBoxNumber) {
             callError("wrongNumberOfCalPointsError");
-            resetInputBoxes();
             return;
         }
 
-        const extraLines = lines.length - inputBoxCounter;
-        for (let i = 0; i < extraLines; i++) {
-            addInputPair();
-        }
-
+        const points = [];
         for (let i = 0; i < lines.length; i++) {
-            const line = lines[i]
-
+            const line = lines[i];
             if (!validFormatRegex.test(line)) {
                 callError("wrongCalPointsFormatError");
-                resetInputBoxes()
                 return;
             }
-
-            const [px, nm] = lines[i].split(";");
-
-            let pxValue = px.trim().replace(',', '.');
-            let nmValue = nm.trim().replace(',', '.');
-
-            const pxFloat = parseFloat(pxValue);
-            const nmFloat = parseFloat(nmValue);
-
-            const pxInput = document.querySelector(`#point${i+1}px`);
-            const nmInput = document.querySelector(`#point${i+1}nm`);
-
-            if (pxInput && nmInput) {
-                pxInput.value = pxFloat;
-                nmInput.value = nmFloat;
+            const parts = line.split(";");
+            const px = parseFloat(String(parts[0]).trim().replace(',', '.'));
+            const nm = parseFloat(String(parts[1]).trim().replace(',', '.'));
+            if (!Number.isFinite(px) || !Number.isFinite(nm)) {
+                callError("wrongCalPointsFormatError");
+                return;
             }
+            points.push({ px, nm });
         }
-        setCalibrationPoints();
+
+        const result = applyCalibrationPoints(points, { origin: 'user', source: 'file-import' });
+        if (!result.ok) callError("wrongCalPointsFormatError");
     };
 
     reader.readAsText(file);
+
 }
 
 /**
@@ -494,14 +586,25 @@ function convertPxAxisIntoNm(){
 /**
  * Resets the input boxes, deletes all calibrated data
  */
-function resetCalibrationPoints() {
+function resetCalibrationPoints(meta) {
+    const options = meta && typeof meta === 'object' ? meta : {};
     resetInputBoxes();
     resetCalValues();
     inputBoxCounter = minInputBoxNumber;
-    drawGridCalibration();
-    drawGridDivergence();
     removeHighlightInputPair(true);
-    document.getElementById("my-file").value = null;
+    const fileInput = document.getElementById("my-file");
+    if (fileInput) fileInput.value = null;
+
+    const state = publishCalibrationState({
+        origin: 'none',
+        sampleId: '',
+        source: options.source || 'reset'
+    });
+
+    try { drawGridCalibration(); } catch (_) {}
+    try { drawGridDivergence(); } catch (_) {}
+    return state;
+
 }
 
 /**
@@ -1125,69 +1228,29 @@ graphCanvasDivergence.addEventListener("mousemove", (e) => {
 });
 
 
-/* SPECTRA PRO calibration hook */
+/* SPECTRA PRO canonical calibration API */
 
 (function(){
-  const sp = window.SpectraPro || (window.SpectraPro = {});
-  function currentCalibrationState(){
-    let coeffs = [];
-    try { coeffs = (typeof polyFitCoefficientsArray !== 'undefined' && Array.isArray(polyFitCoefficientsArray)) ? polyFitCoefficientsArray.slice() : []; } catch(e){}
-    let points = [];
-    try {
-      const px = (typeof pixelCalPoints !== 'undefined' && Array.isArray(pixelCalPoints)) ? pixelCalPoints : [];
-      const nm = (typeof nmCalPoints !== 'undefined' && Array.isArray(nmCalPoints)) ? nmCalPoints : [];
-      points = px.map((p,i)=>({ px:p, nm:nm[i] }));
-    } catch(e){}
-    return {
-      coefficients: coeffs,
-      pointCount: points.filter(p=>Number.isFinite(p.px)&&Number.isFinite(p.nm)).length,
-      points,
-      calibrated: coeffs.length > 0,
-      residualStatus: coeffs.length ? 'available' : 'uncalibrated',
-      timestamp: Date.now()
-    };
-  }
-  function emit(){
-    const data = currentCalibrationState();
-    try {
-      if (sp.coreHooks && sp.coreHooks.emit) sp.coreHooks.emit('calibrationChanged', data);
-      sp.coreBridge = sp.coreBridge || {}; sp.coreBridge.calibration = data;
-    } catch(e){}
-    return data;
-  }
-  const origSet = window.setCalibrationPoints;
-  if (typeof origSet === 'function' && !origSet.__spectraProWrapped){
-    const wrapped = function(){ const r = origSet.apply(this, arguments); emit(); return r; };
-    wrapped.__spectraProWrapped = true; window.setCalibrationPoints = wrapped;
-  }
-  const origCal = window.calibrateGraph;
-  if (typeof origCal === 'function' && !origCal.__spectraProWrapped){
-    const wrapped = function(){ const r = origCal.apply(this, arguments); emit(); return r; };
-    wrapped.__spectraProWrapped = true; window.calibrateGraph = wrapped;
-  }
   window.SpectraCore = window.SpectraCore || {};
-  window.SpectraCore.calibration = Object.assign(window.SpectraCore.calibration || {}, {
-    getState: currentCalibrationState,
-    emitCalibrationState: emit
-  });
-  setTimeout(emit, 0);
-})();
-
-
-/* SPECTRA PRO calibration bridge */
-(function(){
-  const sp = window.SpectraPro || (window.SpectraPro = {});
-  if (window.SpectraCore && window.SpectraCore.calibration && !window.SpectraCore.calibration.getDetailedState) {
-    window.SpectraCore.calibration.getDetailedState = function(){
-      const base = (window.SpectraCore.calibration.getState && window.SpectraCore.calibration.getState()) || {};
-      let range = null;
-      try {
-        if (Array.isArray(base.points) && base.points.length) {
-          const xs = base.points.map(p=>p.px).filter(Number.isFinite);
-          if (xs.length) range = { minPx: Math.min.apply(null, xs), maxPx: Math.max.apply(null, xs) };
-        }
-      } catch(e){}
-      return Object.assign({}, base, { range });
-    };
+  function detailedState(){
+    const base = getCalibrationStateSnapshot();
+    let range = null;
+    try {
+      const xs = (base.points || []).map(point => Number(point.px)).filter(Number.isFinite);
+      if (xs.length) range = { minPx: Math.min.apply(null, xs), maxPx: Math.max.apply(null, xs) };
+    } catch (_) {}
+    return Object.assign({}, base, { range });
   }
+
+  window.SpectraCore.calibration = Object.assign(window.SpectraCore.calibration || {}, {
+    getState: getCalibrationStateSnapshot,
+    getDetailedState: detailedState,
+    emitCalibrationState: publishCalibrationState,
+    applyPoints: applyCalibrationPoints,
+    reset: resetCalibrationPoints
+  });
+
+  setTimeout(function(){
+    publishCalibrationState({ source: 'initial' });
+  }, 0);
 })();
