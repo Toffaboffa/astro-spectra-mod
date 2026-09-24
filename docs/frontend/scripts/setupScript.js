@@ -87,10 +87,9 @@ function changeDisplayScreen(action) {
         leftHandle.classList.toggle('moved');
         leftDetectionArea.classList.toggle('moved');
 
-        const playButton = document.getElementById("playVideoButton");
-        if (window.getComputedStyle(playButton).visibility === 'hidden') {
-            playVideo();
-        }
+        // Sidebar visibility is presentation-only. Never alter camera playback/source
+        // here: playVideo() is now an alias for the explicit Live action and can
+        // leave loaded images/examples, restart the stream, and reset source-owned state.
     } else if (action === "imgSelect") {
         const isHidden = imageSelection.classList.toggle('hidden');
         rightHandle.innerHTML = isHidden ? '◁' : '▷';
