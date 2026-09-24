@@ -1797,6 +1797,27 @@ label[for="peakSizeLower"],
 }
 #SpectraProDockHost .sp-graph-tool--range{gap:7px;}
 #SpectraProDockHost .sp-graph-tool--range span{display:inline-flex;gap:4px;align-items:center;}
+#SpectraProDockHost .sp-graph-tool--select{gap:4px;}
+#SpectraProDockHost .sp-graph-tool--select select{
+  height:22px;
+  min-height:22px;
+  padding:1px 20px 1px 6px;
+  border:1px solid #365675;
+  border-radius:5px;
+  background:#0d1a2b;
+  color:#e8f2ff;
+  font-size:10px;
+  line-height:18px;
+}
+#SpectraProDockHost #spGraphXAxisMode{width:54px;}
+#SpectraProDockHost #spGraphYAxisMode{width:86px;}
+#SpectraProDockHost .sp-graph-tool--analyze{
+  padding-left:2px;
+  color:#dff7ef;
+}
+#SpectraProDockHost .sp-graph-tool--analyze input:disabled + span{
+  opacity:.48;
+}
 #SpectraProDockHost .sp-graph-tool--range b{
   min-width:28px;
   text-align:right;
