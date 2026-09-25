@@ -648,6 +648,14 @@ function testFluorescenceClearNarrowLines() {
   assert.ok(result.fluorescenceLineEvidence.groups[0].matchedCount >= 3, 'Mercury should require several matched lines before automatic display');
   assert.ok(result.clearNarrowLineHits.length >= 3, 'Several clear Hg lines should be promoted to graph labels');
   assert.ok(result.clearNarrowLineHits.every(function (hit) { return hit.element === 'Hg'; }), 'Automatically promoted fluorescence line labels should belong to the coherent Hg fingerprint');
+  assert.equal(result.offsetBasis, 'clear-narrow-line-hits', 'Fluorescent offset must state that it uses the accepted coherent narrow-line set');
+  within(
+    result.offsetNm,
+    worker.SPECTRA_PRO_spectrumMath.matchOffsetNm(result.clearNarrowLineHits),
+    1e-12,
+    'Fluorescent reported offset should be the median residual of accepted coherent narrow-line hits'
+  );
+  assert.ok(Number.isFinite(result.rawMatchOffsetNm), 'Fluorescent analysis should preserve the broader pre-filter matcher offset separately');
   assert.deepEqual(
     Array.from(result.overlayHits, function (hit) { return [hit.element, hit.referenceNm, hit.observedNm]; }),
     Array.from(result.clearNarrowLineHits, function (hit) { return [hit.element, hit.referenceNm, hit.observedNm]; }),
@@ -974,7 +982,8 @@ function testSharedAnalysisInfrastructure() {
   const math = worker.SPECTRA_PRO_spectrumMath;
   const presets = worker.SPECTRA_PRO_presetResolver;
   assert.equal(math.median([9, 1, 5, 3]), 4, 'Shared median should interpolate an even sample count');
-  assert.equal(math.matchOffsetNm([{ deltaNm: -0.4 }, { deltaNm: 0.2 }, { deltaNm: 0.1 }]), 0.1, 'Shared offset should preserve the pipeline median rule');
+  assert.equal(math.matchOffsetNm([{ deltaNm: -0.4 }, { deltaNm: 0.2 }, { deltaNm: 0.1 }]), 0.1, 'Shared offset should preserve the odd-count median rule');
+  assert.equal(math.matchOffsetNm([{ deltaNm: -0.4 }, { deltaNm: 0.2 }, { deltaNm: 0.1 }, { deltaNm: 0.8 }]), 0.15, 'Shared offset should interpolate the two middle residuals for an even match count');
   assert.deepEqual(
     Object.assign({}, math.observedRange({ nm: [510, 490, 500] }, [])),
     { min: 490, max: 510 },
