@@ -391,17 +391,37 @@
 
   function compactCalibrationDiagnostics(value) {
     if (!value || typeof value !== 'object') return null;
+    const wavelengthCoverage = value.wavelengthCoverageNm && typeof value.wavelengthCoverageNm === 'object'
+      ? value.wavelengthCoverageNm
+      : (value.coverageNm && typeof value.coverageNm === 'object' ? value.coverageNm : null);
+    const anchorCoverage = value.anchorWavelengthCoverageNm && typeof value.anchorWavelengthCoverageNm === 'object'
+      ? value.anchorWavelengthCoverageNm
+      : null;
+    const extrapolation = value.extrapolation && typeof value.extrapolation === 'object'
+      ? value.extrapolation
+      : null;
+    const legacyExtrapolated = value.extrapolated === true;
     return {
-      status: cleanString(value.status, 32) || null,
+      model: cleanString(value.model, 64) || null,
+      available: typeof value.available === 'boolean' ? value.available : null,
       pointCount: rounded(value.pointCount, 0),
       polynomialOrder: rounded(value.polynomialOrder, 0),
       rmsResidualNm: rounded(value.rmsResidualNm, 5),
       maxAbsResidualNm: rounded(value.maxAbsResidualNm, 5),
-      samplingNmPerPx: rounded(value.samplingNmPerPx, 5),
-      coverageNm: value.coverageNm && typeof value.coverageNm === 'object' ? {
-        min: rounded(value.coverageNm.min, 3), max: rounded(value.coverageNm.max, 3)
+      samplingNmPerPixel: rounded(value.samplingNmPerPixel != null ? value.samplingNmPerPixel : value.samplingNmPerPx, 5),
+      wavelengthCoverageNm: wavelengthCoverage ? {
+        min: rounded(wavelengthCoverage.min, 3),
+        max: rounded(wavelengthCoverage.max, 3)
       } : null,
-      extrapolated: !!value.extrapolated
+      anchorWavelengthCoverageNm: anchorCoverage ? {
+        min: rounded(anchorCoverage.min, 3),
+        max: rounded(anchorCoverage.max, 3)
+      } : null,
+      extrapolation: {
+        any: extrapolation ? extrapolation.any === true : legacyExtrapolated,
+        left: extrapolation ? extrapolation.left === true : false,
+        right: extrapolation ? extrapolation.right === true : false
+      }
     };
   }
 
