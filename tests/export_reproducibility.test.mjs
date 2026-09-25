@@ -53,6 +53,8 @@ assert.equal(bundle.scientificAnalysis.preprocessing.result.intensityBasis, 'res
 assert.equal(bundle.scientificAnalysis.instrumentResponse.result.applied, true);
 assert.equal(bundle.scientificAnalysis.measurementQuality.overallStatus, 'moderate');
 assert.equal(bundle.scientificAnalysis.detectedPeakCount, null, 'result types without emission-peak data must keep peak count unavailable instead of coercing null to zero');
+assert.equal(bundle.scientificAnalysis.lab.offsetNm, null, 'result types without a line-match offset must not coerce an unavailable offset to zero');
+assert.equal(bundle.scientificAnalysis.lab.rawMatchOffsetNm, null, 'result types without raw matcher residuals must keep raw offset unavailable');
 assert.equal(bundle.scientificAnalysis.detectedFeatures[0].polarity, 'absorption');
 assert.equal(bundle.scientificAnalysis.astro.radialVelocity.uncertaintyKmS, 18.4);
 assert.equal(bundle.scientificAnalysis.astro.stellarClassification.bestClass, 'G');
