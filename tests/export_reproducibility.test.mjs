@@ -23,6 +23,7 @@ const state = {
   preprocessing: { responseCorrection: { enabled: true, profileId: 'test-profile', maxCorrectionFactor: 5 }, baselineMode: 'continuum', normalizationMode: 'continuum' },
   analysis: {
     resultContext: 'astro', presetId: null,
+    detectedPeaks: [], detectedPeakCount: null,
     calibrationDiagnostics: { status: 'usable', rmsResidualNm: 0.12, maxAbsResidualNm: 0.2 },
     matchUncertaintyModel: { calibrationRmsNm: 0.12, samplingNmPerPx: 0.2 }, hardMatchCapNm: 1.8,
     preprocessing: { schema: 'spectra-pro-preprocessing/v1', intensityBasis: 'response-corrected-relative-intensity', activeOperations: ['instrument-response'], responseCorrection: { enabled: true, applied: true, profileId: 'test-profile' } },
@@ -51,6 +52,7 @@ assert.equal(bundle.scientificAnalysis.calibration.diagnostics.rmsResidualNm, 0.
 assert.equal(bundle.scientificAnalysis.preprocessing.result.intensityBasis, 'response-corrected-relative-intensity');
 assert.equal(bundle.scientificAnalysis.instrumentResponse.result.applied, true);
 assert.equal(bundle.scientificAnalysis.measurementQuality.overallStatus, 'moderate');
+assert.equal(bundle.scientificAnalysis.detectedPeakCount, null, 'result types without emission-peak data must keep peak count unavailable instead of coercing null to zero');
 assert.equal(bundle.scientificAnalysis.detectedFeatures[0].polarity, 'absorption');
 assert.equal(bundle.scientificAnalysis.astro.radialVelocity.uncertaintyKmS, 18.4);
 assert.equal(bundle.scientificAnalysis.astro.stellarClassification.bestClass, 'G');
