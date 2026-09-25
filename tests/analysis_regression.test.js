@@ -810,6 +810,20 @@ function testCalibrationAwareMatching() {
     points: fixture.goodCalibration.points.slice(1)
   };
   assert.equal(diagnostics.evaluate(extrapolatedCalibration, frame).extrapolation.left, true, 'Samples beyond calibration anchors should be marked extrapolated');
+  const extrapolatedDiagnostics = diagnostics.evaluate(extrapolatedCalibration, frame);
+  const coveredModel = diagnostics.createMatchingModel(good, fixture.hardware, [], 5, 5);
+  const edgeExtrapolatedModel = diagnostics.createMatchingModel(extrapolatedDiagnostics, fixture.hardware, [], 5, 5);
+  within(
+    edgeExtrapolatedModel.calibrationConfidenceFactor,
+    coveredModel.calibrationConfidenceFactor,
+    1e-12,
+    'Unused extrapolated frame edges must not globally reduce confidence for hits that remain inside calibration anchors'
+  );
+  const insideHit = diagnostics.annotateHit({ peakIndex: 12, deltaNm: 0.1, confidence: 1 }, edgeExtrapolatedModel, extrapolatedDiagnostics, frame);
+  const outsideHit = diagnostics.annotateHit({ peakIndex: 2, deltaNm: 0.1, confidence: 1 }, edgeExtrapolatedModel, extrapolatedDiagnostics, frame);
+  assert.equal(insideHit.extrapolated, false, 'A hit inside calibration anchors must not be marked extrapolated just because another frame edge is outside');
+  assert.equal(outsideHit.extrapolated, true, 'A hit outside calibration anchors must retain the hit-specific extrapolation flag');
+  assert.ok(outsideHit.confidence < insideHit.confidence, 'Only the hit that actually uses extrapolated calibration should receive the extrapolation confidence penalty');
 
   function run(calibration, referenceNm, maxDistanceNm) {
     return analyze(frame, {
