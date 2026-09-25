@@ -225,6 +225,34 @@ const coverageUiRows = Object.fromEntries(coverageUiResult.dq.map((row) => [row.
 assert.equal(coverageUiRows['Cov:'].value, '376–910 nm · ext', 'Data Quality must keep full-frame extrapolation visibly flagged even when result-scoped coverage is good');
 assert.ok(coverageUiRows['Cov:'].title.includes('result-bearing analysis region separately'), 'Coverage tooltip must explain that full-frame and result-bearing coverage are different assessments');
 
+const fitRmsUiResult = snrMetricsFromDataQuality({
+  calibration: {
+    isCalibrated: true,
+    coefficients: [400, 1, 0.1],
+    points: [
+      { px: 0, nm: 400 },
+      { px: 1, nm: 401.1 },
+      { px: 2, nm: 402.4 }
+    ]
+  },
+  analysis: {
+    calibrationDiagnostics: {
+      rmsResidualNm: 0,
+      fitDegreesOfFreedom: 0,
+      fitResidualIndependent: false,
+      exactInterpolation: true,
+      fitResidualStatus: 'exact-interpolation-residual-not-independent',
+      extrapolation: { any: false, left: false, right: false }
+    }
+  }
+}, { nm: [400, 401.1, 402.4], I: [0.1, 0.8, 0.2] });
+const fitRmsUiRows = Object.fromEntries(fitRmsUiResult.dq.map((row) => [row.label, row]));
+assert.equal(fitRmsUiRows['Fit RMS:'].value, '0.00 nm · dof 0', 'Data Quality must label zero-residual exact interpolation as Fit RMS with its degrees of freedom');
+assert.ok(fitRmsUiRows['Fit RMS:'].title.includes('not a direct wavelength-accuracy estimate'), 'Fit RMS tooltip must reject the accuracy interpretation explicitly');
+assert.equal(fitRmsUiResult.metrics.fitDegreesOfFreedom, 0, 'Data Quality metrics must preserve fit degrees of freedom');
+assert.equal(fitRmsUiResult.metrics.fitResidualStatus, 'exact-interpolation-residual-not-independent', 'Data Quality metrics must preserve fit residual status');
+assert.ok(!dataQualityPanel.includes("line('Cal err:'"), 'the misleading Cal err label must not return');
+
 assert.ok(bootstrap.includes("graphXAxisSel && graphXAxisSel.addEventListener('change'"), 'persistent X-axis must control the legacy graph axis directly');
 assert.ok(bootstrap.includes("const pxRadio = $('toggleXLabelsPx');") && bootstrap.includes("const nmRadio = $('toggleXLabelsNm');"), 'persistent X-axis must stay wired to the real graph axis controls');
 assert.ok(bootstrap.includes("graphYAxisSel && graphYAxisSel.addEventListener('change'"), 'persistent Y-axis must update display state directly');
