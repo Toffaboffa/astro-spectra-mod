@@ -129,10 +129,9 @@
     const uncertaintyTolerance = combinedSigma !== null ? Math.max(0.2, combinedSigma * 3) : fallback;
     const effectiveTolerance = Math.min(hardCap, fallback, uncertaintyTolerance);
     const resolutionScale = Math.max(0.05, instrumentSigma || sampling || featureSigma || fallback / 3);
-    let calibrationConfidenceFactor = calibrationSigma !== null
+    const calibrationConfidenceFactor = calibrationSigma !== null
       ? math.clamp(resolutionScale / (resolutionScale + calibrationSigma), 0.35, 1)
       : 1;
-    if (diag.extrapolation && diag.extrapolation.any) calibrationConfidenceFactor *= 0.85;
 
     return {
       model: MODEL,
