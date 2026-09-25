@@ -655,7 +655,7 @@ function testFluorescenceClearNarrowLines() {
     1e-12,
     'Fluorescent reported offset should be the median residual of accepted coherent narrow-line hits'
   );
-  assert.ok(Number.isFinite(result.rawMatchOffsetNm), 'Fluorescent analysis should preserve the broader pre-filter matcher offset separately');
+  assert.ok(Object.prototype.hasOwnProperty.call(result, 'rawMatchOffsetNm'), 'Fluorescent analysis should preserve the broader pre-filter matcher offset field separately, even when the synthetic fixture has no raw library matches');
   assert.deepEqual(
     Array.from(result.overlayHits, function (hit) { return [hit.element, hit.referenceNm, hit.observedNm]; }),
     Array.from(result.clearNarrowLineHits, function (hit) { return [hit.element, hit.referenceNm, hit.observedNm]; }),
