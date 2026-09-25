@@ -110,7 +110,12 @@
   }
 
   function estimateMatchMeanAbsResidualNm(state) {
-    const hits = (((state || {}).analysis || {}).topHits) || [];
+    const analysis = ((state || {}).analysis) || {};
+    const acceptedFluorescentHits = String(analysis.presetId || '') === 'smart-fluorescent' &&
+      Array.isArray(analysis.clearNarrowLineHits) && analysis.clearNarrowLineHits.length
+      ? analysis.clearNarrowLineHits
+      : null;
+    const hits = acceptedFluorescentHits || analysis.topHits || [];
     if (!Array.isArray(hits) || !hits.length) return null;
     const deltas = hits.map(function (h) { return Math.abs(Number(h && h.deltaNm)); }).filter(Number.isFinite);
     if (!deltas.length) return null;
