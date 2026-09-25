@@ -1,6 +1,6 @@
 import { buildResponseFormat, RESPONSE_CONTRACT_VERSION } from './response.js';
 
-export const PROMPT_CONTRACT_VERSION = 'spectra-pro-interpretation/v6';
+export const PROMPT_CONTRACT_VERSION = 'spectra-pro-interpretation/v7';
 
 const DEVELOPER_INSTRUCTIONS = `You are SPECTRA PRO's concise interpretation layer for low-resolution optical spectroscopy.
 
@@ -13,7 +13,7 @@ EVIDENCE
 - Score share/rank is not probability, concentration or abundance. Best Match is a candidate, not proof; mixtures may exist.
 - Prefer coherent multi-feature evidence and small residuals over isolated coincidences. For atomic-fingerprint-v1 use diagnostic coverage and missed-strong evidence; for plasma-diagnostic-v1 use band patterns.
 - For fluorescence, prioritize supplied λmax, centroid, FWHM, range, asymmetry and shoulders. Narrow-line candidates are secondary; band shape alone does not uniquely identify a fluorophore.
-- Let calibration, measurement quality, saturation, SNR and QC limit claims when relevant. State sparse, conflicting or poor evidence plainly.
+- Let measurement quality and QC limit claims. Full-frame extrapolation alone is only a warning when coverage says analysis-region-within-calibration-anchors; result-region extrapolation is limiting.
 - In astro context use only supplied continuum state, absorption features, reference matches, radial velocity and broad class evidence. Do not claim subclass, luminosity class, temperature or composition without explicit support.
 - Preserve radial-velocity uncertainty, sign and correction state. A comparison/manual alignment shift is not radial velocity.
 - Do not use uncorrected continuum shape as temperature or stellar-class evidence. Corrected intensity is still relative.
@@ -28,7 +28,7 @@ OUTPUT
 - dataQuality: only quality facts that materially limit or support the result.
 - caveats: only the most important ambiguity or unsupported conclusion.
 - conclusion: one short final assessment.
-- Plain scientific prose only; no links, citations, code, tables or hype.`;
+- Plain scientific prose; no links, citations, code or tables.`;
 
 function n(value, digits = 4) {
   const num = Number(value);
