@@ -66,6 +66,8 @@ assert.equal(bundle.scientificAnalysis.detectedPeaks.length, 1, 'scientific expo
 assert.equal(bundle.scientificAnalysis.lab.offsetNm, -0.1, 'scientific export snapshot must preserve the canonical reported wavelength offset');
 assert.equal(bundle.scientificAnalysis.lab.rawMatchOffsetNm, -0.1, 'scientific export snapshot must preserve the broader raw matcher offset separately');
 assert.equal(bundle.scientificAnalysis.lab.offsetBasis, 'matcher-residuals', 'scientific export snapshot must preserve offset provenance');
+assert.equal(bundle.scientificAnalysis.lab.matchMeanAbsResidualNm, 0.1, 'scientific export snapshot must keep unsigned match MAE separate from signed offset');
+assert.ok(report.analysisLog.some((line) => line.includes('match MAE=0.1000 nm')), 'PDF analysis log must name the unsigned match-error magnitude separately');
 assert.ok(report.analysisLog.some((line) => line.includes('Detected peaks=1;')), 'PDF analysis log must report the canonical worker peak count instead of an unavailable placeholder');
 assert.ok(report.limitations.includes('use-json-v2-for-complete-state-and-numeric-data'));
 
@@ -83,6 +85,8 @@ const fluorescentBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
 const fluorescentReport = context.SpectraPro.exportUi.buildPdfReportModel(fluorescentBundle);
 assert.ok(fluorescentReport.methodNarrative.some((line) => line.includes('coherent narrow-line hits accepted in the Fluorescent result')), 'Fluorescent PDF narrative must identify the accepted coherent hit set used for the reported offset');
 assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('basis=clear-narrow-line-hits')), 'PDF analysis log must record machine-readable offset provenance');
+assert.ok(Math.abs(fluorescentBundle.scientificAnalysis.lab.matchMeanAbsResidualNm - 0.5553333333333333) < 1e-12, 'Fluorescent scientific export must compute MAE from the accepted hit residual magnitudes');
+assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('match MAE=0.5553 nm')), 'Fluorescent PDF log must keep +0.623 nm signed offset distinct from 0.5553 nm match MAE');
 
 context.SpectraPro.aiAnalysisUi = null;
 const noAiBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
