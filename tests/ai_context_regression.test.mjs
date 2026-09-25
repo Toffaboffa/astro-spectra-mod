@@ -22,6 +22,7 @@ function buildPayload(scenario) {
     resultContext: scenario.id === 'astro' ? 'astro' : 'lab',
     elementScores: [{ element: 'Hydrogen', scoreSharePct: 68, matchedPeaks: 3, evidenceModel: 'atomic-fingerprint-v1' }],
     rawTopHits: [{ element: 'Hydrogen', observedNm: 486.2, referenceNm: 486.13, deltaNm: 0.07 }],
+    offsetNm: 0.07, rawMatchOffsetNm: 0.07, offsetBasis: 'matcher-residuals',
     calibrationDiagnostics: { status: 'usable', pointCount: 3, polynomialOrder: 1, rmsResidualNm: 0.18, maxAbsResidualNm: 0.3, coverageNm: { min: 400, max: 700 }, extrapolated: false },
     preprocessing: { intensityBasis: 'uncorrected-relative-intensity', activeOperations: [], warnings: ['Response correction is not applied.'], responseCorrection: { enabled: false, applied: false } },
     measurementQuality: {
@@ -32,7 +33,12 @@ function buildPayload(scenario) {
     referenceComparison: { state: 'available', referenceLabel: 'Compact reference', normalization: 'min-max', alignment: { mode: 'manual', shiftNm: 0.1, source: 'user', radialVelocityMeasurement: false }, metrics: { correlation: 0.91, mae: 0.08, rmse: 0.1 }, limitations: ['Alignment is not a radial-velocity measurement.'] }
   };
   if (scenario.id === 'lab-molecular') analysis.smartFindGroups = [{ element: 'N2', evidenceModel: 'plasma-diagnostic-v1', scoreSharePct: 61 }];
-  if (scenario.id === 'fluorescence') analysis.fluorescenceSummary = { model: 'broadband-fluorescence-v1', broadbandDetected: true, lambdaMaxNm: 525, centroidNm: 531, fwhmNm: 42, bandMinNm: 500, bandMaxNm: 565 };
+  if (scenario.id === 'fluorescence') {
+    analysis.fluorescenceSummary = { model: 'broadband-fluorescence-v1', broadbandDetected: true, lambdaMaxNm: 525, centroidNm: 531, fwhmNm: 42, bandMinNm: 500, bandMaxNm: 565 };
+    analysis.offsetNm = 0.2;
+    analysis.rawMatchOffsetNm = -0.4;
+    analysis.offsetBasis = 'clear-narrow-line-hits';
+  }
   if (scenario.id === 'astro') {
     analysis.astro = fixture.astro;
     analysis.elementScores = [];
@@ -55,6 +61,11 @@ for (const scenario of fixture.contexts) {
   assert.deepEqual(validatePayload(payload), [], scenario.id + ' payload must pass backend validation');
   assert.ok(payload.quality.measurement, scenario.id + ' must include deterministic measurement quality');
 }
+
+const fluorescence = payloads.get('fluorescence');
+assert.equal(fluorescence.quality.offsetNm, 0.2, 'AI payload must use the canonical accepted-hit wavelength offset');
+assert.equal(fluorescence.quality.rawMatchOffsetNm, -0.4, 'AI payload must retain the broader matcher offset separately');
+assert.equal(fluorescence.quality.offsetBasis, 'clear-narrow-line-hits', 'AI payload must state the source hit set for the canonical offset');
 
 const astro = payloads.get('astro');
 assert.equal(astro.analysis.astro.absorptionFeatures[0].equivalentWidthNm, -0.31);
