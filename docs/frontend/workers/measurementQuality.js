@@ -71,9 +71,17 @@
 
     const snr = finite(metrics.snr);
     dimensions.noise = snr === null
-      ? dimension(flags.indexOf('NO_SIGNAL') !== -1 ? 'poor' : 'unavailable', 'snr-unavailable', { snr: null, noiseSigma: rounded(metrics.noiseSigma, 4) })
+      ? dimension(flags.indexOf('NO_SIGNAL') !== -1 ? 'poor' : 'unavailable', 'snr-unavailable', {
+          snr: null,
+          noiseSigma: rounded(metrics.noiseSigma, 4),
+          signalSpanP95P05: rounded(metrics.signalSpanP95P05, 4),
+          snrDefinition: metrics.snrDefinition || 'p95-p05-over-noise-sigma'
+        })
       : dimension(snr < 3 ? 'poor' : (snr < 8 ? 'moderate' : 'good'), snr < 3 ? 'low-snr' : (snr < 8 ? 'limited-snr' : 'usable-snr'), {
-          snr: rounded(snr, 3), noiseSigma: rounded(metrics.noiseSigma, 4)
+          snr: rounded(snr, 3),
+          noiseSigma: rounded(metrics.noiseSigma, 4),
+          signalSpanP95P05: rounded(metrics.signalSpanP95P05, 4),
+          snrDefinition: metrics.snrDefinition || 'p95-p05-over-noise-sigma'
         });
 
     const saturationFraction = finite(metrics.saturationFraction);
