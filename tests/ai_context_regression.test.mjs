@@ -28,7 +28,19 @@ function buildPayload(scenario) {
     measurementQuality: {
       model: 'measurement-quality-v1', overallStatus: 'limited',
       mainLimitation: { code: 'calibration', status: 'limited', reason: 'Calibration residual limits wavelength precision.' },
-      dimensions: { calibration: { status: 'limited', reason: 'Finite residual.', metrics: { rmsResidualNm: 0.18 } } }
+      dimensions: {
+        calibration: { status: 'limited', reason: 'Finite residual.', metrics: { rmsResidualNm: 0.18 } },
+        noise: {
+          status: 'good',
+          reason: 'usable-snr',
+          metrics: {
+            snr: 12.34,
+            noiseSigma: 0.5,
+            signalSpanP95P05: 6.17,
+            snrDefinition: 'p95-p05-over-noise-sigma'
+          }
+        }
+      }
     },
     referenceComparison: { state: 'available', referenceLabel: 'Compact reference', normalization: 'min-max', alignment: { mode: 'manual', shiftNm: 0.1, source: 'user', radialVelocityMeasurement: false }, metrics: { correlation: 0.91, mae: 0.08, rmse: 0.1 }, limitations: ['Alignment is not a radial-velocity measurement.'] }
   };
@@ -65,6 +77,8 @@ for (const scenario of fixture.contexts) {
   assert.equal(payload.context.deterministicAnalysis, true);
   assert.deepEqual(validatePayload(payload), [], scenario.id + ' payload must pass backend validation');
   assert.ok(payload.quality.measurement, scenario.id + ' must include deterministic measurement quality');
+  assert.equal(payload.quality.measurement.dimensions.noise.metrics.snr, 12.34, scenario.id + ' must send the canonical worker SNR value');
+  assert.equal(payload.quality.measurement.dimensions.noise.metrics.snrDefinition, 'p95-p05-over-noise-sigma', scenario.id + ' must send the canonical SNR definition');
 }
 
 const fluorescence = payloads.get('fluorescence');
