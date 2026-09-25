@@ -809,7 +809,7 @@
       analysisLog: buildAnalysisLogLines(bundle || {}).slice(0, 12),
       aiInterpretation: {
         included: !!compactAiText,
-        label: sv ? 'VALFRI AI-TOLKNING' : 'OPTIONAL AI INTERPRETATION',
+        label: sv ? 'AI-TOLKNING' : 'OPTIONAL AI INTERPRETATION',
         disclaimer: sv
           ? 'Modellgenererad tolkning. Den är inte en mätning och ersätter inte rapportens deterministiska resultat.'
           : 'Model-generated interpretation. It is not a measurement and does not replace the deterministic report results.',
@@ -1010,9 +1010,6 @@
       }
     }
     doc.setFont('helvetica','bold');
-    doc.setFontSize(23);
-    doc.text('SPECTRA PRO', pageW / 2, y, { align:'center' });
-    y += 10;
     doc.setFontSize(14);
     doc.text(sv ? 'Spektralanalysrapport' : 'Spectral Analysis Report', pageW / 2, y, { align:'center' });
     y += 10;
@@ -1061,7 +1058,9 @@
     const graphH = 264;
     const sourceX = 149;
     const sourceW = 52;
-    const sourceH = graphH;
+    const sourceScale = 0.925;
+    const sourceH = graphH * sourceScale;
+    const sourceY = visualTop + (graphH - sourceH) / 2;
 
     if (rotatedGraphUrl) {
       await addImageFitToBox(doc, rotatedGraphUrl, graphX, visualTop, graphW, graphH);
@@ -1072,7 +1071,7 @@
     }
 
     if (rotatedSourceUrl) {
-      await addImageFitToBox(doc, rotatedSourceUrl, sourceX, visualTop, sourceW, sourceH);
+      await addImageFitToBox(doc, rotatedSourceUrl, sourceX, sourceY, sourceW, sourceH);
     } else {
       doc.setFont('helvetica','normal');
       doc.setFontSize(8.5);
