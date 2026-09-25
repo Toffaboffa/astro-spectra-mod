@@ -270,6 +270,12 @@ assert.ok(!graphScript.includes("resizeCanvasToDisplaySize(graphCtx, graphCanvas
 for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Advanced: reference spectrum comparison', 'Continuum diagnostics']) {
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
 }
+assert.ok(workerClient.includes('analysisNext.detectedPeaks = detectedPeaks;'), 'worker results must persist the canonical detected peak list in analysis state');
+assert.ok(workerClient.includes('analysisNext.detectedPeakCount = Number.isFinite(reportedPeakCount)'), 'worker results must persist the canonical detected peak count in analysis state');
+assert.ok(workerClient.includes('analysisNext.detectedPeakCount = null;'), 'result types without peak data must clear stale LAB peak counts');
+assert.ok(dataQualityPanel.includes("line('Graph peaks:'"), 'Data Quality must label its locally recomputed quick peak count as a graph-side metric');
+assert.ok(dataQualityPanel.includes("line('Graph strong:'"), 'Data Quality must label strong quick peaks as graph-side metrics');
+
 assert.ok(workerClient.includes('clearNarrowLineHits'), 'Fluorescent worker results must preserve clear coherent narrow-line hits');
 assert.ok(workerClient.includes('weaker raw coincidences but never hides the clear fingerprint-supported hits'), 'Fluorescent clear line hits must remain visible independently of the optional raw overlay');
 assert.ok(fluorescenceUi.includes('Click a peak to inspect it.'), 'Fluorescent result UI must explain that clear graph peaks are clickable');
