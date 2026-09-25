@@ -451,6 +451,7 @@
         offsetNm: (analysis.offsetNm !== null && analysis.offsetNm !== undefined && analysis.offsetNm !== '' && Number.isFinite(Number(analysis.offsetNm))) ? Number(analysis.offsetNm) : null,
         rawMatchOffsetNm: (analysis.rawMatchOffsetNm !== null && analysis.rawMatchOffsetNm !== undefined && analysis.rawMatchOffsetNm !== '' && Number.isFinite(Number(analysis.rawMatchOffsetNm))) ? Number(analysis.rawMatchOffsetNm) : null,
         offsetBasis: analysis.offsetBasis || null,
+        matchMeanAbsResidualNm: matchMeanAbsResidualNm(analysis),
         topHits: cloneJson(Array.isArray(analysis.topHits) ? analysis.topHits : []),
         rawTopHits: cloneJson(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits : []),
         candidates: cloneJson(Array.isArray(analysis.elementScores) ? analysis.elementScores : []),
@@ -590,6 +591,18 @@
     });
   }
 
+  function matchMeanAbsResidualNm(analysis) {
+    const hits = Array.isArray(analysis && analysis.topHits) ? analysis.topHits : [];
+    const values = hits.map(function (hit) {
+      const value = hit && hit.deltaNm;
+      if (value === null || value === undefined || value === '') return null;
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? Math.abs(numeric) : null;
+    }).filter(Number.isFinite);
+    if (!values.length) return null;
+    return values.reduce(function (sum, value) { return sum + value; }, 0) / values.length;
+  }
+
   function matchedFeatureRows(analysis) {
     const a = analysis || {};
     let src = [];
@@ -642,7 +655,8 @@
       : (analysis.detectedPeakCount === undefined && Array.isArray(analysis.detectedPeaks) ? analysis.detectedPeaks.length : '—');
     lines.push('Detected peaks=' + String(detectedPeakCount) + '; top hits=' + String(Array.isArray(analysis.topHits) ? analysis.topHits.length : 0) + '; raw hits=' + String(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits.length : 0) + '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
     if (analysis.offsetNm != null) {
-      lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm; basis=' + String(analysis.offsetBasis || 'matcher-residuals') + '.');
+      const matchMae = matchMeanAbsResidualNm(analysis);
+      lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm; basis=' + String(analysis.offsetBasis || 'matcher-residuals') + '; match MAE=' + (Number.isFinite(matchMae) ? nfmt(matchMae, 4) + ' nm' : '—') + '.');
     }
     if (analysis.resultContext === 'astro' && analysis.astro) {
       const astro = analysis.astro;
