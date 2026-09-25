@@ -267,10 +267,19 @@
 
   function getAxisMode() {
     try {
-      const sel = document.getElementById('spXAxisMode');
-      if (sel && sel.value) return String(sel.value).toLowerCase();
-      const nm = document.getElementById('nmCheckbox');
-      if (nm) return nm.checked ? 'nm' : 'px';
+      // The persistent graph toolbar is the canonical UI for the horizontal axis.
+      const sel = document.getElementById('spGraphXAxisMode');
+      if (sel && sel.value) {
+        const mode = String(sel.value).toLowerCase();
+        if (mode === 'nm' || mode === 'px') return mode;
+      }
+
+      // Legacy radios still drive the graph itself and remain the fallback when
+      // the persistent toolbar has not been mounted yet.
+      const nm = document.getElementById('toggleXLabelsNm');
+      if (nm && nm.checked) return 'nm';
+      const px = document.getElementById('toggleXLabelsPx');
+      if (px && px.checked) return 'px';
     } catch (_) {}
     return 'px';
   }
