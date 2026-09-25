@@ -448,8 +448,8 @@
         : (analysis.detectedPeakCount === undefined && Array.isArray(analysis.detectedPeaks) ? analysis.detectedPeaks.length : null),
       detectedFeatures: cloneJson(Array.isArray(analysis.features) ? analysis.features : []),
       lab: {
-        offsetNm: Number.isFinite(Number(analysis.offsetNm)) ? Number(analysis.offsetNm) : null,
-        rawMatchOffsetNm: Number.isFinite(Number(analysis.rawMatchOffsetNm)) ? Number(analysis.rawMatchOffsetNm) : null,
+        offsetNm: (analysis.offsetNm !== null && analysis.offsetNm !== undefined && analysis.offsetNm !== '' && Number.isFinite(Number(analysis.offsetNm))) ? Number(analysis.offsetNm) : null,
+        rawMatchOffsetNm: (analysis.rawMatchOffsetNm !== null && analysis.rawMatchOffsetNm !== undefined && analysis.rawMatchOffsetNm !== '' && Number.isFinite(Number(analysis.rawMatchOffsetNm))) ? Number(analysis.rawMatchOffsetNm) : null,
         offsetBasis: analysis.offsetBasis || null,
         topHits: cloneJson(Array.isArray(analysis.topHits) ? analysis.topHits : []),
         rawTopHits: cloneJson(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits : []),
