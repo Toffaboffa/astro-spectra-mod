@@ -109,12 +109,19 @@
     return out;
   }
 
-  function estimatePeakMatchResidualNm(state) {
+  function estimateMatchMeanAbsResidualNm(state) {
     const hits = (((state || {}).analysis || {}).topHits) || [];
     if (!Array.isArray(hits) || !hits.length) return null;
     const deltas = hits.map(function (h) { return Math.abs(Number(h && h.deltaNm)); }).filter(Number.isFinite);
     if (!deltas.length) return null;
     return deltas.reduce(function (a, b) { return a + b; }, 0) / deltas.length;
+  }
+
+  function getReportedOffsetNm(state) {
+    const value = state && state.analysis ? state.analysis.offsetNm : null;
+    if (value === null || value === undefined || value === '') return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
   }
 
   function getHardware(state) { return ((state || {}).hardware) || {}; }
@@ -415,7 +422,8 @@
 
     const resolutionNmPerPx = estimateResolutionNmPerPx(st, latest);
     const noiseMetrics = estimateNoiseMetrics(arr || []);
-    const peakResidualNm = hasLabAnalysis(st) ? estimatePeakMatchResidualNm(st) : null;
+    const matchMeanAbsResidualNm = hasLabAnalysis(st) ? estimateMatchMeanAbsResidualNm(st) : null;
+    const reportedOffsetNm = hasLabAnalysis(st) ? getReportedOffsetNm(st) : null;
     const hw = getHardware(st), hwFwhmNm = Number(hw.spectrometerResolutionFwhmNm);
     const resolvingPower = computeResolvingPower(st, resolutionNmPerPx);
     const peakMetrics = computePeakMetrics(st, arr || []);
@@ -440,7 +448,8 @@
       line('Graph peaks:', `${quickPeaks.length}`, 'Graph-side quick peak estimate from the current active signal using current threshold/distance settings; this is separate from the worker analysis peak count.', 'analysis'),
       line('Graph strong:', `${strongPeaks}`, 'Graph-side quick peaks that pass the current Strong Peak level weighting (1–5).', 'analysis'),
       line('Hits/QC:', `${((st.analysis && st.analysis.topHits) || []).length}/${((st.analysis && st.analysis.qcFlags) || []).length}`, 'Top hits / QC flags from the current LAB analysis.', 'analysis'),
-      line('Peak Δ:', `${hasLabAnalysis(st) ? (formatMaybe(peakResidualNm, 2) + ' nm') : '—'}`, 'Mean wavelength offset between matched peaks and library lines.', 'analysis'),
+      line('Offset:', `${hasLabAnalysis(st) && Number.isFinite(reportedOffsetNm) ? (formatMaybe(reportedOffsetNm, 2) + ' nm') : '—'}`, 'Signed median wavelength residual for the reported analysis result. Positive means observed wavelength is above the reference wavelength; negative means below.', 'analysis'),
+      line('Match MAE:', `${hasLabAnalysis(st) ? (formatMaybe(matchMeanAbsResidualNm, 2) + ' nm') : '—'}`, 'Mean absolute wavelength residual across the current matched hits. This ignores sign and is a match-error magnitude, not a systematic wavelength offset.', 'analysis'),
       line('Conf:', `${Number.isFinite(conf) ? formatMaybe(conf, 2) : '—'}`, 'Best current analysis confidence from the active top-hit set.', 'analysis'),
       line('Noise σ:', `${formatMaybe(noiseMetrics.sigma, 2)}`, 'Estimated noise sigma from residual signal fluctuations.', 'quality'),
       line('SNR:', `${formatMaybe(noiseMetrics.sn, 2)}`, 'Estimated signal-to-noise ratio.', 'quality'),
