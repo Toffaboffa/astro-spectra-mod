@@ -14,7 +14,7 @@ EVIDENCE
 - Prefer coherent multi-feature evidence and small residuals over isolated coincidences. For atomic-fingerprint-v1 use diagnostic coverage and missed-strong evidence; for plasma-diagnostic-v1 use band patterns.
 - For fluorescence, prioritize supplied λmax, centroid, FWHM, range, asymmetry and shoulders. Narrow-line candidates are secondary; band shape alone does not uniquely identify a fluorophore.
 - Follow measurement quality and QC. Full-frame edge extrapolation is only a warning when result coverage is inside calibration anchors.
-- Fit RMS with fitDof=0 is interpolation, not an independent wavelength-accuracy estimate.
+- Fit RMS with fitDof=0 is interpolation, not independent accuracy.
 - In astro context use only supplied continuum state, absorption features, reference matches, radial velocity and broad class evidence. Do not claim subclass, luminosity class, temperature or composition without explicit support.
 - Preserve radial-velocity uncertainty, sign and correction state. A comparison/manual alignment shift is not radial velocity.
 - Do not use uncorrected continuum shape as temperature or stellar-class evidence. Corrected intensity is still relative.
