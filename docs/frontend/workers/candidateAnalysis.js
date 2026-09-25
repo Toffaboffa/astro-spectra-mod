@@ -811,6 +811,7 @@
       topHits: topHits,
       overlayHits: rawLineHits.slice(0, 160),
       peaks: peaks.slice(0, 96),
+      detectedPeakCount: peaks.length,
       features: features.slice(0, 96),
       diffractionCandidates: diffractionCandidates.slice(0, 24),
       offsetNm: estimateOffset(matches),
