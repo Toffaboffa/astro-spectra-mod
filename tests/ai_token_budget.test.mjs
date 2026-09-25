@@ -52,7 +52,18 @@ const state = {
         calibration: { status: 'limited', reason: 'Finite residual.', metrics: { rmsResidualNm: 0.1, maxAbsResidualNm: 0.2 } }
       }
     },
-    calibrationDiagnostics: { status: 'usable', pointCount: 3, rmsResidualNm: 0.1 },
+    calibrationDiagnostics: {
+      model: 'calibration-match-uncertainty-v1',
+      available: true,
+      pointCount: 3,
+      polynomialOrder: 2,
+      rmsResidualNm: 0.1,
+      maxAbsResidualNm: 0.2,
+      samplingNmPerPixel: 0.4,
+      wavelengthCoverageNm: { min: 380, max: 891.6 },
+      anchorWavelengthCoverageNm: { min: 380, max: 891.6 },
+      extrapolation: { any: false, left: false, right: false }
+    },
     preprocessing: { intensityBasis: 'uncorrected-relative-intensity', activeOperations: [], warnings: [] }
   },
   calibration: {
@@ -91,6 +102,8 @@ assert.ok(payload.trace.points.length >= 96 && payload.trace.points.length <= 11
 assert.equal(payload.analysis.hits.length, 28, 'only the most relevant bounded hit set should be sent');
 assert.equal(payload.analysis.candidates.length, 6, 'candidate evidence should remain bounded');
 assert.ok(payload.analysis.calibrationDiagnostics, 'calibration evidence must survive compaction');
+assert.equal(payload.analysis.calibrationDiagnostics.samplingNmPerPixel, 0.4, 'compact AI payload must preserve canonical calibration sampling');
+assert.deepEqual(Object.assign({}, payload.analysis.calibrationDiagnostics.extrapolation), { any: false, left: false, right: false }, 'compact AI payload must preserve calibration extrapolation state');
 assert.ok(payload.quality.measurement, 'measurement quality must survive compaction');
 assert.ok(payloadBytes <= 9000, `dense LAB payload exceeded 9 kB: ${payloadBytes}`);
 assert.ok(estimatedInputTokens <= 2500, `estimated dense input exceeded 2500 tokens: ${estimatedInputTokens}`);
