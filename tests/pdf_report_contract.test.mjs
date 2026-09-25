@@ -15,6 +15,7 @@ const state = {
   analysis: {
     resultContext: 'lab', presetId: 'lamp-hg', detectedPeakCount: 1,
     detectedPeaks: [{ index: 1, value: 8, prominence: 6 }],
+    offsetNm: -0.1, rawMatchOffsetNm: -0.1, offsetBasis: 'matcher-residuals',
     topHits: [{ element: 'Hg', species: 'Hg I', observedNm: 501, referenceNm: 501.1, deltaNm: -0.1 }],
     rawTopHits: [{ element: 'Hg', species: 'Hg I', observedNm: 501, referenceNm: 501.1, deltaNm: -0.1 }],
     elementScores: [{ element: 'Hg', likelyPct: 80, matchedCount: 1, medianDeltaNm: 0.1 }],
@@ -62,8 +63,26 @@ assert.ok(report.methodNarrative.length <= 3, 'human method narrative must remai
 assert.ok(report.analysisLog.length <= 12, 'human analysis log must remain bounded');
 assert.equal(bundle.scientificAnalysis.detectedPeakCount, 1, 'scientific export snapshot must preserve the canonical worker peak count');
 assert.equal(bundle.scientificAnalysis.detectedPeaks.length, 1, 'scientific export snapshot must preserve the canonical worker peak list');
+assert.equal(bundle.scientificAnalysis.lab.offsetNm, -0.1, 'scientific export snapshot must preserve the canonical reported wavelength offset');
+assert.equal(bundle.scientificAnalysis.lab.rawMatchOffsetNm, -0.1, 'scientific export snapshot must preserve the broader raw matcher offset separately');
+assert.equal(bundle.scientificAnalysis.lab.offsetBasis, 'matcher-residuals', 'scientific export snapshot must preserve offset provenance');
 assert.ok(report.analysisLog.some((line) => line.includes('Detected peaks=1;')), 'PDF analysis log must report the canonical worker peak count instead of an unavailable placeholder');
 assert.ok(report.limitations.includes('use-json-v2-for-complete-state-and-numeric-data'));
+
+state.analysis.presetId = 'smart-fluorescent';
+state.analysis.offsetNm = 0.623;
+state.analysis.rawMatchOffsetNm = -0.272;
+state.analysis.offsetBasis = 'clear-narrow-line-hits';
+state.analysis.fluorescenceSummary = { model: 'broadband-fluorescence-v1', broadbandDetected: true, lambdaMaxNm: 595.5, centroidNm: 591.6, fwhmNm: 70.7, bandMinNm: 524.5, bandMaxNm: 659.8 };
+state.analysis.clearNarrowLineHits = [
+  { element: 'Hg', observedNm: 404.385, referenceNm: 404.656, deltaNm: -0.271 },
+  { element: 'Hg', observedNm: 436.605, referenceNm: 435.833, deltaNm: 0.772 },
+  { element: 'Hg', observedNm: 546.697, referenceNm: 546.074, deltaNm: 0.623 }
+];
+const fluorescentBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
+const fluorescentReport = context.SpectraPro.exportUi.buildPdfReportModel(fluorescentBundle);
+assert.ok(fluorescentReport.methodNarrative.some((line) => line.includes('coherent narrow-line hits accepted in the Fluorescent result')), 'Fluorescent PDF narrative must identify the accepted coherent hit set used for the reported offset');
+assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('basis=clear-narrow-line-hits')), 'PDF analysis log must record machine-readable offset provenance');
 
 context.SpectraPro.aiAnalysisUi = null;
 const noAiBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
