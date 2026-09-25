@@ -505,7 +505,15 @@
             analysisNext.smartFindGroups = [];
           }
 
-          if (typeof msg.payload.offsetNm === 'number') analysisNext.offsetNm = msg.payload.offsetNm;
+          if (Object.prototype.hasOwnProperty.call(msg.payload, 'offsetNm')) {
+            analysisNext.offsetNm = Number.isFinite(Number(msg.payload.offsetNm)) ? Number(msg.payload.offsetNm) : null;
+          }
+          if (Object.prototype.hasOwnProperty.call(msg.payload, 'rawMatchOffsetNm')) {
+            analysisNext.rawMatchOffsetNm = Number.isFinite(Number(msg.payload.rawMatchOffsetNm)) ? Number(msg.payload.rawMatchOffsetNm) : null;
+          } else {
+            analysisNext.rawMatchOffsetNm = null;
+          }
+          analysisNext.offsetBasis = msg.payload.offsetBasis ? String(msg.payload.offsetBasis) : 'matcher-residuals';
           if (Array.isArray(msg.payload.qcFlags)) analysisNext.qcFlags = msg.payload.qcFlags;
           analysisNext.calibrationDiagnostics = (msg.payload.calibrationDiagnostics && typeof msg.payload.calibrationDiagnostics === 'object')
             ? msg.payload.calibrationDiagnostics
