@@ -641,6 +641,39 @@
     return out;
   }
 
+  function coverageAssessment(analysis) {
+    const quality = analysis && analysis.measurementQuality;
+    const coverage = quality && quality.dimensions && quality.dimensions.coverage;
+    const metrics = coverage && coverage.metrics ? coverage.metrics : {};
+    return coverage ? {
+      status: coverage.status || 'unavailable',
+      reason: coverage.reason || null,
+      metrics: metrics
+    } : null;
+  }
+
+  function coverageNarrative(analysis, sv) {
+    const coverage = coverageAssessment(analysis);
+    if (!coverage) return '';
+    const m = coverage.metrics || {};
+    if (coverage.reason === 'analysis-region-within-calibration-anchors' && m.fullFrameExtrapolated === true) {
+      return sv
+        ? ' Hela bildens kalibrerade våglängdsintervall sträcker sig utanför kalibreringsankarna, men det uttryckligen analysrelevanta resultatintervallet ligger inom ankarnas område. Kantextrapolationen behålls därför som en varning men sänker inte ensam täckningskvaliteten för det rapporterade resultatet.'
+        : ' The calibrated full-frame wavelength range extends beyond the calibration anchors, but the explicitly result-bearing analysis region lies inside the anchor range. Edge extrapolation is therefore retained as a warning without by itself lowering coverage quality for the reported result.';
+    }
+    if (coverage.reason === 'analysis-region-includes-extrapolation') {
+      return sv
+        ? ' Det analysrelevanta resultatintervallet når utanför kalibreringsankarna; denna extrapolation behandlas därför som en faktisk begränsning för det rapporterade resultatet.'
+        : ' The result-bearing analysis region extends beyond the calibration anchors; this extrapolation is therefore treated as a real limitation on the reported result.';
+    }
+    if (coverage.reason === 'coverage-includes-extrapolation') {
+      return sv
+        ? ' Det fulla kalibrerade våglängdsintervallet innehåller extrapolerade bildkanter och inget smalare resultatområde är definierat, så täckningen bedöms konservativt som begränsande.'
+        : ' The full calibrated wavelength range contains extrapolated frame edges and no narrower result-bearing region is defined, so coverage is conservatively treated as limiting.';
+    }
+    return '';
+  }
+
   function buildAnalysisLogLines(bundle) {
     const state = bundle && bundle.state ? bundle.state : {};
     const analysis = state.analysis || {};
@@ -675,6 +708,17 @@
     } else {
       const rows = candidateRows(analysis).slice(0, 8);
       if (rows.length) lines.push('Ranked candidates: ' + rows.map(function (r) { return r[0] + ' ' + r[1]; }).join('; ') + '.');
+    }
+    const coverage = coverageAssessment(analysis);
+    if (coverage) {
+      const cm = coverage.metrics || {};
+      const analysisRange = Number.isFinite(Number(cm.analysisMinNm)) && Number.isFinite(Number(cm.analysisMaxNm))
+        ? nfmt(cm.analysisMinNm, 2) + '–' + nfmt(cm.analysisMaxNm, 2) + ' nm'
+        : 'not defined';
+      const anchorRange = Number.isFinite(Number(cm.anchorMinNm)) && Number.isFinite(Number(cm.anchorMaxNm))
+        ? nfmt(cm.anchorMinNm, 2) + '–' + nfmt(cm.anchorMaxNm, 2) + ' nm'
+        : 'not available';
+      lines.push('Coverage=' + String(coverage.status || 'unavailable') + '; reason=' + String(coverage.reason || '—') + '; analysis range=' + analysisRange + '; calibration anchors=' + anchorRange + '; full-frame extrapolation=' + (cm.fullFrameExtrapolated === true ? 'yes' : 'no') + '.');
     }
     if (Array.isArray(analysis.qcFlags) && analysis.qcFlags.length) lines.push('QC: ' + analysis.qcFlags.join('; ') + '.');
     return lines;
@@ -772,6 +816,7 @@
     const res = lookupDiagnostic(dq, 'res');
     const calState = cal.isCalibrated ? (sv ? 'aktiv' : 'active') : (sv ? 'inte aktiv' : 'not active');
     const resolution = hw.spectrometerResolutionFwhmNm != null ? nfmt(hw.spectrometerResolutionFwhmNm, 2) + ' nm FWHM' : res;
+    const coverageNote = coverageNarrative(analysis, sv);
 
     const astro = analysis.resultContext === 'astro' && analysis.astro && typeof analysis.astro === 'object' ? analysis.astro : null;
     if (astro) {
@@ -803,7 +848,7 @@
         'För atomära Smart-lägen bedöms inte en kandidat efter en ensam närliggande linje. Fingerprint-lagret väger samman flera diagnostiska linjer, våglängdsnärhet, hur stor del av de observerade starka topparna som förklaras, grupper av samverkande linjer och täckning av en kuraterad profil. Förväntade diagnostiska profilinslag som saknas ger en försiktig negativ viktning, och arter med täta eller tvetydiga kataloglinjer får inte automatiskt fördel av att biblioteket innehåller många möjliga sammanträffanden. Score Share normaliserar den positiva kandidatscoren inom just den aktuella körningen och är därför varken sannolikhet, koncentration eller abundans.',
         'Molekylära lägen använder motsvarande flerbandslogik. Diagnostiska ankare och band bedöms tillsammans, och stöd från flera koherenta band väger tyngre än en isolerad överlappning. I Gas Tube kan atomära och molekylära bidrag förekomma samtidigt. Fluorescent avviker medvetet från linjematchningen: där beskriver SPECTRA PRO i första hand den breda bandformen genom lambda-max, centroid, FWHM, bandområde, asymmetri, shoulders och integrerad baslinjekorrigerad signal. Smala linjekandidater behandlas då endast som sekundär diagnostik.',
         'Relevanta signaturer eller kluster i den aktuella körningen är: ' + signatures + '. Kalibreringen är ' + calState + ', uppskattad instrument-/samplingupplösning i rapportens diagnostik är ' + resolution + ', SNR anges som ' + snr + ' och mättnadsfältet som ' + sat + '. Dessa värden används tillsammans för att bedöma om en numeriskt bra match också är experimentellt trovärdig. Mättnad kan förstöra peakform och relativa intensiteter, medan låg SNR kan skapa extra lokala maxima eller dölja svaga diagnostiska drag.',
-        'Efter matchningen sammanställs kandidatpoäng, observerade träffar, QC-flaggor och förklarad signalandel till det resultat som visas i LAB. Rapportens spektralbild visar den centrala 25 procenten av bildhöjden för att fokusera på själva dispersionsbandet, medan diagrammet återger den graf som faktiskt visades vid exporten med aktiva annoteringar och overlays. Den detaljerade feature-tabellen redovisar observerad våglängd, referensvåglängd, residual och score/confidence för de träffar som finns i den aktuella analysen. SNR definieras konsekvent som (P95-P05)/brus-sigma, där brus-sigma skattas robust från residualer mot ett 5-punkters glidande medelvärde. Resultaten bör ses som reproducerbara förslag givet den uppmätta signalen, valt preset och aktuell kalibrering; ändrad optik, fokus, zoom, gittergeometri eller kamerainställningar kan kräva ny kalibrering innan våglängdsmatchningen åter är tillförlitlig.'
+        'Efter matchningen sammanställs kandidatpoäng, observerade träffar, QC-flaggor och förklarad signalandel till det resultat som visas i LAB. Rapportens spektralbild visar den centrala 25 procenten av bildhöjden för att fokusera på själva dispersionsbandet, medan diagrammet återger den graf som faktiskt visades vid exporten med aktiva annoteringar och overlays. Den detaljerade feature-tabellen redovisar observerad våglängd, referensvåglängd, residual och score/confidence för de träffar som finns i den aktuella analysen. SNR definieras konsekvent som (P95-P05)/brus-sigma, där brus-sigma skattas robust från residualer mot ett 5-punkters glidande medelvärde. Resultaten bör ses som reproducerbara förslag givet den uppmätta signalen, valt preset och aktuell kalibrering; ändrad optik, fokus, zoom, gittergeometri eller kamerainställningar kan kräva ny kalibrering innan våglängdsmatchningen åter är tillförlitlig.' + coverageNote
       ];
     }
 
@@ -813,7 +858,7 @@
       'For atomic Smart modes, a candidate is not accepted because of one nearby catalog line. The fingerprint layer combines multiple diagnostic lines, wavelength closeness, coverage of strong observed peaks, coherent line groups and coverage of a curated profile. Missing diagnostic profile features apply a cautious penalty, while dense or ambiguous catalog regions are prevented from gaining automatic advantage simply because many unrelated lines exist nearby. Score Share normalizes positive candidate score only within the current run and therefore is not a probability, concentration or abundance estimate.',
       'Molecular modes apply the corresponding multi-band logic. Diagnostic anchors and bands are evaluated together, and support from several coherent bands carries more weight than an isolated overlap. Gas Tube can retain both atomic and molecular contributors. Fluorescent deliberately follows a different path: SPECTRA PRO primarily characterizes the broadband shape using lambda max, centroid, FWHM, band range, asymmetry, shoulders and integrated baseline-corrected signal. Narrow-line candidates are secondary diagnostics in that mode.',
       'Relevant signatures or clusters in the current run are: ' + signatures + '. Calibration is ' + calState + ', the instrument/sampling resolution reported by the diagnostics is ' + resolution + ', SNR is ' + snr + ' and the saturation field is ' + sat + '. These values are considered together when deciding whether a numerically attractive match is also experimentally credible. Saturation can destroy peak shape and relative intensity information, whereas low SNR can introduce additional local maxima or hide weak diagnostic features.',
-      'After matching, candidate scores, observed hits, QC flags and explained-signal metrics are assembled into the LAB result. The report source image retains the central 25 percent of image height to focus on the dispersed spectrum, while the graph reproduces the canvas that was actually visible at export time with active annotations and overlays. The detailed feature table reports observed wavelength, reference wavelength, residual and score/confidence for the current hits. SNR is defined consistently as (P95-P05)/noise sigma, with noise sigma robustly estimated from residuals against a 5-point moving mean. Results should be treated as reproducible best proposals given the measured signal, selected preset and active calibration; changes in optics, focus, zoom, grating geometry or camera settings can require recalibration before wavelength matching is trustworthy again.'
+      'After matching, candidate scores, observed hits, QC flags and explained-signal metrics are assembled into the LAB result. The report source image retains the central 25 percent of image height to focus on the dispersed spectrum, while the graph reproduces the canvas that was actually visible at export time with active annotations and overlays. The detailed feature table reports observed wavelength, reference wavelength, residual and score/confidence for the current hits. SNR is defined consistently as (P95-P05)/noise sigma, with noise sigma robustly estimated from residuals against a 5-point moving mean. Results should be treated as reproducible best proposals given the measured signal, selected preset and active calibration; changes in optics, focus, zoom, grating geometry or camera settings can require recalibration before wavelength matching is trustworthy again.' + coverageNote
     ];
   }
 
