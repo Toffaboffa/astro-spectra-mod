@@ -273,7 +273,8 @@ function testBundledFluorescentExample() {
   assert.equal(config.kind, 'image', 'Fluorescent example should use the normal still-image path');
   assert.equal(config.recommendedMode, 'LAB', 'Fluorescent example should remain a LAB sample');
   assert.equal(config.recommendedPreset, 'smart-fluorescent', 'Fluorescent example should recommend Fluorescent analysis');
-  assert.deepEqual(config.stripe, { widthPx: 5, yNormalized: 0.543 }, 'Fluorescent example should use the measured band stripe');
+  assert.equal(config.stripe.widthPx, 5, 'Fluorescent example should use a 5 px stripe');
+  assert.equal(config.stripe.yNormalized, 0.543, 'Fluorescent example should use the measured band stripe position');
   assert.deepEqual(Array.from(config.calibration.points, function (point) { return { px: point.px, nm: point.nm }; }), [
     { px: 32, nm: 388.86 },
     { px: 515, nm: 587.57 },
