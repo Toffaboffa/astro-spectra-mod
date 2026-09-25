@@ -2,6 +2,8 @@
 (function (root) {
   'use strict';
 
+  const SNR_DEFINITION = 'p95-p05-over-noise-sigma';
+
   function percentile(values, q) {
     const arr = values.slice().sort(function (a, b) { return a - b; });
     if (!arr.length) return null;
@@ -48,7 +50,9 @@
       saturationCount: 0,
       saturationFraction: null,
       noiseSigma: null,
-      snr: null
+      signalSpanP95P05: null,
+      snr: null,
+      snrDefinition: SNR_DEFINITION
     };
     if (source.length < 8) {
       flags.push('FRAME_TOO_SMALL');
@@ -80,6 +84,7 @@
     const high = percentile(values, 0.95);
     const dynamicRange = Number(high) - Number(low);
     metrics.dynamicRange = dynamicRange;
+    metrics.signalSpanP95P05 = dynamicRange;
     const minimumRange = fullScale * 0.002;
     if (!(dynamicRange > minimumRange)) {
       flags.push('NO_SIGNAL');
@@ -92,5 +97,5 @@
     }
     return { flags: flags, ok: flags.length === 0, metrics: metrics };
   }
-  root.SPECTRA_PRO_qcRules = { evaluateQC };
+  root.SPECTRA_PRO_qcRules = { evaluateQC: evaluateQC, snrDefinition: SNR_DEFINITION };
 })(typeof self !== 'undefined' ? self : this);
