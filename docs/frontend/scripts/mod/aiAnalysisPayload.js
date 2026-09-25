@@ -256,6 +256,8 @@
       qcFlags: Array.isArray(analysis.qcFlags) ? analysis.qcFlags.slice(0, 24).map(function (v) { return cleanString(v, 96); }).filter(Boolean) : [],
       measurement: compactMeasurementQuality(analysis.measurementQuality),
       offsetNm: rounded(analysis.offsetNm, 4),
+      rawMatchOffsetNm: rounded(analysis.rawMatchOffsetNm, 4),
+      offsetBasis: cleanString(analysis.offsetBasis, 48) || null,
       sampleCount: values.length,
       intensityMean: values.length ? rounded(sum / values.length, 4) : null,
       intensityMin: values.length ? rounded(Math.min.apply(null, values), 4) : null,
