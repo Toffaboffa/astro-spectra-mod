@@ -68,10 +68,9 @@
     if (!Array.isArray(matches) || !matches.length) return null;
     const offsets = matches
       .map(function (match) { return Number(match && match.deltaNm); })
-      .filter(Number.isFinite)
-      .sort(function (a, b) { return a - b; });
+      .filter(Number.isFinite);
     if (!offsets.length) return null;
-    return offsets[Math.floor(offsets.length / 2)];
+    return median(offsets);
   }
 
   root.SPECTRA_PRO_spectrumMath = {
