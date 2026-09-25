@@ -128,6 +128,38 @@ assert.equal(
   'Data Quality Axis must fall back to the legacy px graph radio before the toolbar is mounted'
 );
 
+function matchMetricsFromDataQuality() {
+  const documentStub = { getElementById() { return null; } };
+  const windowStub = { SpectraPro: { v15: {} } };
+  const context = vm.createContext({ console, document: documentStub, window: windowStub });
+  new vm.Script(dataQualityPanel, { filename: 'dataQualityPanel.js' }).runInContext(context);
+  const frame = { source: 'match-metric-regression', I: [0, 1, 0.5, 0.2] };
+  const result = context.window.SpectraPro.v15.dataQualityPanel.compute({
+    appMode: 'LAB',
+    analysis: {
+      enabled: true,
+      offsetNm: 0.623,
+      topHits: [
+        { deltaNm: -0.271 },
+        { deltaNm: 0.772 },
+        { deltaNm: 0.623 }
+      ],
+      qcFlags: []
+    },
+    worker: {},
+    frame: { latest: frame }
+  }, { latestFrame: frame });
+  const byLabel = Object.fromEntries(result.dq.map((row) => [row.label, row]));
+  return byLabel;
+}
+
+const matchMetrics = matchMetricsFromDataQuality();
+assert.equal(matchMetrics['Offset:'].value, '0.62 nm', 'Data Quality must show the signed canonical wavelength offset separately');
+assert.equal(matchMetrics['Match MAE:'].value, '0.56 nm', 'Data Quality must show mean absolute match residual separately from signed offset');
+assert.ok(matchMetrics['Match MAE:'].title.includes('ignores sign'), 'Match MAE tooltip must state that it is unsigned');
+assert.ok(matchMetrics['Offset:'].title.includes('Positive means observed wavelength is above'), 'Offset tooltip must state the residual sign convention');
+assert.ok(!dataQualityPanel.includes("line('Peak Δ:'"), 'ambiguous Peak Δ label must not return');
+
 assert.ok(bootstrap.includes("graphXAxisSel && graphXAxisSel.addEventListener('change'"), 'persistent X-axis must control the legacy graph axis directly');
 assert.ok(bootstrap.includes("const pxRadio = $('toggleXLabelsPx');") && bootstrap.includes("const nmRadio = $('toggleXLabelsNm');"), 'persistent X-axis must stay wired to the real graph axis controls');
 assert.ok(bootstrap.includes("graphYAxisSel && graphYAxisSel.addEventListener('change'"), 'persistent Y-axis must update display state directly');
