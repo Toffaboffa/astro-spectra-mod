@@ -367,6 +367,23 @@
             return out.slice(0, Math.max(1, Number(limit) || 80));
           }
 
+          if (Object.prototype.hasOwnProperty.call(msg.payload, 'peaks') ||
+              Object.prototype.hasOwnProperty.call(msg.payload, 'detectedPeakCount')) {
+            const detectedPeaks = Array.isArray(msg.payload.peaks)
+              ? msg.payload.peaks.slice(0, 96).map(function (peak) { return Object.assign({}, peak || {}); })
+              : [];
+            const reportedPeakCount = Number(msg.payload.detectedPeakCount);
+            analysisNext.detectedPeaks = detectedPeaks;
+            analysisNext.detectedPeakCount = Number.isFinite(reportedPeakCount)
+              ? Math.max(0, Math.round(reportedPeakCount))
+              : detectedPeaks.length;
+          } else {
+            // Do not let a previous LAB peak count leak into result types that do
+            // not publish emission-peak data (for example ASTRO results).
+            analysisNext.detectedPeaks = [];
+            analysisNext.detectedPeakCount = null;
+          }
+
           if (Array.isArray(msg.payload.topHits)) {
             const rawHits = normalizeHits(msg.payload.topHits);
             const overlayHits = Array.isArray(msg.payload.overlayHits) && msg.payload.overlayHits.length
