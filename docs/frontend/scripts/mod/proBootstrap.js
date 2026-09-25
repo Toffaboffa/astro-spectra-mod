@@ -2291,11 +2291,11 @@ function ensureHardwarePanel() {
     '  </div>',
     '  <div class="sp-hw-grid">',
     '    <label class="sp-field sp-hw-field sp-hw-field--preset" title="Choose a known spectrometer profile. Selecting one applies the values immediately.">Spectrometer<select id="spHardwarePreset" class="spctl-select"><option value="">CUSTOM</option><option value="spectra-1">KVANT - Spectra-1</option></select></label>',
-    '    <label class="sp-field sp-hw-field" title="Spectral start wavelength.">Range (min)<input id="spHardwareRangeMin" class="spctl-input" type="number" step="any" placeholder="360"></label>',
-    '    <label class="sp-field sp-hw-field" title="Spectral end wavelength.">Range (max)<input id="spHardwareRangeMax" class="spctl-input" type="number" step="any" placeholder="930"></label>',
+    '    <label class="sp-field sp-hw-field" title="Configured nominal hardware spectral-range start; actual calibrated frame coverage can differ.">Configured range (min)<input id="spHardwareRangeMin" class="spctl-input" type="number" step="any" placeholder="360"></label>',
+    '    <label class="sp-field sp-hw-field" title="Configured nominal hardware spectral-range end; actual calibrated frame coverage can differ.">Configured range (max)<input id="spHardwareRangeMax" class="spctl-input" type="number" step="any" placeholder="930"></label>',
     '    <div class="sp-field sp-hw-field sp-hw-field--unit" title="Spectral range unit."><span class="sp-hw-unit-label">Unit</span><span class="sp-hw-unit-value">nm</span></div>',
     '    <label class="sp-field sp-hw-field" title="Manufacturer spectrometer resolution (FWHM).">Resolution<input id="spHardwareFwhm" class="spctl-input" type="number" step="any" placeholder="1.8"></label>',
-    '    <label class="sp-field sp-hw-field" title="Manufacturer pixel sampling / pixel resolution.">Pixel resolution<input id="spHardwarePixelRes" class="spctl-input" type="number" step="any" placeholder="0.5"></label>',
+    '    <label class="sp-field sp-hw-field" title="Nominal manufacturer/profile pixel scale. The active calibration can produce a different nm/px sampling.">Nominal pixel scale<input id="spHardwarePixelRes" class="spctl-input" type="number" step="any" placeholder="0.5"></label>',
     '    <label class="sp-field sp-hw-field" title="Grating density in lines per mm.">Grating density<input id="spHardwareGrating" class="spctl-input" type="number" step="any" placeholder="500"></label>',
     '  </div>',
     '  <div class="sp-actions sp-hw-actions"><button type="button" id="spHardwareApplyBtn">Apply</button><button type="button" id="spHardwareClearBtn">Clear</button></div>',
@@ -2453,9 +2453,9 @@ function ensureHardwarePanel() {
     const hw = (st && st.hardware) ? st.hardware : {};
     const parts = [];
     if (hw.profileName) parts.push('Profile: ' + hw.profileName);
-    if (Number.isFinite(Number(hw.spectralRangeMinNm)) && Number.isFinite(Number(hw.spectralRangeMaxNm))) parts.push('Range: ' + hw.spectralRangeMinNm + '–' + hw.spectralRangeMaxNm + ' nm');
+    if (Number.isFinite(Number(hw.spectralRangeMinNm)) && Number.isFinite(Number(hw.spectralRangeMaxNm))) parts.push('Configured range: ' + hw.spectralRangeMinNm + '–' + hw.spectralRangeMaxNm + ' nm');
     if (Number.isFinite(Number(hw.spectrometerResolutionFwhmNm))) parts.push('FWHM: <' + hw.spectrometerResolutionFwhmNm + ' nm');
-    if (Number.isFinite(Number(hw.pixelResolutionNm))) parts.push('Pixel res: <' + hw.pixelResolutionNm + ' nm');
+    if (Number.isFinite(Number(hw.pixelResolutionNm))) parts.push('Nominal pixel scale: ' + hw.pixelResolutionNm + ' nm/px');
     if (Number.isFinite(Number(hw.gratingLinesPerMm))) parts.push('Grating: ' + hw.gratingLinesPerMm + ' lines/mm');
     ids.summary.textContent = parts.length ? parts.join(' · ') : 'No hardware profile applied yet.';
   }
