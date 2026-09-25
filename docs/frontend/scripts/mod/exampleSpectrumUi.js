@@ -32,6 +32,16 @@
     })
   });
 
+  const SPECTRA1_HARDWARE = Object.freeze({
+    profileId: 'spectra-1',
+    profileName: 'KVANT - Spectra-1',
+    spectralRangeMinNm: 360,
+    spectralRangeMaxNm: 930,
+    spectrometerResolutionFwhmNm: 1.8,
+    pixelResolutionNm: 0.5,
+    gratingLinesPerMm: 500
+  });
+
   const EXAMPLES = Object.freeze([
     Object.freeze({
       id: 'n2-spectral-tube',
@@ -51,6 +61,7 @@
         sha256: 'dc624e7ca38032b9ca6c93e09f14feec476617c35742316e4f6063b050e3bbea'
       }),
       calibration: SPECTRA1_CALIBRATION,
+      hardwareProfileId: 'spectra-1',
       stripe: Object.freeze({ widthPx: 5, yNormalized: 0.544 }),
       recommendedPreset: 'smart-gastube'
     }),
@@ -72,6 +83,7 @@
         sha256: 'fbef80cbc7637f3220e4eaba31ad4c9e1e8de987fdf93537ce653d5518cbd1f0'
       }),
       calibration: SPECTRA1_CALIBRATION,
+      hardwareProfileId: 'spectra-1',
       stripe: Object.freeze({ widthPx: 5, yNormalized: 0.546 }),
       recommendedPreset: 'smart-gastube'
     }),
@@ -95,6 +107,7 @@
         count: 1280
       }),
       calibration: SPECTRA1_CALIBRATION,
+      hardwareProfileId: 'spectra-1',
       recommendedPreset: 'smart-gastube',
       recommendedMode: 'LAB'
     }),
@@ -119,6 +132,7 @@
         sha256: 'ecd5cc32f7eceb11778e69ba568b56ba6f8261b929b91e880d80a0507e2c38c3'
       }),
       calibration: SPECTRA1_CALIBRATION,
+      hardwareProfileId: 'spectra-1',
       stripe: Object.freeze({ widthPx: 5, yNormalized: 0.543 }),
       recommendedPreset: 'smart-fluorescent',
       recommendedMode: 'LAB'
@@ -180,6 +194,48 @@
 
   function getExample(id) {
     return EXAMPLES.find(function (item) { return item.id === id; }) || null;
+  }
+
+  function emptyHardwareState() {
+    return {
+      profileId: '',
+      profileName: '',
+      appliedAt: Date.now(),
+      spectralRangeMinNm: null,
+      spectralRangeMaxNm: null,
+      spectrometerResolutionFwhmNm: null,
+      pixelResolutionNm: null,
+      gratingLinesPerMm: null
+    };
+  }
+
+  function applyExampleHardware(sample) {
+    const profileId = String(sample && sample.hardwareProfileId || '');
+    const preset = $('spHardwarePreset');
+
+    if (profileId === SPECTRA1_HARDWARE.profileId) {
+      if (preset && typeof preset.dispatchEvent === 'function' && typeof global.Event === 'function') {
+        preset.value = SPECTRA1_HARDWARE.profileId;
+        preset.dispatchEvent(new global.Event('change', { bubbles: true }));
+        return true;
+      }
+      if (sp.store && typeof sp.store.update === 'function') {
+        sp.store.update('hardware', Object.assign({ appliedAt: Date.now() }, SPECTRA1_HARDWARE), {
+          source: 'exampleSpectrum.hardware.spectra1'
+        });
+      }
+      return true;
+    }
+
+    const clearButton = $('spHardwareClearBtn');
+    if (clearButton && typeof clearButton.click === 'function') {
+      clearButton.click();
+      return true;
+    }
+    if (sp.store && typeof sp.store.update === 'function') {
+      sp.store.update('hardware', emptyHardwareState(), { source: 'exampleSpectrum.hardware.none' });
+    }
+    return true;
   }
 
   function ensureStyle() {
@@ -953,6 +1009,7 @@
         const spectrumAsset = await loadRgbSpectrumAsset(sample);
         resetActiveExampleBeforeLoad();
         stopLiveSource();
+        applyExampleHardware(sample);
         closeChooser();
         finishLoadedRgbSpectrum(sample, spectrumAsset);
         return true;
@@ -961,6 +1018,7 @@
         const numericAsset = await loadNumericAsset(sample);
         resetActiveExampleBeforeLoad();
         stopLiveSource();
+        applyExampleHardware(sample);
         closeChooser();
         finishLoadedNumeric(sample, numericAsset);
         return true;
@@ -968,6 +1026,7 @@
       const imageUrl = await preloadAsset(sample);
       resetActiveExampleBeforeLoad();
       stopLiveSource();
+      applyExampleHardware(sample);
       closeChooser();
 
       try {
