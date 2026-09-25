@@ -641,6 +641,45 @@
     return out;
   }
 
+  function calibrationFitAssessment(analysis) {
+    const diagnostics = analysis && analysis.calibrationDiagnostics && typeof analysis.calibrationDiagnostics === 'object'
+      ? analysis.calibrationDiagnostics
+      : null;
+    if (!diagnostics) return null;
+    const rms = diagnostics.rmsResidualNm !== null && diagnostics.rmsResidualNm !== undefined && diagnostics.rmsResidualNm !== ''
+      ? Number(diagnostics.rmsResidualNm)
+      : null;
+    const dof = diagnostics.fitDegreesOfFreedom !== null && diagnostics.fitDegreesOfFreedom !== undefined && diagnostics.fitDegreesOfFreedom !== ''
+      ? Number(diagnostics.fitDegreesOfFreedom)
+      : null;
+    return {
+      rmsResidualNm: Number.isFinite(rms) ? rms : null,
+      fitDegreesOfFreedom: Number.isFinite(dof) ? dof : null,
+      fitResidualIndependent: typeof diagnostics.fitResidualIndependent === 'boolean' ? diagnostics.fitResidualIndependent : null,
+      exactInterpolation: diagnostics.exactInterpolation === true,
+      fitResidualStatus: diagnostics.fitResidualStatus || null
+    };
+  }
+
+  function calibrationFitNarrative(analysis, sv) {
+    const fit = calibrationFitAssessment(analysis);
+    if (!fit || !Number.isFinite(fit.rmsResidualNm)) return '';
+    const rmsText = nfmt(fit.rmsResidualNm, 4) + ' nm';
+    if (fit.fitDegreesOfFreedom === 0) {
+      return sv
+        ? ' Kalibreringens Fit RMS är ' + rmsText + ' med 0 frihetsgrader i fitten. Detta är ' + (fit.exactInterpolation ? 'exakt interpolation av kalibreringspunkterna' : 'en noll-frihetsgradsanpassning') + ' och residualen är därför inte ett oberoende mått på våglängdsnoggrannhet.'
+        : ' Calibration Fit RMS is ' + rmsText + ' with 0 fit degrees of freedom. This is ' + (fit.exactInterpolation ? 'exact interpolation of the calibration points' : 'a zero-degree-of-freedom fit') + ', so the residual is not an independent estimate of wavelength accuracy.';
+    }
+    if (fit.fitDegreesOfFreedom !== null && fit.fitDegreesOfFreedom < 0) {
+      return sv
+        ? ' Kalibreringens Fit RMS är ' + rmsText + ', men fitten saknar oberoende residualfrihetsgrader och värdet ska inte tolkas som våglängdsnoggrannhet.'
+        : ' Calibration Fit RMS is ' + rmsText + ', but the fit has no independent residual degrees of freedom and must not be interpreted as wavelength accuracy.';
+    }
+    return sv
+      ? ' Kalibreringens Fit RMS är ' + rmsText + (fit.fitDegreesOfFreedom !== null ? ' med ' + fit.fitDegreesOfFreedom + ' residualfrihetsgrader.' : '.')
+      : ' Calibration Fit RMS is ' + rmsText + (fit.fitDegreesOfFreedom !== null ? ' with ' + fit.fitDegreesOfFreedom + ' residual degrees of freedom.' : '.');
+  }
+
   function coverageAssessment(analysis) {
     const quality = analysis && analysis.measurementQuality;
     const coverage = quality && quality.dimensions && quality.dimensions.coverage;
@@ -694,6 +733,10 @@
     if (analysis.offsetNm != null) {
       const matchMae = matchMeanAbsResidualNm(analysis);
       lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm; basis=' + String(analysis.offsetBasis || 'matcher-residuals') + '; match MAE=' + (Number.isFinite(matchMae) ? nfmt(matchMae, 4) + ' nm' : '—') + '.');
+    }
+    const calibrationFit = calibrationFitAssessment(analysis);
+    if (calibrationFit && Number.isFinite(calibrationFit.rmsResidualNm)) {
+      lines.push('Calibration fit RMS=' + nfmt(calibrationFit.rmsResidualNm, 4) + ' nm; fit dof=' + (calibrationFit.fitDegreesOfFreedom !== null ? calibrationFit.fitDegreesOfFreedom : '—') + '; residual status=' + String(calibrationFit.fitResidualStatus || '—') + '; independent=' + (calibrationFit.fitResidualIndependent === true ? 'yes' : (calibrationFit.fitResidualIndependent === false ? 'no' : 'unknown')) + '.');
     }
     if (analysis.resultContext === 'astro' && analysis.astro) {
       const astro = analysis.astro;
@@ -817,6 +860,7 @@
     const calState = cal.isCalibrated ? (sv ? 'aktiv' : 'active') : (sv ? 'inte aktiv' : 'not active');
     const resolution = hw.spectrometerResolutionFwhmNm != null ? nfmt(hw.spectrometerResolutionFwhmNm, 2) + ' nm FWHM' : res;
     const coverageNote = coverageNarrative(analysis, sv);
+    const calibrationFitNote = calibrationFitNarrative(analysis, sv);
 
     const astro = analysis.resultContext === 'astro' && analysis.astro && typeof analysis.astro === 'object' ? analysis.astro : null;
     if (astro) {
@@ -830,14 +874,14 @@
         'Den aktuella körningen innehåller ' + featureCount + ' uppmätta absorptionsdrag och ' + matchCount + ' kuraterade referensmatchningar. Feature-mått kan omfatta centrum, djup, FWHM, negativ ekvivalent bredd, SNR och kvalitetsflaggor när sampling och datakvalitet räcker.',
         'Radialhastigheten rapporteras som ' + (velocity.state === 'available' ? nfmt(velocity.velocityKmS, 1) + ' ± ' + nfmt(velocity.uncertaintyKmS, 1) + ' km/s' : String(velocity.state || 'ej tillgänglig')) + '. Positivt värde betyder rödförskjutning/bortgående. Ingen barycentrisk eller heliocentrisk korrigering har tillämpats, och jämförelsealignment är inte en radialhastighetsmätning.',
         'Bred stjärnklassevidens är ' + String(stellar.bestClass || stellar.state || 'otillräcklig') + ' med styrka ' + String(stellar.evidenceStrength || 'ej tillgänglig') + '. Resultatet är heuristisk evidens, inte sannolikhet, exakt underklass, luminositetsklass, temperatur eller sammansättning.',
-        'Kalibreringen är ' + calState + ', instrument-/samplingupplösningen anges som ' + resolution + ', SNR som ' + snr + ' och mättnad som ' + sat + '. Dessa begränsningar samt den deterministiska huvudbegränsningen ska följas vid tolkning.' + coverageNote
+        'Kalibreringen är ' + calState + ', instrument-/samplingupplösningen anges som ' + resolution + ', SNR som ' + snr + ' och mättnad som ' + sat + '. Dessa begränsningar samt den deterministiska huvudbegränsningen ska följas vid tolkning.' + calibrationFitNote + coverageNote
       ];
       return [
         'ASTRO uses the same calibrated and preprocessed spectrum as LAB but interprets continuum-normalized absorption features. Continuum state is ' + String(continuum.state || 'unavailable') + ' and the intensity basis is ' + String((analysis.preprocessing && analysis.preprocessing.intensityBasis) || 'uncorrected relative intensity') + '. Uncorrected continuum shape is not used as temperature or class evidence.',
         'The current run contains ' + featureCount + ' measured absorption features and ' + matchCount + ' curated reference matches. Feature measurements may include center, depth, FWHM, negative equivalent width, SNR and quality flags when sampling and data quality support them.',
         'Radial velocity is reported as ' + (velocity.state === 'available' ? nfmt(velocity.velocityKmS, 1) + ' ± ' + nfmt(velocity.uncertaintyKmS, 1) + ' km/s' : String(velocity.state || 'unavailable')) + '. Positive means redshift/receding. No barycentric or heliocentric correction is applied, and comparison alignment is not a radial-velocity measurement.',
         'Broad stellar-class evidence is ' + String(stellar.bestClass || stellar.state || 'insufficient') + ' with strength ' + String(stellar.evidenceStrength || 'unavailable') + '. The result is heuristic evidence, not probability, exact subclass, luminosity class, temperature or composition.',
-        'Calibration is ' + calState + ', instrument/sampling resolution is reported as ' + resolution + ', SNR as ' + snr + ' and saturation as ' + sat + '. These limits and the deterministic dominant limitation should accompany interpretation.' + coverageNote
+        'Calibration is ' + calState + ', instrument/sampling resolution is reported as ' + resolution + ', SNR as ' + snr + ' and saturation as ' + sat + '. These limits and the deterministic dominant limitation should accompany interpretation.' + calibrationFitNote + coverageNote
       ];
     }
 
@@ -848,7 +892,7 @@
         'För atomära Smart-lägen bedöms inte en kandidat efter en ensam närliggande linje. Fingerprint-lagret väger samman flera diagnostiska linjer, våglängdsnärhet, hur stor del av de observerade starka topparna som förklaras, grupper av samverkande linjer och täckning av en kuraterad profil. Förväntade diagnostiska profilinslag som saknas ger en försiktig negativ viktning, och arter med täta eller tvetydiga kataloglinjer får inte automatiskt fördel av att biblioteket innehåller många möjliga sammanträffanden. Score Share normaliserar den positiva kandidatscoren inom just den aktuella körningen och är därför varken sannolikhet, koncentration eller abundans.',
         'Molekylära lägen använder motsvarande flerbandslogik. Diagnostiska ankare och band bedöms tillsammans, och stöd från flera koherenta band väger tyngre än en isolerad överlappning. I Gas Tube kan atomära och molekylära bidrag förekomma samtidigt. Fluorescent avviker medvetet från linjematchningen: där beskriver SPECTRA PRO i första hand den breda bandformen genom lambda-max, centroid, FWHM, bandområde, asymmetri, shoulders och integrerad baslinjekorrigerad signal. Smala linjekandidater behandlas då endast som sekundär diagnostik.',
         'Relevanta signaturer eller kluster i den aktuella körningen är: ' + signatures + '. Kalibreringen är ' + calState + ', uppskattad instrument-/samplingupplösning i rapportens diagnostik är ' + resolution + ', SNR anges som ' + snr + ' och mättnadsfältet som ' + sat + '. Dessa värden används tillsammans för att bedöma om en numeriskt bra match också är experimentellt trovärdig. Mättnad kan förstöra peakform och relativa intensiteter, medan låg SNR kan skapa extra lokala maxima eller dölja svaga diagnostiska drag.',
-        'Efter matchningen sammanställs kandidatpoäng, observerade träffar, QC-flaggor och förklarad signalandel till det resultat som visas i LAB. Rapportens spektralbild visar den centrala 25 procenten av bildhöjden för att fokusera på själva dispersionsbandet, medan diagrammet återger den graf som faktiskt visades vid exporten med aktiva annoteringar och overlays. Den detaljerade feature-tabellen redovisar observerad våglängd, referensvåglängd, residual och score/confidence för de träffar som finns i den aktuella analysen. SNR definieras konsekvent som (P95-P05)/brus-sigma, där brus-sigma skattas robust från residualer mot ett 5-punkters glidande medelvärde. Resultaten bör ses som reproducerbara förslag givet den uppmätta signalen, valt preset och aktuell kalibrering; ändrad optik, fokus, zoom, gittergeometri eller kamerainställningar kan kräva ny kalibrering innan våglängdsmatchningen åter är tillförlitlig.' + coverageNote
+        'Efter matchningen sammanställs kandidatpoäng, observerade träffar, QC-flaggor och förklarad signalandel till det resultat som visas i LAB. Rapportens spektralbild visar den centrala 25 procenten av bildhöjden för att fokusera på själva dispersionsbandet, medan diagrammet återger den graf som faktiskt visades vid exporten med aktiva annoteringar och overlays. Den detaljerade feature-tabellen redovisar observerad våglängd, referensvåglängd, residual och score/confidence för de träffar som finns i den aktuella analysen. SNR definieras konsekvent som (P95-P05)/brus-sigma, där brus-sigma skattas robust från residualer mot ett 5-punkters glidande medelvärde. Resultaten bör ses som reproducerbara förslag givet den uppmätta signalen, valt preset och aktuell kalibrering; ändrad optik, fokus, zoom, gittergeometri eller kamerainställningar kan kräva ny kalibrering innan våglängdsmatchningen åter är tillförlitlig.' + calibrationFitNote + coverageNote
       ];
     }
 
@@ -858,7 +902,7 @@
       'For atomic Smart modes, a candidate is not accepted because of one nearby catalog line. The fingerprint layer combines multiple diagnostic lines, wavelength closeness, coverage of strong observed peaks, coherent line groups and coverage of a curated profile. Missing diagnostic profile features apply a cautious penalty, while dense or ambiguous catalog regions are prevented from gaining automatic advantage simply because many unrelated lines exist nearby. Score Share normalizes positive candidate score only within the current run and therefore is not a probability, concentration or abundance estimate.',
       'Molecular modes apply the corresponding multi-band logic. Diagnostic anchors and bands are evaluated together, and support from several coherent bands carries more weight than an isolated overlap. Gas Tube can retain both atomic and molecular contributors. Fluorescent deliberately follows a different path: SPECTRA PRO primarily characterizes the broadband shape using lambda max, centroid, FWHM, band range, asymmetry, shoulders and integrated baseline-corrected signal. Narrow-line candidates are secondary diagnostics in that mode.',
       'Relevant signatures or clusters in the current run are: ' + signatures + '. Calibration is ' + calState + ', the instrument/sampling resolution reported by the diagnostics is ' + resolution + ', SNR is ' + snr + ' and the saturation field is ' + sat + '. These values are considered together when deciding whether a numerically attractive match is also experimentally credible. Saturation can destroy peak shape and relative intensity information, whereas low SNR can introduce additional local maxima or hide weak diagnostic features.',
-      'After matching, candidate scores, observed hits, QC flags and explained-signal metrics are assembled into the LAB result. The report source image retains the central 25 percent of image height to focus on the dispersed spectrum, while the graph reproduces the canvas that was actually visible at export time with active annotations and overlays. The detailed feature table reports observed wavelength, reference wavelength, residual and score/confidence for the current hits. SNR is defined consistently as (P95-P05)/noise sigma, with noise sigma robustly estimated from residuals against a 5-point moving mean. Results should be treated as reproducible best proposals given the measured signal, selected preset and active calibration; changes in optics, focus, zoom, grating geometry or camera settings can require recalibration before wavelength matching is trustworthy again.' + coverageNote
+      'After matching, candidate scores, observed hits, QC flags and explained-signal metrics are assembled into the LAB result. The report source image retains the central 25 percent of image height to focus on the dispersed spectrum, while the graph reproduces the canvas that was actually visible at export time with active annotations and overlays. The detailed feature table reports observed wavelength, reference wavelength, residual and score/confidence for the current hits. SNR is defined consistently as (P95-P05)/noise sigma, with noise sigma robustly estimated from residuals against a 5-point moving mean. Results should be treated as reproducible best proposals given the measured signal, selected preset and active calibration; changes in optics, focus, zoom, grating geometry or camera settings can require recalibration before wavelength matching is trustworthy again.' + calibrationFitNote + coverageNote
     ];
   }
 
@@ -1205,7 +1249,10 @@
       [sv ? 'Pixelupplösning' : 'Pixel resolution', hardware.pixelResolutionNm != null ? nfmt(hardware.pixelResolutionNm, 4) + ' nm/px' : '—'],
       [sv ? 'Gittertäthet' : 'Grating density', hardware.gratingLinesPerMm != null ? String(hardware.gratingLinesPerMm) + ' lines/mm' : '—'],
       [sv ? 'Kalibrerad' : 'Calibrated', cal.isCalibrated ? (sv ? 'Ja' : 'Yes') : (sv ? 'Nej' : 'No')],
-      [sv ? 'Kalibreringskoefficienter' : 'Calibration coefficients', Array.isArray(cal.coefficients) ? cal.coefficients.join(', ') : '—']
+      [sv ? 'Kalibreringskoefficienter' : 'Calibration coefficients', Array.isArray(cal.coefficients) ? cal.coefficients.join(', ') : '—'],
+      [sv ? 'Kalibrering Fit RMS' : 'Calibration Fit RMS', analysis.calibrationDiagnostics && Number.isFinite(Number(analysis.calibrationDiagnostics.rmsResidualNm)) ? nfmt(analysis.calibrationDiagnostics.rmsResidualNm, 4) + ' nm' : '—'],
+      [sv ? 'Fit-frihetsgrader' : 'Fit degrees of freedom', analysis.calibrationDiagnostics && analysis.calibrationDiagnostics.fitDegreesOfFreedom != null ? String(analysis.calibrationDiagnostics.fitDegreesOfFreedom) : '—'],
+      [sv ? 'Residualstatus' : 'Residual status', analysis.calibrationDiagnostics && analysis.calibrationDiagnostics.fitResidualStatus ? String(analysis.calibrationDiagnostics.fitResidualStatus) : '—']
     ];
     y = autoTable(doc, [sv ? 'Fält' : 'Field', sv ? 'Värde' : 'Value'], instRows, y);
     const cRows = calibrationRows(cal);
