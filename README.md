@@ -280,9 +280,11 @@ Primary fluorescence output includes:
 - secondary shoulders when detected
 - integrated baseline-corrected signal
 
-Atomic line coincidences are hidden by default in this mode. A **Narrow-line overlay** can be enabled when lamp leakage or genuine narrow-line contamination is physically relevant.
+Clear coherent narrow-line matches are treated as secondary evidence. When the existing multi-line atomic fingerprint layer finds a sufficiently coherent pattern, those lines are listed in **BAND FEATURES** and marked automatically on the graph with the same line-label style used by Gas Tube. The corresponding peak can be clicked to open the peak inspector and inspect the matched element/reference line.
 
-A broad fluorescence band alone does not uniquely identify a fluorophore without an appropriate reference spectrum/library.
+The **Narrow-line overlay** remains available as an optional diagnostic that adds weaker raw wavelength coincidences; it does not control the clear fingerprint-supported matches.
+
+A broad fluorescence band alone does not uniquely identify a fluorophore without an appropriate reference spectrum/library, and secondary atomic-line evidence should be interpreted as a discharge/lamp signature rather than as identification of the fluorophore.
 
 ---
 

@@ -117,7 +117,7 @@
     label = global.document.createElement('label');
     label.id = 'spFieldFluorescenceNarrow';
     label.className = 'sp-field sp-field--checkbox-row';
-    label.title = 'Optional diagnostic overlay for narrow atomic-line coincidences. Off by default because fluorescence is interpreted from the broad emission band.';
+    label.title = 'Clear coherent narrow-line matches are shown automatically. Enable this only to add weaker raw line coincidences.';
     label.innerHTML = '<span>Narrow-line overlay</span><input id="spFluorescenceNarrow" type="checkbox">';
     anchor.parentNode.insertBefore(label, anchor.nextSibling);
 
@@ -154,13 +154,39 @@
     return s.analysis && Array.isArray(s.analysis.narrowLineCandidates) ? s.analysis.narrowLineCandidates : [];
   }
 
+  function currentClearNarrowHits() {
+    const s = state();
+    return s.analysis && Array.isArray(s.analysis.clearNarrowLineHits) ? s.analysis.clearNarrowLineHits : [];
+  }
+
+  function mergeLineHits(primary, secondary, limit) {
+    const out = [];
+    const seen = Object.create(null);
+    [primary, secondary].forEach(function (list) {
+      (Array.isArray(list) ? list : []).forEach(function (hit) {
+        if (!hit) return;
+        const element = String(hit.element || hit.speciesKey || hit.species || '').trim();
+        const ref = Number(hit.referenceNm != null ? hit.referenceNm : hit.refNm);
+        const obs = Number(hit.observedNm != null ? hit.observedNm : hit.obsNm);
+        const key = element + '|' + (Number.isFinite(ref) ? ref.toFixed(3) : '?') + '|' + (Number.isFinite(obs) ? obs.toFixed(3) : '?');
+        if (seen[key]) return;
+        seen[key] = true;
+        out.push(hit);
+      });
+    });
+    return out.slice(0, Math.max(1, Number(limit) || 80));
+  }
+
   function applyNarrowOverlay() {
     if (!store || !isFluorescent()) return;
     const s = state();
     const enabled = !!(s.analysis && s.analysis.narrowLineOverlay);
-    const hits = enabled ? currentNarrowCandidates().slice(0, 80) : [];
+    const clear = currentClearNarrowHits().slice(0, 48);
+    const extras = enabled ? currentNarrowCandidates().slice(0, 80) : [];
+    const hits = mergeLineHits(clear, extras, 80);
     const analysisNext = Object.assign({}, s.analysis || {}, {
       rawTopHits: hits,
+      topHits: clear,
       smartFindHits: hits,
       smartFindGroups: []
     });
@@ -229,19 +255,44 @@
     }
 
     const narrowEnabled = !!(s.analysis && s.analysis.narrowLineOverlay);
+    const clear = currentClearNarrowHits();
     const narrow = currentNarrowCandidates();
-    if (narrowEnabled && narrow.length) {
-      features += '<div class="sp-fluo-feature"><b>Narrow-line candidates</b><br>' + narrow.length + ' raw coincidence(s)</div>';
-      features += narrow.slice(0, 8).map(function (hit) {
-        const species = String(hit.element || hit.species || '?');
+
+    if (clear.length) {
+      features += '<div class="sp-fluo-feature"><b>Narrow emission lines</b><br>' + clear.length + ' coherent match(es)</div>';
+      features += clear.slice(0, 10).map(function (hit) {
+        const species = String(hit.species || hit.element || '?');
         const obs = Number(hit.observedNm);
         const ref = Number(hit.referenceNm);
+        const delta = Math.abs(Number(hit.deltaNm));
         return '<div class="sp-fluo-feature">' + species + ' · ' +
           (Number.isFinite(obs) ? obs.toFixed(1) : '?') + ' nm' +
-          (Number.isFinite(ref) ? ' → ' + ref.toFixed(1) + ' nm' : '') + '</div>';
+          (Number.isFinite(ref) ? ' → ' + ref.toFixed(1) + ' nm' : '') +
+          (Number.isFinite(delta) ? ' · Δ ' + delta.toFixed(1) + ' nm' : '') + '</div>';
       }).join('');
+      features += '<div class="sp-fluo-note">Clear coherent line matches are marked in the graph. Click a peak to inspect it.</div>';
     } else {
-      features += '<div class="sp-fluo-note">Atomic-line labels are hidden by default in Fluorescent mode. Enable Narrow-line overlay only when lamp leakage or another narrow-line source is relevant.</div>';
+      features += '<div class="sp-fluo-note">No clear multi-line atomic signature detected.</div>';
+    }
+
+    if (narrowEnabled) {
+      const clearKeys = Object.create(null);
+      clear.forEach(function (hit) {
+        const element = String(hit.element || hit.speciesKey || hit.species || '').trim();
+        const ref = Number(hit.referenceNm);
+        const obs = Number(hit.observedNm);
+        clearKeys[element + '|' + (Number.isFinite(ref) ? ref.toFixed(3) : '?') + '|' + (Number.isFinite(obs) ? obs.toFixed(3) : '?')] = true;
+      });
+      const extras = narrow.filter(function (hit) {
+        const element = String(hit.element || hit.speciesKey || hit.species || '').trim();
+        const ref = Number(hit.referenceNm);
+        const obs = Number(hit.observedNm);
+        const key = element + '|' + (Number.isFinite(ref) ? ref.toFixed(3) : '?') + '|' + (Number.isFinite(obs) ? obs.toFixed(3) : '?');
+        return !clearKeys[key];
+      });
+      if (extras.length) {
+        features += '<div class="sp-fluo-feature"><b>Additional line candidates</b><br>' + extras.length + ' raw coincidence(s)</div>';
+      }
     }
     hitsEl.innerHTML = features;
 

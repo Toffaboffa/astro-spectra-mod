@@ -169,38 +169,131 @@
     };
   }
 
+  function compactHit(hit) {
+    return {
+      species: hit && (hit.species || hit.speciesKey || hit.element || ''),
+      speciesKey: hit && (hit.speciesKey || hit.species || hit.element || ''),
+      element: hit && hit.element || null,
+      observedNm: Number.isFinite(Number(hit && (hit.observedNm != null ? hit.observedNm : hit.obsNm))) ? +(Number(hit.observedNm != null ? hit.observedNm : hit.obsNm).toFixed(3)) : null,
+      referenceNm: Number.isFinite(Number(hit && (hit.referenceNm != null ? hit.referenceNm : hit.refNm))) ? +(Number(hit.referenceNm != null ? hit.referenceNm : hit.refNm).toFixed(3)) : null,
+      deltaNm: Number.isFinite(Number(hit && hit.deltaNm)) ? +(Number(hit.deltaNm).toFixed(3)) : null,
+      peakIndex: Number.isFinite(Number(hit && hit.peakIndex)) ? Number(hit.peakIndex) : null,
+      confidence: Number.isFinite(Number(hit && hit.confidence)) ? +(Number(hit.confidence).toFixed(3)) : null,
+      score: Number.isFinite(Number(hit && hit.score)) ? +(Number(hit.score).toFixed(1)) : null,
+      prominence: Number.isFinite(Number(hit && hit.prominence)) ? +(Number(hit.prominence).toFixed(3)) : null,
+      kind: hit && hit.kind || 'atom',
+      evidenceModel: hit && hit.evidenceModel || null,
+      excludedByDiffraction: !!(hit && hit.excludedByDiffraction)
+    };
+  }
+
   function compactNarrowHits(out) {
     const source = Array.isArray(out && out.overlayHits) && out.overlayHits.length
       ? out.overlayHits
       : (Array.isArray(out && out.topHits) ? out.topHits : []);
-    return source.slice(0, 48).map(function (hit) {
-      return {
-        species: hit && (hit.species || hit.speciesKey || hit.element || ''),
-        element: hit && hit.element || null,
-        observedNm: Number.isFinite(Number(hit && (hit.observedNm != null ? hit.observedNm : hit.obsNm))) ? +(Number(hit.observedNm != null ? hit.observedNm : hit.obsNm).toFixed(3)) : null,
-        referenceNm: Number.isFinite(Number(hit && (hit.referenceNm != null ? hit.referenceNm : hit.refNm))) ? +(Number(hit.referenceNm != null ? hit.referenceNm : hit.refNm).toFixed(3)) : null,
-        deltaNm: Number.isFinite(Number(hit && hit.deltaNm)) ? +(Number(hit.deltaNm).toFixed(3)) : null,
-        confidence: Number.isFinite(Number(hit && hit.confidence)) ? +(Number(hit.confidence).toFixed(3)) : null,
-        prominence: Number.isFinite(Number(hit && hit.prominence)) ? +(Number(hit.prominence).toFixed(3)) : null,
-        kind: hit && hit.kind || 'atom'
-      };
+    return source.slice(0, 80).map(compactHit);
+  }
+
+  function buildClearNarrowEvidence(out) {
+    const rows = Array.isArray(out && out.elementScores) ? out.elementScores : [];
+    const eligible = Object.create(null);
+    const groups = [];
+
+    rows.forEach(function (row) {
+      const element = String(row && row.element || '').trim();
+      const matched = Math.max(
+        Number(row && row.matchedCount) || 0,
+        Number(row && row.matchedPeaks) || 0,
+        Number(row && row.matchCount) || 0
+      );
+      const diagnosticMatched = Number(row && row.diagnosticMatchedPeaks) || 0;
+      const fingerprintScore = Number(row && row.fingerprintScore) || 0;
+      if (!element || matched < 2 || diagnosticMatched < 2 || fingerprintScore < 35) return;
+      eligible[element] = groups.length;
+      groups.push({
+        element: element,
+        matchedCount: matched,
+        diagnosticMatchedPeaks: diagnosticMatched,
+        diagnosticExpected: Number(row && row.diagnosticExpected) || 0,
+        fingerprintScore: +fingerprintScore.toFixed(1),
+        patternCoveragePct: Number.isFinite(Number(row && row.patternCoveragePct)) ? +(Number(row.patternCoveragePct).toFixed(1)) : null,
+        supportLines: Array.isArray(row && row.supportLines) ? row.supportLines.slice(0, 12) : []
+      });
     });
+
+    const source = [];
+    if (Array.isArray(out && out.topHits)) Array.prototype.push.apply(source, out.topHits);
+    if (Array.isArray(out && out.overlayHits)) Array.prototype.push.apply(source, out.overlayHits);
+
+    const seen = Object.create(null);
+    const hits = [];
+    source.forEach(function (hit) {
+      if (!hit || hit.excludedByDiffraction) return;
+      if (String(hit.kind || 'atom') !== 'atom') return;
+      const element = String(hit.element || '').trim();
+      if (!Object.prototype.hasOwnProperty.call(eligible, element)) return;
+      // Only atomic-profile evidence is promoted automatically in Fluorescent mode.
+      // Raw nearest-line coincidences remain available through the optional overlay.
+      if (!hit.evidenceModel) return;
+      const compact = compactHit(hit);
+      if (!Number.isFinite(Number(compact.observedNm)) || !Number.isFinite(Number(compact.referenceNm))) return;
+      const key = element + '|' + Number(compact.referenceNm).toFixed(3) + '|' + Number(compact.observedNm).toFixed(3);
+      if (seen[key]) return;
+      seen[key] = true;
+      hits.push(compact);
+    });
+
+    hits.sort(function (a, b) {
+      const ra = Object.prototype.hasOwnProperty.call(eligible, String(a.element || '')) ? eligible[String(a.element || '')] : 999;
+      const rb = Object.prototype.hasOwnProperty.call(eligible, String(b.element || '')) ? eligible[String(b.element || '')] : 999;
+      return (ra - rb) ||
+        (Number(b.confidence || 0) - Number(a.confidence || 0)) ||
+        (Number(a.observedNm || 0) - Number(b.observedNm || 0));
+    });
+
+    return {
+      model: out && out.atomicEvidenceModel || null,
+      groups: groups.slice(0, 3),
+      hits: hits.slice(0, 24)
+    };
   }
 
   function enhance(out, frame) {
     if (!out || !out.ok || String(out.presetId || '') !== 'smart-fluorescent') return out;
     const summary = summarize(frame);
-    if (!summary) return out;
+    if (!summary) {
+      out.narrowLineCandidates = [];
+      out.clearNarrowLineHits = [];
+      out.fluorescenceLineEvidence = null;
+      out.fluorescenceSummary = null;
+      out.elementScores = [];
+      out.winnerBreakdown = null;
+      out.topHits = [];
+      out.overlayHits = [];
+      out.atomicEvidenceModel = null;
+      return out;
+    }
 
-    out.narrowLineCandidates = compactNarrowHits(out);
+    const narrowCandidates = compactNarrowHits(out);
+    const lineEvidence = buildClearNarrowEvidence(out);
+
+    out.narrowLineCandidates = narrowCandidates;
+    out.clearNarrowLineHits = lineEvidence.hits.slice();
+    out.fluorescenceLineEvidence = {
+      model: lineEvidence.model,
+      hitCount: lineEvidence.hits.length,
+      groups: lineEvidence.groups.slice()
+    };
     out.fluorescenceSummary = summary;
     out.spectrumType = summary.spectrumType;
     out.scoreSemantics = 'broadband-fluorescence-shape';
     out.elementScores = [];
     out.winnerBreakdown = null;
-    out.topHits = [];
-    out.overlayHits = [];
-    out.atomicEvidenceModel = null;
+    // Coherent narrow-line matches remain visible/clickable as secondary evidence.
+    // The broader raw coincidence set stays in narrowLineCandidates and is opt-in.
+    out.topHits = lineEvidence.hits.slice();
+    out.overlayHits = lineEvidence.hits.slice();
+    out.atomicEvidenceModel = lineEvidence.model;
     return out;
   }
 

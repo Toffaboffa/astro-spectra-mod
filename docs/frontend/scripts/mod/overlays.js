@@ -215,7 +215,8 @@
       if (!state || !(state.analysis && state.analysis.enabled)) return { ok:true, labels:0, bands:0, graphState: !!graphState };
       const astroLabelSettings = (state.analysis && state.analysis.astroLabels) || {};
       if (isAstro && astroLabelSettings.enabled === false) return { ok:true, labels:0, bands:0, graphState: !!graphState, hidden:true };
-      const showLabHits = !isAstro && !(state.analysis && state.analysis.showHits === false);
+      const isFluorescent = !isAstro && String(state.analysis && state.analysis.presetId || '') === 'smart-fluorescent';
+      const showLabHits = !isAstro && (isFluorescent || !(state.analysis && state.analysis.showHits === false));
       const smartEnabled = !isAstro && !!(state.analysis && state.analysis.smartFindEnabled);
       const hits = isAstro
         ? ((state.analysis && state.analysis.astro && Array.isArray(state.analysis.astro.referenceMatches)) ? state.analysis.astro.referenceMatches : [])

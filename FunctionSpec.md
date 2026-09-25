@@ -80,7 +80,9 @@ reported rather than fabricated.
 - Molecular/multi-band evidence.
 - Broadband fluorescence λmax, centroid, FWHM, band range, asymmetry, shoulders and
   integrated relative signal.
-- Candidate rankings, hits, QC, overlays and optional narrow-line fluorescence overlay.
+- Candidate rankings, hits and QC, plus coherent fingerprint-supported narrow-line
+  fluorescence matches shown automatically in the graph/peak inspector and an optional
+  weaker raw-coincidence overlay.
 - Progressive disclosure: Analyze, Preset, Mode and results remain primary; detailed
   thresholds, weighting and worker diagnostics are under Advanced settings.
 

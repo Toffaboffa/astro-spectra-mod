@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '3.1.5';
+  const AI_ASSET_VERSION = '3.1.5-fluorescence-lines-1';
 
   const defaultPresetCatalog = {
     groups: [
@@ -126,6 +126,8 @@
       resultContext: null,
       fluorescenceSummary: null,
       narrowLineCandidates: [],
+      clearNarrowLineHits: [],
+      fluorescenceLineEvidence: null,
       narrowLineOverlay: false,
       offsetNm: null,
       includeWeakPeaks: false,

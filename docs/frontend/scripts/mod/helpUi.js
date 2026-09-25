@@ -342,7 +342,7 @@
       ['Query library', 'Button', 'Opens a library-line browser for the active wavelength range.', 'Use to inspect available reference lines independently of the ranking result.'],
       ['Library Search', 'Text input in popup', 'Filters query results by species/element text.', 'Examples include Fe, Na or isotope-like labels supported by the library.'],
       ['AI Interpretation', 'Button', 'Builds a compact package of the current measurement/analysis and opens the AI observation dialog.', 'Use after the measurement and LAB/fluorescence or ASTRO result are in a useful state.'],
-      ['Narrow-line overlay', 'Fluorescent-only checkbox', 'Shows secondary narrow atomic-line coincidences over a broad fluorescence measurement.', 'Off by default because broad band shape is the primary evidence. Enable only when lamp leakage or a genuine narrow-line contribution is relevant.']
+      ['Narrow-line overlay', 'Fluorescent-only checkbox', 'Adds weaker raw narrow-line coincidences over a broad fluorescence measurement.', 'Clear coherent multi-line matches are shown automatically. Enable this only when you also want to inspect weaker raw coincidences.']
     ];
 
     const scoreRows = [
@@ -363,7 +363,7 @@
         preset('Molecular', 'Band systems.', 'Uses multiple diagnostic bands and molecular-profile logic. One coincident band is weak evidence; coherent systems are stronger.') +
         preset('Gas Tube', 'Discharge tubes / mixed gas-like spectra.', 'Auto tune is enabled by default and evaluates several peak-threshold and wavelength-tolerance combinations, then ranks the stable fingerprint consensus. The same approach is available for Atomic and Molecular presets; manual controls remain available for diagnostics. Combines atomic fingerprints with source-family restrictions and can coexist with molecular contributors.') +
         preset('Flame', 'Flame or mixed-emitter spectra.', 'Designed for flame-type conditions where atomic emitters and background/molecular contributions can coexist.') +
-        preset('Fluorescent', 'Broad fluorescence.', 'Primary output is broadband shape: λmax, centroid, FWHM, band width, asymmetry, shoulders and integrated signal. Atomic labels are secondary and hidden by default.') +
+        preset('Fluorescent', 'Broad fluorescence.', 'Primary output is broadband shape: λmax, centroid, FWHM, band width, asymmetry, shoulders and integrated signal. Clear coherent narrow-line matches are secondary evidence and are shown automatically in the graph.') +
       '</div></section>' +
       controlTable('LAB controls', 'These controls determine what the worker analyzes and how it finds evidence.', labRows) +
       '<section class="sp-help-section"><h3>TOP HITS / MATCH SCORE</h3><p>TOP HITS lists matched evidence and Smart groups. MATCH SCORE ranks candidates after refinement. A raw line coincidence and a coherent fingerprint are not the same thing.</p></section>' +
@@ -377,6 +377,7 @@
         '<dt>Asymmetry</dt><dd>balanced, red-tailed or blue-tailed according to relative band widths around λmax.</dd>' +
         '<dt>Shoulder</dt><dd>A secondary local structure sufficiently separated from the main maximum.</dd>' +
         '<dt>Integrated signal</dt><dd>Area under the baseline-corrected band in the analyzed range; useful for relative comparisons under consistent conditions, not concentration by itself.</dd>' +
+        '<dt>Narrow emission lines</dt><dd>Coherent multi-line atomic matches are shown as secondary evidence, marked on the graph like Gas Tube labels, listed in BAND FEATURES and available in the peak inspector when you click the peak.</dd>' +
       '</dl></section>' +
       plannedShot('Atomic / Gas Tube LAB', 'Show a calibrated gas-tube measurement with Smart find enabled, Top Hits visible and a populated Match Score table. Make sure El, %, S, M, X and Δ are readable.', 'help-lab-atomic.png') +
       plannedShot('Fluorescent LAB', 'Show a broad fluorescence spectrum with Narrow-line overlay OFF and the BAND FEATURES / FLUORESCENCE SUMMARY panels visible, including λmax, centroid, FWHM, band width and asymmetry.', 'help-lab-fluorescence.png');
@@ -424,8 +425,8 @@
       qa('Why did an old image identify the wrong gas?', 'A loaded image may come from a different camera resolution, crop or grating geometry. Reusing an incompatible calibration can shift every wavelength and change matching results.') +
       qa('What is the difference between Ref and RefG?', 'Ref is the processing reference image/trace used by Difference, Ratio, Transmittance and Absorbance. RefG is one or more graph-reference overlays used for visual/comparison display.') +
       qa('When should I use Weak peaks?', 'When a known physical pattern contains weak support features that are being missed. If enabling it produces many isolated coincidences, the result is becoming less selective.') +
-      qa('Why does Fluorescent not show element Score Share?', 'Broad molecular fluorescence is characterized by band shape, not a forest of atomic line coincidences. Use Narrow-line overlay only for secondary lamp leakage or genuine narrow-line contributions.') +
-      qa('Why is Narrow-line overlay off by default?', 'Because raw atomic coincidences inside a broad fluorescence band can look chemically meaningful when they are only wavelength proximity. The broadband shape should remain primary.') +
+      qa('Why does Fluorescent not show element Score Share?', 'Broad fluorescence is characterized primarily by band shape. Coherent multi-line atomic matches are shown separately as secondary narrow-line evidence rather than being promoted to an element Score Share.') +
+      qa('Why is Narrow-line overlay off by default?', 'Clear coherent multi-line matches are already shown automatically. The optional overlay only adds weaker raw wavelength coincidences, which can be misleading inside a broad fluorescence band.') +
       qa('Why is the LAB library button called Reload libraries?', 'Libraries load automatically the first time LAB opens. The button remains as a manual reload/recovery action.') +
       qa('What does Ping worker do?', 'It checks communication with the analysis Web Worker. It is a diagnostic request and does not identify the spectrum.') +
       qa('What should I do if LAB shows no result?', 'Check: LAB active, Analyze on, libraries loaded, Worker not Off, calibrated nm axis for wavelength matching, useful peaks present, Max distance not unrealistically tight, and console/QC messages for errors.') +

@@ -11,7 +11,7 @@
 
   function createAnalysisWorkerClient(options) {
     const opts = Object.assign({
-      workerUrl: '../workers/analysis.worker.js?v=3.0.1-artifact-filter-1',
+      workerUrl: '../workers/analysis.worker.js?v=3.0.1-fluorescence-lines-1',
       throttleMs: 300,
       timeoutMs: 3000,
       enabledModes: ['LAB', 'ASTRO']
@@ -349,6 +349,24 @@
             });
           }
 
+          function mergeLineHits(primary, secondary, limit) {
+            const out = [];
+            const seen = Object.create(null);
+            [primary, secondary].forEach(function (list) {
+              (Array.isArray(list) ? list : []).forEach(function (hit) {
+                if (!hit) return;
+                const element = String(hit.element || hit.speciesKey || hit.species || '').trim();
+                const ref = Number(hit.referenceNm != null ? hit.referenceNm : hit.refNm);
+                const obs = Number(hit.observedNm != null ? hit.observedNm : hit.obsNm);
+                const key = element + '|' + (Number.isFinite(ref) ? ref.toFixed(3) : '?') + '|' + (Number.isFinite(obs) ? obs.toFixed(3) : '?');
+                if (seen[key]) return;
+                seen[key] = true;
+                out.push(Object.assign({}, hit));
+              });
+            });
+            return out.slice(0, Math.max(1, Number(limit) || 80));
+          }
+
           if (Array.isArray(msg.payload.topHits)) {
             const rawHits = normalizeHits(msg.payload.topHits);
             const overlayHits = Array.isArray(msg.payload.overlayHits) && msg.payload.overlayHits.length
@@ -443,13 +461,26 @@
               ? normalizeHits(msg.payload.narrowLineCandidates).slice(0, 120)
               : [];
           }
+          if (Object.prototype.hasOwnProperty.call(msg.payload, 'clearNarrowLineHits')) {
+            analysisNext.clearNarrowLineHits = Array.isArray(msg.payload.clearNarrowLineHits)
+              ? normalizeHits(msg.payload.clearNarrowLineHits).slice(0, 48)
+              : [];
+          }
+          if (Object.prototype.hasOwnProperty.call(msg.payload, 'fluorescenceLineEvidence')) {
+            analysisNext.fluorescenceLineEvidence = (msg.payload.fluorescenceLineEvidence && typeof msg.payload.fluorescenceLineEvidence === 'object')
+              ? msg.payload.fluorescenceLineEvidence
+              : null;
+          }
 
-          // Fluorescent mode treats narrow atomic coincidences as an optional overlay.
-          // Keep that overlay decision in the same state transaction as the worker result.
+          // Fluorescent always shows coherent multi-line matches. The checkbox adds
+          // weaker raw coincidences but never hides the clear fingerprint-supported hits.
           if (String(analysisNext.presetId || '') === 'smart-fluorescent') {
+            const clear = Array.isArray(analysisNext.clearNarrowLineHits) ? analysisNext.clearNarrowLineHits.slice(0, 48) : [];
             const narrow = Array.isArray(analysisNext.narrowLineCandidates) ? analysisNext.narrowLineCandidates.slice(0, 80) : [];
-            const overlay = analysisNext.narrowLineOverlay ? narrow : [];
+            const extras = analysisNext.narrowLineOverlay ? narrow : [];
+            const overlay = mergeLineHits(clear, extras, 80);
             analysisNext.rawTopHits = overlay;
+            analysisNext.topHits = clear.slice(0, 48);
             analysisNext.smartFindHits = overlay;
             analysisNext.smartFindGroups = [];
           }

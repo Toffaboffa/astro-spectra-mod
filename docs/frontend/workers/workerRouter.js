@@ -60,9 +60,16 @@
           if (out && String(out.mode || '') === 'astro') {
             // ASTRO already uses the shared feature/matching pipeline with its
             // controlled absorption reference set. LAB evidence enhancers do not apply.
-          } else if (out && String(out.presetId || '') === 'smart-fluorescent' &&
-              root.SPECTRA_PRO_fluorescenceAnalysis && typeof root.SPECTRA_PRO_fluorescenceAnalysis.enhance === 'function') {
-            out = root.SPECTRA_PRO_fluorescenceAnalysis.enhance(out, frame, STATE, options);
+          } else if (out && String(out.presetId || '') === 'smart-fluorescent') {
+            // Fluorescent keeps broadband shape as the primary interpretation, but
+            // reuses the same curated multi-line atomic fingerprint layer as Gas Tube
+            // to identify only coherent narrow emission signatures.
+            if (root.SPECTRA_PRO_atomicEvidence && typeof root.SPECTRA_PRO_atomicEvidence.enhance === 'function') {
+              out = root.SPECTRA_PRO_atomicEvidence.enhance(out, frame, STATE, options);
+            }
+            if (root.SPECTRA_PRO_fluorescenceAnalysis && typeof root.SPECTRA_PRO_fluorescenceAnalysis.enhance === 'function') {
+              out = root.SPECTRA_PRO_fluorescenceAnalysis.enhance(out, frame, STATE, options);
+            }
           } else if (root.SPECTRA_PRO_atomicEvidence && typeof root.SPECTRA_PRO_atomicEvidence.enhance === 'function') {
             out = root.SPECTRA_PRO_atomicEvidence.enhance(out, frame, STATE, options);
           }

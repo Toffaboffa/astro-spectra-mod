@@ -450,6 +450,8 @@
         winnerBreakdown: cloneJson(analysis.winnerBreakdown),
         fluorescence: cloneJson(analysis.fluorescenceSummary),
         narrowLineCandidates: cloneJson(Array.isArray(analysis.narrowLineCandidates) ? analysis.narrowLineCandidates : []),
+        clearNarrowLineHits: cloneJson(Array.isArray(analysis.clearNarrowLineHits) ? analysis.clearNarrowLineHits : []),
+        fluorescenceLineEvidence: cloneJson(analysis.fluorescenceLineEvidence),
         qcFlags: cloneJson(Array.isArray(analysis.qcFlags) ? analysis.qcFlags : [])
       },
       astro: cloneJson(analysis.astro),

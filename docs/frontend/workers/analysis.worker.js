@@ -27,8 +27,8 @@ importScripts(
   './molecularEvidencePatch.js?v=3.0.1-artifact-filter-1',
   './atomicProfiles.js?v=3.0.1',
   './atomicEvidence.js?v=3.0.1-artifact-filter-1',
-  './fluorescenceAnalysis.js?v=3.0.1',
-  './workerRouter.js?v=3.0.1'
+  './fluorescenceAnalysis.js?v=3.0.1-fluorescence-lines-1',
+  './workerRouter.js?v=3.0.1-fluorescence-lines-1'
 );
 
 self.onmessage = async function (evt) {

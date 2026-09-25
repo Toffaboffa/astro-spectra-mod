@@ -18,6 +18,9 @@ const calibrationScript = fs.readFileSync(path.join(root, 'docs/frontend/scripts
 const calibrationIo = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/calibrationIO.js'), 'utf8');
 const uiPanels = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/uiPanels.js'), 'utf8');
 const i18n = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/i18nUi.js'), 'utf8');
+const workerClient = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/analysisWorkerClient.js'), 'utf8');
+const fluorescenceUi = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/fluorescenceUi.js'), 'utf8');
+const overlays = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/overlays.js'), 'utf8');
 const recording = fs.readFileSync(path.join(root, 'docs/frontend/pages/recording.html'), 'utf8');
 const solarIcon = fs.readFileSync(path.join(root, 'docs/frontend/assets/examples/icons/solar-spectrum.png'));
 const argonAsset = JSON.parse(fs.readFileSync(path.join(root, 'docs/frontend/data/examples/ar-spectral-tube.json'), 'utf8'));
@@ -196,5 +199,10 @@ assert.ok(!graphScript.includes("resizeCanvasToDisplaySize(graphCtx, graphCanvas
 for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Advanced: reference spectrum comparison', 'Continuum diagnostics']) {
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
 }
+assert.ok(workerClient.includes('clearNarrowLineHits'), 'Fluorescent worker results must preserve clear coherent narrow-line hits');
+assert.ok(workerClient.includes('weaker raw coincidences but never hides the clear fingerprint-supported hits'), 'Fluorescent clear line hits must remain visible independently of the optional raw overlay');
+assert.ok(fluorescenceUi.includes('Click a peak to inspect it.'), 'Fluorescent result UI must explain that clear graph peaks are clickable');
+assert.ok(overlays.includes("String(state.analysis && state.analysis.presetId || '') === 'smart-fluorescent'"), 'Fluorescent clear labels must bypass a stale hidden Show hits setting');
+assert.ok(graphScript.includes('function getPeakInspectorMatch(peak)') && graphScript.includes('state.analysis.rawTopHits'), 'Peak inspector must resolve graph peaks against the active line-hit overlay');
 
 console.log('UI consolidation regression: primary workflows, Advanced groups and responsive hierarchy passed.');

@@ -94,6 +94,7 @@ function analyze(frame, options, libraries) {
   if (result && result.ok && result.mode === 'astro') {
     // ASTRO is already finalized by its own interpretation layer.
   } else if (result && result.ok && result.presetId === 'smart-fluorescent') {
+    result = worker.SPECTRA_PRO_atomicEvidence.enhance(result, frame, state, options || {});
     result = worker.SPECTRA_PRO_fluorescenceAnalysis.enhance(result, frame, state, options || {});
   } else if (result && result.ok) {
     result = worker.SPECTRA_PRO_atomicEvidence.enhance(result, frame, state, options || {});
@@ -563,6 +564,57 @@ function testFluorescence() {
   within(summary.centroidNm, fixture.expected.centroidNm, fixture.expected.centroidToleranceNm, 'centroid');
   within(summary.fwhmNm, fixture.expected.fwhmNm, fixture.expected.fwhmToleranceNm, 'FWHM');
   assert.equal(summary.asymmetry, fixture.expected.asymmetry, 'Symmetric profile should remain balanced');
+  assert.equal(result.clearNarrowLineHits.length, 0, 'Broad fluorescence without a coherent atomic fingerprint should not invent clear line labels');
+}
+
+function testFluorescenceClearNarrowLines() {
+  const nm = [];
+  const intensity = [];
+  const lines = [
+    { nm: 404.656, amplitude: 92 },
+    { nm: 435.833, amplitude: 105 },
+    { nm: 546.074, amplitude: 88 },
+    { nm: 576.960, amplitude: 72 },
+    { nm: 579.066, amplitude: 68 }
+  ];
+  for (let i = 0; i <= 620; i += 1) {
+    const wavelength = 390 + i * 0.5;
+    const broad = 8 + 160 * Math.exp(-0.5 * Math.pow((wavelength - 595) / 45, 2));
+    let narrow = 0;
+    lines.forEach(function (line) {
+      narrow += line.amplitude * Math.exp(-0.5 * Math.pow((wavelength - line.nm) / 0.34, 2));
+    });
+    nm.push(+wavelength.toFixed(3));
+    intensity.push(broad + narrow);
+  }
+
+  const frame = {
+    calibrated: true,
+    nm: nm,
+    px: nm.map(function (_, index) { return index; }),
+    I: intensity
+  };
+  const result = analyze(frame, {
+    preset: 'smart-fluorescent',
+    maxDistanceNm: 1.8,
+    peakThresholdRel: 0.01,
+    peakDistancePx: 2
+  }, {});
+
+  assert.equal(result.ok, true, 'Fluorescent tube analysis should succeed');
+  assert.ok(result.fluorescenceSummary && result.fluorescenceSummary.broadbandDetected, 'Broad phosphor-like background should remain the primary fluorescence result');
+  assert.ok(result.fluorescenceLineEvidence, 'Fluorescent analysis should expose secondary coherent line evidence');
+  assert.ok(result.fluorescenceLineEvidence.groups.length >= 1, 'A coherent Hg fingerprint should create a secondary line group');
+  assert.equal(result.fluorescenceLineEvidence.groups[0].element, 'Hg', 'Mercury should be the coherent secondary line signature');
+  assert.ok(result.fluorescenceLineEvidence.groups[0].matchedCount >= 3, 'Mercury should require several matched lines before automatic display');
+  assert.ok(result.clearNarrowLineHits.length >= 3, 'Several clear Hg lines should be promoted to graph labels');
+  assert.ok(result.clearNarrowLineHits.every(function (hit) { return hit.element === 'Hg'; }), 'Automatically promoted fluorescence line labels should belong to the coherent Hg fingerprint');
+  assert.deepEqual(
+    Array.from(result.overlayHits, function (hit) { return [hit.element, hit.referenceNm, hit.observedNm]; }),
+    Array.from(result.clearNarrowLineHits, function (hit) { return [hit.element, hit.referenceNm, hit.observedNm]; }),
+    'The default Fluorescent graph overlay should contain exactly the clear coherent line hits'
+  );
+  assert.equal(result.elementScores.length, 0, 'Fluorescent should keep broadband shape primary instead of exposing atomic Score Share');
 }
 
 function testQualityControlAndSafeFailure() {
@@ -1108,6 +1160,7 @@ const groups = [
   ['atomic emission', testAtomicEmission],
   ['molecular emission', testMolecularEmission],
   ['fluorescence', testFluorescence],
+  ['fluorescence clear narrow lines', testFluorescenceClearNarrowLines],
   ['quality control', testQualityControlAndSafeFailure],
   ['spectral features', testSpectralFeatures],
   ['higher-order diffraction artifacts', testHigherOrderDiffractionArtifacts],
