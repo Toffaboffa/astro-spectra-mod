@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -22,6 +23,7 @@ const helpUi = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/helpUi
 const workerClient = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/analysisWorkerClient.js'), 'utf8');
 const fluorescenceUi = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/fluorescenceUi.js'), 'utf8');
 const overlays = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/overlays.js'), 'utf8');
+const dataQualityPanel = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/dataQualityPanel.js'), 'utf8');
 const recording = fs.readFileSync(path.join(root, 'docs/frontend/pages/recording.html'), 'utf8');
 const solarIcon = fs.readFileSync(path.join(root, 'docs/frontend/assets/examples/icons/solar-spectrum.png'));
 const fluorescentIcon = fs.readFileSync(path.join(root, 'docs/frontend/assets/examples/icons/fluorescent-tube-white-256.png'));
@@ -73,6 +75,59 @@ for (const id of ['spGraphXAxisMode', 'spGraphYAxisMode', 'spGraphPeaks', 'spGra
 for (const removedId of ['spGraphFillMode', 'spGraphAnalyze', 'spXAxisMode', 'spYAxisMode', 'spToggleNmPeaks']) {
   assert.equal(markupCount(removedId), 0, removedId + ' must not duplicate controls between the persistent toolbar and CORE');
 }
+function axisStatusFromDataQuality(elements) {
+  const documentStub = {
+    getElementById(id) { return elements[id] || null; }
+  };
+  const windowStub = { SpectraPro: { v15: {} } };
+  const context = vm.createContext({ console, document: documentStub, window: windowStub });
+  new vm.Script(dataQualityPanel, { filename: 'dataQualityPanel.js' }).runInContext(context);
+  const frame = { source: 'axis-regression', I: [0, 0.5, 1] };
+  const result = context.window.SpectraPro.v15.dataQualityPanel.compute({
+    appMode: 'CORE',
+    analysis: {},
+    worker: {},
+    frame: { latest: frame }
+  }, { latestFrame: frame });
+  const axis = result.status.find((row) => row.label === 'Axis:');
+  return axis && axis.value;
+}
+
+assert.equal(
+  axisStatusFromDataQuality({
+    spGraphXAxisMode: { value: 'nm' },
+    toggleXLabelsNm: { checked: false },
+    toggleXLabelsPx: { checked: true }
+  }),
+  'nm',
+  'Data Quality Axis must use the persistent nm selector as the canonical graph-axis state'
+);
+assert.equal(
+  axisStatusFromDataQuality({
+    spGraphXAxisMode: { value: 'px' },
+    toggleXLabelsNm: { checked: true },
+    toggleXLabelsPx: { checked: false }
+  }),
+  'px',
+  'Data Quality Axis must use the persistent px selector as the canonical graph-axis state'
+);
+assert.equal(
+  axisStatusFromDataQuality({
+    toggleXLabelsNm: { checked: true },
+    toggleXLabelsPx: { checked: false }
+  }),
+  'nm',
+  'Data Quality Axis must fall back to the legacy nm graph radio before the toolbar is mounted'
+);
+assert.equal(
+  axisStatusFromDataQuality({
+    toggleXLabelsNm: { checked: false },
+    toggleXLabelsPx: { checked: true }
+  }),
+  'px',
+  'Data Quality Axis must fall back to the legacy px graph radio before the toolbar is mounted'
+);
+
 assert.ok(bootstrap.includes("graphXAxisSel && graphXAxisSel.addEventListener('change'"), 'persistent X-axis must control the legacy graph axis directly');
 assert.ok(bootstrap.includes("const pxRadio = $('toggleXLabelsPx');") && bootstrap.includes("const nmRadio = $('toggleXLabelsNm');"), 'persistent X-axis must stay wired to the real graph axis controls');
 assert.ok(bootstrap.includes("graphYAxisSel && graphYAxisSel.addEventListener('change'"), 'persistent Y-axis must update display state directly');
