@@ -160,6 +160,46 @@ assert.ok(matchMetrics['Match MAE:'].title.includes('ignores sign'), 'Match MAE 
 assert.ok(matchMetrics['Offset:'].title.includes('Positive means observed wavelength is above'), 'Offset tooltip must state the residual sign convention');
 assert.ok(!dataQualityPanel.includes("line('Peak Δ:'"), 'ambiguous Peak Δ label must not return');
 
+function snrMetricsFromDataQuality(state, frame) {
+  const documentStub = { getElementById() { return null; } };
+  const windowStub = { SpectraPro: { v15: {} } };
+  const context = vm.createContext({ console, document: documentStub, window: windowStub });
+  new vm.Script(dataQualityPanel, { filename: 'dataQualityPanel.js' }).runInContext(context);
+  return context.window.SpectraPro.v15.dataQualityPanel.compute(
+    Object.assign({ appMode: 'CORE', analysis: {}, worker: {}, frame: { latest: frame } }, state || {}),
+    { latestFrame: frame }
+  );
+}
+
+const workerSnrResult = snrMetricsFromDataQuality({
+  analysis: {
+    measurementQuality: {
+      dimensions: {
+        noise: {
+          metrics: {
+            snr: 12.34,
+            noiseSigma: 0.5,
+            signalSpanP95P05: 6.17,
+            snrDefinition: 'p95-p05-over-noise-sigma'
+          }
+        }
+      }
+    }
+  }
+}, { I: [0, 1, 0.1, 0.8, 0.2, 0.7, 0.3, 0.6, 0.4, 0.5] });
+const workerSnrRows = Object.fromEntries(workerSnrResult.dq.map((row) => [row.label, row]));
+assert.equal(workerSnrRows['SNR:'].value, '12.34', 'Data Quality must display worker Measurement Quality SNR when available');
+assert.equal(workerSnrResult.metrics.snrSource, 'worker-measurement-quality', 'Data Quality must identify Measurement Quality as the canonical SNR source');
+assert.equal(workerSnrResult.metrics.snrDefinition, 'p95-p05-over-noise-sigma', 'Data Quality must preserve the canonical SNR definition');
+assert.equal(workerSnrRows['Noise σ:'].value, '0.50', 'Data Quality noise sigma must come from the same worker metric set as SNR');
+
+const fallbackSnrResult = snrMetricsFromDataQuality({}, { I: [0.12, 0.78, 0.2, 0.86, 0.15, 0.74, 0.24, 0.82, 0.18, 0.7, 0.27, 0.76] });
+const fallbackSnrRows = Object.fromEntries(fallbackSnrResult.dq.map((row) => [row.label, row]));
+assert.equal(fallbackSnrRows['SNR:'].value, '2.02', 'Data Quality fallback must reproduce the worker P95-P05 over noise-sigma SNR formula');
+assert.equal(fallbackSnrResult.metrics.snrSource, 'frontend-fallback', 'Data Quality must identify when it is using the mathematically identical frontend fallback');
+assert.ok(fallbackSnrRows['SNR:'].title.includes('(P95 - P05) / noise sigma'), 'SNR tooltip must state the canonical formula');
+assert.ok(!dataQualityPanel.includes('signal / sigma'), 'the old median-signal SNR definition must not return');
+
 assert.ok(bootstrap.includes("graphXAxisSel && graphXAxisSel.addEventListener('change'"), 'persistent X-axis must control the legacy graph axis directly');
 assert.ok(bootstrap.includes("const pxRadio = $('toggleXLabelsPx');") && bootstrap.includes("const nmRadio = $('toggleXLabelsNm');"), 'persistent X-axis must stay wired to the real graph axis controls');
 assert.ok(bootstrap.includes("graphYAxisSel && graphYAxisSel.addEventListener('change'"), 'persistent Y-axis must update display state directly');
