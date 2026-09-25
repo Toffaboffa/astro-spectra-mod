@@ -125,7 +125,7 @@ assert.ok(examples.includes("id: 'fluorescent-tube'"), 'Load Example chooser mus
 assert.ok(examples.includes("fluorescent: '../assets/examples/icons/fluorescent-tube-white-256.png'"), 'Fluorescent chooser card must use its dedicated white tube icon');
 assert.ok(examples.includes("recommendedPreset: 'smart-fluorescent'"), 'Fluorescent chooser sample must select the Fluorescent LAB preset');
 assert.ok(examples.includes("hardwareProfileId: 'spectra-1'"), 'Bundled measured examples must declare the SPECTRA-1 hardware profile');
-assert.equal((examples.match(/applyExampleHardware\\(sample\\);/g) || []).length, 3, 'all three example loader paths must apply their hardware policy before analysis');
+assert.equal((examples.match(/applyExampleHardware\(sample\);/g) || []).length, 3, 'all three example loader paths must apply their hardware policy before analysis');
 assert.ok(examples.includes("source: 'exampleSpectrum.hardware.none'"), 'examples without a hardware profile, including Solar, must clear stale spectrometer hardware');
 assert.deepEqual([...fluorescentSpectrum.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], 'Fluorescent spectrum example must be a real PNG');
 assert.equal(fluorescentSpectrum.readUInt32BE(16), 1280, 'Fluorescent spectrum example must be 1280 px wide');
