@@ -38,6 +38,11 @@ function buildPayload(scenario) {
     analysis.offsetNm = 0.2;
     analysis.rawMatchOffsetNm = -0.4;
     analysis.offsetBasis = 'clear-narrow-line-hits';
+    analysis.topHits = [
+      { element: 'Hg', observedNm: 404.4, referenceNm: 404.656, deltaNm: -0.256 },
+      { element: 'Hg', observedNm: 436.4, referenceNm: 435.833, deltaNm: 0.567 },
+      { element: 'Hg', observedNm: 546.0, referenceNm: 546.074, deltaNm: -0.074 }
+    ];
   }
   if (scenario.id === 'astro') {
     analysis.astro = fixture.astro;
@@ -66,6 +71,7 @@ const fluorescence = payloads.get('fluorescence');
 assert.equal(fluorescence.quality.offsetNm, 0.2, 'AI payload must use the canonical accepted-hit wavelength offset');
 assert.equal(fluorescence.quality.rawMatchOffsetNm, -0.4, 'AI payload must retain the broader matcher offset separately');
 assert.equal(fluorescence.quality.offsetBasis, 'clear-narrow-line-hits', 'AI payload must state the source hit set for the canonical offset');
+assert.equal(fluorescence.quality.matchMeanAbsResidualNm, 0.299, 'AI payload must expose unsigned mean absolute residual separately from signed offset');
 
 const astro = payloads.get('astro');
 assert.equal(astro.analysis.astro.absorptionFeatures[0].equivalentWidthNm, -0.31);
