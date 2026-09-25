@@ -99,12 +99,34 @@ state.analysis.clearNarrowLineHits = [
   { element: 'Hg', observedNm: 436.605, referenceNm: 435.833, deltaNm: 0.772 },
   { element: 'Hg', observedNm: 546.697, referenceNm: 546.074, deltaNm: 0.623 }
 ];
+state.analysis.measurementQuality.overallStatus = 'good';
+state.analysis.measurementQuality.mainLimitation = null;
+state.analysis.measurementQuality.dimensions.coverage = {
+  status: 'good',
+  reason: 'analysis-region-within-calibration-anchors',
+  metrics: {
+    minNm: 376.24,
+    maxNm: 910.34,
+    analysisMinNm: 404.385,
+    analysisMaxNm: 659.8,
+    anchorMinNm: 388.86,
+    anchorMaxNm: 837.76,
+    fullFrameMinNm: 376.24,
+    fullFrameMaxNm: 910.34,
+    fullFrameExtrapolated: true,
+    analysisRegionExtrapolated: false,
+    analysisCoverageBasis: 'fluorescence-band-and-accepted-hits'
+  }
+};
 const fluorescentBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
 const fluorescentReport = context.SpectraPro.exportUi.buildPdfReportModel(fluorescentBundle);
 assert.ok(fluorescentReport.methodNarrative.some((line) => line.includes('coherent narrow-line hits accepted in the Fluorescent result')), 'Fluorescent PDF narrative must identify the accepted coherent hit set used for the reported offset');
 assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('basis=clear-narrow-line-hits')), 'PDF analysis log must record machine-readable offset provenance');
 assert.ok(Math.abs(fluorescentBundle.scientificAnalysis.lab.matchMeanAbsResidualNm - 0.5553333333333333) < 1e-12, 'Fluorescent scientific export must compute MAE from the accepted hit residual magnitudes');
 assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('match MAE=0.5553 nm')), 'Fluorescent PDF log must keep +0.623 nm signed offset distinct from 0.5553 nm match MAE');
+assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('full-frame extrapolation=yes')), 'PDF analysis log must retain the full-frame extrapolation warning');
+assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('reason=analysis-region-within-calibration-anchors')), 'PDF analysis log must state that the reported Fluorescent result lies inside calibration anchors');
+assert.ok(fluorescentReport.methodNarrative.some((line) => line.includes('full-frame wavelength range extends beyond the calibration anchors')), 'PDF narrative must explain why edge extrapolation does not by itself lower safe result coverage');
 
 context.SpectraPro.aiAnalysisUi = null;
 const noAiBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
