@@ -5,6 +5,7 @@
   const spectrumMath = root.SPECTRA_PRO_spectrumMath;
   if (!spectrumMath) return;
   const clamp = spectrumMath.clamp;
+  const matchOffsetNm = spectrumMath.matchOffsetNm;
 
   function finitePairs(frame) {
     if (!frame || !Array.isArray(frame.nm)) return [];
@@ -270,6 +271,8 @@
       out.winnerBreakdown = null;
       out.topHits = [];
       out.overlayHits = [];
+      out.offsetNm = null;
+      out.offsetBasis = 'clear-narrow-line-hits';
       out.atomicEvidenceModel = null;
       return out;
     }
@@ -293,6 +296,8 @@
     // The broader raw coincidence set stays in narrowLineCandidates and is opt-in.
     out.topHits = lineEvidence.hits.slice();
     out.overlayHits = lineEvidence.hits.slice();
+    out.offsetNm = typeof matchOffsetNm === 'function' ? matchOffsetNm(lineEvidence.hits) : null;
+    out.offsetBasis = 'clear-narrow-line-hits';
     out.atomicEvidenceModel = lineEvidence.model;
     return out;
   }
