@@ -505,15 +505,19 @@
             analysisNext.smartFindGroups = [];
           }
 
-          if (Object.prototype.hasOwnProperty.call(msg.payload, 'offsetNm')) {
-            analysisNext.offsetNm = Number.isFinite(Number(msg.payload.offsetNm)) ? Number(msg.payload.offsetNm) : null;
-          }
-          if (Object.prototype.hasOwnProperty.call(msg.payload, 'rawMatchOffsetNm')) {
-            analysisNext.rawMatchOffsetNm = Number.isFinite(Number(msg.payload.rawMatchOffsetNm)) ? Number(msg.payload.rawMatchOffsetNm) : null;
-          } else {
-            analysisNext.rawMatchOffsetNm = null;
-          }
-          analysisNext.offsetBasis = msg.payload.offsetBasis ? String(msg.payload.offsetBasis) : 'matcher-residuals';
+          const hasReportedOffset = Object.prototype.hasOwnProperty.call(msg.payload, 'offsetNm');
+          const hasRawMatchOffset = Object.prototype.hasOwnProperty.call(msg.payload, 'rawMatchOffsetNm');
+          const reportedOffsetValue = hasReportedOffset && msg.payload.offsetNm !== null && msg.payload.offsetNm !== ''
+            ? Number(msg.payload.offsetNm)
+            : null;
+          const rawOffsetValue = hasRawMatchOffset && msg.payload.rawMatchOffsetNm !== null && msg.payload.rawMatchOffsetNm !== ''
+            ? Number(msg.payload.rawMatchOffsetNm)
+            : null;
+          analysisNext.offsetNm = Number.isFinite(reportedOffsetValue) ? reportedOffsetValue : null;
+          analysisNext.rawMatchOffsetNm = Number.isFinite(rawOffsetValue) ? rawOffsetValue : null;
+          analysisNext.offsetBasis = msg.payload.offsetBasis
+            ? String(msg.payload.offsetBasis)
+            : ((hasReportedOffset || hasRawMatchOffset) ? 'matcher-residuals' : null);
           if (Array.isArray(msg.payload.qcFlags)) analysisNext.qcFlags = msg.payload.qcFlags;
           analysisNext.calibrationDiagnostics = (msg.payload.calibrationDiagnostics && typeof msg.payload.calibrationDiagnostics === 'object')
             ? msg.payload.calibrationDiagnostics
