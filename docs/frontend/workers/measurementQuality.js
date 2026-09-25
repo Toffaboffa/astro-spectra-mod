@@ -24,6 +24,56 @@
     return status;
   }
 
+  function finiteRange(values) {
+    const clean = (Array.isArray(values) ? values : []).map(finite).filter(function (value) { return value !== null; });
+    if (!clean.length) return null;
+    return { min: Math.min.apply(null, clean), max: Math.max.apply(null, clean) };
+  }
+
+  function fluorescenceRelevantCoverage(output) {
+    const source = output || {};
+    if (String(source.presetId || '') !== 'smart-fluorescent' && !source.fluorescenceSummary) return null;
+    const values = [];
+    const summary = source.fluorescenceSummary && typeof source.fluorescenceSummary === 'object' ? source.fluorescenceSummary : {};
+    [summary.bandMinNm, summary.bandMaxNm, summary.lambdaMaxNm, summary.centroidNm].forEach(function (value) {
+      const numeric = finite(value);
+      if (numeric !== null) values.push(numeric);
+    });
+    const hits = Array.isArray(source.clearNarrowLineHits) && source.clearNarrowLineHits.length
+      ? source.clearNarrowLineHits
+      : (Array.isArray(source.topHits) ? source.topHits : []);
+    hits.forEach(function (hit) {
+      [hit && hit.observedNm, hit && hit.referenceNm].forEach(function (value) {
+        const numeric = finite(value);
+        if (numeric !== null) values.push(numeric);
+      });
+    });
+    const range = finiteRange(values);
+    return range ? { min: range.min, max: range.max, basis: 'fluorescence-band-and-accepted-hits' } : null;
+  }
+
+  function calibrationCoverageContext(output, diagnostics) {
+    const diag = diagnostics || {};
+    const frameCoverage = diag.wavelengthCoverageNm && finite(diag.wavelengthCoverageNm.min) !== null && finite(diag.wavelengthCoverageNm.max) !== null
+      ? { min: finite(diag.wavelengthCoverageNm.min), max: finite(diag.wavelengthCoverageNm.max) }
+      : null;
+    const anchorCoverage = diag.anchorWavelengthCoverageNm && finite(diag.anchorWavelengthCoverageNm.min) !== null && finite(diag.anchorWavelengthCoverageNm.max) !== null
+      ? { min: finite(diag.anchorWavelengthCoverageNm.min), max: finite(diag.anchorWavelengthCoverageNm.max) }
+      : null;
+    const relevantCoverage = fluorescenceRelevantCoverage(output);
+    const fullFrameExtrapolated = !!(diag.extrapolation && diag.extrapolation.any);
+    const analysisRegionExtrapolated = relevantCoverage && anchorCoverage
+      ? (relevantCoverage.min < anchorCoverage.min || relevantCoverage.max > anchorCoverage.max)
+      : null;
+    return {
+      frameCoverage: frameCoverage,
+      anchorCoverage: anchorCoverage,
+      relevantCoverage: relevantCoverage,
+      fullFrameExtrapolated: fullFrameExtrapolated,
+      analysisRegionExtrapolated: analysisRegionExtrapolated
+    };
+  }
+
   function featureDimension(features, qcFlags) {
     const list = Array.isArray(features) ? features : [];
     if (!list.length) {
@@ -54,6 +104,7 @@
     const flags = Array.isArray(qc.flags) ? qc.flags.slice() : [];
     const metrics = qc.metrics || {};
     const diagnostics = output.calibrationDiagnostics || {};
+    const coverageContext = calibrationCoverageContext(output, diagnostics);
     const uncertainty = output.matchUncertaintyModel || {};
     const hardware = opt.hardware || {};
     const dimensions = {};
@@ -104,14 +155,23 @@
     } else {
       let calibrationStatus = calibrationRms === null ? 'unavailable'
         : (calibrationRms <= calibrationScale * 0.5 ? 'good' : (calibrationRms <= calibrationScale ? 'moderate' : 'poor'));
-      if (diagnostics.extrapolation && diagnostics.extrapolation.any) calibrationStatus = downgrade(calibrationStatus);
+      const relevantExtrapolationKnown = coverageContext.analysisRegionExtrapolated !== null;
+      const resultRegionExtrapolated = relevantExtrapolationKnown
+        ? coverageContext.analysisRegionExtrapolated
+        : coverageContext.fullFrameExtrapolated;
+      if (resultRegionExtrapolated) calibrationStatus = downgrade(calibrationStatus);
       dimensions.calibration = dimension(calibrationStatus,
-        diagnostics.extrapolation && diagnostics.extrapolation.any ? 'calibration-extrapolation' : 'calibration-fit-residual', {
+        resultRegionExtrapolated
+          ? (relevantExtrapolationKnown ? 'analysis-region-calibration-extrapolation' : 'calibration-extrapolation')
+          : 'calibration-fit-residual', {
           pointCount: diagnostics.pointCount || 0,
           polynomialOrder: diagnostics.polynomialOrder == null ? null : diagnostics.polynomialOrder,
           rmsResidualNm: rounded(calibrationRms, 4),
           maxAbsResidualNm: rounded(diagnostics.maxAbsResidualNm, 4),
-          extrapolated: !!(diagnostics.extrapolation && diagnostics.extrapolation.any)
+          extrapolated: resultRegionExtrapolated,
+          fullFrameExtrapolated: coverageContext.fullFrameExtrapolated,
+          analysisRegionExtrapolated: coverageContext.analysisRegionExtrapolated,
+          analysisCoverageBasis: coverageContext.relevantCoverage ? coverageContext.relevantCoverage.basis : null
         });
     }
 
@@ -140,12 +200,35 @@
         });
     }
 
-    const coverage = diagnostics.wavelengthCoverageNm;
-    dimensions.coverage = calibrated && coverage && finite(coverage.min) !== null && finite(coverage.max) !== null
-      ? dimension(diagnostics.extrapolation && diagnostics.extrapolation.any ? 'poor' : 'good', diagnostics.extrapolation && diagnostics.extrapolation.any ? 'coverage-includes-extrapolation' : 'calibrated-coverage-available', {
-          minNm: rounded(coverage.min, 4), maxNm: rounded(coverage.max, 4), extrapolated: !!(diagnostics.extrapolation && diagnostics.extrapolation.any)
-        })
-      : dimension('unavailable', 'calibrated-coverage-unavailable', {});
+    const coverage = coverageContext.frameCoverage;
+    if (calibrated && coverage) {
+      const relevant = coverageContext.relevantCoverage;
+      const anchors = coverageContext.anchorCoverage;
+      const relevantKnown = !!(relevant && anchors);
+      const relevantExtrapolated = relevantKnown ? coverageContext.analysisRegionExtrapolated : null;
+      const coverageStatus = relevantKnown
+        ? (relevantExtrapolated ? 'poor' : 'good')
+        : (coverageContext.fullFrameExtrapolated ? 'poor' : 'good');
+      const coverageReason = relevantKnown
+        ? (relevantExtrapolated ? 'analysis-region-includes-extrapolation' : 'analysis-region-within-calibration-anchors')
+        : (coverageContext.fullFrameExtrapolated ? 'coverage-includes-extrapolation' : 'calibrated-coverage-available');
+      dimensions.coverage = dimension(coverageStatus, coverageReason, {
+        minNm: rounded(coverage.min, 4),
+        maxNm: rounded(coverage.max, 4),
+        analysisMinNm: relevant ? rounded(relevant.min, 4) : null,
+        analysisMaxNm: relevant ? rounded(relevant.max, 4) : null,
+        anchorMinNm: anchors ? rounded(anchors.min, 4) : null,
+        anchorMaxNm: anchors ? rounded(anchors.max, 4) : null,
+        fullFrameMinNm: rounded(coverage.min, 4),
+        fullFrameMaxNm: rounded(coverage.max, 4),
+        extrapolated: coverageContext.fullFrameExtrapolated,
+        fullFrameExtrapolated: coverageContext.fullFrameExtrapolated,
+        analysisRegionExtrapolated: relevantExtrapolated,
+        analysisCoverageBasis: relevant ? relevant.basis : null
+      });
+    } else {
+      dimensions.coverage = dimension('unavailable', 'calibrated-coverage-unavailable', {});
+    }
 
     dimensions.features = featureDimension(output.features, flags);
 
