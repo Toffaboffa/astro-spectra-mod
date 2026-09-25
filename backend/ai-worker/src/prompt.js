@@ -171,8 +171,6 @@ function compactCalibrationDiagnostics(value) {
     : {};
   const sampling = value.samplingNmPerPixel != null ? value.samplingNmPerPixel : value.samplingNmPerPx;
   return {
-    model: text(value.model, 64),
-    available: typeof value.available === 'boolean' ? value.available : null,
     pointCount: n(value.pointCount, 0),
     polynomialOrder: n(value.polynomialOrder, 0),
     rmsResidualNm: n(value.rmsResidualNm, 5),
