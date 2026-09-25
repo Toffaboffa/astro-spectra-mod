@@ -883,6 +883,102 @@ function testMeasurementQualityModel() {
   assert.equal(saturated.dimensions.saturation.status, 'poor', 'Material clipping should map to poor saturation quality');
   assert.equal(saturated.mainLimitation.code, 'saturation', 'Saturation should be selected as the dominant clipping limitation');
 
+  const extrapolatedDiagnostics = {
+    available: true,
+    pointCount: 3,
+    polynomialOrder: 2,
+    rmsResidualNm: 0.05,
+    maxAbsResidualNm: 0.1,
+    samplingNmPerPixel: 0.4,
+    wavelengthCoverageNm: { min: 376.24, max: 910.34 },
+    anchorWavelengthCoverageNm: { min: 388.86, max: 837.76 },
+    extrapolation: { any: true, left: true, right: true }
+  };
+  const goodQc = {
+    flags: [],
+    metrics: {
+      sampleCount: 100,
+      validFraction: 1,
+      dynamicRange: 100,
+      saturationCount: 0,
+      saturationFraction: 0,
+      noiseSigma: 1,
+      signalSpanP95P05: 20,
+      snr: 20,
+      snrDefinition: 'p95-p05-over-noise-sigma'
+    }
+  };
+  const fluorescenceInsideAnchors = qualityEngine.build({
+    ok: true,
+    calibrated: true,
+    presetId: 'smart-fluorescent',
+    features: [],
+    calibrationDiagnostics: extrapolatedDiagnostics,
+    matchUncertaintyModel: { effectiveToleranceNm: 1.8 },
+    fluorescenceSummary: {
+      bandMinNm: 524.47,
+      bandMaxNm: 659.84,
+      lambdaMaxNm: 595.47,
+      centroidNm: 591.62
+    },
+    clearNarrowLineHits: [
+      { observedNm: 404.385, referenceNm: 404.656 },
+      { observedNm: 436.605, referenceNm: 435.833 },
+      { observedNm: 546.697, referenceNm: 546.074 }
+    ]
+  }, { I: Array.from({ length: 100 }, function (_, index) { return index; }) }, {
+    qc: goodQc,
+    hardware: { spectrometerResolutionFwhmNm: 1.8 }
+  });
+  assert.equal(fluorescenceInsideAnchors.dimensions.coverage.status, 'good', 'Full-frame extrapolation must not make Fluorescent coverage poor when the result-bearing band and accepted hits remain inside calibration anchors');
+  assert.equal(fluorescenceInsideAnchors.dimensions.coverage.reason, 'analysis-region-within-calibration-anchors', 'Fluorescent coverage must state that the result-bearing region is inside calibration anchors');
+  assert.equal(fluorescenceInsideAnchors.dimensions.coverage.metrics.fullFrameExtrapolated, true, 'Full-frame extrapolation must remain visible as a warning metric');
+  assert.equal(fluorescenceInsideAnchors.dimensions.coverage.metrics.analysisRegionExtrapolated, false, 'The safe Fluorescent result region must be recorded as non-extrapolated');
+  assert.equal(fluorescenceInsideAnchors.dimensions.coverage.metrics.analysisCoverageBasis, 'fluorescence-band-and-accepted-hits', 'Fluorescent coverage must name the result region used for the decision');
+  assert.equal(fluorescenceInsideAnchors.dimensions.calibration.status, 'good', 'Calibration fit quality must not be downgraded solely because unused frame edges are extrapolated');
+  assert.equal(fluorescenceInsideAnchors.overallStatus, 'good', 'Unused extrapolated frame edges must not force an otherwise good Fluorescent result to poor');
+  assert.ok(fluorescenceInsideAnchors.dimensions.coverage.metrics.analysisMinNm <= 404.385, 'Fluorescent relevant coverage must include accepted narrow-line hits');
+  assert.ok(fluorescenceInsideAnchors.dimensions.coverage.metrics.analysisMaxNm >= 659.84, 'Fluorescent relevant coverage must include the broadband fluorescence band');
+
+  const fluorescenceOutsideAnchors = qualityEngine.build({
+    ok: true,
+    calibrated: true,
+    presetId: 'smart-fluorescent',
+    features: [],
+    calibrationDiagnostics: extrapolatedDiagnostics,
+    matchUncertaintyModel: { effectiveToleranceNm: 1.8 },
+    fluorescenceSummary: {
+      bandMinNm: 810,
+      bandMaxNm: 850,
+      lambdaMaxNm: 830,
+      centroidNm: 832
+    },
+    clearNarrowLineHits: [{ observedNm: 835, referenceNm: 834.9 }]
+  }, { I: Array.from({ length: 100 }, function (_, index) { return index; }) }, {
+    qc: goodQc,
+    hardware: { spectrometerResolutionFwhmNm: 1.8 }
+  });
+  assert.equal(fluorescenceOutsideAnchors.dimensions.coverage.status, 'poor', 'Fluorescent coverage must become poor when the result-bearing region crosses a calibration anchor');
+  assert.equal(fluorescenceOutsideAnchors.dimensions.coverage.reason, 'analysis-region-includes-extrapolation', 'Out-of-anchor Fluorescent results must state that the analysis region itself is extrapolated');
+  assert.equal(fluorescenceOutsideAnchors.dimensions.coverage.metrics.analysisRegionExtrapolated, true, 'Out-of-anchor Fluorescent result region must be recorded as extrapolated');
+  assert.equal(fluorescenceOutsideAnchors.dimensions.calibration.status, 'moderate', 'Calibration quality should be downgraded when the reported Fluorescent result itself uses extrapolated wavelengths');
+  assert.equal(fluorescenceOutsideAnchors.overallStatus, 'poor', 'Result-bearing calibration extrapolation must still make the overall quality poor');
+  assert.equal(fluorescenceOutsideAnchors.mainLimitation.code, 'coverage', 'Result-bearing extrapolation should surface coverage as the dominant limitation');
+
+  const genericExtrapolated = qualityEngine.build({
+    ok: true,
+    calibrated: true,
+    presetId: 'nearest',
+    features: [],
+    calibrationDiagnostics: extrapolatedDiagnostics,
+    matchUncertaintyModel: { effectiveToleranceNm: 1.8 }
+  }, { I: Array.from({ length: 100 }, function (_, index) { return index; }) }, {
+    qc: goodQc,
+    hardware: { spectrometerResolutionFwhmNm: 1.8 }
+  });
+  assert.equal(genericExtrapolated.dimensions.coverage.status, 'poor', 'Modes without an explicit result-bearing region must conservatively retain full-frame extrapolation as poor coverage');
+  assert.equal(genericExtrapolated.dimensions.calibration.status, 'moderate', 'Modes without an explicit result-bearing region must retain the conservative calibration downgrade');
+
   const frame = gaussianFrame(calibrationFixture, true);
   frame.px = frame.I.map(function (_, index) { return index; });
   const good = analyze(frame, {
