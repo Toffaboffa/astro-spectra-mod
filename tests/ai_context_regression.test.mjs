@@ -23,7 +23,18 @@ function buildPayload(scenario) {
     elementScores: [{ element: 'Hydrogen', scoreSharePct: 68, matchedPeaks: 3, evidenceModel: 'atomic-fingerprint-v1' }],
     rawTopHits: [{ element: 'Hydrogen', observedNm: 486.2, referenceNm: 486.13, deltaNm: 0.07 }],
     offsetNm: 0.07, rawMatchOffsetNm: 0.07, offsetBasis: 'matcher-residuals',
-    calibrationDiagnostics: { status: 'usable', pointCount: 3, polynomialOrder: 1, rmsResidualNm: 0.18, maxAbsResidualNm: 0.3, coverageNm: { min: 400, max: 700 }, extrapolated: false },
+    calibrationDiagnostics: {
+      model: 'calibration-match-uncertainty-v1',
+      available: true,
+      pointCount: 3,
+      polynomialOrder: 2,
+      rmsResidualNm: 0.18,
+      maxAbsResidualNm: 0.3,
+      wavelengthCoverageNm: { min: 376.240561, max: 910.338212 },
+      anchorWavelengthCoverageNm: { min: 388.86, max: 837.76 },
+      samplingNmPerPixel: 0.417590031834,
+      extrapolation: { any: true, left: true, right: true }
+    },
     preprocessing: { intensityBasis: 'uncorrected-relative-intensity', activeOperations: [], warnings: ['Response correction is not applied.'], responseCorrection: { enabled: false, applied: false } },
     measurementQuality: {
       model: 'measurement-quality-v1', overallStatus: 'limited',
@@ -79,6 +90,15 @@ for (const scenario of fixture.contexts) {
   assert.ok(payload.quality.measurement, scenario.id + ' must include deterministic measurement quality');
   assert.equal(payload.quality.measurement.dimensions.noise.metrics.snr, 12.34, scenario.id + ' must send the canonical worker SNR value');
   assert.equal(payload.quality.measurement.dimensions.noise.metrics.snrDefinition, 'p95-p05-over-noise-sigma', scenario.id + ' must send the canonical SNR definition');
+  assert.equal(payload.analysis.calibrationDiagnostics.model, 'calibration-match-uncertainty-v1', scenario.id + ' must preserve the worker calibration-diagnostics model');
+  assert.equal(payload.analysis.calibrationDiagnostics.available, true, scenario.id + ' must preserve calibration diagnostics availability');
+  assert.equal(payload.analysis.calibrationDiagnostics.samplingNmPerPixel, 0.41759, scenario.id + ' must map samplingNmPerPixel from the worker schema');
+  assert.deepEqual(Object.assign({}, payload.analysis.calibrationDiagnostics.wavelengthCoverageNm), { min: 376.241, max: 910.338 }, scenario.id + ' must map actual calibrated wavelength coverage');
+  assert.deepEqual(Object.assign({}, payload.analysis.calibrationDiagnostics.anchorWavelengthCoverageNm), { min: 388.86, max: 837.76 }, scenario.id + ' must preserve calibration-anchor wavelength coverage');
+  assert.deepEqual(Object.assign({}, payload.analysis.calibrationDiagnostics.extrapolation), { any: true, left: true, right: true }, scenario.id + ' must preserve directional extrapolation flags');
+  assert.equal(payload.analysis.calibrationDiagnostics.samplingNmPerPx, undefined, scenario.id + ' must not emit the stale samplingNmPerPx alias');
+  assert.equal(payload.analysis.calibrationDiagnostics.coverageNm, undefined, scenario.id + ' must not emit the stale coverageNm alias');
+  assert.equal(payload.analysis.calibrationDiagnostics.extrapolated, undefined, scenario.id + ' must not emit the stale extrapolated alias');
 }
 
 const fluorescence = payloads.get('fluorescence');
@@ -100,6 +120,10 @@ assert.equal(modelData.context.analysisContext, 'astro');
 assert.equal(modelData.measurement.quality.measurement.overallStatus, 'limited');
 assert.equal(modelData.analysis.astro.radialVelocity.uncertaintyKmS, 18.4);
 assert.equal(modelData.analysis.referenceComparison.alignment.radialVelocityMeasurement, false);
+assert.equal(modelData.analysis.calibrationDiagnostics.samplingNmPerPixel, 0.41759, 'backend model compaction must retain canonical calibration sampling');
+assert.deepEqual(modelData.analysis.calibrationDiagnostics.wavelengthCoverageNm, [376.241, 910.338], 'backend model compaction must retain calibrated wavelength coverage');
+assert.deepEqual(modelData.analysis.calibrationDiagnostics.anchorWavelengthCoverageNm, [388.86, 837.76], 'backend model compaction must retain anchor wavelength coverage');
+assert.deepEqual(modelData.analysis.calibrationDiagnostics.extrapolation, { any: true, left: true, right: true }, 'backend model compaction must retain directional extrapolation');
 assert.ok(modelInput.includes(fixture.observation), 'observation remains data in the model input');
 
 const instructions = buildDeveloperInstructions();
