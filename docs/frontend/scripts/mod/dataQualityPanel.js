@@ -32,7 +32,7 @@
     );
   }
 
-  function estimateResolutionNmPerPx(state, latest) {
+  function estimateCalibratedSamplingNmPerPixel(state, latest) {
     const st = state || {};
     const cal = st.calibration || {};
     const coeffs = Array.isArray(cal.coefficients) ? cal.coefficients : [];
@@ -160,14 +160,13 @@
 
   function getHardware(state) { return ((state || {}).hardware) || {}; }
 
-  function computeResolvingPower(state, resolutionNmPerPx) {
+  function computeResolvingPower(state) {
     const hw = getHardware(state);
     const fwhm = Number(hw.spectrometerResolutionFwhmNm);
     const rangeMin = Number(hw.spectralRangeMinNm);
     const rangeMax = Number(hw.spectralRangeMaxNm);
     const lambdaMid = (Number.isFinite(rangeMin) && Number.isFinite(rangeMax)) ? ((rangeMin + rangeMax) / 2) : 550;
     if (Number.isFinite(fwhm) && fwhm > 0) return lambdaMid / fwhm;
-    if (Number.isFinite(resolutionNmPerPx) && resolutionNmPerPx > 0) return lambdaMid / resolutionNmPerPx;
     return null;
   }
 
@@ -454,13 +453,21 @@
       line('HW:', `${getHardwareLabel(st)}`, 'Active hardware profile, or CUSTOM when manual hardware values are applied.', 'hardware')
     ];
 
-    const resolutionNmPerPx = estimateResolutionNmPerPx(st, latest);
+    const diagnosticSampling = st.analysis && st.analysis.calibrationDiagnostics
+      ? Number(st.analysis.calibrationDiagnostics.samplingNmPerPixel)
+      : NaN;
+    const calibratedSamplingNmPerPixel = Number.isFinite(diagnosticSampling) && diagnosticSampling > 0
+      ? diagnosticSampling
+      : estimateCalibratedSamplingNmPerPixel(st, latest);
     const noiseMetrics = canonicalNoiseMetrics(st, arr || []);
     snrText = Number.isFinite(noiseMetrics.snr) ? noiseMetrics.snr.toFixed(2) : '—';
     const matchMeanAbsResidualNm = hasLabAnalysis(st) ? estimateMatchMeanAbsResidualNm(st) : null;
     const reportedOffsetNm = hasLabAnalysis(st) ? getReportedOffsetNm(st) : null;
     const hw = getHardware(st), hwFwhmNm = Number(hw.spectrometerResolutionFwhmNm);
-    const resolvingPower = computeResolvingPower(st, resolutionNmPerPx);
+    const nominalPixelScaleNmPerPixel = Number(hw.pixelResolutionNm);
+    const configuredHardwareRangeMinNm = Number(hw.spectralRangeMinNm);
+    const configuredHardwareRangeMaxNm = Number(hw.spectralRangeMaxNm);
+    const resolvingPower = computeResolvingPower(st);
     const peakMetrics = computePeakMetrics(st, arr || []);
     const signalMetrics = computeSignalMetrics(arr || []);
     const quickPeaks = peakMetrics.peaks;
@@ -504,14 +511,16 @@
       line('Conf:', `${Number.isFinite(conf) ? formatMaybe(conf, 2) : '—'}`, 'Best current analysis confidence from the active top-hit set.', 'analysis'),
       line('Noise σ:', `${formatMaybe(noiseMetrics.sigma, 2)}`, 'Robust noise sigma estimated from residuals against a 5-point moving mean.', 'quality'),
       line('SNR:', `${formatMaybe(noiseMetrics.snr, 2)}`, 'Canonical SNR = (P95 - P05) / noise sigma. The same definition is used by worker Measurement Quality, GUI diagnostics, exports and AI context.', 'quality'),
-      line('Res:', `${Number.isFinite(resolutionNmPerPx) ? resolutionNmPerPx.toFixed(2) + ' nm/px' : '—'}`, 'Estimated calibration resolution in nm per pixel.', 'calibration'),
-      line('Cov:', `${formatRange(coverage.min, coverage.max, 0)}${Number.isFinite(coverage.min) && Number.isFinite(coverage.max) ? ' nm' : ''}${fullFrameExtrapolated ? ' · ext' : ''}`, 'Calibrated wavelength coverage of the full active spectrum. ext means one or both frame edges lie outside the calibration anchors; Measurement Quality evaluates the result-bearing analysis region separately when that region is explicitly defined.', 'calibration'),
+      line('Cal samp:', `${Number.isFinite(calibratedSamplingNmPerPixel) ? calibratedSamplingNmPerPixel.toFixed(3) + ' nm/px' : '—'}`, 'Calibrated wavelength sampling derived from the active px→nm mapping. This is not the same quantity as the hardware profile nominal pixel scale.', 'calibration'),
+      line('Nom px:', `${Number.isFinite(nominalPixelScaleNmPerPixel) ? nominalPixelScaleNmPerPixel.toFixed(3) + ' nm/px' : '—'}`, 'Nominal pixel scale from the configured hardware profile. It is a hardware/profile value and need not equal the calibrated sampling from the current wavelength mapping.', 'hardware'),
+      line('Cal cov:', `${formatRange(coverage.min, coverage.max, 0)}${Number.isFinite(coverage.min) && Number.isFinite(coverage.max) ? ' nm' : ''}${fullFrameExtrapolated ? ' · ext' : ''}`, 'Actual calibrated wavelength coverage of the current active spectrum. ext means one or both frame edges lie outside the calibration anchors.', 'calibration'),
+      line('HW range:', `${formatRange(configuredHardwareRangeMinNm, configuredHardwareRangeMaxNm, 0)}${Number.isFinite(configuredHardwareRangeMinNm) && Number.isFinite(configuredHardwareRangeMaxNm) ? ' nm' : ''}`, 'Configured nominal spectral range from the hardware profile. This is not the same quantity as the actual calibrated wavelength coverage of the current frame.', 'hardware'),
       line('Fit RMS:', `${fitRmsValue}`, 'RMS residual of the calibration polynomial at the calibration points. This is a fit residual, not a direct wavelength-accuracy estimate; with zero fit degrees of freedom an exact interpolation has no independent residual check.', 'calibration'),
       line('FWHM:', `${Number.isFinite(hwFwhmNm) ? (formatMaybe(hwFwhmNm, 2) + ' nm') : '—'}`, 'Instrument full width at half maximum, if known from hardware data.', 'hardware'),
       line('Eff. R:', `${Number.isFinite(resolvingPower) ? ('R≈' + Math.round(resolvingPower)) : '—'}`, 'Approximate resolving power R ≈ λ/Δλ.', 'hardware')
     ];
 
-    return { status, dq, metrics: { min, max, avg, dyn, validCount, saturation: satText, snr: snrText, snrValue: noiseMetrics.snr, snrDefinition: noiseMetrics.definition, snrSource: noiseMetrics.source, signalSpanP95P05: noiseMetrics.signalSpanP95P05, reportedOffsetNm: reportedOffsetNm, matchMeanAbsResidualNm: matchMeanAbsResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.snr, resolutionNmPerPx, hardwareFwhmNm: hwFwhmNm, resolvingPower, quickPeakCount: quickPeaks.length, strongPeakCount: strongPeaks, baseline: baseline, headroom, coverageMinNm: coverage.min, coverageMaxNm: coverage.max, bestConfidence: conf, calibrationRmsNm: calRmsNm, calibrationFitRmsNm: calRmsNm, fitDegreesOfFreedom: Number.isFinite(fitDegreesOfFreedom) ? fitDegreesOfFreedom : null, fitResidualStatus: fitResidualStatus, measurementQuality: measurementQuality || null } };
+    return { status, dq, metrics: { min, max, avg, dyn, validCount, saturation: satText, snr: snrText, snrValue: noiseMetrics.snr, snrDefinition: noiseMetrics.definition, snrSource: noiseMetrics.source, signalSpanP95P05: noiseMetrics.signalSpanP95P05, reportedOffsetNm: reportedOffsetNm, matchMeanAbsResidualNm: matchMeanAbsResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.snr, resolutionNmPerPx: calibratedSamplingNmPerPixel, calibratedSamplingNmPerPixel: calibratedSamplingNmPerPixel, nominalPixelScaleNmPerPixel: Number.isFinite(nominalPixelScaleNmPerPixel) ? nominalPixelScaleNmPerPixel : null, configuredHardwareRangeMinNm: Number.isFinite(configuredHardwareRangeMinNm) ? configuredHardwareRangeMinNm : null, configuredHardwareRangeMaxNm: Number.isFinite(configuredHardwareRangeMaxNm) ? configuredHardwareRangeMaxNm : null, hardwareFwhmNm: hwFwhmNm, resolvingPower, quickPeakCount: quickPeaks.length, strongPeakCount: strongPeaks, baseline: baseline, headroom, coverageMinNm: coverage.min, coverageMaxNm: coverage.max, bestConfidence: conf, calibrationRmsNm: calRmsNm, calibrationFitRmsNm: calRmsNm, fitDegreesOfFreedom: Number.isFinite(fitDegreesOfFreedom) ? fitDegreesOfFreedom : null, fitResidualStatus: fitResidualStatus, measurementQuality: measurementQuality || null } };
   }
 
   mod.compute = compute;
