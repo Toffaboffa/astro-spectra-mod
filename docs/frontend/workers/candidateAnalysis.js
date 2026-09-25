@@ -814,6 +814,7 @@
       detectedPeakCount: peaks.length,
       features: features.slice(0, 96),
       diffractionCandidates: diffractionCandidates.slice(0, 24),
+      rawMatchOffsetNm: estimateOffset(matches),
       offsetNm: estimateOffset(matches),
       qcFlags: qc.flags || [],
       confidence: confidence.overall || 0,
