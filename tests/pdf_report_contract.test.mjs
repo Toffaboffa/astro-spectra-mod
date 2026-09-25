@@ -21,7 +21,22 @@ const state = {
     elementScores: [{ element: 'Hg', likelyPct: 80, matchedCount: 1, medianDeltaNm: 0.1 }],
     qcFlags: ['limited-resolution'],
     preprocessing: { schema: 'spectra-pro-preprocessing/v1', intensityBasis: 'uncorrected-relative-intensity', activeOperations: [] },
-    measurementQuality: { overallStatus: 'limited', mainLimitation: { code: 'resolution', reason: 'Limited resolution.' } }
+    measurementQuality: {
+      overallStatus: 'limited',
+      mainLimitation: { code: 'resolution', reason: 'Limited resolution.' },
+      dimensions: {
+        noise: {
+          status: 'good',
+          reason: 'usable-snr',
+          metrics: {
+            snr: 12.34,
+            noiseSigma: 0.5,
+            signalSpanP95P05: 6.17,
+            snrDefinition: 'p95-p05-over-noise-sigma'
+          }
+        }
+      }
+    }
   }
 };
 
@@ -66,6 +81,9 @@ assert.equal(bundle.scientificAnalysis.detectedPeaks.length, 1, 'scientific expo
 assert.equal(bundle.scientificAnalysis.lab.offsetNm, -0.1, 'scientific export snapshot must preserve the canonical reported wavelength offset');
 assert.equal(bundle.scientificAnalysis.lab.rawMatchOffsetNm, -0.1, 'scientific export snapshot must preserve the broader raw matcher offset separately');
 assert.equal(bundle.scientificAnalysis.lab.offsetBasis, 'matcher-residuals', 'scientific export snapshot must preserve offset provenance');
+assert.equal(bundle.scientificAnalysis.measurementQuality.dimensions.noise.metrics.snr, 12.34, 'scientific export must preserve the canonical worker SNR value');
+assert.equal(bundle.scientificAnalysis.measurementQuality.dimensions.noise.metrics.snrDefinition, 'p95-p05-over-noise-sigma', 'scientific export must preserve the canonical SNR definition');
+assert.ok(report.methodNarrative.some((line) => line.includes('(P95-P05)/noise sigma')), 'PDF method narrative must define the reported SNR quantity explicitly');
 assert.equal(bundle.scientificAnalysis.lab.matchMeanAbsResidualNm, 0.1, 'scientific export snapshot must keep unsigned match MAE separate from signed offset');
 assert.ok(report.analysisLog.some((line) => line.includes('match MAE=0.1000 nm')), 'PDF analysis log must name the unsigned match-error magnitude separately');
 assert.ok(report.analysisLog.some((line) => line.includes('Detected peaks=1;')), 'PDF analysis log must report the canonical worker peak count instead of an unavailable placeholder');
