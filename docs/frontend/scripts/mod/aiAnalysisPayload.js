@@ -249,7 +249,11 @@
   }
 
   function matchMeanAbsResidualNm(analysis) {
-    const hits = Array.isArray(analysis && analysis.topHits) ? analysis.topHits : [];
+    const source = analysis || {};
+    const hits = String(source.presetId || '') === 'smart-fluorescent' &&
+      Array.isArray(source.clearNarrowLineHits) && source.clearNarrowLineHits.length
+      ? source.clearNarrowLineHits
+      : (Array.isArray(source.topHits) ? source.topHits : []);
     const values = hits.map(function (hit) {
       const n = finiteNumber(hit && hit.deltaNm);
       return n == null ? null : Math.abs(n);
