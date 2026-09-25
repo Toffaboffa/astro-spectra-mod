@@ -80,12 +80,31 @@
     const pixels = framePixelRange(frame);
     const extrapolatedLeft = !!(pixels && anchorPixelCoverage && pixels.min < anchorPixelCoverage.min);
     const extrapolatedRight = !!(pixels && anchorPixelCoverage && pixels.max > anchorPixelCoverage.max);
+    const fitDegreesOfFreedom = coefficients.length && points.length
+      ? points.length - coefficients.length
+      : null;
+    const exactInterpolation = fitDegreesOfFreedom === 0 &&
+      Number.isFinite(maximumResidual) && maximumResidual <= 1e-9;
+    const fitResidualIndependent = Number.isFinite(fitDegreesOfFreedom) ? fitDegreesOfFreedom > 0 : null;
+    const fitResidualStatus = !Number.isFinite(fitDegreesOfFreedom)
+      ? 'unavailable'
+      : (fitDegreesOfFreedom > 0
+        ? 'overdetermined-residual-check'
+        : (exactInterpolation
+          ? 'exact-interpolation-residual-not-independent'
+          : (fitDegreesOfFreedom === 0
+            ? 'zero-dof-residual-not-independent'
+            : 'underdetermined-residual-not-independent')));
 
     return {
       model: MODEL,
       available: coefficients.length > 0 && points.length > 0,
       pointCount: points.length,
       polynomialOrder: coefficients.length ? coefficients.length - 1 : null,
+      fitDegreesOfFreedom: fitDegreesOfFreedom,
+      fitResidualIndependent: fitResidualIndependent,
+      exactInterpolation: exactInterpolation,
+      fitResidualStatus: fitResidualStatus,
       coefficients: coefficients,
       points: points,
       rmsResidualNm: Number.isFinite(rms) ? +rms.toFixed(6) : null,
