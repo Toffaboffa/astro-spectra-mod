@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = 'v3.1.5';
+  const VERSION = 'v3.1.6';
   let initialStripeCentered = false;
   let helpClickBound = false;
   let helpPausedByHelp = false;
@@ -140,17 +140,11 @@
     document.head.appendChild(style);
   }
 
-  function patchHelpVersionAndRuntimeNote() {
+  function patchHelpVersion() {
     try {
       if (sp.helpUi) sp.helpUi.version = VERSION.replace(/^v/, '');
       const guideVersion = document.querySelector('#spHelpOverlay .sp-help-version b');
       if (guideVersion) guideVersion.textContent = VERSION;
-      document.querySelectorAll('#spHelpOverlay .sp-help-card p').forEach(function (p) {
-        const text = String(p.textContent || '');
-        if (text.indexOf('HELP opens this modal without changing app mode or stopping the current measurement.') >= 0) {
-          p.textContent = 'HELP opens this modal without changing app mode. A live camera is paused while the guide is open and resumes when the guide closes; an already-paused camera stays paused.';
-        }
-      });
     } catch (_) {}
   }
 
@@ -164,7 +158,7 @@
     button.textContent = 'HELP';
     button.title = 'Open the SPECTRA PRO help guide.';
     if (button.parentElement !== tabs || button.nextElementSibling) tabs.appendChild(button);
-    patchHelpVersionAndRuntimeNote();
+    patchHelpVersion();
     return true;
   }
 
@@ -252,7 +246,7 @@
       pauseLiveVideoForHelp();
       global.setTimeout(function () {
         normalizeHelpButtonRight();
-        patchHelpVersionAndRuntimeNote();
+        patchHelpVersion();
         armHelpCloseObserver();
       }, 0);
     }, true);

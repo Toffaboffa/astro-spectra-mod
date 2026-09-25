@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '3.1.5';
+  const VERSION = '3.1.6';
   const SWITCH_ID = 'spLanguageSwitch';
   const STYLE_ID = 'spLanguageSwitchStyle';
   const HIGH_FREQUENCY_SELECTOR = '#spStatusText,#spDataQualityText,#spDQDetailsBody,#spLabHits,#spLabQc,#spAstroContinuum,#spAstroFeatures,#spAstroMatches,#spAstroQuality,#spAstroVelocity,#spResponseStatus,#spResponseCatalogNote,#spSideConsolePre';
@@ -274,6 +274,7 @@
     'SPECTRA PRO HELP': 'SPECTRA PRO HJÄLP',
     'Complete instrument and analysis guide': 'Komplett guide för instrument och analys',
     'Complete control, measurement, calibration and analysis reference': 'Komplett referens för kontroller, mätning, kalibrering och analys',
+    'HELP opens this modal without changing app mode. If a live camera is playing, it is paused while HELP is open and resumes when HELP closes; a camera that was already paused stays paused. Close it with ×, Escape or by clicking outside the dialog.': 'HELP öppnar den här guiden utan att ändra appläge. Om en livekamera spelar pausas den medan HELP är öppen och återupptas när HELP stängs; en kamera som redan var pausad förblir pausad. Stäng med ×, Escape eller genom att klicka utanför dialogrutan.',
     'UI guide': 'UI-guide',
     'Recommended workflow:': 'Rekommenderat arbetsflöde:',
     'Quick Start': 'Snabbguide',
@@ -310,6 +311,33 @@
     'CORE graph and display controls': 'CORE-kontroller för graf och visning',
     'Long exposure popup': 'Popup för lång exponering',
     'Original calibration-side controls': 'Ursprungliga kalibreringskontroller',
+    'ASTRO controls': 'ASTRO-kontroller',
+    'ASTRO interpretation': 'ASTRO-tolkning',
+    'Interface language': 'Gränssnittsspråk',
+    'Language buttons': 'Språkknappar',
+    'One-shot button': 'Engångsknapp',
+    'Persistent graph checkbox': 'Beständig grafkryssruta',
+    'Graph click': 'Grafklick',
+    'Graph interaction': 'Grafinteraktion',
+    'Keyboard: ← / → (also < / >)': 'Tangentbord: ← / → (även < / >)',
+    'Button + file selector': 'Knapp + filväljare',
+    'Read-only text/trace': 'Endast visning: text/kurva',
+    'Live': 'Live',
+    'Auto Pause': 'Auto Pause',
+    'Saturation': 'Mättnad',
+    'Overlays → Diffraction': 'Overlays → Diffraktion',
+    'Overlays → Extrapolation': 'Overlays → Extrapolering',
+    'Overlays → Shade': 'Overlays → Skuggning',
+    'Peak Inspector': 'Toppinspektör',
+    'Peak Inspector navigation': 'Navigering i toppinspektören',
+    'Drag on graph': 'Dra i grafen',
+    'EN / SV': 'EN / SV',
+    'Instrument response': 'Instrumentrespons',
+    'Response status': 'Responsstatus',
+    'Show labels': 'Visa etiketter',
+    'Minimum dip depth': 'Minsta dipdjup',
+    'Minimum label spacing (px)': 'Minsta etikettavstånd (px)',
+    'Reference spectrum comparison': 'Jämförelse med referensspektrum',
     'Status & Data Quality': 'Status & datakvalitet',
     'STATUS describes application state and which supporting data are currently available.': 'STATUS beskriver applikationens tillstånd och vilka stöddata som finns tillgängliga.',
     'DATA QUALITY combines signal statistics, peak-detection information, LAB match diagnostics, calibration metrics and hardware metadata.': 'DATAKVALITET kombinerar signalstatistik, toppdetektion, LAB-matchningsdiagnostik, kalibreringsmått och hårdvarumetadata.',
@@ -375,6 +403,9 @@
     'Why is Headroom high but SNR poor?': 'Varför är marginalen stor men SNR dålig?',
     'Why can SNR look extremely high?': 'Varför kan SNR se extremt hög ut?',
     'Why did an old image identify the wrong gas?': 'Varför identifierade en gammal bild fel gas?',
+    'What exactly does Auto Pause do?': 'Vad gör Auto Pause exakt?',
+    'How do I use Peak Inspector?': 'Hur använder jag Toppinspektören?',
+    'Why can reference comparison and radial velocity show different shifts?': 'Varför kan referensjämförelse och radialhastighet visa olika skift?',
     'What is the difference between Ref and RefG?': 'Vad är skillnaden mellan Ref och RefG?',
     'When should I use Weak peaks?': 'När ska jag använda Svaga toppar?',
     'Why does Fluorescent not show element Score Share?': 'Varför visar Fluorescent inte Score Share för grundämnen?',
