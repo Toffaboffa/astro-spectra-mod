@@ -796,6 +796,10 @@ function testCalibrationAwareMatching() {
 
   assert.equal(good.pointCount, 3, 'Calibration diagnostics should expose point count');
   assert.equal(good.polynomialOrder, 1, 'Calibration diagnostics should expose polynomial order');
+  assert.equal(good.fitDegreesOfFreedom, 1, 'Three points with a linear fit should leave one independent residual degree of freedom');
+  assert.equal(good.fitResidualIndependent, true, 'Overdetermined calibration residuals should be identified as independent fit checks');
+  assert.equal(good.exactInterpolation, false, 'An overdetermined calibration must not be labelled exact interpolation');
+  assert.equal(good.fitResidualStatus, 'overdetermined-residual-check', 'Overdetermined calibration should expose its residual-check status');
   within(good.points[1].fittedNm, 500, 1e-9, 'fitted calibration wavelength');
   within(good.points[1].residualNm, 0, 1e-9, 'good calibration point residual');
   within(good.rmsResidualNm, 0, 1e-9, 'good calibration RMS');
@@ -804,6 +808,41 @@ function testCalibrationAwareMatching() {
   assert.deepEqual(Object.assign({}, good.extrapolation), { any: false, left: false, right: false }, 'Covered frame should not be marked extrapolated');
   within(poor.rmsResidualNm, 1.5, 1e-9, 'poor calibration RMS');
   within(poor.maxAbsResidualNm, 1.5, 1e-9, 'poor calibration maximum residual');
+
+  const quadraticFrame = {
+    calibrated: true,
+    px: [0, 1, 2, 3],
+    nm: [400, 401.1, 402.4, 403.9],
+    I: [1, 2, 3, 4]
+  };
+  const exactQuadratic = diagnostics.evaluate({
+    coefficients: [400, 1, 0.1],
+    points: [
+      { px: 0, nm: 400 },
+      { px: 1, nm: 401.1 },
+      { px: 2, nm: 402.4 }
+    ]
+  }, quadraticFrame);
+  assert.equal(exactQuadratic.polynomialOrder, 2, 'Quadratic calibration should expose polynomial order 2');
+  assert.equal(exactQuadratic.fitDegreesOfFreedom, 0, 'Three calibration points with three polynomial coefficients must have zero fit degrees of freedom');
+  assert.equal(exactQuadratic.fitResidualIndependent, false, 'Zero-DOF fit residuals must not be presented as independent evidence of accuracy');
+  assert.equal(exactQuadratic.exactInterpolation, true, 'Zero-residual quadratic through three points should be labelled exact interpolation');
+  assert.equal(exactQuadratic.fitResidualStatus, 'exact-interpolation-residual-not-independent', 'Exact interpolation must carry an explicit non-independent residual status');
+  within(exactQuadratic.rmsResidualNm, 0, 1e-12, 'exact interpolation fit RMS');
+
+  const overdeterminedQuadratic = diagnostics.evaluate({
+    coefficients: [400, 1, 0.1],
+    points: [
+      { px: 0, nm: 400 },
+      { px: 1, nm: 401.1 },
+      { px: 2, nm: 402.4 },
+      { px: 3, nm: 403.9 }
+    ]
+  }, quadraticFrame);
+  assert.equal(overdeterminedQuadratic.fitDegreesOfFreedom, 1, 'Four points with a quadratic fit should leave one residual degree of freedom');
+  assert.equal(overdeterminedQuadratic.fitResidualIndependent, true, 'Overdetermined quadratic residuals should be independent fit checks');
+  assert.equal(overdeterminedQuadratic.exactInterpolation, false, 'A redundant fourth point must distinguish validation from exact interpolation');
+  assert.equal(overdeterminedQuadratic.fitResidualStatus, 'overdetermined-residual-check', 'Overdetermined quadratic should expose residual-check status');
 
   const extrapolatedCalibration = {
     coefficients: fixture.goodCalibration.coefficients,
@@ -1002,8 +1041,80 @@ function testMeasurementQualityModel() {
   }, { atomLines: [{ element: 'X', species: 'X I', speciesKey: 'X I', nm: calibrationFixture.references.nearbyNm }] });
   assert.ok(good.measurementQuality, 'Analysis result should expose the shared measurement-quality object');
   assert.equal(good.measurementQuality.model, 'measurement-quality-v1', 'Measurement quality should expose a stable model identifier');
-  assert.equal(good.measurementQuality.dimensions.calibration.status, 'good', 'Low calibration residual should be classified as good');
+  assert.equal(good.measurementQuality.dimensions.calibration.status, 'good', 'Low calibration residual with independent residual degrees of freedom should be classified as good');
   assert.equal(good.measurementQuality.dimensions.sampling.status, 'good', 'Two samples per instrument FWHM should be classified as adequate');
+
+  const exactInterpolationQuality = qualityEngine.build({
+    ok: true,
+    calibrated: true,
+    features: [],
+    calibrationDiagnostics: {
+      available: true,
+      pointCount: 3,
+      polynomialOrder: 2,
+      fitDegreesOfFreedom: 0,
+      fitResidualIndependent: false,
+      exactInterpolation: true,
+      fitResidualStatus: 'exact-interpolation-residual-not-independent',
+      rmsResidualNm: 0,
+      maxAbsResidualNm: 0,
+      samplingNmPerPixel: 0.4,
+      wavelengthCoverageNm: { min: 400, max: 700 },
+      anchorWavelengthCoverageNm: { min: 400, max: 700 },
+      extrapolation: { any: false, left: false, right: false }
+    },
+    matchUncertaintyModel: { effectiveToleranceNm: 1.8 }
+  }, { I: Array.from({ length: 100 }, function (_, index) { return index; }) }, {
+    qc: {
+      flags: [],
+      metrics: {
+        sampleCount: 100, validFraction: 1, dynamicRange: 99,
+        saturationCount: 0, saturationFraction: 0,
+        noiseSigma: 1, signalSpanP95P05: 20, snr: 20,
+        snrDefinition: 'p95-p05-over-noise-sigma'
+      }
+    },
+    hardware: { spectrometerResolutionFwhmNm: 1.8 }
+  });
+  assert.equal(exactInterpolationQuality.dimensions.calibration.status, 'moderate', 'Zero RMS with zero fit degrees of freedom must not be rewarded as good calibration accuracy');
+  assert.equal(exactInterpolationQuality.dimensions.calibration.reason, 'calibration-fit-residual-not-independent', 'Zero-DOF calibration must state that the residual is not independent');
+  assert.equal(exactInterpolationQuality.dimensions.calibration.metrics.exactInterpolation, true, 'Measurement Quality must preserve exact-interpolation status');
+  assert.equal(exactInterpolationQuality.dimensions.calibration.metrics.fitDegreesOfFreedom, 0, 'Measurement Quality must preserve zero fit degrees of freedom');
+
+  const overdeterminedFitQuality = qualityEngine.build({
+    ok: true,
+    calibrated: true,
+    features: [],
+    calibrationDiagnostics: {
+      available: true,
+      pointCount: 4,
+      polynomialOrder: 2,
+      fitDegreesOfFreedom: 1,
+      fitResidualIndependent: true,
+      exactInterpolation: false,
+      fitResidualStatus: 'overdetermined-residual-check',
+      rmsResidualNm: 0,
+      maxAbsResidualNm: 0,
+      samplingNmPerPixel: 0.4,
+      wavelengthCoverageNm: { min: 400, max: 700 },
+      anchorWavelengthCoverageNm: { min: 400, max: 700 },
+      extrapolation: { any: false, left: false, right: false }
+    },
+    matchUncertaintyModel: { effectiveToleranceNm: 1.8 }
+  }, { I: Array.from({ length: 100 }, function (_, index) { return index; }) }, {
+    qc: {
+      flags: [],
+      metrics: {
+        sampleCount: 100, validFraction: 1, dynamicRange: 99,
+        saturationCount: 0, saturationFraction: 0,
+        noiseSigma: 1, signalSpanP95P05: 20, snr: 20,
+        snrDefinition: 'p95-p05-over-noise-sigma'
+      }
+    },
+    hardware: { spectrometerResolutionFwhmNm: 1.8 }
+  });
+  assert.equal(overdeterminedFitQuality.dimensions.calibration.status, 'good', 'Zero RMS may be good fit evidence when redundant calibration points provide an independent residual check');
+  assert.equal(overdeterminedFitQuality.dimensions.calibration.reason, 'calibration-fit-residual', 'Overdetermined fit should retain ordinary calibration-fit residual semantics');
   assert.equal(good.measurementQuality.dimensions.coverage.status, 'good', 'Covered calibrated wavelengths should be good');
 
   const poorCalibration = analyze(frame, {
