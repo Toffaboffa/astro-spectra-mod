@@ -145,27 +145,46 @@
 
     const calibrated = !!output.calibrated;
     const calibrationRms = finite(diagnostics.rmsResidualNm);
+    const fitDegreesOfFreedom = finite(diagnostics.fitDegreesOfFreedom);
+    const fitResidualIndependent = diagnostics.fitResidualIndependent === true ||
+      (fitDegreesOfFreedom !== null && fitDegreesOfFreedom > 0);
+    const fitResidualIndependenceKnown = typeof diagnostics.fitResidualIndependent === 'boolean' ||
+      fitDegreesOfFreedom !== null;
     const sampling = finite(diagnostics.samplingNmPerPixel);
     const instrumentFwhm = finite(hardware.spectrometerResolutionFwhmNm);
     const calibrationScale = Math.max(0.05, sampling || 0, instrumentFwhm ? instrumentFwhm / 2.355 : 0);
     if (!calibrated || !diagnostics.available) {
       dimensions.calibration = dimension('unavailable', 'wavelength-calibration-unavailable', {
-        pointCount: diagnostics.pointCount || 0, rmsResidualNm: calibrationRms
+        pointCount: diagnostics.pointCount || 0,
+        rmsResidualNm: calibrationRms,
+        fitDegreesOfFreedom: fitDegreesOfFreedom,
+        fitResidualIndependent: fitResidualIndependenceKnown ? fitResidualIndependent : null,
+        exactInterpolation: diagnostics.exactInterpolation === true,
+        fitResidualStatus: diagnostics.fitResidualStatus || null
       });
     } else {
       let calibrationStatus = calibrationRms === null ? 'unavailable'
         : (calibrationRms <= calibrationScale * 0.5 ? 'good' : (calibrationRms <= calibrationScale ? 'moderate' : 'poor'));
+      if (fitResidualIndependenceKnown && !fitResidualIndependent && calibrationStatus === 'good') {
+        calibrationStatus = 'moderate';
+      }
       const relevantExtrapolationKnown = coverageContext.analysisRegionExtrapolated !== null;
       const resultRegionExtrapolated = relevantExtrapolationKnown
         ? coverageContext.analysisRegionExtrapolated
         : coverageContext.fullFrameExtrapolated;
       if (resultRegionExtrapolated) calibrationStatus = downgrade(calibrationStatus);
-      dimensions.calibration = dimension(calibrationStatus,
-        resultRegionExtrapolated
-          ? (relevantExtrapolationKnown ? 'analysis-region-calibration-extrapolation' : 'calibration-extrapolation')
-          : 'calibration-fit-residual', {
+      const calibrationReason = resultRegionExtrapolated
+        ? (relevantExtrapolationKnown ? 'analysis-region-calibration-extrapolation' : 'calibration-extrapolation')
+        : (fitResidualIndependenceKnown && !fitResidualIndependent
+          ? 'calibration-fit-residual-not-independent'
+          : 'calibration-fit-residual');
+      dimensions.calibration = dimension(calibrationStatus, calibrationReason, {
           pointCount: diagnostics.pointCount || 0,
           polynomialOrder: diagnostics.polynomialOrder == null ? null : diagnostics.polynomialOrder,
+          fitDegreesOfFreedom: fitDegreesOfFreedom,
+          fitResidualIndependent: fitResidualIndependenceKnown ? fitResidualIndependent : null,
+          exactInterpolation: diagnostics.exactInterpolation === true,
+          fitResidualStatus: diagnostics.fitResidualStatus || null,
           rmsResidualNm: rounded(calibrationRms, 4),
           maxAbsResidualNm: rounded(diagnostics.maxAbsResidualNm, 4),
           extrapolated: resultRegionExtrapolated,
