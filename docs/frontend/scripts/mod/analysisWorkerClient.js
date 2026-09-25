@@ -372,7 +372,10 @@
             const detectedPeaks = Array.isArray(msg.payload.peaks)
               ? msg.payload.peaks.slice(0, 96).map(function (peak) { return Object.assign({}, peak || {}); })
               : [];
-            const reportedPeakCount = Number(msg.payload.detectedPeakCount);
+            const reportedPeakCount = (msg.payload.detectedPeakCount === null ||
+              msg.payload.detectedPeakCount === undefined || msg.payload.detectedPeakCount === '')
+              ? null
+              : Number(msg.payload.detectedPeakCount);
             analysisNext.detectedPeaks = detectedPeaks;
             analysisNext.detectedPeakCount = Number.isFinite(reportedPeakCount)
               ? Math.max(0, Math.round(reportedPeakCount))
