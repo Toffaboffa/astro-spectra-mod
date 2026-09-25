@@ -764,6 +764,7 @@ function testSpectralFeatures() {
   const labResult = analyze(labFixture.frame, { preset: labFixture.preset }, { atomLines: labFixture.atomLines });
   assert.ok(labResult.features.length >= labFixture.minimumMatchedPeaks, 'LAB result should expose measured emission features');
   assert.ok(labResult.peaks.some(function (peak) { return Number.isFinite(peak.fwhmNm); }), 'LAB peaks should consume feature-width measurements');
+  assert.equal(labResult.detectedPeakCount, labResult.peaks.length, 'LAB worker result should publish a canonical detected peak count matching its peak list');
 }
 
 function testCalibrationAwareMatching() {
