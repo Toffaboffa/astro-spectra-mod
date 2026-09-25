@@ -222,8 +222,8 @@ const coverageUiResult = snrMetricsFromDataQuality({
   }
 }, { nm: [376.24, 500, 700, 910.34], I: [0.1, 0.8, 0.5, 0.2] });
 const coverageUiRows = Object.fromEntries(coverageUiResult.dq.map((row) => [row.label, row]));
-assert.equal(coverageUiRows['Cov:'].value, '376–910 nm · ext', 'Data Quality must keep full-frame extrapolation visibly flagged even when result-scoped coverage is good');
-assert.ok(coverageUiRows['Cov:'].title.includes('result-bearing analysis region separately'), 'Coverage tooltip must explain that full-frame and result-bearing coverage are different assessments');
+assert.equal(coverageUiRows['Cal cov:'].value, '376–910 nm · ext', 'Data Quality must keep calibrated full-frame coverage visibly flagged when frame edges are extrapolated');
+assert.ok(coverageUiRows['Cal cov:'].title.includes('Actual calibrated wavelength coverage'), 'Calibrated coverage tooltip must identify the current frame quantity explicitly');
 
 const fitRmsUiResult = snrMetricsFromDataQuality({
   calibration: {
@@ -253,6 +253,47 @@ assert.equal(fitRmsUiResult.metrics.fitDegreesOfFreedom, 0, 'Data Quality metric
 assert.equal(fitRmsUiResult.metrics.fitResidualStatus, 'exact-interpolation-residual-not-independent', 'Data Quality metrics must preserve fit residual status');
 assert.ok(!dataQualityPanel.includes("line('Cal err:'"), 'the misleading Cal err label must not return');
 
+const scaleUiResult = snrMetricsFromDataQuality({
+  calibration: {
+    isCalibrated: true,
+    coefficients: [375.833752147951, 0.406800723225485, 0.00000842256722],
+    points: [
+      { px: 32, nm: 388.86 },
+      { px: 515, nm: 587.57 },
+      { px: 1110, nm: 837.76 }
+    ]
+  },
+  hardware: {
+    spectralRangeMinNm: 360,
+    spectralRangeMaxNm: 930,
+    spectrometerResolutionFwhmNm: 1.8,
+    pixelResolutionNm: 0.5
+  },
+  analysis: {
+    calibrationDiagnostics: {
+      samplingNmPerPixel: 0.417590031834,
+      wavelengthCoverageNm: { min: 376.240561, max: 910.338212 },
+      extrapolation: { any: true, left: true, right: true }
+    }
+  }
+}, {
+  nm: [376.240561, 500, 700, 910.338212],
+  I: [0.1, 0.8, 0.5, 0.2]
+});
+const scaleUiRows = Object.fromEntries(scaleUiResult.dq.map((row) => [row.label, row]));
+assert.equal(scaleUiRows['Cal samp:'].value, '0.418 nm/px', 'Data Quality must show calibrated sampling from the active wavelength mapping');
+assert.equal(scaleUiRows['Nom px:'].value, '0.500 nm/px', 'Data Quality must show the nominal hardware pixel scale separately');
+assert.equal(scaleUiRows['Cal cov:'].value, '376–910 nm · ext', 'Data Quality must show actual calibrated frame coverage separately');
+assert.equal(scaleUiRows['HW range:'].value, '360–930 nm', 'Data Quality must show configured hardware range separately');
+assert.ok(scaleUiRows['Nom px:'].title.includes('need not equal the calibrated sampling'), 'Nominal pixel-scale tooltip must explain why the two nm/px values can differ');
+assert.ok(scaleUiRows['HW range:'].title.includes('not the same quantity as the actual calibrated wavelength coverage'), 'Hardware-range tooltip must distinguish configured range from calibrated coverage');
+assert.equal(scaleUiResult.metrics.calibratedSamplingNmPerPixel, 0.417590031834, 'Data Quality metrics must retain calibrated sampling');
+assert.equal(scaleUiResult.metrics.nominalPixelScaleNmPerPixel, 0.5, 'Data Quality metrics must retain nominal hardware pixel scale');
+assert.ok(!dataQualityPanel.includes("line('Res:'"), 'calibrated sampling must not be labelled as generic resolution');
+
+assert.ok(bootstrap.includes('Configured range (min)') && bootstrap.includes('Configured range (max)'), 'Hardware panel must label profile wavelength range as configured rather than measured coverage');
+assert.ok(bootstrap.includes('Nominal pixel scale<input id="spHardwarePixelRes"'), 'Hardware panel must label pixelResolutionNm as nominal pixel scale');
+assert.ok(bootstrap.includes("Nominal pixel scale: ' + hw.pixelResolutionNm + ' nm/px'"), 'Hardware summary must identify the nominal pixel scale and units explicitly');
 assert.ok(bootstrap.includes("graphXAxisSel && graphXAxisSel.addEventListener('change'"), 'persistent X-axis must control the legacy graph axis directly');
 assert.ok(bootstrap.includes("const pxRadio = $('toggleXLabelsPx');") && bootstrap.includes("const nmRadio = $('toggleXLabelsNm');"), 'persistent X-axis must stay wired to the real graph axis controls');
 assert.ok(bootstrap.includes("graphYAxisSel && graphYAxisSel.addEventListener('change'"), 'persistent Y-axis must update display state directly');
