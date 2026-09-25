@@ -671,6 +671,16 @@ function testQualityControlAndSafeFailure() {
     const qc = worker.SPECTRA_PRO_qcRules.evaluateQC({ frame: item.frame });
     assert.ok(qc.flags.includes(item.expectedFlag), `${item.id}: expected ${item.expectedFlag}`);
   });
+  const lowSnrQc = worker.SPECTRA_PRO_qcRules.evaluateQC({ frame: fixture.cases.find(function (item) { return item.id === 'low_snr'; }).frame });
+  assert.equal(worker.SPECTRA_PRO_qcRules.snrDefinition, 'p95-p05-over-noise-sigma', 'QC must publish one canonical SNR definition');
+  assert.equal(lowSnrQc.metrics.snrDefinition, 'p95-p05-over-noise-sigma', 'QC metrics must identify the canonical SNR definition');
+  assert.ok(Number.isFinite(lowSnrQc.metrics.signalSpanP95P05), 'QC must expose the P95-P05 signal span used in SNR');
+  within(
+    lowSnrQc.metrics.snr,
+    lowSnrQc.metrics.signalSpanP95P05 / lowSnrQc.metrics.noiseSigma,
+    1e-12,
+    'QC SNR must equal the robust P95-P05 signal span divided by noise sigma'
+  );
 
   const invalid = worker.SPECTRA_PRO_analysisPipeline.analyzeFrame(null, {}, {});
   assert.equal(invalid.ok, false, 'Missing spectrum should fail safely');
@@ -861,6 +871,13 @@ function testMeasurementQualityModel() {
   const lowSnr = qualityEngine.build(baseResult, qcCase('low_snr').frame, {});
   assert.equal(lowSnr.dimensions.noise.status, 'poor', 'LOW_SNR should map to poor noise quality');
   assert.equal(lowSnr.mainLimitation.code, 'noise', 'Noise should be the dominant low-SNR limitation');
+  assert.equal(lowSnr.dimensions.noise.metrics.snrDefinition, 'p95-p05-over-noise-sigma', 'Measurement Quality must preserve the canonical SNR definition');
+  within(
+    lowSnr.dimensions.noise.metrics.snr,
+    lowSnr.dimensions.noise.metrics.signalSpanP95P05 / lowSnr.dimensions.noise.metrics.noiseSigma,
+    0.01,
+    'Measurement Quality SNR must use the same P95-P05 over noise-sigma quantity'
+  );
 
   const saturated = qualityEngine.build(baseResult, qcCase('saturated_normalized').frame, {});
   assert.equal(saturated.dimensions.saturation.status, 'poor', 'Material clipping should map to poor saturation quality');
