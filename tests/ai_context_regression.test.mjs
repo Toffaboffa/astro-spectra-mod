@@ -120,10 +120,10 @@ assert.equal(modelData.context.analysisContext, 'astro');
 assert.equal(modelData.measurement.quality.measurement.overallStatus, 'limited');
 assert.equal(modelData.analysis.astro.radialVelocity.uncertaintyKmS, 18.4);
 assert.equal(modelData.analysis.referenceComparison.alignment.radialVelocityMeasurement, false);
-assert.equal(modelData.analysis.calibrationDiagnostics.samplingNmPerPixel, 0.41759, 'backend model compaction must retain canonical calibration sampling');
-assert.deepEqual(modelData.analysis.calibrationDiagnostics.wavelengthCoverageNm, [376.241, 910.338], 'backend model compaction must retain calibrated wavelength coverage');
-assert.deepEqual(modelData.analysis.calibrationDiagnostics.anchorWavelengthCoverageNm, [388.86, 837.76], 'backend model compaction must retain anchor wavelength coverage');
-assert.deepEqual(modelData.analysis.calibrationDiagnostics.extrapolation, { any: true, left: true, right: true }, 'backend model compaction must retain directional extrapolation');
+assert.equal(modelData.analysis.calibrationDiagnostics.samplingNmPerPx, 0.41759, 'backend model compaction must retain the worker-derived calibrated sampling');
+assert.deepEqual(modelData.analysis.calibrationDiagnostics.coverageNm, [376.241, 910.338], 'backend model compaction must retain calibrated wavelength coverage');
+assert.deepEqual(modelData.analysis.calibrationDiagnostics.anchorCoverageNm, [388.86, 837.76], 'backend model compaction must retain anchor wavelength coverage');
+assert.deepEqual(modelData.analysis.calibrationDiagnostics.extrapolatedSides, ['left', 'right'], 'backend model compaction must retain directional extrapolation without the stale false value');
 assert.ok(modelInput.includes(fixture.observation), 'observation remains data in the model input');
 
 const instructions = buildDeveloperInstructions();
