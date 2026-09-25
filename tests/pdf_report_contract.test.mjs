@@ -21,6 +21,22 @@ const state = {
     elementScores: [{ element: 'Hg', likelyPct: 80, matchedCount: 1, medianDeltaNm: 0.1 }],
     qcFlags: ['limited-resolution'],
     preprocessing: { schema: 'spectra-pro-preprocessing/v1', intensityBasis: 'uncorrected-relative-intensity', activeOperations: [] },
+    calibrationDiagnostics: {
+      model: 'calibration-match-uncertainty-v1',
+      available: true,
+      pointCount: 2,
+      polynomialOrder: 1,
+      fitDegreesOfFreedom: 0,
+      fitResidualIndependent: false,
+      exactInterpolation: true,
+      fitResidualStatus: 'exact-interpolation-residual-not-independent',
+      rmsResidualNm: 0,
+      maxAbsResidualNm: 0,
+      wavelengthCoverageNm: { min: 500, max: 502 },
+      anchorWavelengthCoverageNm: { min: 500, max: 502 },
+      samplingNmPerPixel: 1,
+      extrapolation: { any: false, left: false, right: false }
+    },
     measurementQuality: {
       overallStatus: 'limited',
       mainLimitation: { code: 'resolution', reason: 'Limited resolution.' },
@@ -81,6 +97,12 @@ assert.equal(bundle.scientificAnalysis.detectedPeaks.length, 1, 'scientific expo
 assert.equal(bundle.scientificAnalysis.lab.offsetNm, -0.1, 'scientific export snapshot must preserve the canonical reported wavelength offset');
 assert.equal(bundle.scientificAnalysis.lab.rawMatchOffsetNm, -0.1, 'scientific export snapshot must preserve the broader raw matcher offset separately');
 assert.equal(bundle.scientificAnalysis.lab.offsetBasis, 'matcher-residuals', 'scientific export snapshot must preserve offset provenance');
+assert.equal(bundle.scientificAnalysis.calibration.diagnostics.fitDegreesOfFreedom, 0, 'scientific export must preserve calibration fit degrees of freedom');
+assert.equal(bundle.scientificAnalysis.calibration.diagnostics.exactInterpolation, true, 'scientific export must preserve exact-interpolation status');
+assert.equal(bundle.scientificAnalysis.calibration.diagnostics.fitResidualStatus, 'exact-interpolation-residual-not-independent', 'scientific export must preserve the non-independent residual status');
+assert.ok(report.analysisLog.some((line) => line.includes('Calibration fit RMS=0.0000 nm; fit dof=0;')), 'PDF analysis log must label zero-residual calibration as a fit statistic with zero degrees of freedom');
+assert.ok(report.methodNarrative.some((line) => line.includes('exact interpolation of the calibration points')), 'PDF narrative must explain that zero-DOF zero RMS is exact interpolation, not an accuracy measurement');
+assert.ok(report.methodNarrative.some((line) => line.includes('not an independent estimate of wavelength accuracy')), 'PDF narrative must reject the wavelength-accuracy interpretation explicitly');
 assert.equal(bundle.scientificAnalysis.measurementQuality.dimensions.noise.metrics.snr, 12.34, 'scientific export must preserve the canonical worker SNR value');
 assert.equal(bundle.scientificAnalysis.measurementQuality.dimensions.noise.metrics.snrDefinition, 'p95-p05-over-noise-sigma', 'scientific export must preserve the canonical SNR definition');
 assert.ok(report.methodNarrative.some((line) => line.includes('(P95-P05)/noise sigma')), 'PDF method narrative must define the reported SNR quantity explicitly');
