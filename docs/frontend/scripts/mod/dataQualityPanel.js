@@ -85,7 +85,13 @@
   }
 
   function estimateNoiseMetrics(arr) {
-    const out = { sigma: null, signal: null, sn: null };
+    const out = {
+      sigma: null,
+      signalSpanP95P05: null,
+      snr: null,
+      definition: 'p95-p05-over-noise-sigma',
+      source: 'frontend-fallback'
+    };
     if (!Array.isArray(arr) || arr.length < 9) return out;
     const vals = arr.map(Number).filter(Number.isFinite);
     if (vals.length < 9) return out;
@@ -103,10 +109,33 @@
     const absResiduals = residuals.map(function (v) { return Math.abs(v); });
     const mad = median(absResiduals);
     const sigma = Number.isFinite(mad) ? (mad * 1.4826) : null;
-    const signal = median(smooth);
-    const sn = (Number.isFinite(signal) && Number.isFinite(sigma) && sigma > 0) ? (signal / sigma) : null;
-    out.sigma = sigma; out.signal = signal; out.sn = sn;
+    const low = percentile(vals, 0.05);
+    const high = percentile(vals, 0.95);
+    const signalSpan = Number.isFinite(low) && Number.isFinite(high) ? (high - low) : null;
+    const snr = (Number.isFinite(signalSpan) && Number.isFinite(sigma) && sigma > 0) ? (signalSpan / sigma) : null;
+    out.sigma = sigma;
+    out.signalSpanP95P05 = signalSpan;
+    out.snr = snr;
     return out;
+  }
+
+  function canonicalNoiseMetrics(state, arr) {
+    const noise = state && state.analysis && state.analysis.measurementQuality &&
+      state.analysis.measurementQuality.dimensions && state.analysis.measurementQuality.dimensions.noise;
+    const metrics = noise && noise.metrics && typeof noise.metrics === 'object' ? noise.metrics : null;
+    if (metrics) {
+      const snr = (metrics.snr !== null && metrics.snr !== undefined && metrics.snr !== '') ? Number(metrics.snr) : null;
+      const sigma = (metrics.noiseSigma !== null && metrics.noiseSigma !== undefined && metrics.noiseSigma !== '') ? Number(metrics.noiseSigma) : null;
+      const signalSpan = (metrics.signalSpanP95P05 !== null && metrics.signalSpanP95P05 !== undefined && metrics.signalSpanP95P05 !== '') ? Number(metrics.signalSpanP95P05) : null;
+      return {
+        sigma: Number.isFinite(sigma) ? sigma : null,
+        signalSpanP95P05: Number.isFinite(signalSpan) ? signalSpan : null,
+        snr: Number.isFinite(snr) ? snr : null,
+        definition: String(metrics.snrDefinition || 'p95-p05-over-noise-sigma'),
+        source: 'worker-measurement-quality'
+      };
+    }
+    return estimateNoiseMetrics(arr);
   }
 
   function estimateMatchMeanAbsResidualNm(state) {
@@ -389,8 +418,8 @@
         else if (sat === 0 && mx >= 250) { sat = 0; for (let i = 0; i < arr.length; i += 1) { const vv = Number(arr[i]); if (Number.isFinite(vv) && vv >= 250) sat += 1; } }
         const pct = ((sat / Math.max(1, validCount)) * 100).toFixed(1);
         satText = `${sat}/${validCount} (${pct}%)`;
-        const noiseMetrics0 = estimateNoiseMetrics(arr);
-        if (Number.isFinite(noiseMetrics0.sn)) snrText = noiseMetrics0.sn.toFixed(2);
+        const noiseMetrics0 = canonicalNoiseMetrics(st, arr);
+        if (Number.isFinite(noiseMetrics0.snr)) snrText = noiseMetrics0.snr.toFixed(2);
       }
     }
 
@@ -426,7 +455,8 @@
     ];
 
     const resolutionNmPerPx = estimateResolutionNmPerPx(st, latest);
-    const noiseMetrics = estimateNoiseMetrics(arr || []);
+    const noiseMetrics = canonicalNoiseMetrics(st, arr || []);
+    snrText = Number.isFinite(noiseMetrics.snr) ? noiseMetrics.snr.toFixed(2) : '—';
     const matchMeanAbsResidualNm = hasLabAnalysis(st) ? estimateMatchMeanAbsResidualNm(st) : null;
     const reportedOffsetNm = hasLabAnalysis(st) ? getReportedOffsetNm(st) : null;
     const hw = getHardware(st), hwFwhmNm = Number(hw.spectrometerResolutionFwhmNm);
@@ -456,8 +486,8 @@
       line('Offset:', `${hasLabAnalysis(st) && Number.isFinite(reportedOffsetNm) ? (formatMaybe(reportedOffsetNm, 2) + ' nm') : '—'}`, 'Signed median wavelength residual for the reported analysis result. Positive means observed wavelength is above the reference wavelength; negative means below.', 'analysis'),
       line('Match MAE:', `${hasLabAnalysis(st) ? (formatMaybe(matchMeanAbsResidualNm, 2) + ' nm') : '—'}`, 'Mean absolute wavelength residual across the current matched hits. This ignores sign and is a match-error magnitude, not a systematic wavelength offset.', 'analysis'),
       line('Conf:', `${Number.isFinite(conf) ? formatMaybe(conf, 2) : '—'}`, 'Best current analysis confidence from the active top-hit set.', 'analysis'),
-      line('Noise σ:', `${formatMaybe(noiseMetrics.sigma, 2)}`, 'Estimated noise sigma from residual signal fluctuations.', 'quality'),
-      line('SNR:', `${formatMaybe(noiseMetrics.sn, 2)}`, 'Estimated signal-to-noise ratio.', 'quality'),
+      line('Noise σ:', `${formatMaybe(noiseMetrics.sigma, 2)}`, 'Robust noise sigma estimated from residuals against a 5-point moving mean.', 'quality'),
+      line('SNR:', `${formatMaybe(noiseMetrics.snr, 2)}`, 'Canonical SNR = (P95 - P05) / noise sigma. The same definition is used by worker Measurement Quality, GUI diagnostics, exports and AI context.', 'quality'),
       line('Res:', `${Number.isFinite(resolutionNmPerPx) ? resolutionNmPerPx.toFixed(2) + ' nm/px' : '—'}`, 'Estimated calibration resolution in nm per pixel.', 'calibration'),
       line('Cov:', `${formatRange(coverage.min, coverage.max, 0)}${Number.isFinite(coverage.min) && Number.isFinite(coverage.max) ? ' nm' : ''}`, 'Calibrated wavelength coverage of the current active spectrum.', 'calibration'),
       line('Cal err:', `${Number.isFinite(calRmsNm) ? (formatMaybe(calRmsNm, 2) + ' nm') : '—'}`, 'RMS calibration fit error computed from calibration points and the active polynomial fit.', 'calibration'),
@@ -465,7 +495,7 @@
       line('Eff. R:', `${Number.isFinite(resolvingPower) ? ('R≈' + Math.round(resolvingPower)) : '—'}`, 'Approximate resolving power R ≈ λ/Δλ.', 'hardware')
     ];
 
-    return { status, dq, metrics: { min, max, avg, dyn, validCount, saturation: satText, snr: snrText, reportedOffsetNm: reportedOffsetNm, matchMeanAbsResidualNm: matchMeanAbsResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.sn, resolutionNmPerPx, hardwareFwhmNm: hwFwhmNm, resolvingPower, quickPeakCount: quickPeaks.length, strongPeakCount: strongPeaks, baseline: baseline, headroom, coverageMinNm: coverage.min, coverageMaxNm: coverage.max, bestConfidence: conf, calibrationRmsNm: calRmsNm, measurementQuality: measurementQuality || null } };
+    return { status, dq, metrics: { min, max, avg, dyn, validCount, saturation: satText, snr: snrText, snrValue: noiseMetrics.snr, snrDefinition: noiseMetrics.definition, snrSource: noiseMetrics.source, signalSpanP95P05: noiseMetrics.signalSpanP95P05, reportedOffsetNm: reportedOffsetNm, matchMeanAbsResidualNm: matchMeanAbsResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.snr, resolutionNmPerPx, hardwareFwhmNm: hwFwhmNm, resolvingPower, quickPeakCount: quickPeaks.length, strongPeakCount: strongPeaks, baseline: baseline, headroom, coverageMinNm: coverage.min, coverageMaxNm: coverage.max, bestConfidence: conf, calibrationRmsNm: calRmsNm, measurementQuality: measurementQuality || null } };
   }
 
   mod.compute = compute;
