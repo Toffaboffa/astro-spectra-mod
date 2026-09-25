@@ -9,13 +9,13 @@ importScripts(
   './lineMatcher.js?v=3.0.1',
   './qcRules.js?v=3.0.1',
   './confidenceModel.js?v=3.0.1',
-  './spectrumMath.js?v=3.0.1',
+  './spectrumMath.js?v=3.1.6-offset-1',
   './presetResolver.js?v=3.0.1',
   './calibrationDiagnostics.js?v=3.0.1',
   './spectralFeatures.js?v=3.0.1',
   './diffractionArtifacts.js?v=3.0.1-diffraction-1',
   './measurementQuality.js?v=3.0.1',
-  './candidateAnalysis.js?v=3.1.6-peak-count-1',
+  './candidateAnalysis.js?v=3.1.6-offset-1',
   './astroReferences.js?v=3.0.1',
   './astroContinuum.js?v=3.0.1',
   './dopplerEstimate.js?v=3.0.1',
@@ -27,7 +27,7 @@ importScripts(
   './molecularEvidencePatch.js?v=3.0.1-artifact-filter-1',
   './atomicProfiles.js?v=3.0.1',
   './atomicEvidence.js?v=3.0.1-artifact-filter-1',
-  './fluorescenceAnalysis.js?v=3.0.1-fluorescence-lines-1',
+  './fluorescenceAnalysis.js?v=3.1.6-offset-1',
   './workerRouter.js?v=3.0.1-fluorescence-lines-1'
 );
 
