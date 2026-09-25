@@ -448,6 +448,9 @@
         : (analysis.detectedPeakCount === undefined && Array.isArray(analysis.detectedPeaks) ? analysis.detectedPeaks.length : null),
       detectedFeatures: cloneJson(Array.isArray(analysis.features) ? analysis.features : []),
       lab: {
+        offsetNm: Number.isFinite(Number(analysis.offsetNm)) ? Number(analysis.offsetNm) : null,
+        rawMatchOffsetNm: Number.isFinite(Number(analysis.rawMatchOffsetNm)) ? Number(analysis.rawMatchOffsetNm) : null,
+        offsetBasis: analysis.offsetBasis || null,
         topHits: cloneJson(Array.isArray(analysis.topHits) ? analysis.topHits : []),
         rawTopHits: cloneJson(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits : []),
         candidates: cloneJson(Array.isArray(analysis.elementScores) ? analysis.elementScores : []),
@@ -638,7 +641,9 @@
       ? Math.max(0, Math.round(Number(analysis.detectedPeakCount)))
       : (analysis.detectedPeakCount === undefined && Array.isArray(analysis.detectedPeaks) ? analysis.detectedPeaks.length : '—');
     lines.push('Detected peaks=' + String(detectedPeakCount) + '; top hits=' + String(Array.isArray(analysis.topHits) ? analysis.topHits.length : 0) + '; raw hits=' + String(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits.length : 0) + '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
-    if (analysis.offsetNm != null) lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm.');
+    if (analysis.offsetNm != null) {
+      lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm; basis=' + String(analysis.offsetBasis || 'matcher-residuals') + '.');
+    }
     if (analysis.resultContext === 'astro' && analysis.astro) {
       const astro = analysis.astro;
       const velocity = astro.radialVelocity || {};
@@ -738,6 +743,10 @@
     const dq = bundle.visibleDiagnostics ? bundle.visibleDiagnostics.dataQuality : [];
     const preset = String(analysis.presetId || '—');
     const offset = Number.isFinite(Number(analysis.offsetNm)) ? nfmt(analysis.offsetNm, 3) + ' nm' : (sv ? 'inte tillgänglig' : 'not available');
+    const fluorescentOffset = String(analysis.offsetBasis || '') === 'clear-narrow-line-hits' || preset === 'smart-fluorescent';
+    const offsetBasisText = fluorescentOffset
+      ? (sv ? 'medianen av residualerna för de koherenta smala linjeträffar som accepterats i Fluorescent-resultatet' : 'the median residual of the coherent narrow-line hits accepted in the Fluorescent result')
+      : (sv ? 'medianen av residualerna i analysmotorns matchningsmängd före eventuell visningsfiltrering' : 'the median residual of the analysis matcher set before any display filtering');
     const signatures = signatureSummary(analysis, sv);
     const maxDist = Number.isFinite(Number(analysis.maxDistanceNm)) ? nfmt(analysis.maxDistanceNm, 2) + ' nm' : (sv ? 'aktuell presetgräns' : 'the active preset limit');
     const snr = lookupDiagnostic(dq, 'snr');
@@ -772,7 +781,7 @@
     if (sv) {
       return [
         'Analysen bygger på den spektralprofil som extraherats ur den valda strimman i källbilden. Intensitetsdata och, när kalibrering finns, motsvarande våglängdsaxel skickas till SPECTRA PRO:s analysworker. Peak-detektionen bedömer lokala maxima med hänsyn till relativ höjd, prominens och minsta tillåtna separation. I de Smart-presets som stöder Auto tune startar analysen från ett relativt tillåtande peak-urval och omprövar sedan evidensen med stramare trösklar och våglängdstoleranser. Därmed blir identifieringen mindre beroende av ett enda manuellt valt tröskelvärde.',
-        'Matchning mot linje- och banddata sker bara inom den aktuella våglängdstäckningen. För linjebaserad analys används en hård maximal våglängdsavvikelse, här ' + maxDist + ', så att avlägsna bibliotekslinjer inte kan få stöd enbart genom att biblioteket är tätt. Den rapporterade offseten är ' + offset + ' och bygger i den aktuella browsermotorn på medianen av residualerna för de matchningar som finns tillgängliga. Den fungerar som ett diagnostiskt mått på systematisk förskjutning mellan observerade och refererade våglängder; den ersätter inte en korrekt multipunktskalibrering.',
+        'Matchning mot linje- och banddata sker bara inom den aktuella våglängdstäckningen. För linjebaserad analys används en hård maximal våglängdsavvikelse, här ' + maxDist + ', så att avlägsna bibliotekslinjer inte kan få stöd enbart genom att biblioteket är tätt. Den rapporterade offseten är ' + offset + ' och bygger på ' + offsetBasisText + '. Den fungerar som ett diagnostiskt mått på systematisk förskjutning mellan observerade och refererade våglängder; den ersätter inte en korrekt multipunktskalibrering.',
         'För atomära Smart-lägen bedöms inte en kandidat efter en ensam närliggande linje. Fingerprint-lagret väger samman flera diagnostiska linjer, våglängdsnärhet, hur stor del av de observerade starka topparna som förklaras, grupper av samverkande linjer och täckning av en kuraterad profil. Förväntade diagnostiska profilinslag som saknas ger en försiktig negativ viktning, och arter med täta eller tvetydiga kataloglinjer får inte automatiskt fördel av att biblioteket innehåller många möjliga sammanträffanden. Score Share normaliserar den positiva kandidatscoren inom just den aktuella körningen och är därför varken sannolikhet, koncentration eller abundans.',
         'Molekylära lägen använder motsvarande flerbandslogik. Diagnostiska ankare och band bedöms tillsammans, och stöd från flera koherenta band väger tyngre än en isolerad överlappning. I Gas Tube kan atomära och molekylära bidrag förekomma samtidigt. Fluorescent avviker medvetet från linjematchningen: där beskriver SPECTRA PRO i första hand den breda bandformen genom lambda-max, centroid, FWHM, bandområde, asymmetri, shoulders och integrerad baslinjekorrigerad signal. Smala linjekandidater behandlas då endast som sekundär diagnostik.',
         'Relevanta signaturer eller kluster i den aktuella körningen är: ' + signatures + '. Kalibreringen är ' + calState + ', uppskattad instrument-/samplingupplösning i rapportens diagnostik är ' + resolution + ', SNR anges som ' + snr + ' och mättnadsfältet som ' + sat + '. Dessa värden används tillsammans för att bedöma om en numeriskt bra match också är experimentellt trovärdig. Mättnad kan förstöra peakform och relativa intensiteter, medan låg SNR kan skapa extra lokala maxima eller dölja svaga diagnostiska drag.',
@@ -782,7 +791,7 @@
 
     return [
       'The analysis starts from the spectral profile extracted from the selected stripe in the source image. Intensity data and, when calibration is available, the corresponding wavelength axis are passed to the SPECTRA PRO analysis worker. Peak detection evaluates local maxima using relative height, prominence and minimum separation. In Smart presets that support Auto tune, the analysis begins with a relatively permissive master peak set and then re-evaluates the evidence with stricter peak thresholds and wavelength tolerances. This reduces dependence on one manually chosen threshold.',
-      'Matching against line and band data is limited to the wavelength coverage of the current measurement. Line-based analysis uses a hard maximum wavelength mismatch, here ' + maxDist + ', so distant catalog lines cannot gain support merely because the library is dense. The reported offset is ' + offset + ' and, in the current browser engine, is estimated from the median residual of the available matches. It is a diagnostic measure of systematic displacement between observed and reference wavelengths; it is not a substitute for valid multipoint calibration.',
+      'Matching against line and band data is limited to the wavelength coverage of the current measurement. Line-based analysis uses a hard maximum wavelength mismatch, here ' + maxDist + ', so distant catalog lines cannot gain support merely because the library is dense. The reported offset is ' + offset + ' and is based on ' + offsetBasisText + '. It is a diagnostic measure of systematic displacement between observed and reference wavelengths; it is not a substitute for valid multipoint calibration.',
       'For atomic Smart modes, a candidate is not accepted because of one nearby catalog line. The fingerprint layer combines multiple diagnostic lines, wavelength closeness, coverage of strong observed peaks, coherent line groups and coverage of a curated profile. Missing diagnostic profile features apply a cautious penalty, while dense or ambiguous catalog regions are prevented from gaining automatic advantage simply because many unrelated lines exist nearby. Score Share normalizes positive candidate score only within the current run and therefore is not a probability, concentration or abundance estimate.',
       'Molecular modes apply the corresponding multi-band logic. Diagnostic anchors and bands are evaluated together, and support from several coherent bands carries more weight than an isolated overlap. Gas Tube can retain both atomic and molecular contributors. Fluorescent deliberately follows a different path: SPECTRA PRO primarily characterizes the broadband shape using lambda max, centroid, FWHM, band range, asymmetry, shoulders and integrated baseline-corrected signal. Narrow-line candidates are secondary diagnostics in that mode.',
       'Relevant signatures or clusters in the current run are: ' + signatures + '. Calibration is ' + calState + ', the instrument/sampling resolution reported by the diagnostics is ' + resolution + ', SNR is ' + snr + ' and the saturation field is ' + sat + '. These values are considered together when deciding whether a numerically attractive match is also experimentally credible. Saturation can destroy peak shape and relative intensity information, whereas low SNR can introduce additional local maxima or hide weak diagnostic features.',
