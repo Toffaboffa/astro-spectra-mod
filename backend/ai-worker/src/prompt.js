@@ -160,12 +160,31 @@ function compactSettings(value) {
 
 function compactCalibrationDiagnostics(value) {
   if (!value || typeof value !== 'object') return null;
-  const coverage = value.coverageNm && typeof value.coverageNm === 'object' ? value.coverageNm : {};
+  const coverage = value.wavelengthCoverageNm && typeof value.wavelengthCoverageNm === 'object'
+    ? value.wavelengthCoverageNm
+    : (value.coverageNm && typeof value.coverageNm === 'object' ? value.coverageNm : {});
+  const anchorCoverage = value.anchorWavelengthCoverageNm && typeof value.anchorWavelengthCoverageNm === 'object'
+    ? value.anchorWavelengthCoverageNm
+    : {};
+  const extrapolation = value.extrapolation && typeof value.extrapolation === 'object'
+    ? value.extrapolation
+    : {};
+  const sampling = value.samplingNmPerPixel != null ? value.samplingNmPerPixel : value.samplingNmPerPx;
   return {
-    status: text(value.status, 32), pointCount: n(value.pointCount, 0), polynomialOrder: n(value.polynomialOrder, 0),
-    rmsResidualNm: n(value.rmsResidualNm, 5), maxAbsResidualNm: n(value.maxAbsResidualNm, 5),
-    samplingNmPerPx: n(value.samplingNmPerPx, 5), coverageNm: [n(coverage.min, 3), n(coverage.max, 3)],
-    extrapolated: value.extrapolated === true
+    model: text(value.model, 64),
+    available: typeof value.available === 'boolean' ? value.available : null,
+    pointCount: n(value.pointCount, 0),
+    polynomialOrder: n(value.polynomialOrder, 0),
+    rmsResidualNm: n(value.rmsResidualNm, 5),
+    maxAbsResidualNm: n(value.maxAbsResidualNm, 5),
+    samplingNmPerPixel: n(sampling, 5),
+    wavelengthCoverageNm: [n(coverage.min, 3), n(coverage.max, 3)],
+    anchorWavelengthCoverageNm: [n(anchorCoverage.min, 3), n(anchorCoverage.max, 3)],
+    extrapolation: {
+      any: extrapolation.any === true || value.extrapolated === true,
+      left: extrapolation.left === true,
+      right: extrapolation.right === true
+    }
   };
 }
 
