@@ -471,6 +471,11 @@
     const conf = hasLabAnalysis(st) ? bestAnalysisConfidence(st) : null;
     const measurementQuality = st.analysis && st.analysis.measurementQuality;
     const mainLimitation = measurementQuality && measurementQuality.mainLimitation;
+    const coverageQuality = measurementQuality && measurementQuality.dimensions && measurementQuality.dimensions.coverage;
+    const coverageQualityMetrics = coverageQuality && coverageQuality.metrics ? coverageQuality.metrics : {};
+    const calibrationDiagnostics = st.analysis && st.analysis.calibrationDiagnostics;
+    const fullFrameExtrapolated = coverageQualityMetrics.fullFrameExtrapolated === true ||
+      !!(calibrationDiagnostics && calibrationDiagnostics.extrapolation && calibrationDiagnostics.extrapolation.any);
 
     const dq = [
       line('Quality:', `${measurementQuality && measurementQuality.overallStatus ? qualityTerm(measurementQuality.overallStatus) : '—'}`, 'Categorical measurement quality; this is not a percentage or probability.', 'quality'),
@@ -489,7 +494,7 @@
       line('Noise σ:', `${formatMaybe(noiseMetrics.sigma, 2)}`, 'Robust noise sigma estimated from residuals against a 5-point moving mean.', 'quality'),
       line('SNR:', `${formatMaybe(noiseMetrics.snr, 2)}`, 'Canonical SNR = (P95 - P05) / noise sigma. The same definition is used by worker Measurement Quality, GUI diagnostics, exports and AI context.', 'quality'),
       line('Res:', `${Number.isFinite(resolutionNmPerPx) ? resolutionNmPerPx.toFixed(2) + ' nm/px' : '—'}`, 'Estimated calibration resolution in nm per pixel.', 'calibration'),
-      line('Cov:', `${formatRange(coverage.min, coverage.max, 0)}${Number.isFinite(coverage.min) && Number.isFinite(coverage.max) ? ' nm' : ''}`, 'Calibrated wavelength coverage of the current active spectrum.', 'calibration'),
+      line('Cov:', `${formatRange(coverage.min, coverage.max, 0)}${Number.isFinite(coverage.min) && Number.isFinite(coverage.max) ? ' nm' : ''}${fullFrameExtrapolated ? ' · ext' : ''}`, 'Calibrated wavelength coverage of the full active spectrum. ext means one or both frame edges lie outside the calibration anchors; Measurement Quality evaluates the result-bearing analysis region separately when that region is explicitly defined.', 'calibration'),
       line('Cal err:', `${Number.isFinite(calRmsNm) ? (formatMaybe(calRmsNm, 2) + ' nm') : '—'}`, 'RMS calibration fit error computed from calibration points and the active polynomial fit.', 'calibration'),
       line('FWHM:', `${Number.isFinite(hwFwhmNm) ? (formatMaybe(hwFwhmNm, 2) + ' nm') : '—'}`, 'Instrument full width at half maximum, if known from hardware data.', 'hardware'),
       line('Eff. R:', `${Number.isFinite(resolvingPower) ? ('R≈' + Math.round(resolvingPower)) : '—'}`, 'Approximate resolving power R ≈ λ/Δλ.', 'hardware')
