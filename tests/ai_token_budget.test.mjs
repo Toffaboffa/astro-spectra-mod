@@ -57,8 +57,12 @@ const state = {
       available: true,
       pointCount: 3,
       polynomialOrder: 2,
-      rmsResidualNm: 0.1,
-      maxAbsResidualNm: 0.2,
+      fitDegreesOfFreedom: 0,
+      fitResidualIndependent: false,
+      exactInterpolation: true,
+      fitResidualStatus: 'exact-interpolation-residual-not-independent',
+      rmsResidualNm: 0,
+      maxAbsResidualNm: 0,
       samplingNmPerPixel: 0.4,
       wavelengthCoverageNm: { min: 380, max: 891.6 },
       anchorWavelengthCoverageNm: { min: 380, max: 891.6 },
@@ -103,6 +107,9 @@ assert.equal(payload.analysis.hits.length, 28, 'only the most relevant bounded h
 assert.equal(payload.analysis.candidates.length, 6, 'candidate evidence should remain bounded');
 assert.ok(payload.analysis.calibrationDiagnostics, 'calibration evidence must survive compaction');
 assert.equal(payload.analysis.calibrationDiagnostics.samplingNmPerPixel, 0.4, 'compact AI payload must preserve canonical calibration sampling');
+assert.equal(payload.analysis.calibrationDiagnostics.fitDegreesOfFreedom, 0, 'compact AI payload must preserve calibration fit degrees of freedom');
+assert.equal(payload.analysis.calibrationDiagnostics.fitResidualIndependent, false, 'compact AI payload must preserve non-independent residual semantics');
+assert.equal(payload.analysis.calibrationDiagnostics.exactInterpolation, true, 'compact AI payload must preserve exact interpolation status');
 assert.deepEqual(Object.assign({}, payload.analysis.calibrationDiagnostics.extrapolation), { any: false, left: false, right: false }, 'compact AI payload must preserve calibration extrapolation state');
 assert.ok(payload.quality.measurement, 'measurement quality must survive compaction');
 assert.ok(payloadBytes <= 9000, `dense LAB payload exceeded 9 kB: ${payloadBytes}`);
