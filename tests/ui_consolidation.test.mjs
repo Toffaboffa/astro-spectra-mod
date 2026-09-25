@@ -395,10 +395,10 @@ assert.ok(!graphScript.includes("resizeCanvasToDisplaySize(graphCtx, graphCanvas
 for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Advanced: reference spectrum comparison', 'Continuum diagnostics']) {
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
 }
-assert.ok(spectrapro.includes('analysisWorkerClient.js?v=3.1.6-coverage-1'), 'published worker client must use the result-scoped coverage cache key');
-assert.ok(spectrapro.includes('dataQualityPanel.js?v=3.1.6-coverage-1'), 'published Data Quality module must use the result-scoped coverage cache key');
-assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=3.1.6-coverage-1'"), 'worker client must load the refreshed result-scoped coverage worker shell');
-assert.ok(stateStore.includes("const AI_ASSET_VERSION = '3.1.6-coverage-1';"), 'dynamic export/AI modules must use the result-scoped coverage cache key');
+assert.ok(spectrapro.includes('analysisWorkerClient.js?v=3.1.6-fit-dof-1'), 'published worker client must use the calibration-fit-DOF cache key');
+assert.ok(spectrapro.includes('dataQualityPanel.js?v=3.1.6-fit-dof-1'), 'published Data Quality module must use the calibration-fit-DOF cache key');
+assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=3.1.6-fit-dof-1'"), 'worker client must load the refreshed calibration-fit-DOF worker shell');
+assert.ok(stateStore.includes("const AI_ASSET_VERSION = '3.1.6-fit-dof-1';"), 'dynamic export/AI modules must use the calibration-fit-DOF cache key');
 assert.ok(workerClient.includes('analysisNext.rawMatchOffsetNm = Number.isFinite(rawOffsetValue) ? rawOffsetValue : null;'), 'worker results must preserve the broader matcher offset separately');
 assert.ok(workerClient.includes('analysisNext.offsetBasis = msg.payload.offsetBasis') && workerClient.includes("? 'matcher-residuals' : null);"), 'worker results must persist wavelength-offset provenance and clear it when no offset exists');
 assert.ok(workerClient.includes('analysisNext.detectedPeaks = detectedPeaks;'), 'worker results must persist the canonical detected peak list in analysis state');
