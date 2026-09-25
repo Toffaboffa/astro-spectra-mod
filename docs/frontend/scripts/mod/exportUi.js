@@ -442,6 +442,8 @@
         intensityBasis: preprocessingResult && preprocessingResult.intensityBasis ? preprocessingResult.intensityBasis : 'uncorrected-relative-intensity'
       },
       measurementQuality: cloneJson(analysis.measurementQuality),
+      detectedPeaks: cloneJson(Array.isArray(analysis.detectedPeaks) ? analysis.detectedPeaks : []),
+      detectedPeakCount: Number.isFinite(Number(analysis.detectedPeakCount)) ? Math.max(0, Math.round(Number(analysis.detectedPeakCount))) : null,
       detectedFeatures: cloneJson(Array.isArray(analysis.features) ? analysis.features : []),
       lab: {
         topHits: cloneJson(Array.isArray(analysis.topHits) ? analysis.topHits : []),
@@ -630,7 +632,10 @@
       lines.push('Preprocessing schema=' + String(analysis.preprocessing.schema || '—') + '; intensity basis=' + String(analysis.preprocessing.intensityBasis || 'uncorrected-relative-intensity') + '; active operations=' + (operations.length ? operations.join(', ') : 'none') + '; warnings=' + (warnings.length ? warnings.join(', ') : 'none') + '.');
     }
     lines.push('Calibration=' + (cal.isCalibrated ? 'active' : 'inactive') + '; points=' + String(Array.isArray(cal.points) ? cal.points.length : 0) + '; worker=' + String(worker.status || '—') + '; analysis rate=' + String(worker.analysisHz != null ? worker.analysisHz : '—') + ' Hz.');
-    lines.push('Detected peaks=' + String(analysis.detectedPeakCount != null ? analysis.detectedPeakCount : '—') + '; top hits=' + String(Array.isArray(analysis.topHits) ? analysis.topHits.length : 0) + '; raw hits=' + String(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits.length : 0) + '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
+    const detectedPeakCount = Number.isFinite(Number(analysis.detectedPeakCount))
+      ? Math.max(0, Math.round(Number(analysis.detectedPeakCount)))
+      : (Array.isArray(analysis.detectedPeaks) ? analysis.detectedPeaks.length : '—');
+    lines.push('Detected peaks=' + String(detectedPeakCount) + '; top hits=' + String(Array.isArray(analysis.topHits) ? analysis.topHits.length : 0) + '; raw hits=' + String(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits.length : 0) + '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
     if (analysis.offsetNm != null) lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm.');
     if (analysis.resultContext === 'astro' && analysis.astro) {
       const astro = analysis.astro;
