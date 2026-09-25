@@ -303,7 +303,7 @@ for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Ad
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
 }
 assert.ok(spectrapro.includes('analysisWorkerClient.js?v=3.1.6-offset-2'), 'published worker client must use the wavelength-offset cache key');
-assert.ok(spectrapro.includes('dataQualityPanel.js?v=3.1.6-match-mae-1'), 'published Data Quality module must use the separate match-MAE cache key');
+assert.ok(spectrapro.includes('dataQualityPanel.js?v=3.1.6-match-mae-2'), 'published Data Quality module must use the final separate match-MAE cache key');
 assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=3.1.6-offset-2'"), 'worker client must load the refreshed wavelength-offset worker shell');
 assert.ok(stateStore.includes("const AI_ASSET_VERSION = '3.1.6-match-mae-1';"), 'dynamic export/AI modules must use the separate match-MAE cache key');
 assert.ok(workerClient.includes('analysisNext.rawMatchOffsetNm = Number.isFinite(rawOffsetValue) ? rawOffsetValue : null;'), 'worker results must preserve the broader matcher offset separately');
