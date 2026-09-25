@@ -248,6 +248,16 @@
     };
   }
 
+  function matchMeanAbsResidualNm(analysis) {
+    const hits = Array.isArray(analysis && analysis.topHits) ? analysis.topHits : [];
+    const values = hits.map(function (hit) {
+      const n = finiteNumber(hit && hit.deltaNm);
+      return n == null ? null : Math.abs(n);
+    }).filter(function (value) { return value != null; });
+    if (!values.length) return null;
+    return values.reduce(function (sum, value) { return sum + value; }, 0) / values.length;
+  }
+
   function buildQuality(frame, analysis, trace) {
     const source = traceSource(frame);
     const values = source ? source.y.map(finiteNumber).filter(function (v) { return v != null; }) : [];
@@ -258,6 +268,7 @@
       offsetNm: rounded(analysis.offsetNm, 4),
       rawMatchOffsetNm: rounded(analysis.rawMatchOffsetNm, 4),
       offsetBasis: cleanString(analysis.offsetBasis, 48) || null,
+      matchMeanAbsResidualNm: rounded(matchMeanAbsResidualNm(analysis), 4),
       sampleCount: values.length,
       intensityMean: values.length ? rounded(sum / values.length, 4) : null,
       intensityMin: values.length ? rounded(Math.min.apply(null, values), 4) : null,
