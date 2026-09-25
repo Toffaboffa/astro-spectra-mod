@@ -15,7 +15,7 @@ importScripts(
   './spectralFeatures.js?v=3.0.1',
   './diffractionArtifacts.js?v=3.0.1-diffraction-1',
   './measurementQuality.js?v=3.0.1',
-  './candidateAnalysis.js?v=3.0.1-artifact-filter-1',
+  './candidateAnalysis.js?v=3.1.6-peak-count-1',
   './astroReferences.js?v=3.0.1',
   './astroContinuum.js?v=3.0.1',
   './dopplerEstimate.js?v=3.0.1',
