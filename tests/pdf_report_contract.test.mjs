@@ -11,7 +11,13 @@ const state = {
   frame: { latest: { source: 'numeric-contract', px: [0, 1, 2], nm: [500, 501, 502], I: [2, 8, 3] } },
   calibration: { isCalibrated: true, points: [{ px: 0, nm: 500 }, { px: 2, nm: 502 }], coefficients: [500, 1] },
   subtraction: { mode: 'raw' },
-  hardware: { profileName: 'Contract instrument', spectrometerResolutionFwhmNm: 1.2 },
+  hardware: {
+    profileName: 'Contract instrument',
+    spectralRangeMinNm: 360,
+    spectralRangeMaxNm: 930,
+    spectrometerResolutionFwhmNm: 1.2,
+    pixelResolutionNm: 0.5
+  },
   analysis: {
     resultContext: 'lab', presetId: 'lamp-hg', detectedPeakCount: 1,
     detectedPeaks: [{ index: 1, value: 8, prominence: 6 }],
@@ -32,9 +38,9 @@ const state = {
       fitResidualStatus: 'exact-interpolation-residual-not-independent',
       rmsResidualNm: 0,
       maxAbsResidualNm: 0,
-      wavelengthCoverageNm: { min: 500, max: 502 },
-      anchorWavelengthCoverageNm: { min: 500, max: 502 },
-      samplingNmPerPixel: 1,
+      wavelengthCoverageNm: { min: 376.240561, max: 910.338212 },
+      anchorWavelengthCoverageNm: { min: 388.86, max: 837.76 },
+      samplingNmPerPixel: 0.417590031834,
       extrapolation: { any: false, left: false, right: false }
     },
     measurementQuality: {
@@ -91,6 +97,10 @@ assert.equal(report.aiInterpretation.label, 'OPTIONAL AI INTERPRETATION');
 assert.ok(report.aiInterpretation.disclaimer.includes('does not replace the deterministic report results'));
 assert.ok(report.aiInterpretation.text.length <= 2400, 'optional AI prose must not make the human report unbounded');
 assert.ok(report.methodNarrative.length <= 3, 'human method narrative must remain concise');
+assert.ok(source.includes("sv ? 'Nominell pixelskala' : 'Nominal pixel scale'"), 'PDF instrument table must label the hardware value as nominal pixel scale');
+assert.ok(source.includes("sv ? 'Kalibrerad sampling' : 'Calibrated sampling'"), 'PDF instrument table must show calibrated sampling separately');
+assert.ok(source.includes("sv ? 'Konfigurerat hårdvaruomfång' : 'Configured hardware range'"), 'PDF instrument table must label configured hardware range explicitly');
+assert.ok(source.includes("sv ? 'Kalibrerad täckning' : 'Calibrated coverage'"), 'PDF instrument table must show actual calibrated coverage separately');
 assert.ok(report.analysisLog.length <= 12, 'human analysis log must remain bounded');
 assert.equal(bundle.scientificAnalysis.detectedPeakCount, 1, 'scientific export snapshot must preserve the canonical worker peak count');
 assert.equal(bundle.scientificAnalysis.detectedPeaks.length, 1, 'scientific export snapshot must preserve the canonical worker peak list');
@@ -103,6 +113,9 @@ assert.equal(bundle.scientificAnalysis.calibration.diagnostics.fitResidualStatus
 assert.ok(report.analysisLog.some((line) => line.includes('Calibration fit RMS=0.0000 nm; fit dof=0;')), 'PDF analysis log must label zero-residual calibration as a fit statistic with zero degrees of freedom');
 assert.ok(report.methodNarrative.some((line) => line.includes('exact interpolation of the calibration points')), 'PDF narrative must explain that zero-DOF zero RMS is exact interpolation, not an accuracy measurement');
 assert.ok(report.methodNarrative.some((line) => line.includes('not an independent estimate of wavelength accuracy')), 'PDF narrative must reject the wavelength-accuracy interpretation explicitly');
+assert.ok(report.analysisLog.some((line) => line.includes('Nominal hardware pixel scale=0.5000 nm/px; calibrated sampling=0.4176 nm/px')), 'PDF analysis log must keep nominal hardware pixel scale separate from calibrated sampling');
+assert.ok(report.analysisLog.some((line) => line.includes('configured hardware range=360.0–930.0 nm; calibrated coverage=376.2–910.3 nm')), 'PDF analysis log must keep configured hardware range separate from actual calibrated coverage');
+assert.ok(report.methodNarrative.some((line) => line.includes('These are different quantities and need not be numerically equal')), 'PDF narrative must explain why nominal pixel scale and calibrated sampling are not a contradiction');
 assert.equal(bundle.scientificAnalysis.measurementQuality.dimensions.noise.metrics.snr, 12.34, 'scientific export must preserve the canonical worker SNR value');
 assert.equal(bundle.scientificAnalysis.measurementQuality.dimensions.noise.metrics.snrDefinition, 'p95-p05-over-noise-sigma', 'scientific export must preserve the canonical SNR definition');
 assert.ok(report.methodNarrative.some((line) => line.includes('(P95-P05)/noise sigma')), 'PDF method narrative must define the reported SNR quantity explicitly');
