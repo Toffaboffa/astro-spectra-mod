@@ -983,7 +983,7 @@ function testSharedAnalysisInfrastructure() {
   const presets = worker.SPECTRA_PRO_presetResolver;
   assert.equal(math.median([9, 1, 5, 3]), 4, 'Shared median should interpolate an even sample count');
   assert.equal(math.matchOffsetNm([{ deltaNm: -0.4 }, { deltaNm: 0.2 }, { deltaNm: 0.1 }]), 0.1, 'Shared offset should preserve the odd-count median rule');
-  assert.equal(math.matchOffsetNm([{ deltaNm: -0.4 }, { deltaNm: 0.2 }, { deltaNm: 0.1 }, { deltaNm: 0.8 }]), 0.15, 'Shared offset should interpolate the two middle residuals for an even match count');
+  within(math.matchOffsetNm([{ deltaNm: -0.4 }, { deltaNm: 0.2 }, { deltaNm: 0.1 }, { deltaNm: 0.8 }]), 0.15, 1e-12, 'Shared offset should interpolate the two middle residuals for an even match count');
   assert.deepEqual(
     Object.assign({}, math.observedRange({ nm: [510, 490, 500] }, [])),
     { min: 490, max: 510 },
