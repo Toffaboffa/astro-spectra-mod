@@ -111,8 +111,10 @@ jobs:
 
           export_ui = Path("docs/frontend/scripts/mod/exportUi.js").read_text(encoding="utf-8")
           assert "const rotatedSourceUrl = croppedSourceUrl ? (await rotateDataUrl90(croppedSourceUrl) || croppedSourceUrl) : '';" in export_ui
-          assert "const sourceH = graphH;" in export_ui
-          assert "await addImageFitToBox(doc, rotatedSourceUrl, sourceX, visualTop, sourceW, sourceH);" in export_ui
+          assert "const sourceScale = 0.925;" in export_ui
+          assert "const sourceH = graphH * sourceScale;" in export_ui
+          assert "const sourceY = visualTop + (graphH - sourceH) / 2;" in export_ui
+          assert "await addImageFitToBox(doc, rotatedSourceUrl, sourceX, sourceY, sourceW, sourceH);" in export_ui
 
           ne = Path("docs/frontend/assets/examples/ne-spectral-tube/ne-spectral-tube.png")
           ne_data = ne.read_bytes()
