@@ -13,6 +13,7 @@
     purple: '../assets/examples/icons/spectral-tube-purple-128.png',
     orange: '../assets/examples/icons/spectral-tube-orange-128.png',
     cyan: '../assets/examples/icons/spectral-tube-cyan-128.png',
+    fluorescent: '../assets/examples/icons/fluorescent-tube-white-256.png',
     solar: '../assets/examples/icons/solar-spectrum.png'
   });
 
@@ -95,6 +96,31 @@
       }),
       calibration: SPECTRA1_CALIBRATION,
       recommendedPreset: 'smart-gastube',
+      recommendedMode: 'LAB'
+    }),
+    Object.freeze({
+      id: 'fluorescent-tube',
+      kind: 'image',
+      labelEn: 'Fluorescent tube',
+      labelSv: 'Lysrör',
+      descriptionEn: 'Warm-white Philips MASTER TL5 HE 28W/830 fluorescent-tube spectrum recorded with SPECTRA-1.',
+      descriptionSv: 'Spektrum från ett varmvitt Philips MASTER TL5 HE 28W/830-lysrör, registrerat med SPECTRA-1.',
+      sourceLabelEn: 'Fluorescent tube — Philips MASTER TL5 HE 28W/830 (calibrated)',
+      sourceLabelSv: 'Lysrör — Philips MASTER TL5 HE 28W/830 (kalibrerat)',
+      icon: SAMPLE_ICONS.fluorescent,
+      badge: 'SPECTRA-1',
+      metaEn: '1280×720 px · 3-point calibration · Fluorescent preset',
+      metaSv: '1280×720 px · 3-punktskalibrering · Fluorescent-förval',
+      image: Object.freeze({
+        path: '../assets/examples/fluorescent-tube/fluorescent-tube.png',
+        width: 1280,
+        height: 720,
+        mime: 'image/png',
+        sha256: 'ecd5cc32f7eceb11778e69ba568b56ba6f8261b929b91e880d80a0507e2c38c3'
+      }),
+      calibration: SPECTRA1_CALIBRATION,
+      stripe: Object.freeze({ widthPx: 5, yNormalized: 0.543 }),
+      recommendedPreset: 'smart-fluorescent',
       recommendedMode: 'LAB'
     }),
     Object.freeze({
@@ -821,7 +847,10 @@
       else if (typeof global.drawGraph === 'function') global.drawGraph();
     } catch (_) {}
 
-    log((isSwedish() ? sample.labelSv : sample.labelEn) + ' loaded · 1280×720 px · stripe 5 px · Gas Tube preset.');
+    const presetLabel = String(sample && sample.recommendedPreset || '') === 'smart-fluorescent'
+      ? 'Fluorescent preset'
+      : 'Gas Tube preset';
+    log((isSwedish() ? sample.labelSv : sample.labelEn) + ' loaded · 1280×720 px · stripe 5 px · ' + presetLabel + '.');
   }
 
   function enableAstroAnalysis() {

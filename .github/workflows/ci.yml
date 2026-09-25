@@ -88,16 +88,22 @@ jobs:
           assert "spectral-tube-purple-128.png" in module
           assert "spectral-tube-orange-128.png" in module
           assert "spectral-tube-cyan-128.png" in module
+          assert "fluorescent-tube-white-256.png" in module
           n2_start = module.index("id: 'n2-spectral-tube'")
           ne_start = module.index("id: 'ne-spectral-tube'")
           ar_start = module.index("id: 'ar-spectral-tube'")
+          fluorescent_start = module.index("id: 'fluorescent-tube'")
           solar_start = module.index("id: 'solar-tsis1-hsrs'")
           n2_block = module[n2_start:ne_start]
           ne_block = module[ne_start:ar_start]
-          ar_block = module[ar_start:solar_start]
+          ar_block = module[ar_start:fluorescent_start]
+          fluorescent_block = module[fluorescent_start:solar_start]
           assert "icon: SAMPLE_ICONS.purple" in n2_block, "N2 sample must use the purple tube icon"
           assert "icon: SAMPLE_ICONS.orange" in ne_block, "Ne sample must use the orange tube icon"
           assert "icon: SAMPLE_ICONS.cyan" in ar_block, "Ar sample must use the cyan tube icon"
+          assert "icon: SAMPLE_ICONS.fluorescent" in fluorescent_block, "Fluorescent sample must use the dedicated white tube icon"
+          assert "recommendedPreset: 'smart-fluorescent'" in fluorescent_block, "Fluorescent sample must select the Fluorescent preset"
+          assert "yNormalized: 0.543" in fluorescent_block, "Fluorescent sample must keep the measured stripe position"
           assert "icon: SAMPLE_ICONS.cyan" not in n2_block + ne_block, "Cyan icon must remain exclusive to the Argon sample"
           assert "chunk-" not in module
           assert "const VERSION = '3.1.5';" in module
@@ -130,6 +136,23 @@ jobs:
               assert (w, h) == (128, 128), f"Unexpected {name} icon dimensions: {(w, h)}"
               icon_digest = hashlib.sha256(icon_data).hexdigest()
               assert icon_digest == expected_digest, f"{name} icon SHA-256 mismatch: {icon_digest}"
+
+          fluorescent_image = Path("docs/frontend/assets/examples/fluorescent-tube/fluorescent-tube.png").read_bytes()
+          assert len(fluorescent_image) == 45238, f"Unexpected fluorescent example size: {len(fluorescent_image)}"
+          assert fluorescent_image[:8] == b"\x89PNG\r\n\x1a\n", "Fluorescent example is not a PNG"
+          fluorescent_width, fluorescent_height = struct.unpack(">II", fluorescent_image[16:24])
+          assert (fluorescent_width, fluorescent_height) == (1280, 720), f"Unexpected fluorescent example dimensions: {(fluorescent_width, fluorescent_height)}"
+          fluorescent_digest = hashlib.sha256(fluorescent_image).hexdigest()
+          assert fluorescent_digest == "ecd5cc32f7eceb11778e69ba568b56ba6f8261b929b91e880d80a0507e2c38c3", f"Fluorescent example SHA-256 mismatch: {fluorescent_digest}"
+
+          fluorescent_icon = Path("docs/frontend/assets/examples/icons/fluorescent-tube-white-256.png").read_bytes()
+          assert len(fluorescent_icon) == 24385, f"Unexpected fluorescent icon size: {len(fluorescent_icon)}"
+          assert fluorescent_icon[:8] == b"\x89PNG\r\n\x1a\n", "Fluorescent icon is not a PNG"
+          fluorescent_icon_width, fluorescent_icon_height = struct.unpack(">II", fluorescent_icon[16:24])
+          assert (fluorescent_icon_width, fluorescent_icon_height) == (256, 144), f"Unexpected fluorescent icon dimensions: {(fluorescent_icon_width, fluorescent_icon_height)}"
+          assert fluorescent_icon[25] == 6, "Fluorescent icon must keep RGBA transparency"
+          fluorescent_icon_digest = hashlib.sha256(fluorescent_icon).hexdigest()
+          assert fluorescent_icon_digest == "8916ead095c2767e255028dcfba0d13468417b31017e0d16d767a362b3a6761d", f"Fluorescent icon SHA-256 mismatch: {fluorescent_icon_digest}"
 
           argon = Path("docs/frontend/data/examples/ar-spectral-tube.json")
           argon_json = json.loads(argon.read_text(encoding="utf-8"))

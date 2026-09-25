@@ -13,7 +13,7 @@ The application is designed primarily for teaching, demonstrations, experimental
 The project is no longer a scaffold. The main Recording page is functional and currently includes:
 
 - live camera acquisition and still-image loading
-- built-in calibrated **Load Example** catalog with SPECTRA-1 line spectra and a measured solar reference spectrum
+- built-in calibrated **Load Example** catalog with SPECTRA-1 line spectra, a fluorescent-tube spectrum and a measured solar reference spectrum
 - movable/adjustable sampling stripe
 - real-time spectrum graph
 - pixel and calibrated wavelength axes
@@ -44,19 +44,19 @@ The detailed implementation and reproducibility contract is maintained in `Funct
 
 ## Built-in spectrum examples
 
-SPECTRA PRO v3.1.5 includes a **Load Example** button in the Source panel. The N₂ and Ne line-spectrum images use the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
+SPECTRA PRO v3.1.5 includes a **Load Example** button in the Source panel. The N₂, Ne and fluorescent-tube spectrum images use the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
 
-The bundled catalog contains N₂ and Ne spectral-tube measurements recorded with SPECTRA-1. Both samples use their original 1280×720 PNG source images without format conversion or cropping. The catalog also contains a compact numeric solar spectrum for ASTRO. The dialog uses color-coded spectral-tube icons: purple for N₂, orange for Ne, with the cyan variant bundled for future samples. Clicking a card selects it; **Load sample** confirms and loads the selection.
+The bundled catalog contains N₂ and Ne spectral-tube measurements, a warm-white Philips MASTER TL5 HE 28W/830 fluorescent-tube measurement, a measured Argon RGB profile and a compact numeric solar spectrum for ASTRO. The N₂ and Ne samples keep their original 1280×720 PNG sources. The fluorescent source spectrum is likewise kept pixel-exact: its original 1280×180 pixels are centered unchanged on a black 1280×720 canvas, with no rescaling or recoloring. Its chooser card uses the dedicated white fluorescent-tube icon. Clicking a card selects it; **Load sample** confirms and loads the selection.
 
-After a sample is selected and **Load sample** is pressed, SPECTRA PRO automatically:
+After an image sample is selected and **Load sample** is pressed, SPECTRA PRO automatically:
 
-- loads the selected bundled image at its original 1280×720 resolution
+- loads the selected bundled image at 1280×720 resolution
 - places the sampling stripe through the bright spectral band and sets Stripe Width to 5 px
 - applies the three reported SPECTRA-1 calibration anchors: 32 px → 388.86 nm, 515 px → 587.57 nm and 1110 px → 837.76 nm
 - switches the graph X-axis directly to nm without showing the redundant wavelength-axis confirmation
-- selects **Gas Tube** as the recommended LAB preset
+- selects **Gas Tube** for the N₂/Ne samples or **Fluorescent** for the fluorescent-tube sample; the preprocessing Mode remains **Raw**
 
-The example does **not** enable LAB Analyze automatically. The user remains in control of when analysis starts. The calibration is applied through the existing calibration engine and therefore appears in CALIBRATE like an ordinary three-point calibration.
+The image examples do **not** enable LAB Analyze automatically. The user remains in control of when analysis starts. The calibration is applied through the existing calibration engine and therefore appears in CALIBRATE like an ordinary three-point calibration.
 
 The historical report also records a SPECTRA-1 factory quadratic fit (a2 = 8.457e-06, a1 = 0.406760986, a0 = 375.834988). The current demo intentionally feeds the reported calibration anchors through the current SPECTRA calibration engine rather than overriding that engine with legacy coefficients.
 

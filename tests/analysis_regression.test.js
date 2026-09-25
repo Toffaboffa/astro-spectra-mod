@@ -246,6 +246,44 @@ function testBundledSolarExample() {
   assert.equal(result.astro.stellarClassification.diagnostics.continuumUsed, false, 'Uncorrected continuum shape must not affect classification');
 }
 
+function testBundledFluorescentExample() {
+  const imageFile = path.join(repoRoot, 'docs', 'frontend', 'assets', 'examples', 'fluorescent-tube', 'fluorescent-tube.png');
+  const image = fs.readFileSync(imageFile);
+  assert.deepEqual(Array.from(image.subarray(0, 8)), [137, 80, 78, 71, 13, 10, 26, 10], 'Fluorescent example must remain a PNG');
+  assert.equal(image.readUInt32BE(16), 1280, 'Fluorescent example width should remain 1280 px');
+  assert.equal(image.readUInt32BE(20), 720, 'Fluorescent example height should remain 720 px');
+  assert.equal(crypto.createHash('sha256').update(image).digest('hex'), 'ecd5cc32f7eceb11778e69ba568b56ba6f8261b929b91e880d80a0507e2c38c3', 'Fluorescent example pixels/source canvas must remain exact');
+
+  const iconFile = path.join(repoRoot, 'docs', 'frontend', 'assets', 'examples', 'icons', 'fluorescent-tube-white-256.png');
+  const icon = fs.readFileSync(iconFile);
+  assert.equal(icon.readUInt32BE(16), 256, 'Fluorescent chooser icon width should remain 256 px');
+  assert.equal(icon.readUInt32BE(20), 144, 'Fluorescent chooser icon height should remain 144 px');
+  assert.equal(crypto.createHash('sha256').update(icon).digest('hex'), '8916ead095c2767e255028dcfba0d13468417b31017e0d16d767a362b3a6761d', 'Fluorescent chooser icon should remain exact');
+
+  const exampleContext = vm.createContext({ console: console, setTimeout: function () {} });
+  exampleContext.window = exampleContext;
+  exampleContext.SpectraPro = {};
+  new vm.Script(
+    fs.readFileSync(path.join(repoRoot, 'docs', 'frontend', 'scripts', 'mod', 'exampleSpectrumUi.js'), 'utf8'),
+    { filename: 'exampleSpectrumUi.js' }
+  ).runInContext(exampleContext);
+  const catalog = exampleContext.SpectraPro.exampleSpectrumUi;
+  assert.ok(catalog.getCatalog().includes('fluorescent-tube'), 'Load Example catalog should expose the fluorescent-tube sample');
+  const config = catalog.getConfig('fluorescent-tube');
+  assert.equal(config.kind, 'image', 'Fluorescent example should use the normal still-image path');
+  assert.equal(config.recommendedMode, 'LAB', 'Fluorescent example should remain a LAB sample');
+  assert.equal(config.recommendedPreset, 'smart-fluorescent', 'Fluorescent example should recommend Fluorescent analysis');
+  assert.deepEqual(config.stripe, { widthPx: 5, yNormalized: 0.543 }, 'Fluorescent example should use the measured band stripe');
+  assert.deepEqual(Array.from(config.calibration.points, function (point) { return { px: point.px, nm: point.nm }; }), [
+    { px: 32, nm: 388.86 },
+    { px: 515, nm: 587.57 },
+    { px: 1110, nm: 837.76 }
+  ], 'Fluorescent example should use the SPECTRA-1 three-point calibration');
+  assert.equal(config.image.width, 1280);
+  assert.equal(config.image.height, 720);
+  assert.equal(config.image.sha256, 'ecd5cc32f7eceb11778e69ba568b56ba6f8261b929b91e880d80a0507e2c38c3');
+}
+
 function testBundledArgonExample() {
   const assetFile = path.join(repoRoot, 'docs', 'frontend', 'data', 'examples', 'ar-spectral-tube.json');
   const asset = JSON.parse(fs.readFileSync(assetFile, 'utf8'));
@@ -1170,6 +1208,7 @@ const groups = [
   ['formal preprocessing', testFormalPreprocessingPipeline],
   ['ASTRO continuum and absorption', testAstroContinuumAndAbsorption],
   ['bundled solar ASTRO example', testBundledSolarExample],
+  ['bundled fluorescent LAB example', testBundledFluorescentExample],
   ['bundled Argon LAB example', testBundledArgonExample],
   ['stellar spectral-class evidence', testStellarClassEvidence],
   ['reference spectrum comparison', testReferenceSpectrumComparison],

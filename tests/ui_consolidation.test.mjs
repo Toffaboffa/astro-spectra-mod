@@ -23,6 +23,8 @@ const fluorescenceUi = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mo
 const overlays = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/overlays.js'), 'utf8');
 const recording = fs.readFileSync(path.join(root, 'docs/frontend/pages/recording.html'), 'utf8');
 const solarIcon = fs.readFileSync(path.join(root, 'docs/frontend/assets/examples/icons/solar-spectrum.png'));
+const fluorescentIcon = fs.readFileSync(path.join(root, 'docs/frontend/assets/examples/icons/fluorescent-tube-white-256.png'));
+const fluorescentSpectrum = fs.readFileSync(path.join(root, 'docs/frontend/assets/examples/fluorescent-tube/fluorescent-tube.png'));
 const argonAsset = JSON.parse(fs.readFileSync(path.join(root, 'docs/frontend/data/examples/ar-spectral-tube.json'), 'utf8'));
 
 function markupCount(id) {
@@ -119,6 +121,16 @@ assert.ok(examples.includes("setGraphFillMode('source')"), 'loading Solar must s
 assert.ok(examples.includes("setGraphFillMode('off')"), 'loading a normal image example must restore the default OFF graph fill');
 assert.ok(examples.includes('asset.irradianceWm2Nm'), 'solar preview must derive its Fraunhofer structure from the bundled numeric measurements');
 assert.ok(examples.includes("id: 'ar-spectral-tube'"), 'Load Example chooser must expose the Argon spectral-tube sample');
+assert.ok(examples.includes("id: 'fluorescent-tube'"), 'Load Example chooser must expose the fluorescent-tube sample');
+assert.ok(examples.includes("fluorescent: '../assets/examples/icons/fluorescent-tube-white-256.png'"), 'Fluorescent chooser card must use its dedicated white tube icon');
+assert.ok(examples.includes("recommendedPreset: 'smart-fluorescent'"), 'Fluorescent chooser sample must select the Fluorescent LAB preset');
+assert.deepEqual([...fluorescentSpectrum.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], 'Fluorescent spectrum example must be a real PNG');
+assert.equal(fluorescentSpectrum.readUInt32BE(16), 1280, 'Fluorescent spectrum example must be 1280 px wide');
+assert.equal(fluorescentSpectrum.readUInt32BE(20), 720, 'Fluorescent spectrum example must be 720 px high');
+assert.deepEqual([...fluorescentIcon.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], 'Fluorescent chooser icon must be a real PNG');
+assert.equal(fluorescentIcon.readUInt32BE(16), 256, 'Fluorescent chooser icon must preserve its width');
+assert.equal(fluorescentIcon.readUInt32BE(20), 144, 'Fluorescent chooser icon must preserve its height');
+assert.equal(fluorescentIcon[25], 6, 'Fluorescent chooser icon must preserve RGBA transparency');
 assert.ok(examples.includes("kind: 'rgb-spectrum'"), 'Argon chooser sample must use the measured RGB spectrum loader');
 assert.equal(argonAsset.schema, 'spectra-pro-rgb-spectrum-example/v1', 'Argon measured example must keep its versioned schema');
 assert.equal(argonAsset.sampleCount, 1280, 'Argon measured example must keep all 1280 samples');

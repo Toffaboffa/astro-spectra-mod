@@ -80,6 +80,8 @@ reported rather than fabricated.
 - Molecular/multi-band evidence.
 - Broadband fluorescence λmax, centroid, FWHM, band range, asymmetry, shoulders and
   integrated relative signal.
+- Bundled SPECTRA-1 fluorescent-tube still-image example using the shared three-point
+  calibration, 5 px sampling stripe, Raw preprocessing and Fluorescent preset.
 - Candidate rankings, hits and QC, plus coherent fingerprint-supported narrow-line
   fluorescence matches shown automatically in the graph/peak inspector and an optional
   weaker raw-coincidence overlay.
