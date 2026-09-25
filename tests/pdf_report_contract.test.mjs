@@ -14,6 +14,7 @@ const state = {
   hardware: { profileName: 'Contract instrument', spectrometerResolutionFwhmNm: 1.2 },
   analysis: {
     resultContext: 'lab', presetId: 'lamp-hg', detectedPeakCount: 1,
+    detectedPeaks: [{ index: 1, value: 8, prominence: 6 }],
     topHits: [{ element: 'Hg', species: 'Hg I', observedNm: 501, referenceNm: 501.1, deltaNm: -0.1 }],
     rawTopHits: [{ element: 'Hg', species: 'Hg I', observedNm: 501, referenceNm: 501.1, deltaNm: -0.1 }],
     elementScores: [{ element: 'Hg', likelyPct: 80, matchedCount: 1, medianDeltaNm: 0.1 }],
@@ -59,6 +60,9 @@ assert.ok(report.aiInterpretation.disclaimer.includes('does not replace the dete
 assert.ok(report.aiInterpretation.text.length <= 2400, 'optional AI prose must not make the human report unbounded');
 assert.ok(report.methodNarrative.length <= 3, 'human method narrative must remain concise');
 assert.ok(report.analysisLog.length <= 12, 'human analysis log must remain bounded');
+assert.equal(bundle.scientificAnalysis.detectedPeakCount, 1, 'scientific export snapshot must preserve the canonical worker peak count');
+assert.equal(bundle.scientificAnalysis.detectedPeaks.length, 1, 'scientific export snapshot must preserve the canonical worker peak list');
+assert.ok(report.analysisLog.some((line) => line.includes('Detected peaks=1;')), 'PDF analysis log must report the canonical worker peak count instead of an unavailable placeholder');
 assert.ok(report.limitations.includes('use-json-v2-for-complete-state-and-numeric-data'));
 
 context.SpectraPro.aiAnalysisUi = null;
