@@ -170,19 +170,18 @@ function compactCalibrationDiagnostics(value) {
     ? value.extrapolation
     : {};
   const sampling = value.samplingNmPerPixel != null ? value.samplingNmPerPixel : value.samplingNmPerPx;
+  const extrapolatedSides = [];
+  if (extrapolation.left === true) extrapolatedSides.push('left');
+  if (extrapolation.right === true) extrapolatedSides.push('right');
+  if (!extrapolatedSides.length && value.extrapolated === true) extrapolatedSides.push('unspecified');
   return {
-    pointCount: n(value.pointCount, 0),
     polynomialOrder: n(value.polynomialOrder, 0),
     rmsResidualNm: n(value.rmsResidualNm, 5),
     maxAbsResidualNm: n(value.maxAbsResidualNm, 5),
-    samplingNmPerPixel: n(sampling, 5),
-    wavelengthCoverageNm: [n(coverage.min, 3), n(coverage.max, 3)],
-    anchorWavelengthCoverageNm: [n(anchorCoverage.min, 3), n(anchorCoverage.max, 3)],
-    extrapolation: {
-      any: extrapolation.any === true || value.extrapolated === true,
-      left: extrapolation.left === true,
-      right: extrapolation.right === true
-    }
+    samplingNmPerPx: n(sampling, 5),
+    coverageNm: [n(coverage.min, 3), n(coverage.max, 3)],
+    anchorCoverageNm: [n(anchorCoverage.min, 3), n(anchorCoverage.max, 3)],
+    extrapolatedSides
   };
 }
 
