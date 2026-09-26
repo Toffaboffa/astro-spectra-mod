@@ -205,6 +205,8 @@ Run from the repository root:
 ```text
 node tests/main_compatibility.test.mjs
 node tests/analysis_regression.test.js
+node tests/neon_real_export_regression.test.mjs
+node tests/n2_real_export_regression.test.mjs
 node tests/ai_context_regression.test.mjs
 node tests/ai_token_budget.test.mjs
 node tests/ui_consolidation.test.mjs

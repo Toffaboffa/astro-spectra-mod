@@ -5,6 +5,8 @@ Run the compact deterministic scientific regression suite with:
 ```text
 node tests/main_compatibility.test.mjs
 node tests/analysis_regression.test.js
+node tests/neon_real_export_regression.test.mjs
+node tests/n2_real_export_regression.test.mjs
 node tests/ai_context_regression.test.mjs
 node tests/ai_token_budget.test.mjs
 node tests/ui_consolidation.test.mjs
@@ -34,6 +36,16 @@ reference handling, smoothing, processed-signal worker consumption and provenanc
 The instrument-response case verifies relative correction recovery, interpolation,
 full-coverage and calibration guards, hardware applicability, amplification limiting,
 custom CSV parsing and explicit corrected/uncorrected intensity semantics.
+The real Neon export regression locks the reviewed hard-cap, result-scoped calibration
+coverage, accepted-hit PDF basis, localized source identity and six-page report-tail
+contract from the 2026-09-26 Neon export.
+The real N2 export integration regression locks the reviewed 2026-09-26 N2 case across
+AI and PDF boundaries: excluded higher-order 770 nm evidence must not reach AI,
+structured N2+ evidence must not stringify to [object Object], source identity must
+remain provenance rather than model evidence, the estimated AI input must stay at or
+below 3500 tokens, PDF candidate match counts must agree with GUI/JSON, camera capability
+glyphs must remain readable, the stale v1.5 module tooltip must not return, and the
+reviewed six-page/90-degree page-3 layout contract must remain intact.
 The AI context suite verifies the four explicit interpretation contexts
 (`lab-atomic`, `lab-molecular`, `fluorescence`, and `astro`), compact deterministic
 measurement-quality transfer, bounded ASTRO evidence, backend validation, prompt-data

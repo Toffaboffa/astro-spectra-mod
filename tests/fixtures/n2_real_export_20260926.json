@@ -1,0 +1,378 @@
+{
+  "schema": "spectra-pro-n2-real-export-regression/v1",
+  "id": "n2-export-20260926-155042",
+  "reviewedExport": {
+    "generatedAt": "2026-09-26T13:50:42.251Z",
+    "appVersion": "v1.3.8",
+    "interfaceLanguage": "sv",
+    "sourceAssetSha256": "dc624e7ca38032b9ca6c93e09f14feec476617c35742316e4f6063b050e3bbea",
+    "pdfPageCount": 6,
+    "pdfPage3RotationDeg": 90,
+    "acceptedTopHitCount": 37,
+    "rawTopHitCount": 42,
+    "detectedPeakCount": 34,
+    "visibleDataQualityCount": 22,
+    "visibleStatusCount": 17,
+    "cameraStatusValue": "ok · 1280x720 · exp✓ zoom—",
+    "historicalModuleTooltip": "Loaded v1.5 frontend modules.",
+    "historicalObservation": "Jag har öppnat och tittat på ett spektralrör märkt N.",
+    "historicalAiInputTokens": 3723,
+    "historicalAiHitCount": 28,
+    "historicalAiTracePoints": 107,
+    "historicalAiPossibleBands": [
+      "[object Object]"
+    ]
+  },
+  "sourceMetadata": {
+    "kind": "bundled-example",
+    "sampleId": "n2-spectral-tube",
+    "sourceLabel": "N₂ spectral tube (calibrated)",
+    "sourceLabelSv": "N₂ spektralrör (kalibrerat)",
+    "assetId": "n2-spectral-tube"
+  },
+  "calibration": {
+    "points": [
+      {
+        "px": 32,
+        "nm": 388.86
+      },
+      {
+        "px": 515,
+        "nm": 587.57
+      },
+      {
+        "px": 1110,
+        "nm": 837.76
+      }
+    ],
+    "coefficients": [
+      375.833752147951,
+      0.406800723225485,
+      0.00000842256722
+    ],
+    "diagnostics": {
+      "polynomialOrder": 2,
+      "fitDegreesOfFreedom": 0,
+      "fitResidualIndependent": false,
+      "exactInterpolation": true,
+      "fitResidualStatus": "exact-interpolation-residual-not-independent",
+      "rmsResidualNm": 0,
+      "maxAbsResidualNm": 0,
+      "samplingNmPerPixel": 0.41759003183437926,
+      "wavelengthCoverageNm": {
+        "min": 376.2405612937437,
+        "max": 910.3382120098197
+      },
+      "anchorWavelengthCoverageNm": {
+        "min": 388.86,
+        "max": 837.76
+      },
+      "extrapolation": {
+        "any": true,
+        "left": true,
+        "right": true
+      }
+    }
+  },
+  "hardware": {
+    "profileId": "spectra-1",
+    "profileName": "KVANT - Spectra-1",
+    "appliedAt": 1790430538098,
+    "spectralRangeMinNm": 360,
+    "spectralRangeMaxNm": 930,
+    "spectrometerResolutionFwhmNm": 1.8,
+    "pixelResolutionNm": 0.5,
+    "gratingLinesPerMm": 500
+  },
+  "quality": {
+    "overallStatus": "moderate",
+    "mainLimitation": {
+      "code": "calibration",
+      "status": "moderate",
+      "reason": "calibration-fit-residual-not-independent"
+    },
+    "coverage": {
+      "status": "good",
+      "reason": "analysis-region-within-calibration-anchors",
+      "metrics": {
+        "minNm": 376.2406,
+        "maxNm": 910.3382,
+        "analysisMinNm": 391.4,
+        "analysisMaxNm": 757.1989,
+        "anchorMinNm": 388.86,
+        "anchorMaxNm": 837.76,
+        "fullFrameMinNm": 376.2406,
+        "fullFrameMaxNm": 910.3382,
+        "extrapolated": true,
+        "fullFrameExtrapolated": true,
+        "analysisRegionExtrapolated": false,
+        "analysisCoverageBasis": "accepted-result-hits",
+        "analysisHitCount": 37
+      }
+    },
+    "calibration": {
+      "status": "moderate",
+      "reason": "calibration-fit-residual-not-independent",
+      "metrics": {
+        "pointCount": 3,
+        "polynomialOrder": 2,
+        "fitDegreesOfFreedom": 0,
+        "fitResidualIndependent": false,
+        "exactInterpolation": true,
+        "fitResidualStatus": "exact-interpolation-residual-not-independent",
+        "rmsResidualNm": 0,
+        "maxAbsResidualNm": 0,
+        "extrapolated": false,
+        "fullFrameExtrapolated": true,
+        "analysisRegionExtrapolated": false,
+        "analysisCoverageBasis": "accepted-result-hits",
+        "analysisHitCount": 37
+      }
+    },
+    "noise": {
+      "status": "good",
+      "reason": "usable-snr",
+      "metrics": {
+        "snr": 145.016,
+        "noiseSigma": 0.2965,
+        "signalSpanP95P05": 43,
+        "snrDefinition": "p95-p05-over-noise-sigma"
+      }
+    }
+  },
+  "acceptedHits": [
+    {
+      "species": "N2 N2 second positive",
+      "element": "N2",
+      "referenceNm": 426.97,
+      "observedNm": 426.663,
+      "deltaNm": -0.307,
+      "confidence": 0.678,
+      "score": 79.4,
+      "kind": "molecular-band",
+      "evidenceModel": "plasma-diagnostic-v1"
+    },
+    {
+      "species": "N2",
+      "element": "N2",
+      "referenceNm": 404.3,
+      "observedNm": 405.111,
+      "deltaNm": 0.811,
+      "confidence": 0.676,
+      "score": 71.7,
+      "kind": "molecular-band"
+    },
+    {
+      "species": "N2",
+      "element": "N2",
+      "referenceNm": 399.8,
+      "observedNm": 398.4079,
+      "deltaNm": -1.392,
+      "confidence": 0.672,
+      "score": 51.2,
+      "kind": "molecular-band"
+    },
+    {
+      "species": "N2 N2 second positive",
+      "element": "N2",
+      "referenceNm": 399.84,
+      "observedNm": 398.408,
+      "deltaNm": -1.432,
+      "confidence": 0.648,
+      "score": 65,
+      "kind": "molecular-band",
+      "evidenceModel": "plasma-diagnostic-v1"
+    },
+    {
+      "species": "N2 N2 second positive",
+      "element": "N2",
+      "referenceNm": 420.05,
+      "observedNm": 419.54,
+      "deltaNm": -0.51,
+      "confidence": 0.64,
+      "score": 66.8,
+      "kind": "molecular-band",
+      "evidenceModel": "plasma-diagnostic-v1"
+    },
+    {
+      "species": "N2",
+      "element": "N2",
+      "referenceNm": 406.3,
+      "observedNm": 405.111,
+      "deltaNm": -1.189,
+      "confidence": 0.619,
+      "score": 62.3,
+      "kind": "molecular-band"
+    },
+    {
+      "species": "N2 N2 second positive",
+      "element": "N2",
+      "referenceNm": 434.36,
+      "observedNm": 435.053,
+      "deltaNm": 0.693,
+      "confidence": 0.587,
+      "score": 60.9,
+      "kind": "molecular-band",
+      "evidenceModel": "plasma-diagnostic-v1"
+    },
+    {
+      "species": "N2",
+      "element": "N2",
+      "referenceNm": 391.4,
+      "observedNm": 392.3887,
+      "deltaNm": 0.989,
+      "confidence": 0.548,
+      "score": 61.3,
+      "kind": "molecular-band"
+    }
+  ],
+  "excludedRawN2Hit": {
+    "species": "N2",
+    "element": "N2",
+    "referenceNm": 771,
+    "observedNm": 770.2863,
+    "deltaNm": -0.714,
+    "confidence": 0.561,
+    "score": 68.2,
+    "kind": "molecular-band",
+    "excludedByDiffraction": true,
+    "excludedFromScoring": true,
+    "exclusionReason": "possible-higher-order-diffraction",
+    "diffractionOrder": 2,
+    "diffractionParentNm": 385.4652
+  },
+  "candidates": [
+    {
+      "element": "N2",
+      "likelyPct": 22,
+      "scoreSharePct": 22,
+      "totalScore": 77.053,
+      "matchedPeaks": 6,
+      "matchedCount": 6,
+      "matchedExpected": 6,
+      "missedStrong": 0,
+      "medianDeltaNm": 0.601,
+      "evidenceModel": "plasma-diagnostic-v2-auto"
+    },
+    {
+      "element": "N2+",
+      "likelyPct": 20,
+      "scoreSharePct": 20,
+      "totalScore": 73.345,
+      "matchedPeaks": 5,
+      "matchedCount": 5,
+      "matchedExpected": 5,
+      "missedStrong": 0,
+      "medianDeltaNm": 1.147,
+      "evidenceModel": "plasma-diagnostic-v2-auto"
+    },
+    {
+      "element": "H",
+      "likelyPct": 15,
+      "scoreSharePct": 15,
+      "totalScore": 54.752,
+      "matchedPeaks": 3,
+      "matchedCount": 3,
+      "matchedExpected": 3,
+      "diagnosticMatchedPeaks": 2,
+      "missedStrong": 1,
+      "medianDeltaNm": 1.401,
+      "evidenceModel": "atomic-fingerprint-v2+auto"
+    },
+    {
+      "element": "Hg",
+      "likelyPct": 15,
+      "scoreSharePct": 15,
+      "totalScore": 53.846,
+      "matchedPeaks": 2,
+      "matchedCount": 2,
+      "matchedExpected": 2,
+      "diagnosticMatchedPeaks": 2,
+      "missedStrong": 3,
+      "medianDeltaNm": 0.618,
+      "evidenceModel": "atomic-fingerprint-v2+auto"
+    },
+    {
+      "element": "Xe",
+      "likelyPct": 11,
+      "scoreSharePct": 11,
+      "totalScore": 38.994,
+      "matchedPeaks": 3,
+      "matchedCount": 3,
+      "matchedExpected": 3,
+      "diagnosticMatchedPeaks": 1,
+      "missedStrong": 4,
+      "medianDeltaNm": 0.491,
+      "evidenceModel": "atomic-fingerprint-v2+auto"
+    },
+    {
+      "element": "Ar",
+      "likelyPct": 7,
+      "scoreSharePct": 7,
+      "totalScore": 25.165,
+      "matchedPeaks": 3,
+      "matchedCount": 3,
+      "matchedExpected": 3,
+      "diagnosticMatchedPeaks": 3,
+      "missedStrong": 12,
+      "medianDeltaNm": 0.075,
+      "evidenceModel": "atomic-fingerprint-v2+auto"
+    },
+    {
+      "element": "Ne",
+      "likelyPct": 5,
+      "scoreSharePct": 5,
+      "totalScore": 17.649,
+      "matchedPeaks": 1,
+      "matchedCount": 1,
+      "matchedExpected": 1,
+      "diagnosticMatchedPeaks": 1,
+      "missedStrong": 17,
+      "medianDeltaNm": 0.293,
+      "evidenceModel": "atomic-fingerprint-v2+auto"
+    },
+    {
+      "element": "Kr",
+      "likelyPct": 5,
+      "scoreSharePct": 5,
+      "totalScore": 17.541,
+      "matchedPeaks": 2,
+      "matchedCount": 2,
+      "matchedExpected": 2,
+      "diagnosticMatchedPeaks": 1,
+      "missedStrong": 12,
+      "medianDeltaNm": 0.873,
+      "evidenceModel": "atomic-fingerprint-v2+auto"
+    }
+  ],
+  "winnerBreakdown": {
+    "primaryEmitter": "N2",
+    "primaryLikelyPct": 22,
+    "explainedPeaksPct": 20,
+    "explainedIntensityPct": 41.3,
+    "possibleBands": [
+      {
+        "element": "N2+",
+        "likelyPct": 20,
+        "explainedIntensityPct": 30,
+        "explainedPeaksPct": 16.7
+      }
+    ],
+    "scoreSemantics": "relative-score-share",
+    "evidenceModel": "plasma-diagnostic-v2-auto"
+  },
+  "expected": {
+    "hardMatchCapNm": 1.8,
+    "tokenBudget": 3500,
+    "defaultTraceMax": 80,
+    "defaultHitMax": 20,
+    "candidateMax": 6,
+    "candidateMatchCounts": {
+      "H": 3,
+      "Xe": 3,
+      "Kr": 2
+    },
+    "analysisLogMaxCount": 12,
+    "reproducibilityRowCount": 13
+  }
+}
