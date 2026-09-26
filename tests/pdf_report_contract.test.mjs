@@ -139,7 +139,7 @@ assert.ok(source.includes("sv ? 'Kalibrerad sampling' : 'Calibrated sampling'"),
 assert.ok(source.includes("sv ? 'Konfigurerat hårdvaruomfång' : 'Configured hardware range'"), 'PDF instrument table must label configured hardware range explicitly');
 assert.ok(source.includes("sv ? 'Kalibrerad täckning' : 'Calibrated coverage'"), 'PDF instrument table must show actual calibrated coverage separately');
 assert.ok(source.includes("if (String(a.presetId || '') === 'smart-fluorescent')"), 'PDF matched-feature selector must special-case Fluorescent accepted hits');
-assert.ok(source.includes('clearNarrowLineHits') && source.includes('optional weaker overlay candidates do not alter the report table'), 'PDF source must document that Fluorescent overlay candidates are visual only');
+assert.ok(source.includes('clearNarrowLineHits') && source.includes('optional weaker overlay candidates are visual and do not change the deterministic report result'), 'PDF source must document that Fluorescent overlay candidates are visual only');
 assert.ok(source.includes('function pdfTableRow(row)'), 'PDF export must centralize table-cell sanitization');
 assert.ok(source.includes('head: [pdfTableRow(head)]') && source.includes('body: paired.map(pdfTableRow)'), 'matched-feature AutoTable must sanitize both headers and cells');
 assert.ok(source.includes("body: rows.map(pdfTableRow)"), 'quality/status AutoTable must sanitize diagnostic labels such as Noise sigma');
