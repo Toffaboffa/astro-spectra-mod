@@ -430,7 +430,7 @@
         state: cloneJson(source.calibration),
         diagnostics: cloneJson(analysis.calibrationDiagnostics),
         matchUncertaintyModel: cloneJson(analysis.matchUncertaintyModel),
-        hardMatchCapNm: Number.isFinite(Number(analysis.hardMatchCapNm)) ? Number(analysis.hardMatchCapNm) : null
+        hardMatchCapNm: finiteReportNumber(analysis.hardMatchCapNm)
       },
       preprocessing: {
         configuration: cloneJson(preprocessingConfig),
@@ -629,9 +629,15 @@
     return (Array.isArray(row) ? row : []).map(pdfText);
   }
 
+  function finiteReportNumber(value) {
+    if (value === null || value === undefined || value === '' || typeof value === 'boolean') return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+
   function nfmt(value, digits) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n.toFixed(digits == null ? 2 : digits) : '—';
+    const n = finiteReportNumber(value);
+    return n === null ? '—' : n.toFixed(digits == null ? 2 : digits);
   }
 
   function candidateName(h) {
@@ -689,14 +695,19 @@
       const species = candidateName(h);
       const obs = h.observedNm != null ? h.observedNm : (h.obsNm != null ? h.obsNm : (h.nm_meas != null ? h.nm_meas : h.nm));
       const ref = h.referenceNm != null ? h.referenceNm : (h.refNm != null ? h.refNm : (h.ref_nm != null ? h.ref_nm : null));
-      const delta = h.deltaNm != null ? h.deltaNm : (h.delta_nm != null ? h.delta_nm : ((Number.isFinite(Number(obs)) && Number.isFinite(Number(ref))) ? Number(ref) - Number(obs) : null));
+      const obsNumber = finiteReportNumber(obs);
+      const refNumber = finiteReportNumber(ref);
+      const delta = h.deltaNm != null
+        ? h.deltaNm
+        : (h.delta_nm != null ? h.delta_nm : (obsNumber !== null && refNumber !== null ? refNumber - obsNumber : null));
+      const deltaNumber = finiteReportNumber(delta);
       const score = h.score != null ? h.score : (h.confidence != null ? h.confidence : '');
       return [
         species,
-        Number.isFinite(Number(obs)) ? nfmt(obs, 3) : '—',
-        Number.isFinite(Number(ref)) ? nfmt(ref, 3) : '—',
-        Number.isFinite(Number(delta)) ? nfmt(delta, 3) : '—',
-        score === '' ? '—' : nfmt(score, 3)
+        obsNumber !== null ? nfmt(obsNumber, 3) : '—',
+        refNumber !== null ? nfmt(refNumber, 3) : '—',
+        deltaNumber !== null ? nfmt(deltaNumber, 3) : '—',
+        finiteReportNumber(score) !== null ? nfmt(score, 3) : '—'
       ];
     });
   }
@@ -897,11 +908,15 @@
     const coverage = coverageAssessment(analysis);
     if (coverage) {
       const cm = coverage.metrics || {};
-      const analysisRange = Number.isFinite(Number(cm.analysisMinNm)) && Number.isFinite(Number(cm.analysisMaxNm))
-        ? nfmt(cm.analysisMinNm, 2) + '–' + nfmt(cm.analysisMaxNm, 2) + ' nm'
+      const analysisMin = finiteReportNumber(cm.analysisMinNm);
+      const analysisMax = finiteReportNumber(cm.analysisMaxNm);
+      const anchorMin = finiteReportNumber(cm.anchorMinNm);
+      const anchorMax = finiteReportNumber(cm.anchorMaxNm);
+      const analysisRange = analysisMin !== null && analysisMax !== null
+        ? nfmt(analysisMin, 2) + '–' + nfmt(analysisMax, 2) + ' nm'
         : 'not defined';
-      const anchorRange = Number.isFinite(Number(cm.anchorMinNm)) && Number.isFinite(Number(cm.anchorMaxNm))
-        ? nfmt(cm.anchorMinNm, 2) + '–' + nfmt(cm.anchorMaxNm, 2) + ' nm'
+      const anchorRange = anchorMin !== null && anchorMax !== null
+        ? nfmt(anchorMin, 2) + '–' + nfmt(anchorMax, 2) + ' nm'
         : 'not available';
       lines.push('Coverage=' + String(coverage.status || 'unavailable') + '; reason=' + String(coverage.reason || '—') + '; analysis range=' + analysisRange + '; calibration anchors=' + anchorRange + '; full-frame extrapolation=' + (cm.fullFrameExtrapolated === true ? 'yes' : 'no') + '.');
     }
@@ -921,15 +936,23 @@
   function canonicalSnrText(analysis, dq) {
     const noise = analysis && analysis.measurementQuality && analysis.measurementQuality.dimensions &&
       analysis.measurementQuality.dimensions.noise;
-    const value = noise && noise.metrics ? Number(noise.metrics.snr) : NaN;
-    return Number.isFinite(value) ? nfmt(value, 2) : lookupDiagnostic(dq, 'snr');
+    const metrics = noise && noise.metrics;
+    if (metrics && Object.prototype.hasOwnProperty.call(metrics, 'snr')) {
+      const value = finiteReportNumber(metrics.snr);
+      return value === null ? '—' : nfmt(value, 2);
+    }
+    return lookupDiagnostic(dq, 'snr');
   }
 
   function canonicalSaturationText(analysis, dq) {
     const saturation = analysis && analysis.measurementQuality && analysis.measurementQuality.dimensions &&
       analysis.measurementQuality.dimensions.saturation;
-    const fraction = saturation && saturation.metrics ? Number(saturation.metrics.saturationFraction) : NaN;
-    return Number.isFinite(fraction) ? nfmt(fraction * 100, 2) + '%' : lookupDiagnostic(dq, 'sat');
+    const metrics = saturation && saturation.metrics;
+    if (metrics && Object.prototype.hasOwnProperty.call(metrics, 'saturationFraction')) {
+      const fraction = finiteReportNumber(metrics.saturationFraction);
+      return fraction === null ? '—' : nfmt(fraction * 100, 2) + '%';
+    }
+    return lookupDiagnostic(dq, 'sat');
   }
 
   function reportSourceLabel(bundle, sv) {
@@ -1079,7 +1102,8 @@
     const hw = state.hardware || {};
     const dq = bundle.visibleDiagnostics ? bundle.visibleDiagnostics.dataQuality : [];
     const preset = String(analysis.presetId || '—');
-    const offset = Number.isFinite(Number(analysis.offsetNm)) ? nfmt(analysis.offsetNm, 3) + ' nm' : (sv ? 'inte tillgänglig' : 'not available');
+    const offsetValue = finiteReportNumber(analysis.offsetNm);
+    const offset = offsetValue !== null ? nfmt(offsetValue, 3) + ' nm' : (sv ? 'inte tillgänglig' : 'not available');
     const matchMaeValue = matchMeanAbsResidualNm(analysis);
     const matchMae = Number.isFinite(matchMaeValue) ? nfmt(matchMaeValue, 3) + ' nm' : (sv ? 'inte tillgänglig' : 'not available');
     const fluorescentOffset = String(analysis.offsetBasis || '') === 'clear-narrow-line-hits' || preset === 'smart-fluorescent';
@@ -1087,7 +1111,8 @@
       ? (sv ? 'medianen av residualerna för de koherenta smala linjeträffar som accepterats i Fluorescent-resultatet' : 'the median residual of the coherent narrow-line hits accepted in the Fluorescent result')
       : (sv ? 'medianen av residualerna i analysmotorns matchningsmängd före eventuell visningsfiltrering' : 'the median residual of the analysis matcher set before any display filtering');
     const signatures = signatureSummary(analysis, sv);
-    const maxDist = Number.isFinite(Number(analysis.maxDistanceNm)) ? nfmt(analysis.maxDistanceNm, 2) + ' nm' : (sv ? 'aktuell presetgräns' : 'the active preset limit');
+    const maxDistanceValue = finiteReportNumber(analysis.maxDistanceNm);
+    const maxDist = maxDistanceValue !== null ? nfmt(maxDistanceValue, 2) + ' nm' : (sv ? 'aktuell presetgräns' : 'the active preset limit');
     const snr = canonicalSnrText(analysis, dq);
     const sat = canonicalSaturationText(analysis, dq);
     const calState = cal.isCalibrated ? (sv ? 'aktiv' : 'active') : (sv ? 'inte aktiv' : 'not active');
@@ -1465,7 +1490,7 @@
       ['Preset', analysis.presetId || '—', sv ? 'Aktiv analysprofil' : 'Active analysis profile', '—'],
       [sv ? 'Bearbetning' : 'Processing', (state.subtraction && state.subtraction.mode) || 'raw', sv ? 'Aktivt signalflöde' : 'Active signal processing', '—'],
       [sv ? 'Aktiva försteg' : 'Active preprocessing', analysis.preprocessing && Array.isArray(analysis.preprocessing.activeOperations) && analysis.preprocessing.activeOperations.length ? analysis.preprocessing.activeOperations.join(', ') : 'none', sv ? 'Faktiskt tillämpade operationer' : 'Operations actually applied', '—'],
-      [sv ? 'Topptröskel' : 'Peak threshold', analysis.peakThresholdRel != null ? nfmt(Number(analysis.peakThresholdRel) * 100, 2) : '—', sv ? 'Relativ LAB-tröskel' : 'Relative LAB threshold', '%'],
+      [sv ? 'Topptröskel' : 'Peak threshold', finiteReportNumber(analysis.peakThresholdRel) !== null ? nfmt(finiteReportNumber(analysis.peakThresholdRel) * 100, 2) : '—', sv ? 'Relativ LAB-tröskel' : 'Relative LAB threshold', '%'],
       [sv ? 'Toppavstånd' : 'Peak distance', analysis.peakDistancePx != null ? String(analysis.peakDistancePx) : '—', sv ? 'Minsta separation' : 'Minimum separation', 'px'],
       [sv ? 'Max avstånd' : 'Max distance', analysis.maxDistanceNm != null ? nfmt(analysis.maxDistanceNm, 3) : '—', sv ? 'Hård matchningsgräns' : 'Hard matching gate', 'nm'],
       [sv ? 'Svaga toppar' : 'Weak peaks', analysis.includeWeakPeaks ? 'on' : 'off', sv ? 'Analysinställning' : 'Analysis setting', '—']
@@ -1502,12 +1527,12 @@
       [sv ? 'Konfigurerat hårdvaruomfång' : 'Configured hardware range', (hardware.spectralRangeMinNm != null || hardware.spectralRangeMaxNm != null) ? String(hardware.spectralRangeMinNm || '—') + '–' + String(hardware.spectralRangeMaxNm || '—') + ' nm' : '—'],
       ['FWHM', hardware.spectrometerResolutionFwhmNm != null ? nfmt(hardware.spectrometerResolutionFwhmNm, 3) + ' nm' : '—'],
       [sv ? 'Nominell pixelskala' : 'Nominal pixel scale', hardware.pixelResolutionNm != null ? nfmt(hardware.pixelResolutionNm, 4) + ' nm/px' : '—'],
-      [sv ? 'Kalibrerad sampling' : 'Calibrated sampling', analysis.calibrationDiagnostics && Number.isFinite(Number(analysis.calibrationDiagnostics.samplingNmPerPixel)) ? nfmt(analysis.calibrationDiagnostics.samplingNmPerPixel, 4) + ' nm/px' : '—'],
-      [sv ? 'Kalibrerad täckning' : 'Calibrated coverage', analysis.calibrationDiagnostics && analysis.calibrationDiagnostics.wavelengthCoverageNm && Number.isFinite(Number(analysis.calibrationDiagnostics.wavelengthCoverageNm.min)) && Number.isFinite(Number(analysis.calibrationDiagnostics.wavelengthCoverageNm.max)) ? nfmt(analysis.calibrationDiagnostics.wavelengthCoverageNm.min, 2) + '–' + nfmt(analysis.calibrationDiagnostics.wavelengthCoverageNm.max, 2) + ' nm' : '—'],
+      [sv ? 'Kalibrerad sampling' : 'Calibrated sampling', analysis.calibrationDiagnostics && finiteReportNumber(analysis.calibrationDiagnostics.samplingNmPerPixel) !== null ? nfmt(analysis.calibrationDiagnostics.samplingNmPerPixel, 4) + ' nm/px' : '—'],
+      [sv ? 'Kalibrerad täckning' : 'Calibrated coverage', analysis.calibrationDiagnostics && analysis.calibrationDiagnostics.wavelengthCoverageNm && finiteReportNumber(analysis.calibrationDiagnostics.wavelengthCoverageNm.min) !== null && finiteReportNumber(analysis.calibrationDiagnostics.wavelengthCoverageNm.max) !== null ? nfmt(analysis.calibrationDiagnostics.wavelengthCoverageNm.min, 2) + '–' + nfmt(analysis.calibrationDiagnostics.wavelengthCoverageNm.max, 2) + ' nm' : '—'],
       [sv ? 'Gittertäthet' : 'Grating density', hardware.gratingLinesPerMm != null ? String(hardware.gratingLinesPerMm) + ' lines/mm' : '—'],
       [sv ? 'Kalibrerad' : 'Calibrated', cal.isCalibrated ? (sv ? 'Ja' : 'Yes') : (sv ? 'Nej' : 'No')],
       [sv ? 'Kalibreringskoefficienter' : 'Calibration coefficients', Array.isArray(cal.coefficients) ? cal.coefficients.join(', ') : '—'],
-      [sv ? 'Kalibrering Fit RMS' : 'Calibration Fit RMS', analysis.calibrationDiagnostics && Number.isFinite(Number(analysis.calibrationDiagnostics.rmsResidualNm)) ? nfmt(analysis.calibrationDiagnostics.rmsResidualNm, 4) + ' nm' : '—'],
+      [sv ? 'Kalibrering Fit RMS' : 'Calibration Fit RMS', analysis.calibrationDiagnostics && finiteReportNumber(analysis.calibrationDiagnostics.rmsResidualNm) !== null ? nfmt(analysis.calibrationDiagnostics.rmsResidualNm, 4) + ' nm' : '—'],
       [sv ? 'Fit-frihetsgrader' : 'Fit degrees of freedom', analysis.calibrationDiagnostics && analysis.calibrationDiagnostics.fitDegreesOfFreedom != null ? String(analysis.calibrationDiagnostics.fitDegreesOfFreedom) : '—'],
       [sv ? 'Residualstatus' : 'Residual status', analysis.calibrationDiagnostics && analysis.calibrationDiagnostics.fitResidualStatus ? String(analysis.calibrationDiagnostics.fitResidualStatus) : '—']
     ];
@@ -1850,6 +1875,7 @@
     buildPdfReportModel: buildPdfReportModel,
     estimateQualityStatusBlockHeight: estimateQualityStatusBlockHeight,
     pdfSafeText: pdfText,
+    pdfSafeNumber: finiteReportNumber,
     buildCsv: buildCsv,
     captureSourceDataUrl: captureSourceDataUrl,
     captureGraphDataUrl: captureGraphDataUrl,
