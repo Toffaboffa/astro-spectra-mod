@@ -1,0 +1,111 @@
+{
+  "schema": "spectra-pro-neon-real-export-regression/v1",
+  "id": "neon-export-20260926-101102",
+  "sourceMetadata": {
+    "kind": "bundled-example",
+    "sampleId": "ne-spectral-tube",
+    "sampleKind": "image",
+    "sourceLabel": "Ne spectral tube (calibrated)",
+    "sourceLabelEn": "Ne spectral tube (calibrated)",
+    "sourceLabelSv": "Ne spektralrör (kalibrerat)",
+    "assetId": "ne-spectral-tube",
+    "assetPath": "../assets/examples/ne-spectral-tube/ne-spectral-tube.png",
+    "assetMimeType": "image/png",
+    "assetSha256": "fbef80cbc7637f3220e4eaba31ad4c9e1e8de987fdf93537ce653d5518cbd1f0",
+    "assetSchema": "",
+    "scientificRole": "",
+    "scientificProvenance": null
+  },
+  "hardware": {
+    "profileId": "spectra-1",
+    "profileName": "KVANT - Spectra-1",
+    "spectralRangeMinNm": 360,
+    "spectralRangeMaxNm": 930,
+    "spectrometerResolutionFwhmNm": 1.8,
+    "pixelResolutionNm": 0.5,
+    "gratingLinesPerMm": 500
+  },
+  "calibrationDiagnostics": {
+    "available": true,
+    "pointCount": 3,
+    "polynomialOrder": 2,
+    "fitDegreesOfFreedom": 0,
+    "fitResidualIndependent": false,
+    "exactInterpolation": true,
+    "fitResidualStatus": "exact-interpolation-residual-not-independent",
+    "rmsResidualNm": 0,
+    "maxAbsResidualNm": 0,
+    "wavelengthCoverageNm": { "min": 376.2405612937437, "max": 910.3382120098197 },
+    "anchorWavelengthCoverageNm": { "min": 388.86, "max": 837.76 },
+    "samplingNmPerPixel": 0.41759003183437926,
+    "extrapolation": { "any": true, "left": true, "right": true }
+  },
+  "matchUncertaintyModel": {
+    "effectiveToleranceNm": 1.8,
+    "hardCapNm": 1.8,
+    "combinedUncertaintyNm": 0.801456
+  },
+  "detectedPeakCount": 16,
+  "detectedPeaks": [
+    {"index":507,"nm":584.6736,"prominence":73.88888888888889,"value":134,"featureQualityFlags":[]},
+    {"index":529,"nm":593.7954,"prominence":34.33333333333333,"value":73,"featureQualityFlags":[]},
+    {"index":564,"nm":608.1944,"prominence":29,"value":123,"featureQualityFlags":[]},
+    {"index":576,"nm":613.4928,"prominence":57.888888888888886,"value":160,"featureQualityFlags":[]},
+    {"index":593,"nm":620.6223,"prominence":4,"value":19,"featureQualityFlags":[]},
+    {"index":605,"nm":625.438,"prominence":31.555555555555557,"value":78,"featureQualityFlags":[]},
+    {"index":621,"nm":631.9382,"prominence":39.77777777777777,"value":109,"featureQualityFlags":[]},
+    {"index":636,"nm":638.0719,"prominence":43.66666666666666,"value":188,"featureQualityFlags":[]},
+    {"index":661,"nm":649.0275,"prominence":42.66666666666666,"value":128,"featureQualityFlags":[]},
+    {"index":683,"nm":657.8404,"prominence":10.666666666666668,"value":40,"featureQualityFlags":[]},
+    {"index":702,"nm":665.9277,"prominence":20.22222222222222,"value":61,"featureQualityFlags":["POSSIBLE_BLEND"]},
+    {"index":710,"nm":667.0092,"prominence":4.111111111111107,"value":42,"featureQualityFlags":["POSSIBLE_BLEND"]},
+    {"index":761,"nm":690.5069,"prominence":19.444444444444446,"value":41,"featureQualityFlags":[]},
+    {"index":784,"nm":700.572,"prominence":27.999999999999996,"value":60,"featureQualityFlags":[]},
+    {"index":834,"nm":721.5819,"prominence":4.888888888888888,"value":10,"featureQualityFlags":[]},
+    {"index":870,"nm":736.7576,"prominence":1.3333333333333333,"value":2,"featureQualityFlags":["CONTINUUM_NONPOSITIVE"]}
+  ],
+  "acceptedNeHits": [
+    {"element":"Ne","species":"Ne I","observedNm":638.072,"referenceNm":638.299,"deltaNm":-0.227,"confidence":0.7,"prominence":43.667,"extrapolated":false},
+    {"element":"Ne","species":"Ne I","observedNm":584.674,"referenceNm":585.249,"deltaNm":-0.575,"confidence":0.609,"prominence":73.889,"extrapolated":false},
+    {"element":"Ne","species":"Ne I","observedNm":593.795,"referenceNm":594.483,"deltaNm":-0.688,"confidence":0.413,"prominence":34.333,"extrapolated":false},
+    {"element":"Ne","species":"Ne I","observedNm":613.493,"referenceNm":614.306,"deltaNm":-0.813,"confidence":0.406,"prominence":57.889,"extrapolated":false},
+    {"element":"Ne","species":"Ne I","observedNm":608.194,"referenceNm":607.434,"deltaNm":0.76,"confidence":0.36,"prominence":29,"extrapolated":false},
+    {"element":"Ne","species":"Ne I","observedNm":631.938,"referenceNm":633.443,"deltaNm":-1.505,"confidence":0.348,"prominence":39.778,"extrapolated":false},
+    {"element":"Ne","species":"Ne I","observedNm":649.028,"referenceNm":650.653,"deltaNm":-1.625,"confidence":0.317,"prominence":42.667,"extrapolated":false},
+    {"element":"Ne","species":"Ne I","observedNm":625.438,"referenceNm":626.65,"deltaNm":-1.212,"confidence":0.312,"prominence":31.556,"extrapolated":false},
+    {"element":"Ne","species":"Ne I","observedNm":620.622,"referenceNm":621.728,"deltaNm":-1.106,"confidence":0.279,"prominence":4,"extrapolated":false},
+    {"element":"Ne","species":"Ne I","observedNm":667.009,"referenceNm":667.828,"deltaNm":-0.819,"confidence":0.267,"prominence":4.111,"extrapolated":false}
+  ],
+  "historical": {
+    "topHitCount": 42,
+    "rawTopHitCount": 46,
+    "outOfHardCapHits": [
+      {"element":"Ne","observedNm":700.572,"referenceNm":702.405,"deltaNm":-1.833,"confidence":0.432},
+      {"element":"Ne","observedNm":657.84,"referenceNm":659.895,"deltaNm":-2.055,"confidence":0.342},
+      {"element":"Ne","observedNm":690.507,"referenceNm":692.947,"deltaNm":-2.44,"confidence":0.309},
+      {"element":"Ne","observedNm":721.582,"referenceNm":724.517,"deltaNm":-2.935,"confidence":0.203},
+      {"element":"He","observedNm":584.674,"referenceNm":587.562,"deltaNm":-2.888,"confidence":0.345}
+    ],
+    "measurementQuality": {
+      "overallStatus": "poor",
+      "mainLimitation": {"code":"calibration","status":"poor","reason":"calibration-extrapolation"},
+      "noise": {"status":"unavailable","reason":"snr-unavailable","metrics":{"snr":null,"noiseSigma":0,"signalSpanP95P05":60,"snrDefinition":"p95-p05-over-noise-sigma"}},
+      "coverage": {"status":"poor","reason":"coverage-includes-extrapolation","metrics":{"minNm":376.2406,"maxNm":910.3382,"analysisMinNm":null,"analysisMaxNm":null,"anchorMinNm":388.86,"anchorMaxNm":837.76,"fullFrameMinNm":376.2406,"fullFrameMaxNm":910.3382,"extrapolated":true,"fullFrameExtrapolated":true,"analysisRegionExtrapolated":null,"analysisCoverageBasis":null}},
+      "calibration": {"status":"poor","reason":"calibration-extrapolation","metrics":{"pointCount":3,"polynomialOrder":2,"fitDegreesOfFreedom":0,"fitResidualIndependent":false,"exactInterpolation":true,"fitResidualStatus":"exact-interpolation-residual-not-independent","rmsResidualNm":0,"maxAbsResidualNm":0,"extrapolated":true,"fullFrameExtrapolated":true,"analysisRegionExtrapolated":null,"analysisCoverageBasis":null}}
+    },
+    "visibleConfidenceLabel": "Conf:",
+    "visibleBestHitConfidence": 0.87
+  },
+  "expected": {
+    "hardMatchCapNm": 1.8,
+    "coverageBasis": "accepted-result-hits",
+    "coverageStatus": "good",
+    "calibrationStatus": "moderate",
+    "overallStatus": "moderate",
+    "fitDegreesOfFreedom": 0,
+    "snr": null,
+    "sourceLabelSv": "Ne spektralrör (kalibrerat)",
+    "sourceBadgeSv": "KÄLLA: Exempel",
+    "bestHitConfidence": 0.87
+  }
+}
