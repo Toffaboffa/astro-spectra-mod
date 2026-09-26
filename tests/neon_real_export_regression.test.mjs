@@ -180,6 +180,16 @@ assert.ok(report.analysisLog.some((line) => line.includes('reason=analysis-regio
 assert.ok(report.analysisLog.some((line) => line.includes('report hit basis=accepted-top-hits')), 'real Neon PDF log must state the deterministic accepted-hit basis');
 assert.equal(bundle.sourceMetadata.sourceLabelSv, fixture.expected.sourceLabelSv, 'real Neon export must preserve localized source provenance');
 
-assert.ok(exportSource.includes("pageBreak: 'avoid'") && exportSource.includes('Do not force a new page here'), 'PDF tail layout contract must keep compact no-spill pagination behavior');
+const neonTailHeight = exportContext.SpectraPro.exportUi.estimateResultDetailsPageHeight(
+  fixture.expected.acceptedTopHitCountAfterHardCap,
+  fixture.historical.visibleDataQualityCount,
+  fixture.historical.visibleStatusCount,
+  0,
+  fixture.expected.analysisLogMaxCount,
+  fixture.expected.reproducibilityRowCount
+);
+assert.ok(neonTailHeight <= 258, 'reviewed Neon result-details tail must fit within one A4 content page so the report remains six pages');
+assert.ok(exportSource.includes('Quality/Status, analysis log and reproducibility together on page 6.'), 'PDF layout contract must keep the compact six-page Neon report target');
+assert.ok(exportSource.includes("pageBreak: 'avoid'") && exportSource.includes("rowPageBreak: 'avoid'"), 'PDF result-detail tables must avoid tiny spill pages');
 
 console.log('Neon real-export regression: PASS');
