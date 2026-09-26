@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v3.1.7**
+**Current UI version: v1.3.8**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
@@ -44,7 +44,7 @@ The detailed implementation and reproducibility contract is maintained in `Funct
 
 ## Built-in spectrum examples
 
-SPECTRA PRO v3.1.7 includes a **Load Example** button in the Source panel. The N₂, Ne and fluorescent-tube spectrum images use the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
+SPECTRA PRO v1.3.8 includes a **Load Example** button in the Source panel. The N₂, Ne and fluorescent-tube spectrum images use the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
 
 The bundled catalog contains N₂ and Ne spectral-tube measurements, a warm-white Philips MASTER TL5 HE 28W/830 fluorescent-tube measurement, a measured Argon RGB profile and a compact numeric solar spectrum for ASTRO. The N₂ and Ne samples keep their original 1280×720 PNG sources. The fluorescent source spectrum is likewise kept pixel-exact: its original 1280×180 pixels are centered unchanged on a black 1280×720 canvas, with no rescaling or recoloring. Its chooser card uses the dedicated white fluorescent-tube icon. Clicking a card selects it; **Load sample** confirms and loads the selection.
 
@@ -72,7 +72,7 @@ SPECTRA PRO starts in **English on every page load**. A compact **EN / SV** swit
 - **SV** translates the visible application UI to Swedish at runtime.
 - Analysis data, wavelengths, units, chemical symbols, species labels and the scientific result values are not rewritten as language content.
 - AI Interpretation output is intentionally independent of the UI language and continues to follow the language of the user's observation when that language can be identified.
-- The language choice is not persisted across reloads in v3.1.7; English is always the clean baseline after a new load.
+- The language choice is not persisted across reloads in v1.3.8; English is always the clean baseline after a new load.
 
 The translation layer is isolated from calibration, graph rendering and worker analysis. It observes the application UI only while Swedish is active, so the normal English path keeps the same behavior as before the language feature.
 
@@ -80,7 +80,7 @@ The translation layer is isolated from calibration, graph rendering and worker a
 
 ## Unified export
 
-SPECTRA PRO v3.1.7 uses the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
+SPECTRA PRO v1.3.8 uses the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
 
 The export dialog can generate any combination of:
 

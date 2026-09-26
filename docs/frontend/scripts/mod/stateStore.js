@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '3.1.7-pdf-six-page-1';
+  const AI_ASSET_VERSION = '1.3.8-pdf-six-page-1';
 
   const defaultPresetCatalog = {
     groups: [
