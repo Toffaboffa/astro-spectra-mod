@@ -753,11 +753,39 @@
     return true;
   }
 
-  function markExampleActive(sample) {
+  function exampleSourceProvenance(sample, asset) {
+    const source = sample || {};
+    const assetDef = source.image || source.spectrum || source.numeric || {};
+    let scientificProvenance = asset && asset.provenance ? asset.provenance : null;
+    try {
+      scientificProvenance = scientificProvenance ? JSON.parse(JSON.stringify(scientificProvenance)) : null;
+    } catch (_) {}
+    return {
+      kind: 'bundled-example',
+      sampleId: String(source.id || ''),
+      sampleKind: String(source.kind || ''),
+      sourceLabel: String(source.sourceLabelEn || source.labelEn || source.id || ''),
+      sourceLabelEn: String(source.sourceLabelEn || source.labelEn || source.id || ''),
+      sourceLabelSv: String(source.sourceLabelSv || source.labelSv || source.id || ''),
+      assetId: String((asset && asset.id) || assetDef.assetId || source.id || ''),
+      assetPath: String(assetDef.path || ''),
+      assetMimeType: String(assetDef.mime || ''),
+      assetSha256: String(assetDef.sha256 || ''),
+      assetSchema: String((asset && asset.schema) || assetDef.schema || ''),
+      scientificRole: String((asset && asset.scientificRole) || ''),
+      scientificProvenance: scientificProvenance
+    };
+  }
+
+  function markExampleActive(sample, asset) {
     try {
       const sourceWindow = $('videoMainWindow');
-      if (!sourceWindow || !sourceWindow.dataset) return;
-      sourceWindow.dataset.spectraExampleId = String(sample && sample.id || '');
+      if (sourceWindow && sourceWindow.dataset) {
+        sourceWindow.dataset.spectraExampleId = String(sample && sample.id || '');
+      }
+      if (sp.store && typeof sp.store.update === 'function') {
+        sp.store.update('frame.provenance', exampleSourceProvenance(sample, asset), { source: 'exampleSpectrum.sourceProvenance' });
+      }
     } catch (_) {}
   }
 
@@ -765,6 +793,9 @@
     try {
       const sourceWindow = $('videoMainWindow');
       if (sourceWindow && sourceWindow.dataset) delete sourceWindow.dataset.spectraExampleId;
+      if (sp.store && typeof sp.store.update === 'function') {
+        sp.store.update('frame.provenance', null, { source: 'exampleSpectrum.sourceProvenance.clear' });
+      }
     } catch (_) {}
   }
 
@@ -858,7 +889,7 @@
       stripeYpx: Number(asset.capture && asset.capture.stripeYpx),
       stripeWidthPx: Number(asset.capture && asset.capture.stripeWidthPx)
     });
-    markExampleActive(sample);
+    markExampleActive(sample, asset);
     global.setTimeout(function () {
       try { if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage(true); } catch (_) {}
       try { if (typeof global.showSelectedStripe === 'function') global.showSelectedStripe(); } catch (_) {}
@@ -990,7 +1021,7 @@
       stripeYpx: 360,
       stripeWidthPx: 1
     });
-    markExampleActive(sample);
+    markExampleActive(sample, asset);
     global.setTimeout(function () {
       try { if (typeof global.redrawGraphIfLoadedImage === 'function') global.redrawGraphIfLoadedImage(true); } catch (_) {}
       try { if (typeof global.showSelectedStripe === 'function') global.showSelectedStripe(); } catch (_) {}
