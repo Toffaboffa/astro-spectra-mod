@@ -18,6 +18,68 @@
   function setVideoElement(el){ try { return runtime().setVideoElement ? runtime().setVideoElement(el) : el; } catch(_) { return el; } }
   function refreshMetrics(){ try { if (runtime().refreshActiveSourceMetrics) runtime().refreshActiveSourceMetrics(); } catch(_) {} }
 
+  function currentLanguage(){
+    try {
+      if (sp.i18n && typeof sp.i18n.getLanguage === 'function') {
+        return String(sp.i18n.getLanguage() || 'en').toLowerCase() === 'sv' ? 'sv' : 'en';
+      }
+      const lang = document && document.documentElement ? String(document.documentElement.lang || '') : '';
+      return lang.toLowerCase().indexOf('sv') === 0 ? 'sv' : 'en';
+    } catch(_) { return 'en'; }
+  }
+
+  function currentSourceProvenance(){
+    try {
+      const store = sp.store;
+      const st = store && typeof store.getState === 'function' ? store.getState() : null;
+      const provenance = st && st.frame && st.frame.provenance;
+      return provenance && typeof provenance === 'object' ? provenance : null;
+    } catch(_) { return null; }
+  }
+
+  function localizedSourceIdentity(provenance){
+    const meta = provenance || currentSourceProvenance();
+    if (!meta) return '';
+    const sv = currentLanguage() === 'sv';
+    return String(
+      (sv ? meta.sourceLabelSv : meta.sourceLabelEn) ||
+      meta.sourceLabel ||
+      meta.fileName ||
+      meta.sampleId ||
+      ''
+    ).trim();
+  }
+
+  function sourceDescriptor(){
+    const provenance = currentSourceProvenance();
+    const sv = currentLanguage() === 'sv';
+    const live = isSourceCameraView() && !(provenance && provenance.kind);
+    let kind = 'image';
+    if (live) kind = 'camera';
+    else if (provenance && provenance.kind === 'bundled-example') kind = 'example';
+    else if (provenance && provenance.kind === 'user-image') kind = 'image';
+    else if (provenance && provenance.kind) kind = String(provenance.kind);
+
+    const badge = kind === 'camera'
+      ? (sv ? 'KÄLLA: Kamera' : 'SOURCE Cam')
+      : (kind === 'example'
+        ? (sv ? 'KÄLLA: Exempel' : 'SOURCE Example')
+        : (sv ? 'KÄLLA: Bild' : 'SOURCE Image'));
+    return {
+      kind: kind,
+      badge: badge,
+      identity: localizedSourceIdentity(provenance)
+    };
+  }
+
+  function syncSourceIdentityUi(){
+    const display = $('loadedImageFilename');
+    if (!display) return;
+    const descriptor = sourceDescriptor();
+    if (descriptor.kind === 'camera') return;
+    if (descriptor.identity) display.textContent = descriptor.identity;
+  }
+
 
   function saveCurrentSourceState(){
     const img = $('cameraImage');
@@ -180,7 +242,7 @@
     if (lbl) {
       if (mode === 'dark') lbl.textContent = 'DARK';
       else if (mode === 'ref') lbl.textContent = 'REF';
-      else lbl.textContent = isSourceCameraView() ? 'SOURCE Cam' : 'SOURCE: Image';
+      else lbl.textContent = sourceDescriptor().badge;
     }
     const badge = ensureGraphBadge();
     if (badge) {
@@ -188,6 +250,7 @@
       else if (mode === 'ref') { badge.textContent = 'REF PREVIEW'; badge.style.display = 'block'; }
       else { badge.textContent = ''; badge.style.display = 'none'; }
     }
+    syncSourceIdentityUi();
     syncCaptureButtons();
   }
 
@@ -299,12 +362,21 @@
       const store = sp.store;
       if (store && typeof store.subscribe === 'function') {
         store.subscribe(function(path){
-          if (String(path||'').indexOf('subtraction.') === 0) {
+          const changedPath = String(path || '');
+          if (changedPath.indexOf('subtraction.') === 0) {
             setUiEnabled();
             updateLabels();
             syncCaptureButtons();
           }
+          if (changedPath === 'frame.provenance' || changedPath === 'frame.source' || changedPath === 'frame.latest') {
+            updateLabels();
+          }
         });
+      }
+    } catch(_) {}
+    try {
+      if (sp.eventBus && typeof sp.eventBus.on === 'function') {
+        sp.eventBus.on('language:changed', function(){ updateLabels(); });
       }
     } catch(_) {}
     window.addEventListener('resize', function(){ updateLabels(); refreshVisuals(); });
@@ -317,6 +389,8 @@
 
   api.setMode = setMode;
   api.getMode = function(){ return mode; };
+  api.getSourceDescriptor = sourceDescriptor;
+  api.refreshSourceLabels = updateLabels;
   api.clearSourceImage = function(){
     sourceState.wasImage = false;
     sourceState.imageSrc = '';
