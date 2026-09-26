@@ -448,6 +448,14 @@ assert.ok(workerClient.includes('analysisNext.detectedPeakCount = Number.isFinit
 assert.ok(workerClient.includes('analysisNext.detectedPeakCount = null;'), 'result types without peak data must clear stale LAB peak counts');
 assert.ok(dataQualityPanel.includes("line('Graph peaks:'"), 'Data Quality must label its locally recomputed quick peak count as a graph-side metric');
 assert.ok(dataQualityPanel.includes("line('Graph strong:'"), 'Data Quality must label strong quick peaks as graph-side metrics');
+assert.ok(stateStore.includes("frame: { latest: null, source: 'none', provenance: null }"), 'canonical state must reserve frame source provenance');
+assert.ok(examples.includes("sp.store.update('frame.provenance', exampleSourceProvenance(sample, asset)"), 'bundled examples must persist source provenance into state');
+assert.ok(examples.includes("sampleId: String(source.id || '')") && examples.includes("sourceLabel: String(source.sourceLabelEn"), 'bundled example provenance must retain sample ID and canonical source label');
+assert.ok(examples.includes('Philips MASTER TL5 HE 28W/830'), 'fluorescent bundled provenance must retain the full lamp identity');
+assert.ok(imageLoading.includes("kind: 'user-image'") && imageLoading.includes("fileName: String(file.name || '')"), 'local image loading must persist filename-based source metadata');
+assert.ok(imageLoading.includes("fileSizeBytes: Number.isFinite(Number(file.size))"), 'local image provenance must retain file size when available');
+assert.ok(imageLoading.includes("setFrameSourceProvenance(null, 'imageLoading.cameraSource')"), 'returning to camera source must clear stale file/example provenance');
+assert.ok(bootstrap.includes('provenance: Object.assign({}, provenance)') && bootstrap.includes('sourceLabel: provenance.sourceLabel || null'), 'frame synchronization must copy canonical provenance into the current frame');
 
 assert.ok(workerClient.includes('clearNarrowLineHits'), 'Fluorescent worker results must preserve clear coherent narrow-line hits');
 assert.ok(workerClient.includes('weaker raw coincidences but never hides the clear fingerprint-supported hits'), 'Fluorescent clear line hits must remain visible independently of the optional raw overlay');
