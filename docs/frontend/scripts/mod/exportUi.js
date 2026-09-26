@@ -683,10 +683,25 @@
       if (Array.isArray(a.topHits)) return a.topHits.slice(0, 48);
       return [];
     }
-    if (Array.isArray(a.rawTopHits) && a.rawTopHits.length) return a.rawTopHits.slice(0, 80);
-    if (Array.isArray(a.topHits) && a.topHits.length) return a.topHits.slice(0, 80);
-    if (Array.isArray(a.smartFindHits) && a.smartFindHits.length) return a.smartFindHits.slice(0, 80);
+    // All other deterministic LAB result tables use canonical accepted topHits.
+    // rawTopHits remains in JSON for reproducibility/diagnostics but must never
+    // promote confirmation-only, duplicate or overlay-only hits into the PDF.
+    if (Array.isArray(a.topHits)) return a.topHits.slice(0, 80);
+    // Legacy fallback only when canonical topHits is absent from old state.
+    if (Array.isArray(a.smartFindHits)) return a.smartFindHits.slice(0, 80);
     return [];
+  }
+
+  function deterministicMatchedHitBasis(analysis) {
+    const a = analysis || {};
+    if (String(a.presetId || '') === 'smart-fluorescent') {
+      return Array.isArray(a.clearNarrowLineHits)
+        ? 'accepted-clear-narrow-line-hits'
+        : (Array.isArray(a.topHits) ? 'accepted-top-hits' : 'no-accepted-hits');
+    }
+    if (Array.isArray(a.topHits)) return 'accepted-top-hits';
+    if (Array.isArray(a.smartFindHits)) return 'legacy-smart-find-hits';
+    return 'no-accepted-hits';
   }
 
   function matchedFeatureRows(analysis) {
@@ -881,7 +896,11 @@
         '; narrow-line candidates=' + String(Array.isArray(analysis.narrowLineCandidates) ? analysis.narrowLineCandidates.length : 0) +
         '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
     } else {
-      lines.push('Detected peaks=' + String(detectedPeakCount) + '; top hits=' + String(Array.isArray(analysis.topHits) ? analysis.topHits.length : 0) + '; raw hits=' + String(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits.length : 0) + '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
+      lines.push('Detected peaks=' + String(detectedPeakCount) +
+        '; accepted top hits=' + String(Array.isArray(analysis.topHits) ? analysis.topHits.length : 0) +
+        '; raw diagnostic hits=' + String(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits.length : 0) +
+        '; report hit basis=' + deterministicMatchedHitBasis(analysis) +
+        '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
     }
     if (analysis.offsetNm != null) {
       const matchMae = matchMeanAbsResidualNm(analysis);
@@ -1192,9 +1211,7 @@
       methodNarrative: compactPdfNarrative(buildDetailedNarrative(bundle || {})),
       analysisLog: buildAnalysisLogLines(bundle || {}).slice(0, 12),
       matchedFeatureRows: matchedFeatureRows(bundle && bundle.state ? bundle.state.analysis : {}),
-      matchedFeatureBasis: bundle && bundle.state && bundle.state.analysis && String(bundle.state.analysis.presetId || '') === 'smart-fluorescent'
-        ? 'accepted-clear-narrow-line-hits'
-        : 'analysis-matched-hits',
+      matchedFeatureBasis: deterministicMatchedHitBasis(bundle && bundle.state ? bundle.state.analysis : {}),
       aiInterpretation: {
         included: !!compactAiText,
         label: sv ? 'AI-TOLKNING' : 'OPTIONAL AI INTERPRETATION',
