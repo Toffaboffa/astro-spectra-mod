@@ -398,6 +398,70 @@ assert.equal(solarIcon.readUInt32BE(16), 1280, 'Solar chooser icon must preserve
 assert.equal(solarIcon.readUInt32BE(20), 426, 'Solar chooser icon must preserve the supplied height');
 assert.equal(solarIcon[25], 6, 'Solar chooser icon must use RGBA PNG transparency');
 assert.ok(framePreview.includes('api.clearSourceImage = function()'), 'frame preview must expose a safe source-image reset');
+
+function sourceDescriptorFromFramePreview({ provenance = null, language = 'en', live = false } = {}) {
+  const state = { frame: { provenance } };
+  const video = { id: 'videoMain', srcObject: live ? {} : null };
+  const image = { id: 'cameraImage' };
+  const documentStub = {
+    documentElement: { lang: language },
+    body: {},
+    getElementById(id) {
+      if (id === 'videoMain') return video;
+      if (id === 'cameraImage') return image;
+      return null;
+    }
+  };
+  const windowStub = {
+    SpectraPro: {
+      store: { getState() { return state; } },
+      runtime: { getVideoElement() { return live ? video : image; } },
+      i18n: { getLanguage() { return language; } }
+    },
+    addEventListener() {},
+    getComputedStyle() { return { position: 'static' }; }
+  };
+  const context = vm.createContext({ console, document: documentStub, window: windowStub });
+  new vm.Script(framePreview, { filename: 'framePreview.js' }).runInContext(context);
+  return context.window.SpectraPro.framePreview.getSourceDescriptor();
+}
+
+assert.equal(sourceDescriptorFromFramePreview({ live: true, language: 'en' }).badge, 'SOURCE Cam', 'live camera must retain the camera source badge');
+const swedishNeSource = sourceDescriptorFromFramePreview({
+  live: true,
+  language: 'sv',
+  provenance: {
+    kind: 'bundled-example',
+    sourceLabel: 'Ne spectral tube (calibrated)',
+    sourceLabelEn: 'Ne spectral tube (calibrated)',
+    sourceLabelSv: 'Ne spektralrör (kalibrerat)'
+  }
+});
+assert.equal(swedishNeSource.kind, 'example', 'bundled-example provenance must override stale/live-camera detection in the source badge');
+assert.equal(swedishNeSource.badge, 'KÄLLA: Exempel', 'Swedish bundled examples must be labelled as examples rather than SOURCE Cam');
+assert.equal(swedishNeSource.identity, 'Ne spektralrör (kalibrerat)', 'Swedish source UI must prefer sourceLabelSv for bundled examples');
+const englishNeSource = sourceDescriptorFromFramePreview({
+  language: 'en',
+  provenance: {
+    kind: 'bundled-example',
+    sourceLabel: 'Ne spectral tube (calibrated)',
+    sourceLabelEn: 'Ne spectral tube (calibrated)',
+    sourceLabelSv: 'Ne spektralrör (kalibrerat)'
+  }
+});
+assert.equal(englishNeSource.badge, 'SOURCE Example', 'English bundled examples must be labelled as examples');
+assert.equal(englishNeSource.identity, 'Ne spectral tube (calibrated)', 'English source UI must prefer sourceLabelEn');
+const userImageSource = sourceDescriptorFromFramePreview({
+  language: 'sv',
+  provenance: { kind: 'user-image', sourceLabel: 'mitt-spektrum.png', fileName: 'mitt-spektrum.png' }
+});
+assert.equal(userImageSource.badge, 'KÄLLA: Bild', 'local imported images must be labelled as image sources');
+assert.equal(userImageSource.identity, 'mitt-spektrum.png', 'local imported image identity must retain the filename');
+
+assert.ok(framePreview.includes("changedPath === 'frame.provenance'"), 'source labels must refresh when canonical provenance changes');
+assert.ok(framePreview.includes("sp.eventBus.on('language:changed'"), 'source labels must refresh immediately when interface language changes');
+assert.ok(framePreview.includes("meta.sourceLabelSv") && framePreview.includes("meta.sourceLabelEn"), 'source UI must select the localized provenance label');
+assert.ok(framePreview.includes("display.textContent = descriptor.identity"), 'loaded source identity field must be refreshed from localized provenance');
 assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source #cameraImage'), 'numeric examples must forcibly hide stale source images');
 assert.ok(mainStyles.includes('#videoMainWindow.sp-numeric-source #spFramePreviewCanvas'), 'numeric examples must show their matching source preview canvas');
 assert.ok(graphScript.includes('useNumericSourceFill'), 'SOURCE graph fill must use the calibrated numeric wavelength colors');
@@ -473,6 +537,7 @@ assert.ok(spectrapro.includes('proBootstrap.js?v=3.1.7-provenance-1'), 'publishe
 assert.ok(spectrapro.includes('dataQualityPanel.js?v=3.1.7-hit-confidence-1'), 'published Data Quality module must use the honest-hit-confidence cache key');
 assert.ok(spectrapro.includes('stateStore.js?v=3.1.7-pdf-top-hits-1'), 'published state store must use the accepted-PDF-topHits cache key');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.1.7-provenance-1'), 'published image loader must use the source-provenance cache key');
+assert.ok(spectrapro.includes('framePreview.js?v=3.1.7-source-ui-1'), 'published frame preview must use the source-identity UI cache key');
 assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=3.1.7-result-scope-1'"), 'worker client must load the refreshed result-scoped LAB quality worker shell');
 assert.ok(stateStore.includes("const AI_ASSET_VERSION = '3.1.7-pdf-top-hits-1';"), 'dynamic export/AI/example modules must use the accepted-PDF-topHits cache key');
 assert.ok(workerClient.includes('analysisNext.rawMatchOffsetNm = Number.isFinite(rawOffsetValue) ? rawOffsetValue : null;'), 'worker results must preserve the broader matcher offset separately');
