@@ -38,6 +38,8 @@ jobs:
         run: node tests/calibration_runtime_regression.test.mjs
       - name: Run compact scientific analysis regressions
         run: node tests/analysis_regression.test.js
+      - name: Run real Neon export regression pack
+        run: node tests/neon_real_export_regression.test.mjs
       - name: Run AI context regressions
         run: node tests/ai_context_regression.test.mjs
       - name: Enforce compact AI token budget
