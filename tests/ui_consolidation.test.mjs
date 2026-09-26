@@ -22,6 +22,7 @@ const i18n = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/i18nUi.j
 const helpUi = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/helpUi.js'), 'utf8');
 const workerClient = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/analysisWorkerClient.js'), 'utf8');
 const fluorescenceUi = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/fluorescenceUi.js'), 'utf8');
+const exportUi = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/exportUi.js'), 'utf8');
 const overlays = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/overlays.js'), 'utf8');
 const dataQualityPanel = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/dataQualityPanel.js'), 'utf8');
 const recording = fs.readFileSync(path.join(root, 'docs/frontend/pages/recording.html'), 'utf8');
