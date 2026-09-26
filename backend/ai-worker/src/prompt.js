@@ -343,26 +343,26 @@ function compactModelData(payload) {
   const analysis = p.analysis && typeof p.analysis === 'object' ? p.analysis : {};
   const candidates = compactCandidates(analysis.candidates);
   const bestSpecies = text((analysis.bestMatch && analysis.bestMatch.species) || (candidates.rows[0] && candidates.rows[0][0]), 80);
+  const sourceContext = p.context && p.context.source && typeof p.context.source === 'object' ? {
+    kind: text(p.context.source.kind, 40),
+    sampleId: text(p.context.source.sampleId, 64),
+    label: text(p.context.source.sourceLabel, 160),
+    assetId: text(p.context.source.assetId, 96),
+    fileName: text(p.context.source.fileName, 160),
+    provider: text(p.context.source.provider, 120),
+    dataset: text(p.context.source.dataset, 120),
+    reference: text(p.context.source.reference, 140),
+    provenanceType: text(p.context.source.provenanceType, 64),
+    provenanceNote: text(p.context.source.provenanceNote, 140)
+  } : null;
 
   return {
     observation: typeof p.observation === 'string' && p.observation.trim() ? p.observation.trim() : null,
-    context: {
+    context: Object.assign({
       analysisContext: text(p.context && p.context.analysisContext, 32),
       deterministicAnalysis: p.context && p.context.deterministicAnalysis === true,
-      appMode: text(p.context && p.context.appMode, 24),
-      source: p.context && p.context.source && typeof p.context.source === 'object' ? {
-        kind: text(p.context.source.kind, 40),
-        sampleId: text(p.context.source.sampleId, 64),
-        label: text(p.context.source.sourceLabel, 160),
-        assetId: text(p.context.source.assetId, 96),
-        fileName: text(p.context.source.fileName, 160),
-        provider: text(p.context.source.provider, 120),
-        dataset: text(p.context.source.dataset, 120),
-        reference: text(p.context.source.reference, 140),
-        provenanceType: text(p.context.source.provenanceType, 64),
-        provenanceNote: text(p.context.source.provenanceNote, 140)
-      } : null
-    },
+      appMode: text(p.context && p.context.appMode, 24)
+    }, sourceContext ? { source: sourceContext } : {}),
     measurement: {
       trace: compactTrace(p.trace),
       calibration: compactCalibration(p.calibration),
