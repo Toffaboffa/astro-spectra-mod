@@ -126,6 +126,9 @@ assert.deepEqual(Array.from(report.sections), [
   'deterministic-results', 'quality-and-status', 'reproducibility'
 ]);
 assert.ok(!report.abstract.includes('AI evidence sentence'), 'AI text must not be blended into the deterministic abstract');
+assert.ok(report.abstract.includes('Source identity: contract-spectrum.png.'), 'deterministic abstract must include the persisted source identity when available');
+assert.ok(report.abstract.includes('Canonical SNR is 12.34 using (P95-P05)/noise sigma'), 'deterministic abstract must name the canonical SNR definition');
+assert.ok(report.abstract.includes('Calibration fit, actual calibrated sampling/coverage, instrument FWHM and QC are treated as separate quantities.'), 'deterministic abstract must keep fit, sampling, coverage and instrument resolution conceptually separate');
 assert.equal(report.aiInterpretation.included, true);
 assert.equal(report.aiInterpretation.label, 'OPTIONAL AI INTERPRETATION');
 assert.ok(report.aiInterpretation.disclaimer.includes('does not replace the deterministic report results'));
@@ -148,6 +151,10 @@ assert.ok(!source.includes("// Detailed log and reproducibility\n    doc.addPage
 assert.ok(source.includes("fontSize: 6.8, cellPadding: 0.9"), 'Quality/Status table must use the compact print layout');
 assert.ok(source.includes("fontSize: 6.9, cellPadding: 0.9"), 'reproducibility table must use the compact print layout');
 assert.ok(source.includes("'σ':'sigma'") && source.includes("'≈':' approx '") && source.includes("'±':' +/- '") && source.includes("'×':' x '"), 'PDF sanitizer must cover the scientific symbols that previously rendered incorrectly');
+assert.ok(!source.includes('instrument/sampling resolution'), 'English report prose must not conflate instrument resolution with calibrated sampling');
+assert.ok(!source.includes('instrument-/samplingupplösningen'), 'Swedish report prose must not conflate instrument resolution with calibrated sampling');
+assert.ok(source.includes('Calibrated sampling, nominal pixel scale and instrument FWHM are separate quantities.'), 'LAB report prose must state the canonical separation between sampling and instrument resolution');
+assert.ok(source.includes('fitvärde misstolkas som fysisk noggrannhet') && source.includes('numerical fit statistic is not mistaken for physical accuracy'), 'report prose must preserve the distinction between fit residual and physical accuracy');
 assert.ok(source.includes(".replace(/[^\\x09\\x0A\\x0D\\x20-\\xFF]/g, '?')"), 'PDF sanitizer must replace any remaining unsupported Unicode instead of emitting broken glyphs');
 assert.ok(report.analysisLog.length <= 12, 'human analysis log must remain bounded');
 assert.equal(bundle.scientificAnalysis.detectedPeakCount, 1, 'scientific export snapshot must preserve the canonical worker peak count');
@@ -167,6 +174,10 @@ assert.ok(report.methodNarrative.some((line) => line.includes('These are differe
 assert.equal(bundle.scientificAnalysis.measurementQuality.dimensions.noise.metrics.snr, 12.34, 'scientific export must preserve the canonical worker SNR value');
 assert.equal(bundle.scientificAnalysis.measurementQuality.dimensions.noise.metrics.snrDefinition, 'p95-p05-over-noise-sigma', 'scientific export must preserve the canonical SNR definition');
 assert.ok(report.methodNarrative.some((line) => line.includes('(P95-P05)/noise sigma')), 'PDF method narrative must define the reported SNR quantity explicitly');
+assert.ok(report.methodNarrative.some((line) => line.includes('reported signed wavelength offset is -0.100 nm')), 'PDF method narrative must identify offset as a signed wavelength residual');
+assert.ok(report.methodNarrative.some((line) => line.includes('positive means observed wavelength above the reference value and negative means below')), 'PDF method narrative must define the wavelength-offset sign convention');
+assert.ok(report.methodNarrative.some((line) => line.includes('Match MAE is 0.100 nm')), 'PDF method narrative must report unsigned Match MAE separately from signed offset');
+assert.ok(report.methodNarrative.some((line) => line.includes('Offset and Match MAE describe different properties')), 'PDF method narrative must state that offset and Match MAE are not interchangeable');
 assert.equal(bundle.scientificAnalysis.lab.matchMeanAbsResidualNm, 0.1, 'scientific export snapshot must keep unsigned match MAE separate from signed offset');
 assert.ok(report.analysisLog.some((line) => line.includes('match MAE=0.1000 nm')), 'PDF analysis log must name the unsigned match-error magnitude separately');
 assert.ok(report.analysisLog.some((line) => line.includes('Detected peaks=1;')), 'PDF analysis log must report the canonical worker peak count instead of an unavailable placeholder');
@@ -227,6 +238,10 @@ const fluorescentReport = context.SpectraPro.exportUi.buildPdfReportModel(fluore
 const fluorescentRowsOverlayOff = JSON.stringify(fluorescentReport.matchedFeatureRows);
 const fluorescentLogOverlayOff = JSON.stringify(fluorescentReport.analysisLog);
 assert.ok(fluorescentReport.methodNarrative.some((line) => line.includes('coherent narrow-line hits accepted in the Fluorescent result')), 'Fluorescent PDF narrative must identify the accepted coherent hit set used for the reported offset');
+assert.ok(fluorescentReport.abstract.includes('Source identity: Fluorescent tube — Philips MASTER TL5 HE 28W/830 (calibrated).'), 'Fluorescent deterministic abstract must identify the actual bundled source');
+assert.ok(fluorescentReport.methodNarrative.some((line) => line.includes('reported signed wavelength offset is 0.623 nm')), 'Fluorescent narrative must report the canonical accepted-hit signed offset');
+assert.ok(fluorescentReport.methodNarrative.some((line) => line.includes('Match MAE is 0.555 nm')), 'Fluorescent narrative must keep accepted-hit MAE separate from signed offset');
+assert.ok(fluorescentReport.methodNarrative.some((line) => line.includes('optional weaker overlay candidates do not change the table')), 'Fluorescent narrative must state that overlay-only candidates do not alter deterministic results');
 assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('basis=clear-narrow-line-hits')), 'PDF analysis log must record machine-readable offset provenance');
 assert.equal(fluorescentReport.matchedFeatureBasis, 'accepted-clear-narrow-line-hits', 'Fluorescent report model must identify accepted clear narrow-line hits as the table basis');
 assert.equal(fluorescentReport.matchedFeatureRows.length, 3, 'Fluorescent matched-feature table must contain only accepted coherent hits when overlay is off');
