@@ -535,11 +535,11 @@ for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Ad
 assert.ok(spectrapro.includes('analysisWorkerClient.js?v=3.1.7-result-scope-1'), 'published worker client must use the result-scoped LAB quality cache key');
 assert.ok(spectrapro.includes('proBootstrap.js?v=3.1.7-provenance-1'), 'published bootstrap must use the source-provenance cache key');
 assert.ok(spectrapro.includes('dataQualityPanel.js?v=3.1.7-hit-confidence-1'), 'published Data Quality module must use the honest-hit-confidence cache key');
-assert.ok(spectrapro.includes('stateStore.js?v=3.1.7-pdf-top-hits-1'), 'published state store must use the accepted-PDF-topHits cache key');
+assert.ok(spectrapro.includes('stateStore.js?v=3.1.7-pdf-six-page-1'), 'published state store must use the six-page-PDF-layout cache key');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.1.7-provenance-1'), 'published image loader must use the source-provenance cache key');
 assert.ok(spectrapro.includes('framePreview.js?v=3.1.7-source-ui-1'), 'published frame preview must use the source-identity UI cache key');
 assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=3.1.7-result-scope-1'"), 'worker client must load the refreshed result-scoped LAB quality worker shell');
-assert.ok(stateStore.includes("const AI_ASSET_VERSION = '3.1.7-pdf-top-hits-1';"), 'dynamic export/AI/example modules must use the accepted-PDF-topHits cache key');
+assert.ok(stateStore.includes("const AI_ASSET_VERSION = '3.1.7-pdf-six-page-1';"), 'dynamic export/AI/example modules must use the six-page-PDF-layout cache key');
 assert.ok(workerClient.includes('analysisNext.rawMatchOffsetNm = Number.isFinite(rawOffsetValue) ? rawOffsetValue : null;'), 'worker results must preserve the broader matcher offset separately');
 assert.ok(workerClient.includes('analysisNext.offsetBasis = msg.payload.offsetBasis') && workerClient.includes("? 'matcher-residuals' : null);"), 'worker results must persist wavelength-offset provenance and clear it when no offset exists');
 assert.ok(workerClient.includes('analysisNext.detectedPeaks = detectedPeaks;'), 'worker results must persist the canonical detected peak list in analysis state');
