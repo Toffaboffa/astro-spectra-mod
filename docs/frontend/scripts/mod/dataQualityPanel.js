@@ -438,7 +438,7 @@
       line('Worker:', `${(st.worker && st.worker.status) || 'idle'}${(st.worker && st.worker.analysisHz) ? ` · ${st.worker.analysisHz} Hz` : ''}`, 'Worker state and analysis refresh rate.', 'system'),
       line('Src:', `${(latest && latest.source) || (st.frame && st.frame.source) || 'none'}${(latest && latest.pixelWidth) ? ` · ${latest.pixelWidth} px` : ''}`, 'Current frame source and active signal width in pixels.', 'system'),
       line('Cam:', `${camStatus} · ${camRes} · ${camExposure} ${camZoom}`, 'Camera status, resolution, exposure control support and zoom support.', 'system'),
-      line('Mods:', `${loadedV15}/8`, 'Loaded v1.5 frontend modules.', 'system'),
+      line('Mods:', `${loadedV15}/8`, 'Loaded frontend modules.', 'system'),
       line('Preset:', `${getPresetLabel(st)}`, 'Selected LAB/analysis preset.', 'analysis'),
       line('Analyze:', `${st.analysis && st.analysis.enabled ? 'on' : 'off'}`, 'Whether worker-based LAB analysis is enabled.', 'analysis'),
       line('Axis:', `${getAxisMode()}`, 'Current horizontal axis mode: raw pixels or calibrated wavelength.', 'analysis'),

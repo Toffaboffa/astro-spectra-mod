@@ -611,6 +611,7 @@
       '≈':' approx ','≃':' approx ','≅':' approx ','≠':' != ','≤':' <= ','≥':' >= ',
       '±':' +/- ','×':' x ','⋅':' x ','√':'sqrt','∞':'infinity','∝':' proportional-to ',
       '→':' -> ','←':' <- ','↔':' <-> ','⇒':' => ','⇐':' <= ',
+      '✓':' yes ','✔':' yes ','✗':' no ','✕':' no ',
       '−':'-','–':'-','—':'-','‑':'-',
       '“':'"','”':'"','„':'"','‘':"'",'’':"'",'…':'...',
       '•':'*','·':' - ',' ':' ',
@@ -650,8 +651,12 @@
     return src.slice(0, 20).map(function (h) {
       const share = h.scoreSharePct != null ? h.scoreSharePct : (h.scoreShare != null ? h.scoreShare : (h.percent != null ? h.percent : null));
       const score = h.score != null ? h.score : (h.smartScore != null ? h.smartScore : null);
-      const rawMatches = h.diagnosticMatchedPeaks != null ? h.diagnosticMatchedPeaks : (h.matchedCount != null ? h.matchedCount : (h.matches != null ? h.matches : ''));
-      const matches = Array.isArray(rawMatches) ? rawMatches.length : rawMatches;
+      const acceptedMatches = h.matchedPeaks != null ? h.matchedPeaks
+        : (h.matchedCount != null ? h.matchedCount
+        : (h.matchedExpected != null ? h.matchedExpected
+        : (h.matchCount != null ? h.matchCount
+        : (h.lineCount != null ? h.lineCount : ''))));
+      const matches = Array.isArray(acceptedMatches) ? acceptedMatches.length : acceptedMatches;
       const delta = h.medianDeltaNm != null ? h.medianDeltaNm : (h.deltaNm != null ? h.deltaNm : (h.delta_nm != null ? h.delta_nm : ''));
       return [candidateName(h), share != null ? nfmt(share, 1) + '%' : (score != null ? nfmt(score, 1) : '—'), String(matches == null ? '' : matches), delta === '' ? '—' : nfmt(delta, 3)];
     });
@@ -1938,6 +1943,7 @@
     estimateResultDetailsPageHeight: estimateResultDetailsPageHeight,
     pdfSafeText: pdfText,
     pdfSafeNumber: finiteReportNumber,
+    buildPdfCandidateRows: candidateRows,
     buildCsv: buildCsv,
     captureSourceDataUrl: captureSourceDataUrl,
     captureGraphDataUrl: captureGraphDataUrl,

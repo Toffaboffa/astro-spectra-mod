@@ -534,12 +534,12 @@ for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Ad
 }
 assert.ok(spectrapro.includes('analysisWorkerClient.js?v=1.3.8-result-scope-1'), 'published worker client must use the result-scoped LAB quality cache key');
 assert.ok(spectrapro.includes('proBootstrap.js?v=1.3.8-provenance-1'), 'published bootstrap must use the source-provenance cache key');
-assert.ok(spectrapro.includes('dataQualityPanel.js?v=1.3.8-hit-confidence-1'), 'published Data Quality module must use the honest-hit-confidence cache key');
-assert.ok(spectrapro.includes('stateStore.js?v=1.3.8-pdf-six-page-1'), 'published state store must use the six-page-PDF-layout cache key');
+assert.ok(spectrapro.includes('dataQualityPanel.js?v=1.3.8-result-consistency-1'), 'published Data Quality module must use the result-consistency cache key');
+assert.ok(spectrapro.includes('stateStore.js?v=1.3.8-result-consistency-1'), 'published state store must refresh dynamic result/export assets');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=1.3.8-provenance-1'), 'published image loader must use the source-provenance cache key');
 assert.ok(spectrapro.includes('framePreview.js?v=1.3.8-source-ui-1'), 'published frame preview must use the source-identity UI cache key');
 assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=1.3.8-result-scope-1'"), 'worker client must load the refreshed result-scoped LAB quality worker shell');
-assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.3.8-pdf-six-page-1';"), 'dynamic export/AI/example modules must use the six-page-PDF-layout cache key');
+assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.3.8-result-consistency-1';"), 'dynamic export/AI/example modules must use the result-consistency cache key');
 assert.ok(workerClient.includes('analysisNext.rawMatchOffsetNm = Number.isFinite(rawOffsetValue) ? rawOffsetValue : null;'), 'worker results must preserve the broader matcher offset separately');
 assert.ok(workerClient.includes('analysisNext.offsetBasis = msg.payload.offsetBasis') && workerClient.includes("? 'matcher-residuals' : null);"), 'worker results must persist wavelength-offset provenance and clear it when no offset exists');
 assert.ok(workerClient.includes('analysisNext.detectedPeaks = detectedPeaks;'), 'worker results must persist the canonical detected peak list in analysis state');
@@ -550,6 +550,8 @@ assert.ok(dataQualityPanel.includes("line('Graph strong:'"), 'Data Quality must 
 assert.ok(dataQualityPanel.includes("line('Best hit conf:'"), 'Data Quality must label confidence as an individual accepted-hit metric');
 assert.ok(!dataQualityPanel.includes("line('Conf:'"), 'ambiguous Data Quality Conf label must not return');
 assert.ok(dataQualityPanel.includes('not the probability or confidence that the overall Best Match species identification is correct'), 'Data Quality confidence tooltip must explicitly reject species-level probability semantics');
+assert.ok(dataQualityPanel.includes('Loaded frontend modules.'), 'module-status tooltip must be version-neutral');
+assert.ok(!dataQualityPanel.includes('Loaded v1.5 frontend modules.'), 'obsolete v1.5 module wording must not leak into Status/export metadata');
 assert.ok(stateStore.includes("frame: { latest: null, source: 'none', provenance: null }"), 'canonical state must reserve frame source provenance');
 assert.ok(examples.includes("sp.store.update('frame.provenance', exampleSourceProvenance(sample, asset)"), 'bundled examples must persist source provenance into state');
 assert.ok(examples.includes("sampleId: String(source.id || '')") && examples.includes("sourceLabel: String(source.sourceLabelEn"), 'bundled example provenance must retain sample ID and canonical source label');

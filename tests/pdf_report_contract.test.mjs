@@ -104,6 +104,19 @@ assert.equal(
   'PDF text sanitizer must preserve supported Swedish Latin characters while replacing unsupported scientific glyphs'
 );
 assert.ok(!/[λΔσ≈μΩ₂₃⁻→≤≥−–—Å]/.test(context.SpectraPro.exportUi.pdfSafeText('λ Δ σ ≈ μ Ω H₂O 10⁻³ → ≤ ≥ − – — Å')), 'unsupported scientific Unicode must not survive into the core Helvetica PDF text path');
+assert.equal(context.SpectraPro.exportUi.pdfSafeText('exp✓ zoom—'), 'exp yes zoom-', 'PDF status text must transliterate camera capability checkmarks instead of emitting broken glyphs');
+assert.ok(!context.SpectraPro.exportUi.pdfSafeText('exp✓').includes('?'), 'PDF checkmarks must never fall through to the unsupported-glyph question-mark fallback');
+
+const candidateConsistencyRows = context.SpectraPro.exportUi.buildPdfCandidateRows({
+  elementScores: [
+    { element: 'H', scoreSharePct: 15, matchedPeaks: 3, matchedCount: 3, diagnosticMatchedPeaks: 1, medianDeltaNm: 0.6 },
+    { element: 'Xe', scoreSharePct: 11, matchedCount: 3, diagnosticMatchedPeaks: 1, medianDeltaNm: 0.5 },
+    { element: 'Kr', scoreSharePct: 7, matchedExpected: 2, diagnosticMatchedPeaks: 1, medianDeltaNm: 0.1 }
+  ]
+});
+assert.deepEqual(Array.from(candidateConsistencyRows[0]), ['H', '15.0%', '3', '0.600'], 'PDF candidate Matches must prefer GUI/JSON matchedPeaks over diagnosticMatchedPeaks');
+assert.deepEqual(Array.from(candidateConsistencyRows[1]), ['Xe', '11.0%', '3', '0.500'], 'PDF candidate Matches must fall back to accepted matchedCount');
+assert.deepEqual(Array.from(candidateConsistencyRows[2]), ['Kr', '7.0%', '2', '0.100'], 'PDF candidate Matches must use accepted match-count aliases before diagnostic evidence');
 
 const compactQualityHeight = context.SpectraPro.exportUi.estimateQualityStatusBlockHeight(
   Array.from({ length: 18 }, (_, index) => ({ label: 'Q' + index, value: String(index) })),
@@ -166,6 +179,9 @@ assert.ok(source.includes("fontSize: 6.15, cellPadding: 0.52"), 'Quality/Status 
 assert.ok(source.includes("fontSize: 6.0, cellPadding: 0.48"), 'matched-feature table must use the compact six-page print layout');
 assert.ok(!source.includes("if (y > 165) { doc.addPage(); y = 18; }"), 'the old reproducibility-only page-break trigger must not return');
 assert.ok(source.includes("'σ':'sigma'") && source.includes("'≈':' approx '") && source.includes("'±':' +/- '") && source.includes("'×':' x '"), 'PDF sanitizer must cover the scientific symbols that previously rendered incorrectly');
+assert.ok(source.includes("'✓':' yes '") && source.includes("'✔':' yes '"), 'PDF sanitizer must explicitly transliterate camera capability checkmarks');
+assert.ok(source.includes('h.matchedPeaks != null ? h.matchedPeaks') && !source.includes('const rawMatches = h.diagnosticMatchedPeaks'), 'PDF candidate Matches must use accepted candidate evidence rather than diagnostic match counts');
+assert.ok(source.includes('ctx.rotate(Math.PI / 2)'), 'page-3 visual rotation path must remain unchanged');
 assert.ok(!source.includes('instrument/sampling resolution'), 'English report prose must not conflate instrument resolution with calibrated sampling');
 assert.ok(!source.includes('instrument-/samplingupplösningen'), 'Swedish report prose must not conflate instrument resolution with calibrated sampling');
 assert.ok(source.includes('Calibrated sampling, nominal pixel scale and instrument FWHM are separate quantities.'), 'LAB report prose must state the canonical separation between sampling and instrument resolution');
