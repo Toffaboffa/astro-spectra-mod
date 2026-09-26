@@ -161,6 +161,37 @@ assert.ok(matchMetrics['Match MAE:'].title.includes('ignores sign'), 'Match MAE 
 assert.ok(matchMetrics['Offset:'].title.includes('Positive means observed wavelength is above'), 'Offset tooltip must state the residual sign convention');
 assert.ok(!dataQualityPanel.includes("line('Peak Δ:'"), 'ambiguous Peak Δ label must not return');
 
+function confidenceMetricsFromDataQuality() {
+  const documentStub = { getElementById() { return null; } };
+  const windowStub = { SpectraPro: { v15: {} } };
+  const context = vm.createContext({ console, document: documentStub, window: windowStub });
+  new vm.Script(dataQualityPanel, { filename: 'dataQualityPanel.js' }).runInContext(context);
+  const frame = { source: 'confidence-regression', I: [0, 1, 0.5, 0.2] };
+  return context.window.SpectraPro.v15.dataQualityPanel.compute({
+    appMode: 'LAB',
+    analysis: {
+      enabled: true,
+      topHits: [
+        { element: 'Ne', confidence: 0.41 },
+        { element: 'Ne', confidence: 0.87 },
+        { element: 'Kr', confidence: 0.63 }
+      ],
+      qcFlags: []
+    },
+    worker: {},
+    frame: { latest: frame }
+  }, { latestFrame: frame });
+}
+
+const confidenceResult = confidenceMetricsFromDataQuality();
+const confidenceRows = Object.fromEntries(confidenceResult.dq.map((row) => [row.label, row]));
+assert.equal(confidenceRows['Best hit conf:'].value, '0.87', 'Data Quality must label the maximum accepted-hit confidence as an individual-hit metric');
+assert.ok(confidenceRows['Best hit conf:'].title.includes('one individual line match'), 'Best hit confidence tooltip must identify the value as a single line-match confidence');
+assert.ok(confidenceRows['Best hit conf:'].title.includes('not the probability or confidence that the overall Best Match species identification is correct'), 'Best hit confidence tooltip must reject species-level probability interpretation');
+assert.equal(confidenceResult.metrics.bestHitConfidence, 0.87, 'Data Quality metrics must expose the honest bestHitConfidence name');
+assert.equal(confidenceResult.metrics.bestConfidence, 0.87, 'legacy bestConfidence metric alias must remain numerically compatible for existing consumers');
+assert.ok(!confidenceRows['Conf:'], 'ambiguous Conf label must not return');
+
 function snrMetricsFromDataQuality(state, frame) {
   const documentStub = { getElementById() { return null; } };
   const windowStub = { SpectraPro: { v15: {} } };
@@ -451,6 +482,9 @@ assert.ok(workerClient.includes('analysisNext.detectedPeakCount = Number.isFinit
 assert.ok(workerClient.includes('analysisNext.detectedPeakCount = null;'), 'result types without peak data must clear stale LAB peak counts');
 assert.ok(dataQualityPanel.includes("line('Graph peaks:'"), 'Data Quality must label its locally recomputed quick peak count as a graph-side metric');
 assert.ok(dataQualityPanel.includes("line('Graph strong:'"), 'Data Quality must label strong quick peaks as graph-side metrics');
+assert.ok(dataQualityPanel.includes("line('Best hit conf:'"), 'Data Quality must label confidence as an individual accepted-hit metric');
+assert.ok(!dataQualityPanel.includes("line('Conf:'"), 'ambiguous Data Quality Conf label must not return');
+assert.ok(dataQualityPanel.includes('not the probability or confidence that the overall Best Match species identification is correct'), 'Data Quality confidence tooltip must explicitly reject species-level probability semantics');
 assert.ok(stateStore.includes("frame: { latest: null, source: 'none', provenance: null }"), 'canonical state must reserve frame source provenance');
 assert.ok(examples.includes("sp.store.update('frame.provenance', exampleSourceProvenance(sample, asset)"), 'bundled examples must persist source provenance into state');
 assert.ok(examples.includes("sampleId: String(source.id || '')") && examples.includes("sourceLabel: String(source.sourceLabelEn"), 'bundled example provenance must retain sample ID and canonical source label');
