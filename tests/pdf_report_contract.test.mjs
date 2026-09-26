@@ -8,7 +8,18 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/exportUi.js'), 'utf8');
 const state = {
   appMode: 'LAB',
-  frame: { latest: { source: 'numeric-contract', px: [0, 1, 2], nm: [500, 501, 502], I: [2, 8, 3] } },
+  frame: {
+    source: 'numeric-contract',
+    provenance: {
+      kind: 'user-image',
+      sourceLabel: 'contract-spectrum.png',
+      fileName: 'contract-spectrum.png',
+      mimeType: 'image/png',
+      fileSizeBytes: 2048,
+      origin: 'local-file'
+    },
+    latest: { source: 'numeric-contract', px: [0, 1, 2], nm: [500, 501, 502], I: [2, 8, 3] }
+  },
   calibration: { isCalibrated: true, points: [{ px: 0, nm: 500 }, { px: 2, nm: 502 }], coefficients: [500, 1] },
   subtraction: { mode: 'raw' },
   hardware: {
@@ -86,6 +97,10 @@ assert.equal(bundle.schema, 'spectra-pro-export/v2', 'JSON must remain the compl
 assert.equal(bundle.ai.resultText, longAiText, 'JSON must retain the complete completed AI text');
 assert.equal(report.schema, 'spectra-pro-pdf-report/v1');
 assert.equal(report.sourceExportSchema, 'spectra-pro-export/v2');
+assert.equal(bundle.sourceMetadata.kind, 'user-image', 'PDF/JSON bundle must retain local-image source kind');
+assert.equal(bundle.sourceMetadata.fileName, 'contract-spectrum.png', 'PDF/JSON bundle must retain imported image filename');
+assert.equal(bundle.frameSummary.sourceLabel, 'contract-spectrum.png', 'frameSummary must retain imported source identity');
+assert.ok(report.analysisLog.some((line) => line.includes('Source identity=contract-spectrum.png; kind=user-image')), 'PDF analysis log must record source identity and kind');
 assert.equal(report.deterministicCore, true);
 assert.deepEqual(Array.from(report.sections), [
   'cover', 'deterministic-abstract', 'spectrum-and-source', 'method-and-calibration',
@@ -124,6 +139,17 @@ assert.ok(report.analysisLog.some((line) => line.includes('match MAE=0.1000 nm')
 assert.ok(report.analysisLog.some((line) => line.includes('Detected peaks=1;')), 'PDF analysis log must report the canonical worker peak count instead of an unavailable placeholder');
 assert.ok(report.limitations.includes('use-json-v2-for-complete-state-and-numeric-data'));
 
+state.frame.provenance = {
+  kind: 'bundled-example',
+  sampleId: 'fluorescent-tube',
+  sampleKind: 'image',
+  sourceLabel: 'Fluorescent tube — Philips MASTER TL5 HE 28W/830 (calibrated)',
+  sourceLabelEn: 'Fluorescent tube — Philips MASTER TL5 HE 28W/830 (calibrated)',
+  sourceLabelSv: 'Lysrör — Philips MASTER TL5 HE 28W/830 (kalibrerat)',
+  assetId: 'fluorescent-tube',
+  assetPath: '../assets/examples/fluorescent-tube/fluorescent-tube.png',
+  assetSha256: 'ecd5cc32f7eceb11778e69ba568b56ba6f8261b929b91e880d80a0507e2c38c3'
+};
 state.analysis.presetId = 'smart-fluorescent';
 state.analysis.offsetNm = 0.623;
 state.analysis.rawMatchOffsetNm = -0.272;
@@ -162,6 +188,15 @@ assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('match MAE=
 assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('full-frame extrapolation=yes')), 'PDF analysis log must retain the full-frame extrapolation warning');
 assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('reason=analysis-region-within-calibration-anchors')), 'PDF analysis log must state that the reported Fluorescent result lies inside calibration anchors');
 assert.ok(fluorescentReport.methodNarrative.some((line) => line.includes('full-frame wavelength range extends beyond the calibration anchors')), 'PDF narrative must explain why edge extrapolation does not by itself lower safe result coverage');
+assert.equal(fluorescentBundle.sourceMetadata.sampleId, 'fluorescent-tube', 'Fluorescent export must retain bundled example ID');
+assert.equal(fluorescentBundle.sourceMetadata.sourceLabel, 'Fluorescent tube — Philips MASTER TL5 HE 28W/830 (calibrated)', 'Fluorescent export must retain the full source identity');
+assert.equal(fluorescentBundle.sourceMetadata.assetSha256, 'ecd5cc32f7eceb11778e69ba568b56ba6f8261b929b91e880d80a0507e2c38c3', 'Fluorescent export must retain bundled asset SHA-256');
+assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('Source identity=Fluorescent tube — Philips MASTER TL5 HE 28W/830 (calibrated)')), 'Fluorescent PDF analysis log must preserve the human source identity');
+assert.ok(source.includes("sv ? 'Källidentitet' : 'Source identity'"), 'PDF reproducibility table must contain source identity');
+assert.ok(source.includes("sv ? 'Källtyp' : 'Source kind'"), 'PDF reproducibility table must contain source kind');
+assert.ok(source.includes("sv ? 'Exempel-ID' : 'Sample ID'"), 'PDF reproducibility table must contain bundled sample ID');
+assert.ok(source.includes("'SHA-256'"), 'PDF reproducibility table must expose bundled asset SHA-256');
+assert.ok(source.includes("sv ? 'Proveniens' : 'Provenance'"), 'PDF reproducibility table must expose scientific provenance');
 
 context.SpectraPro.aiAnalysisUi = null;
 const noAiBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
