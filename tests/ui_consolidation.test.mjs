@@ -464,6 +464,8 @@ assert.ok(workerClient.includes('weaker raw coincidences but never hides the cle
 assert.ok(fluorescenceUi.includes('Click a peak to inspect it.'), 'Fluorescent result UI must explain that clear graph peaks are clickable');
 assert.ok(overlays.includes("String(state.analysis && state.analysis.presetId || '') === 'smart-fluorescent'"), 'Fluorescent clear labels must bypass a stale hidden Show hits setting');
 assert.ok(graphScript.includes('function getPeakInspectorMatch(peak)') && graphScript.includes('state.analysis.rawTopHits'), 'Peak inspector must resolve graph peaks against the active line-hit overlay');
+assert.ok(examples.includes("sp.store.update('frame.provenance', exampleSourceProvenance(sample, asset)"), 'bundled example provenance must remain persisted after PDF-hit changes');
+assert.ok(fluorescenceUi.includes('rawTopHits: hits') && fluorescenceUi.includes('topHits: clear'), 'Fluorescent UI may vary raw overlay hits while keeping accepted top hits separate');
 
 assert.ok(helpUi.includes("const HELP_VERSION = '3.1.6';"), 'HELP must publish the same v3.1.6 release version as the application');
 for (const term of [
