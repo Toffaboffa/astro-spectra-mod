@@ -1020,6 +1020,82 @@ function testMeasurementQualityModel() {
   assert.equal(fluorescenceOutsideAnchors.overallStatus, 'poor', 'Result-bearing calibration extrapolation must still make the overall quality poor');
   assert.equal(fluorescenceOutsideAnchors.mainLimitation.code, 'coverage', 'Result-bearing extrapolation should surface coverage as the dominant limitation');
 
+  const exactFitExtrapolatedDiagnostics = Object.assign({}, extrapolatedDiagnostics, {
+    fitDegreesOfFreedom: 0,
+    fitResidualIndependent: false,
+    exactInterpolation: true,
+    fitResidualStatus: 'exact-interpolation-residual-not-independent',
+    rmsResidualNm: 0,
+    maxAbsResidualNm: 0
+  });
+  const gasTubeInsideAnchors = qualityEngine.build({
+    ok: true,
+    calibrated: true,
+    presetId: 'smart-gastube',
+    features: [],
+    calibrationDiagnostics: exactFitExtrapolatedDiagnostics,
+    matchUncertaintyModel: { effectiveToleranceNm: 1.8 },
+    topHits: [
+      { element: 'Ne', observedNm: 584.72, referenceNm: 585.249 },
+      { element: 'Ne', observedNm: 614.18, referenceNm: 614.306 },
+      { element: 'Ne', observedNm: 650.61, referenceNm: 650.653 },
+      { element: 'Ne', observedNm: 703.25, referenceNm: 703.241 },
+      { element: 'Ne', observedNm: 721.56, referenceNm: 721.32 }
+    ]
+  }, { I: Array.from({ length: 100 }, function (_, index) { return index; }) }, {
+    qc: goodQc,
+    hardware: { spectrometerResolutionFwhmNm: 1.8 }
+  });
+  assert.equal(gasTubeInsideAnchors.dimensions.coverage.status, 'good', 'Gas Tube coverage should be good when all accepted result hits lie inside calibration anchors even if frame edges are extrapolated');
+  assert.equal(gasTubeInsideAnchors.dimensions.coverage.reason, 'analysis-region-within-calibration-anchors', 'Gas Tube should classify coverage from the accepted result-hit interval');
+  assert.equal(gasTubeInsideAnchors.dimensions.coverage.metrics.analysisCoverageBasis, 'accepted-result-hits', 'Gas Tube coverage must name accepted result hits as its analysis scope');
+  assert.equal(gasTubeInsideAnchors.dimensions.coverage.metrics.analysisHitCount, 5, 'Gas Tube coverage must retain the accepted hit count used to define the result region');
+  assert.equal(gasTubeInsideAnchors.dimensions.coverage.metrics.fullFrameExtrapolated, true, 'Gas Tube must keep unused edge extrapolation visible as a warning metric');
+  assert.equal(gasTubeInsideAnchors.dimensions.coverage.metrics.analysisRegionExtrapolated, false, 'Gas Tube accepted result region should be marked non-extrapolated inside anchors');
+  assert.ok(gasTubeInsideAnchors.dimensions.coverage.metrics.analysisMinNm <= 584.72, 'Gas Tube result scope must include the lowest accepted observed/reference wavelength');
+  assert.ok(gasTubeInsideAnchors.dimensions.coverage.metrics.analysisMaxNm >= 721.56, 'Gas Tube result scope must include the highest accepted observed/reference wavelength');
+  assert.equal(gasTubeInsideAnchors.dimensions.calibration.status, 'moderate', 'Zero-DOF calibration should remain moderate, but unused extrapolated frame edges must not downgrade it to poor');
+  assert.equal(gasTubeInsideAnchors.dimensions.calibration.reason, 'calibration-fit-residual-not-independent', 'Safe Gas Tube result scope should leave zero-DOF fit independence as the calibration limitation');
+  assert.equal(gasTubeInsideAnchors.overallStatus, 'moderate', 'A safe Gas Tube result region with zero-DOF calibration should be moderate rather than poor');
+
+  const gasTubeOutsideAnchors = qualityEngine.build({
+    ok: true,
+    calibrated: true,
+    presetId: 'smart-gastube',
+    features: [],
+    calibrationDiagnostics: exactFitExtrapolatedDiagnostics,
+    matchUncertaintyModel: { effectiveToleranceNm: 1.8 },
+    topHits: [
+      { element: 'Ne', observedNm: 703.25, referenceNm: 703.241 },
+      { element: 'Xe', observedNm: 845.1, referenceNm: 844.9 }
+    ]
+  }, { I: Array.from({ length: 100 }, function (_, index) { return index; }) }, {
+    qc: goodQc,
+    hardware: { spectrometerResolutionFwhmNm: 1.8 }
+  });
+  assert.equal(gasTubeOutsideAnchors.dimensions.coverage.status, 'poor', 'Gas Tube coverage must become poor when an accepted result hit lies outside the calibration anchors');
+  assert.equal(gasTubeOutsideAnchors.dimensions.coverage.reason, 'analysis-region-includes-extrapolation', 'Gas Tube must report result-bearing extrapolation when accepted hits cross an anchor');
+  assert.equal(gasTubeOutsideAnchors.dimensions.coverage.metrics.analysisRegionExtrapolated, true, 'Gas Tube must record accepted-hit extrapolation explicitly');
+  assert.equal(gasTubeOutsideAnchors.dimensions.calibration.status, 'poor', 'Zero-DOF calibration must be downgraded when the accepted Gas Tube result itself uses extrapolated wavelengths');
+  assert.equal(gasTubeOutsideAnchors.dimensions.calibration.reason, 'analysis-region-calibration-extrapolation', 'Gas Tube calibration limitation must identify result-region extrapolation');
+
+  const nearestInsideAnchors = qualityEngine.build({
+    ok: true,
+    calibrated: true,
+    presetId: 'nearest',
+    features: [],
+    calibrationDiagnostics: extrapolatedDiagnostics,
+    matchUncertaintyModel: { effectiveToleranceNm: 1.8 },
+    topHits: [
+      { element: 'Hg', observedNm: 546.1, referenceNm: 546.074 }
+    ]
+  }, { I: Array.from({ length: 100 }, function (_, index) { return index; }) }, {
+    qc: goodQc,
+    hardware: { spectrometerResolutionFwhmNm: 1.8 }
+  });
+  assert.equal(nearestInsideAnchors.dimensions.coverage.status, 'good', 'Other line-based LAB presets should also use accepted result hits instead of unused extrapolated frame edges');
+  assert.equal(nearestInsideAnchors.dimensions.coverage.metrics.analysisCoverageBasis, 'accepted-result-hits', 'Generic line-based LAB coverage should use the same accepted-hit scope');
+
   const genericExtrapolated = qualityEngine.build({
     ok: true,
     calibrated: true,
@@ -1031,7 +1107,7 @@ function testMeasurementQualityModel() {
     qc: goodQc,
     hardware: { spectrometerResolutionFwhmNm: 1.8 }
   });
-  assert.equal(genericExtrapolated.dimensions.coverage.status, 'poor', 'Modes without an explicit result-bearing region must conservatively retain full-frame extrapolation as poor coverage');
+  assert.equal(genericExtrapolated.dimensions.coverage.status, 'poor', 'Modes without accepted result hits or another explicit result-bearing region must conservatively retain full-frame extrapolation as poor coverage');
   assert.equal(genericExtrapolated.dimensions.calibration.status, 'moderate', 'Modes without an explicit result-bearing region must retain the conservative calibration downgrade');
 
   const frame = gaussianFrame(calibrationFixture, true);
