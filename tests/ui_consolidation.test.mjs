@@ -440,10 +440,10 @@ for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Ad
 assert.ok(spectrapro.includes('analysisWorkerClient.js?v=3.1.6-fit-dof-1'), 'published worker client must use the calibration-fit-DOF cache key');
 assert.ok(spectrapro.includes('proBootstrap.js?v=3.1.6-provenance-1'), 'published bootstrap must use the source-provenance cache key');
 assert.ok(spectrapro.includes('dataQualityPanel.js?v=3.1.6-scale-1'), 'published Data Quality module must use the nominal-vs-calibrated scale cache key');
-assert.ok(spectrapro.includes('stateStore.js?v=3.1.6-pdf-layout-1'), 'published state store must use the compact-PDF-layout cache key');
+assert.ok(spectrapro.includes('stateStore.js?v=3.1.6-report-prose-1'), 'published state store must use the canonical-report-prose cache key');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.1.6-provenance-1'), 'published image loader must use the source-provenance cache key');
 assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=3.1.6-fit-dof-1'"), 'worker client must load the refreshed calibration-fit-DOF worker shell');
-assert.ok(stateStore.includes("const AI_ASSET_VERSION = '3.1.6-pdf-layout-1';"), 'dynamic export/AI/example modules must use the compact-PDF-layout cache key');
+assert.ok(stateStore.includes("const AI_ASSET_VERSION = '3.1.6-report-prose-1';"), 'dynamic export/AI/example modules must use the canonical-report-prose cache key');
 assert.ok(workerClient.includes('analysisNext.rawMatchOffsetNm = Number.isFinite(rawOffsetValue) ? rawOffsetValue : null;'), 'worker results must preserve the broader matcher offset separately');
 assert.ok(workerClient.includes('analysisNext.offsetBasis = msg.payload.offsetBasis') && workerClient.includes("? 'matcher-residuals' : null);"), 'worker results must persist wavelength-offset provenance and clear it when no offset exists');
 assert.ok(workerClient.includes('analysisNext.detectedPeaks = detectedPeaks;'), 'worker results must persist the canonical detected peak list in analysis state');
@@ -471,6 +471,10 @@ assert.ok(exportUi.includes('pdfSafeText: pdfText'), 'export UI must expose the 
 assert.ok(exportUi.includes('body: rows.map(pdfTableRow)'), 'quality/status PDF table must pass every cell through the PDF-safe sanitizer');
 assert.ok(exportUi.includes('estimateQualityStatusBlockHeight(dq, status, qc)'), 'PDF export must preflight the Quality/Status block before pagination');
 assert.ok(exportUi.includes("pageBreak: 'avoid'") && exportUi.includes('Do not force a new page here'), 'PDF report tail must avoid small table spills and reuse available page space');
+assert.ok(exportUi.includes('reported signed wavelength offset') && exportUi.includes('Match MAE is'), 'PDF prose must distinguish signed wavelength offset from unsigned Match MAE');
+assert.ok(exportUi.includes('Canonical SNR is') && exportUi.includes('(P95-P05)/noise sigma'), 'PDF prose must use the canonical SNR definition');
+assert.ok(!exportUi.includes('instrument/sampling resolution') && !exportUi.includes('instrument-/samplingupplösningen'), 'PDF prose must not conflate instrument FWHM with calibrated sampling');
+assert.ok(exportUi.includes('Source identity: ') && exportUi.includes('Källidentitet: '), 'deterministic abstract must use persisted source identity when available');
 
 assert.ok(helpUi.includes("const HELP_VERSION = '3.1.6';"), 'HELP must publish the same v3.1.6 release version as the application');
 for (const term of [
