@@ -156,6 +156,9 @@ assert.ok(!source.includes('instrument-/samplingupplösningen'), 'Swedish report
 assert.ok(source.includes('Calibrated sampling, nominal pixel scale and instrument FWHM are separate quantities.'), 'LAB report prose must state the canonical separation between sampling and instrument resolution');
 assert.ok(source.includes('fitvärde misstolkas som fysisk noggrannhet') && source.includes('numerical fit statistic is not mistaken for physical accuracy'), 'report prose must preserve the distinction between fit residual and physical accuracy');
 assert.ok(source.includes(".replace(/[^\\x09\\x0A\\x0D\\x20-\\xFF]/g, '?')"), 'PDF sanitizer must replace any remaining unsupported Unicode instead of emitting broken glyphs');
+assert.ok(source.includes('function finiteReportNumber(value)') && source.includes("value === null || value === undefined || value === '' || typeof value === 'boolean'"), 'PDF export must centralize null-safe numeric conversion before formatting');
+assert.ok(source.includes('const analysisMin = finiteReportNumber(cm.analysisMinNm)') && source.includes("analysisRange = analysisMin !== null && analysisMax !== null"), 'PDF coverage log must use null-safe numeric range checks');
+assert.ok(source.includes("Object.prototype.hasOwnProperty.call(metrics, 'snr')"), 'PDF canonical SNR logic must distinguish an explicit unavailable worker value from an absent metric');
 assert.ok(report.analysisLog.length <= 12, 'human analysis log must remain bounded');
 assert.equal(bundle.scientificAnalysis.detectedPeakCount, 1, 'scientific export snapshot must preserve the canonical worker peak count');
 assert.equal(bundle.scientificAnalysis.detectedPeaks.length, 1, 'scientific export snapshot must preserve the canonical worker peak list');
@@ -182,6 +185,79 @@ assert.equal(bundle.scientificAnalysis.lab.matchMeanAbsResidualNm, 0.1, 'scienti
 assert.ok(report.analysisLog.some((line) => line.includes('match MAE=0.1000 nm')), 'PDF analysis log must name the unsigned match-error magnitude separately');
 assert.ok(report.analysisLog.some((line) => line.includes('Detected peaks=1;')), 'PDF analysis log must report the canonical worker peak count instead of an unavailable placeholder');
 assert.ok(report.limitations.includes('use-json-v2-for-complete-state-and-numeric-data'));
+
+assert.equal(context.SpectraPro.exportUi.pdfSafeNumber(null), null, 'PDF numeric conversion must preserve null as unavailable');
+assert.equal(context.SpectraPro.exportUi.pdfSafeNumber(undefined), null, 'PDF numeric conversion must preserve undefined as unavailable');
+assert.equal(context.SpectraPro.exportUi.pdfSafeNumber(''), null, 'PDF numeric conversion must preserve empty numeric fields as unavailable');
+assert.equal(context.SpectraPro.exportUi.pdfSafeNumber(false), null, 'PDF numeric conversion must not coerce booleans to 0/1');
+assert.equal(context.SpectraPro.exportUi.pdfSafeNumber('0'), 0, 'PDF numeric conversion must still preserve a real numeric zero');
+
+const savedNullSemantics = {
+  noise: state.analysis.measurementQuality.dimensions.noise,
+  coverage: state.analysis.measurementQuality.dimensions.coverage,
+  saturation: state.analysis.measurementQuality.dimensions.saturation,
+  offsetNm: state.analysis.offsetNm,
+  maxDistanceNm: state.analysis.maxDistanceNm,
+  hardMatchCapNm: state.analysis.hardMatchCapNm,
+  topHits: state.analysis.topHits,
+  rawTopHits: state.analysis.rawTopHits
+};
+state.analysis.measurementQuality.dimensions.noise = {
+  status: 'unavailable',
+  reason: 'snr-unavailable',
+  metrics: {
+    snr: null,
+    noiseSigma: 0,
+    signalSpanP95P05: 180,
+    snrDefinition: 'p95-p05-over-noise-sigma'
+  }
+};
+state.analysis.measurementQuality.dimensions.saturation = {
+  status: 'unavailable',
+  reason: 'saturation-unavailable',
+  metrics: { saturationFraction: null }
+};
+state.analysis.measurementQuality.dimensions.coverage = {
+  status: 'poor',
+  reason: 'coverage-includes-extrapolation',
+  metrics: {
+    analysisMinNm: null,
+    analysisMaxNm: null,
+    anchorMinNm: null,
+    anchorMaxNm: null,
+    fullFrameExtrapolated: true,
+    analysisRegionExtrapolated: null
+  }
+};
+state.analysis.offsetNm = null;
+state.analysis.maxDistanceNm = null;
+state.analysis.hardMatchCapNm = null;
+state.analysis.topHits = [{ element: 'X', observedNm: null, referenceNm: null, deltaNm: null, confidence: null }];
+state.analysis.rawTopHits = state.analysis.topHits.slice();
+
+const nullBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
+const nullReport = context.SpectraPro.exportUi.buildPdfReportModel(nullBundle);
+assert.ok(nullReport.abstract.includes('Canonical SNR is — using (P95-P05)/noise sigma'), 'PDF abstract must render canonical SNR=null as unavailable, never 0.00');
+assert.ok(!nullReport.abstract.includes('Canonical SNR is 0.00'), 'PDF abstract must not coerce unavailable SNR to zero');
+assert.ok(nullReport.analysisLog.some((line) => line.includes('analysis range=not defined; calibration anchors=not available')), 'PDF analysis log must render null result/anchor ranges as unavailable rather than 0.00–0.00 nm');
+assert.ok(!nullReport.analysisLog.some((line) => line.includes('analysis range=0.00–0.00 nm')), 'PDF analysis log must not coerce a null analysis range to zero');
+assert.equal(nullBundle.scientificAnalysis.calibration.hardMatchCapNm, null, 'scientific export must preserve an unavailable hard match cap instead of coercing it to zero');
+assert.ok(nullReport.methodNarrative.some((line) => line.includes('reported signed wavelength offset is not available')), 'PDF narrative must preserve unavailable offset semantics');
+assert.ok(nullReport.methodNarrative.some((line) => line.includes('the active preset limit')), 'PDF narrative must preserve unavailable max-distance semantics rather than showing 0.00 nm');
+assert.deepEqual(Array.from(nullReport.matchedFeatureRows[0]), ['X', '—', '—', '—', '—'], 'PDF matched-feature rows must not turn null wavelengths/confidence into numeric zeroes');
+
+state.analysis.measurementQuality.dimensions.noise = savedNullSemantics.noise;
+if (savedNullSemantics.coverage === undefined) delete state.analysis.measurementQuality.dimensions.coverage;
+else state.analysis.measurementQuality.dimensions.coverage = savedNullSemantics.coverage;
+if (savedNullSemantics.saturation === undefined) delete state.analysis.measurementQuality.dimensions.saturation;
+else state.analysis.measurementQuality.dimensions.saturation = savedNullSemantics.saturation;
+state.analysis.offsetNm = savedNullSemantics.offsetNm;
+if (savedNullSemantics.maxDistanceNm === undefined) delete state.analysis.maxDistanceNm;
+else state.analysis.maxDistanceNm = savedNullSemantics.maxDistanceNm;
+if (savedNullSemantics.hardMatchCapNm === undefined) delete state.analysis.hardMatchCapNm;
+else state.analysis.hardMatchCapNm = savedNullSemantics.hardMatchCapNm;
+state.analysis.topHits = savedNullSemantics.topHits;
+state.analysis.rawTopHits = savedNullSemantics.rawTopHits;
 
 state.frame.provenance = {
   kind: 'bundled-example',
