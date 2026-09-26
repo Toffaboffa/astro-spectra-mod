@@ -1,6 +1,6 @@
 import { buildResponseFormat, RESPONSE_CONTRACT_VERSION } from './response.js';
 
-export const PROMPT_CONTRACT_VERSION = 'spectra-pro-interpretation/v8';
+export const PROMPT_CONTRACT_VERSION = 'spectra-pro-interpretation/v9';
 
 const DEVELOPER_INSTRUCTIONS = `You are SPECTRA PRO's concise interpretation layer for low-resolution optical spectroscopy.
 
@@ -349,7 +349,19 @@ function compactModelData(payload) {
     context: {
       analysisContext: text(p.context && p.context.analysisContext, 32),
       deterministicAnalysis: p.context && p.context.deterministicAnalysis === true,
-      appMode: text(p.context && p.context.appMode, 24)
+      appMode: text(p.context && p.context.appMode, 24),
+      source: p.context && p.context.source && typeof p.context.source === 'object' ? {
+        kind: text(p.context.source.kind, 40),
+        sampleId: text(p.context.source.sampleId, 64),
+        label: text(p.context.source.sourceLabel, 160),
+        assetId: text(p.context.source.assetId, 96),
+        fileName: text(p.context.source.fileName, 160),
+        provider: text(p.context.source.provider, 120),
+        dataset: text(p.context.source.dataset, 120),
+        reference: text(p.context.source.reference, 140),
+        provenanceType: text(p.context.source.provenanceType, 64),
+        provenanceNote: text(p.context.source.provenanceNote, 140)
+      } : null
     },
     measurement: {
       trace: compactTrace(p.trace),
