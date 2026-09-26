@@ -1216,6 +1216,56 @@ function testAtomicAutoTuneDiagnosticAnchor() {
   );
 }
 
+function testAtomicAutoTuneHardCapSeparation() {
+  const evidence = worker.SPECTRA_PRO_atomicEvidence;
+  const peaks = [
+    { index: 100, nm: 587.330, prominence: 180, value: 180 },
+    { index: 200, nm: 666.001, prominence: 250, value: 250 },
+    { index: 300, nm: 704.149, prominence: 100, value: 100 }
+  ];
+  const out = evidence.enhance({
+    ok: true,
+    calibrated: true,
+    presetId: 'smart-gastube',
+    autoTune: true,
+    maxDistanceNm: 1.8,
+    peaks: peaks,
+    topHits: [],
+    overlayHits: [],
+    elementScores: [],
+    diffractionCandidates: []
+  }, {
+    calibrated: true,
+    nm: peaks.map(function (peak) { return peak.nm; }),
+    I: peaks.map(function (peak) { return peak.value; })
+  }, {}, {});
+
+  assert.ok(out && out.ok, 'Auto Tune hard-cap regression should return an analysis result');
+  assert.ok(out.autoTuneSummary && out.autoTuneSummary.confirmationIsScoringOnly === true, 'Auto Tune must declare the 3 nm confirmation pass as scoring-only');
+  assert.equal(out.autoTuneSummary.reportableToleranceNm, 1.8, 'Auto Tune must publish the accepted/reportable tolerance');
+  assert.equal(out.autoTuneSummary.confirmationToleranceNm, 3, 'Auto Tune must keep the broader 3 nm confirmation tolerance visible in diagnostics');
+  assert.ok(out.topHits.every(function (hit) { return Math.abs(Number(hit.deltaNm)) <= 1.8 + 1e-9; }), 'Accepted top hits must respect the advertised 1.8 nm hard gate');
+  assert.ok(out.overlayHits.every(function (hit) { return Math.abs(Number(hit.deltaNm)) <= 1.8 + 1e-9; }), 'Ordinary overlay hits must respect the advertised 1.8 nm hard gate');
+  assert.equal(out.topHits.some(function (hit) {
+    return hit.element === 'He' && Math.abs(Number(hit.referenceNm) - 706.519) < 0.01;
+  }), false, 'A >1.8 nm confirmation-only helium hit must not enter accepted top hits');
+
+  const heliumRow = (out.elementScores || []).find(function (row) { return row && row.element === 'He'; });
+  assert.ok(heliumRow, 'Broad confirmation evidence may still keep helium as a scored candidate');
+  assert.equal(heliumRow.matchedPeaks, 1, 'Candidate UI evidence count must report only accepted hits inside the hard gate');
+  assert.equal(heliumRow.autoTuneConfirmationMatchedPeaks, 3, 'Candidate diagnostics must retain the broader confirmation evidence count');
+  assert.equal(heliumRow.autoTuneConfirmationOnlyPeaks, 2, 'Candidate diagnostics must expose how many confirmation hits were scoring-only');
+
+  const heliumDiagnostic = (out.autoTuneSummary.candidates || []).find(function (row) { return row && row.element === 'He'; });
+  assert.ok(heliumDiagnostic, 'Auto Tune diagnostics must retain the helium confirmation pass');
+  assert.equal(heliumDiagnostic.reportableMatched, 1, 'Auto Tune diagnostics must distinguish accepted hits');
+  assert.equal(heliumDiagnostic.confirmationMatched, 3, 'Auto Tune diagnostics must preserve broader confirmation matches for candidate scoring');
+  assert.equal(heliumDiagnostic.confirmationOnlyMatched, 2, 'Auto Tune diagnostics must explicitly count scoring-only broad matches');
+  assert.ok((heliumDiagnostic.passes || []).some(function (pass) {
+    return pass.id === 'confirm' && pass.toleranceNm === 3 && pass.matched === 3;
+  }), 'The 3 nm confirmation pass must remain auditable after accepted-hit filtering');
+}
+
 function testSharedAnalysisInfrastructure() {
   const math = worker.SPECTRA_PRO_spectrumMath;
   const presets = worker.SPECTRA_PRO_presetResolver;
@@ -1464,7 +1514,8 @@ const groups = [
   ['instrument-response correction', testInstrumentResponseCorrection],
   ['ASTRO radial velocity', testRadialVelocity],
   ['shared analysis infrastructure', testSharedAnalysisInfrastructure],
-  ['atomic auto-tune diagnostic anchor', testAtomicAutoTuneDiagnosticAnchor]
+  ['atomic auto-tune diagnostic anchor', testAtomicAutoTuneDiagnosticAnchor],
+  ['atomic auto-tune hard-cap separation', testAtomicAutoTuneHardCapSeparation]
 ];
 
 groups.forEach(function (entry) {
