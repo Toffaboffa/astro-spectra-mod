@@ -5,6 +5,34 @@ let comparisonColors = ['#d64d4d','#5b915b','#362cba',
 let comparisonGraph = [];
 let checkedComparisonId = null;
 
+function setFrameSourceProvenance(value, source) {
+    try {
+        const sp = window.SpectraPro || {};
+        if (sp.store && typeof sp.store.update === 'function') {
+            sp.store.update('frame.provenance', value || null, { source: source || 'imageLoading.sourceProvenance' });
+        }
+    } catch (_) {}
+}
+
+function provenanceFromLocalImage(file) {
+    if (!file) return null;
+    let lastModified = null;
+    try {
+        lastModified = Number.isFinite(Number(file.lastModified)) && Number(file.lastModified) > 0
+            ? new Date(Number(file.lastModified)).toISOString()
+            : null;
+    } catch (_) {}
+    return {
+        kind: 'user-image',
+        sourceLabel: String(file.name || 'Local image'),
+        fileName: String(file.name || ''),
+        mimeType: String(file.type || ''),
+        fileSizeBytes: Number.isFinite(Number(file.size)) ? Number(file.size) : null,
+        lastModified: lastModified,
+        origin: 'local-file'
+    };
+}
+
 /**
  * Loads an image from the user's computer into the camera window
  */
@@ -36,6 +64,7 @@ function loadImageIntoCamera() {
                 } catch (_) {}
 
                 switchLoadedImageSettings(file.name);
+                setFrameSourceProvenance(provenanceFromLocalImage(file), 'imageLoading.localFile');
 
                 if (currentSource) currentSource.style.display = 'none';
                 if (typeof disarmAutoPause === 'function') disarmAutoPause('Disarmed by source change.');
@@ -93,6 +122,7 @@ function loadImageIntoCamera() {
  * @param filename - name of the loaded file, if none is set the function reverts settings to camera mode
  */
 function switchLoadedImageSettings(filename = null) {
+    if (filename === null) setFrameSourceProvenance(null, 'imageLoading.cameraSource');
     const display = document.getElementById('loadedImageFilename');
     display.innerText = filename;
     display.style.display = filename === null ? 'none' : 'block';
