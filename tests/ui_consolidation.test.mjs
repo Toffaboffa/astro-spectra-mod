@@ -466,6 +466,8 @@ assert.ok(overlays.includes("String(state.analysis && state.analysis.presetId ||
 assert.ok(graphScript.includes('function getPeakInspectorMatch(peak)') && graphScript.includes('state.analysis.rawTopHits'), 'Peak inspector must resolve graph peaks against the active line-hit overlay');
 assert.ok(examples.includes("sp.store.update('frame.provenance', exampleSourceProvenance(sample, asset)"), 'bundled example provenance must remain persisted after PDF-hit changes');
 assert.ok(fluorescenceUi.includes('rawTopHits: hits') && fluorescenceUi.includes('topHits: clear'), 'Fluorescent UI may vary raw overlay hits while keeping accepted top hits separate');
+assert.ok(exportUi.includes('pdfSafeText: pdfText'), 'export UI must expose the deterministic PDF-safe text sanitizer for contract testing');
+assert.ok(exportUi.includes('body: rows.map(pdfTableRow)'), 'quality/status PDF table must pass every cell through the PDF-safe sanitizer');
 
 assert.ok(helpUi.includes("const HELP_VERSION = '3.1.6';"), 'HELP must publish the same v3.1.6 release version as the application');
 for (const term of [
