@@ -44,7 +44,7 @@
       analysisHz: 0,
       droppedJobs: 0
     },
-    frame: { latest: null, source: 'none' },
+    frame: { latest: null, source: 'none', provenance: null },
     calibration: {
       isCalibrated: false,
       coefficients: [],
