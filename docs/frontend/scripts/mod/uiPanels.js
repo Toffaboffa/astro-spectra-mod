@@ -1,7 +1,7 @@
 (function (global) {
   'use strict';
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = 'v3.1.6';
+  const VERSION = 'v3.1.7';
   sp.version = VERSION;
 
   function createModeTabs(container) {
