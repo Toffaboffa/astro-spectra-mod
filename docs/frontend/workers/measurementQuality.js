@@ -52,6 +52,30 @@
     return range ? { min: range.min, max: range.max, basis: 'fluorescence-band-and-accepted-hits' } : null;
   }
 
+  function acceptedResultHitCoverage(output) {
+    const source = output || {};
+    if (String(source.mode || '').toLowerCase() === 'astro') return null;
+    if (String(source.presetId || '') === 'smart-fluorescent' || source.fluorescenceSummary) return null;
+    const hits = Array.isArray(source.topHits) ? source.topHits.filter(function (hit) {
+      return hit && hit.excludedFromScoring !== true;
+    }) : [];
+    if (!hits.length) return null;
+    const values = [];
+    hits.forEach(function (hit) {
+      [hit && hit.observedNm, hit && hit.referenceNm].forEach(function (value) {
+        const numeric = finite(value);
+        if (numeric !== null) values.push(numeric);
+      });
+    });
+    const range = finiteRange(values);
+    return range ? {
+      min: range.min,
+      max: range.max,
+      basis: 'accepted-result-hits',
+      hitCount: hits.length
+    } : null;
+  }
+
   function calibrationCoverageContext(output, diagnostics) {
     const diag = diagnostics || {};
     const frameCoverage = diag.wavelengthCoverageNm && finite(diag.wavelengthCoverageNm.min) !== null && finite(diag.wavelengthCoverageNm.max) !== null
@@ -60,7 +84,7 @@
     const anchorCoverage = diag.anchorWavelengthCoverageNm && finite(diag.anchorWavelengthCoverageNm.min) !== null && finite(diag.anchorWavelengthCoverageNm.max) !== null
       ? { min: finite(diag.anchorWavelengthCoverageNm.min), max: finite(diag.anchorWavelengthCoverageNm.max) }
       : null;
-    const relevantCoverage = fluorescenceRelevantCoverage(output);
+    const relevantCoverage = fluorescenceRelevantCoverage(output) || acceptedResultHitCoverage(output);
     const fullFrameExtrapolated = !!(diag.extrapolation && diag.extrapolation.any);
     const analysisRegionExtrapolated = relevantCoverage && anchorCoverage
       ? (relevantCoverage.min < anchorCoverage.min || relevantCoverage.max > anchorCoverage.max)
@@ -190,7 +214,10 @@
           extrapolated: resultRegionExtrapolated,
           fullFrameExtrapolated: coverageContext.fullFrameExtrapolated,
           analysisRegionExtrapolated: coverageContext.analysisRegionExtrapolated,
-          analysisCoverageBasis: coverageContext.relevantCoverage ? coverageContext.relevantCoverage.basis : null
+          analysisCoverageBasis: coverageContext.relevantCoverage ? coverageContext.relevantCoverage.basis : null,
+          analysisHitCount: coverageContext.relevantCoverage && Number.isFinite(Number(coverageContext.relevantCoverage.hitCount))
+            ? Number(coverageContext.relevantCoverage.hitCount)
+            : null
         });
     }
 
@@ -243,7 +270,8 @@
         extrapolated: coverageContext.fullFrameExtrapolated,
         fullFrameExtrapolated: coverageContext.fullFrameExtrapolated,
         analysisRegionExtrapolated: relevantExtrapolated,
-        analysisCoverageBasis: relevant ? relevant.basis : null
+        analysisCoverageBasis: relevant ? relevant.basis : null,
+        analysisHitCount: relevant && Number.isFinite(Number(relevant.hitCount)) ? Number(relevant.hitCount) : null
       });
     } else {
       dimensions.coverage = dimension('unavailable', 'calibrated-coverage-unavailable', {});
