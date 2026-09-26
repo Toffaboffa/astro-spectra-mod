@@ -3657,6 +3657,15 @@ function autoCloseInfoPopupIfDefault() {
                   const a = window.SpectraPro.spectrumFrameAdapter.adapt(normalized, st && st.calibration);
                   if (a) adapted = a;
                 }
+                const provenance = st && st.frame && st.frame.provenance;
+                if (provenance && typeof provenance === 'object') {
+                  adapted = Object.assign({}, adapted, {
+                    provenance: Object.assign({}, provenance),
+                    sampleId: provenance.sampleId || null,
+                    sourceLabel: provenance.sourceLabel || null,
+                    sourceKind: provenance.kind || null
+                  });
+                }
               } catch (_) {}
 
               updateStorePath('frame.latest', adapted, { source: 'proBootstrap.frameSync' });
