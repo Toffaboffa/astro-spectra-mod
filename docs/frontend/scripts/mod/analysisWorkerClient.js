@@ -11,7 +11,7 @@
 
   function createAnalysisWorkerClient(options) {
     const opts = Object.assign({
-      workerUrl: '../workers/analysis.worker.js?v=3.1.7-fit-dof-1',
+      workerUrl: '../workers/analysis.worker.js?v=3.1.7-hard-cap-1',
       throttleMs: 300,
       timeoutMs: 3000,
       enabledModes: ['LAB', 'ASTRO']
