@@ -568,8 +568,9 @@ assert.ok(examples.includes("sp.store.update('frame.provenance', exampleSourcePr
 assert.ok(fluorescenceUi.includes('rawTopHits: hits') && fluorescenceUi.includes('topHits: clear'), 'Fluorescent UI may vary raw overlay hits while keeping accepted top hits separate');
 assert.ok(exportUi.includes('pdfSafeText: pdfText'), 'export UI must expose the deterministic PDF-safe text sanitizer for contract testing');
 assert.ok(exportUi.includes('body: rows.map(pdfTableRow)'), 'quality/status PDF table must pass every cell through the PDF-safe sanitizer');
-assert.ok(exportUi.includes('estimateQualityStatusBlockHeight(dq, status, qc)'), 'PDF export must preflight the Quality/Status block before pagination');
-assert.ok(exportUi.includes("pageBreak: 'avoid'") && exportUi.includes('Do not force a new page here'), 'PDF report tail must avoid small table spills and reuse available page space');
+assert.ok(exportUi.includes('estimateResultDetailsPageHeight('), 'PDF export must preflight the complete result-details page before pagination');
+assert.ok(exportUi.includes("pageBreak: 'avoid'") && exportUi.includes('compactColumnBlock'), 'PDF report tail must keep compact tables together and render log/reproducibility in shared columns');
+assert.ok(exportUi.includes('former pages') && exportUi.includes('single readable print page'), 'PDF result tail must preserve the six-page print-layout intent');
 assert.ok(exportUi.includes('reported signed wavelength offset') && exportUi.includes('Match MAE is'), 'PDF prose must distinguish signed wavelength offset from unsigned Match MAE');
 assert.ok(exportUi.includes('Canonical SNR is') && exportUi.includes('(P95-P05)/noise sigma'), 'PDF prose must use the canonical SNR definition');
 assert.ok(exportUi.includes('function finiteReportNumber(value)') && exportUi.includes("Object.prototype.hasOwnProperty.call(metrics, 'snr')"), 'PDF export must preserve explicit unavailable numeric worker values instead of coercing null to zero');
