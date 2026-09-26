@@ -469,6 +469,8 @@ assert.ok(examples.includes("sp.store.update('frame.provenance', exampleSourcePr
 assert.ok(fluorescenceUi.includes('rawTopHits: hits') && fluorescenceUi.includes('topHits: clear'), 'Fluorescent UI may vary raw overlay hits while keeping accepted top hits separate');
 assert.ok(exportUi.includes('pdfSafeText: pdfText'), 'export UI must expose the deterministic PDF-safe text sanitizer for contract testing');
 assert.ok(exportUi.includes('body: rows.map(pdfTableRow)'), 'quality/status PDF table must pass every cell through the PDF-safe sanitizer');
+assert.ok(exportUi.includes('estimateQualityStatusBlockHeight(dq, status, qc)'), 'PDF export must preflight the Quality/Status block before pagination');
+assert.ok(exportUi.includes("pageBreak: 'avoid'") && exportUi.includes('Do not force a new page here'), 'PDF report tail must avoid small table spills and reuse available page space');
 
 assert.ok(helpUi.includes("const HELP_VERSION = '3.1.6';"), 'HELP must publish the same v3.1.6 release version as the application');
 for (const term of [
