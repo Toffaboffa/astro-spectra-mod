@@ -67,6 +67,10 @@ assert.ok(uiTweaks.includes('badge.textContent = VERSION;'), 'version badge writ
 
 const aiWorker = read('backend/ai-worker/src/index.js');
 assert.ok(aiWorker.includes("appVersion: '3.1.7'"), 'AI Worker responses must expose application release 3.1.7');
+const aiWorkerPackage = JSON.parse(read('backend/ai-worker/package.json'));
+assert.equal(aiWorkerPackage.version, '3.1.7', 'AI Worker package metadata must align with the SPECTRA PRO v3.1.7 release');
+const aiWorkerReadme = read('backend/ai-worker/README.md');
+assert.ok(aiWorkerReadme.includes('appVersion: "3.1.7"'), 'AI Worker deployment documentation must show the current appVersion');
 assert.ok(!aiWorker.includes('stage: 6'), 'AI Worker responses must not expose a temporary roadmap-stage label');
 
 const removedPlaceholders = [
