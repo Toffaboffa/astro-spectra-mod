@@ -339,7 +339,9 @@ function testBundledArgonExample() {
   assert.equal(result.ok, true, 'Bundled Argon spectrum should run through production LAB analysis');
   assert.ok(result.elementScores.length > 0, 'Bundled Argon spectrum should produce ranked atomic evidence');
   assert.equal(result.elementScores[0].element, 'Ar', 'Bundled Argon spectrum should rank Ar first');
-  assert.ok(result.elementScores[0].matchedPeaks >= 8, 'Bundled Argon spectrum should retain broad multi-line Ar evidence');
+  assert.ok(result.elementScores[0].autoTuneConfirmationMatchedPeaks >= 8, 'Bundled Argon spectrum should retain broad multi-line Ar confirmation evidence for scoring');
+  assert.ok(result.elementScores[0].matchedPeaks <= result.elementScores[0].autoTuneConfirmationMatchedPeaks, 'Reportable Ar line count must not exceed broader confirmation evidence');
+  assert.ok(result.topHits.every(function (hit) { return Math.abs(Number(hit.deltaNm)) <= Number(result.maxDistanceNm) + 1e-9; }), 'Bundled Argon accepted hits must respect the advertised hard match gate');
 }
 
 function testStellarClassEvidence() {
