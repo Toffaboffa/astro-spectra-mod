@@ -18,7 +18,25 @@ context.SpectraPro = {
 
 const state = {
   appMode: 'ASTRO',
-  frame: { latest: { source: 'numeric-test', px: [0, 1, 2], nm: [480, 486.2, 492], I: [10, 6, 9], processedI: [1, 0.6, 0.9], normalizedI: [1, 0.75, 1] } },
+  frame: {
+    source: 'solar-example',
+    provenance: {
+      kind: 'bundled-example',
+      sampleId: 'solar-tsis1-hsrs',
+      sampleKind: 'numeric',
+      sourceLabel: 'Solar spectrum — TSIS-1 HSRS (calibrated)',
+      sourceLabelEn: 'Solar spectrum — TSIS-1 HSRS (calibrated)',
+      sourceLabelSv: 'Solspektrum — TSIS-1 HSRS (kalibrerat)',
+      assetId: 'solar-tsis1-hsrs-visible',
+      assetPath: '../data/examples/solar-tsis1-hsrs-visible-0p2nm.json',
+      scientificRole: 'measured-reference-spectrum',
+      scientificProvenance: {
+        provider: 'LASP, University of Colorado Boulder',
+        dataset: 'TSIS-1 Hybrid Solar Reference Spectrum (HSRS)'
+      }
+    },
+    latest: { source: 'solar-example', px: [0, 1, 2], nm: [480, 486.2, 492], I: [10, 6, 9], processedI: [1, 0.6, 0.9], normalizedI: [1, 0.75, 1] }
+  },
   calibration: { isCalibrated: true, points: [{ px: 0, nm: 480 }, { px: 2, nm: 492 }], coefficients: [480, 6] },
   preprocessing: { responseCorrection: { enabled: true, profileId: 'test-profile', maxCorrectionFactor: 5 }, baselineMode: 'continuum', normalizationMode: 'continuum' },
   analysis: {
@@ -60,8 +78,17 @@ assert.equal(bundle.scientificAnalysis.astro.radialVelocity.uncertaintyKmS, 18.4
 assert.equal(bundle.scientificAnalysis.astro.stellarClassification.bestClass, 'G');
 assert.equal(bundle.scientificAnalysis.referenceComparison.alignment.radialVelocityMeasurement, false);
 assert.deepEqual(Array.from(bundle.spectrumData.nm), [480, 486.2, 492]);
+assert.equal(bundle.sourceMetadata.kind, 'bundled-example', 'JSON export must preserve source provenance kind');
+assert.equal(bundle.sourceMetadata.sampleId, 'solar-tsis1-hsrs', 'JSON export must preserve bundled sample identity');
+assert.equal(bundle.sourceMetadata.sourceLabel, 'Solar spectrum — TSIS-1 HSRS (calibrated)', 'JSON export must preserve canonical source label');
+assert.equal(bundle.sourceMetadata.scientificProvenance.dataset, 'TSIS-1 Hybrid Solar Reference Spectrum (HSRS)', 'JSON export must preserve scientific provenance metadata');
+assert.equal(bundle.frameSummary.sampleId, 'solar-tsis1-hsrs', 'frameSummary must expose sample identity for reproducibility');
+assert.equal(bundle.frameSummary.sourceLabel, 'Solar spectrum — TSIS-1 HSRS (calibrated)', 'frameSummary must expose source identity');
+assert.equal(bundle.frameSummary.assetId, 'solar-tsis1-hsrs-visible', 'frameSummary must expose source asset identity');
 
 bundle.scientificAnalysis.detectedFeatures[0].centerNm = 999;
 assert.equal(state.analysis.features[0].centerNm, 486.2, 'export must be detached from live state');
+bundle.sourceMetadata.scientificProvenance.dataset = 'mutated';
+assert.equal(state.frame.provenance.scientificProvenance.dataset, 'TSIS-1 Hybrid Solar Reference Spectrum (HSRS)', 'exported source provenance must be detached from live state');
 
 console.log('Export reproducibility regression: explicit scientific snapshot and detached numeric data passed.');
