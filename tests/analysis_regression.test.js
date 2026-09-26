@@ -1238,8 +1238,8 @@ function testAtomicAutoTuneHardCapSeparation() {
     diffractionCandidates: []
   }, {
     calibrated: true,
-    nm: peaks.map(function (peak) { return peak.nm; }),
-    I: peaks.map(function (peak) { return peak.value; })
+    nm: [376, 900],
+    I: [1, 1]
   }, {}, {});
 
   assert.ok(out && out.ok, 'Auto Tune hard-cap regression should return an analysis result');
