@@ -595,9 +595,38 @@
   }
 
   function pdfText(value) {
-    return String(value == null ? '' : value)
-      .replace(/[₂]/g, '2').replace(/[₃]/g, '3').replace(/[₄]/g, '4')
-      .replace(/[⁺]/g, '+').replace(/[⁻]/g, '-').replace(/λ/g, 'lambda').replace(/Δ/g, 'Delta');
+    // jsPDF core Helvetica uses a WinAnsi-style single-byte font. Keep Swedish
+    // Latin characters, but transliterate scientific/math Unicode that the core
+    // font cannot represent reliably. Every PDF text/table path passes here.
+    const replacements = {
+      '₀':'0','₁':'1','₂':'2','₃':'3','₄':'4','₅':'5','₆':'6','₇':'7','₈':'8','₉':'9',
+      '⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9',
+      '⁺':'+','⁻':'-',
+      'α':'alpha','β':'beta','γ':'gamma','δ':'delta','ε':'epsilon','ζ':'zeta','η':'eta','θ':'theta',
+      'ι':'iota','κ':'kappa','λ':'lambda','μ':'mu','ν':'nu','ξ':'xi','ο':'omicron','π':'pi',
+      'ρ':'rho','σ':'sigma','ς':'sigma','τ':'tau','υ':'upsilon','φ':'phi','χ':'chi','ψ':'psi','ω':'omega',
+      'Α':'Alpha','Β':'Beta','Γ':'Gamma','Δ':'Delta','Ε':'Epsilon','Ζ':'Zeta','Η':'Eta','Θ':'Theta',
+      'Ι':'Iota','Κ':'Kappa','Λ':'Lambda','Μ':'Mu','Ν':'Nu','Ξ':'Xi','Ο':'Omicron','Π':'Pi',
+      'Ρ':'Rho','Σ':'Sigma','Τ':'Tau','Υ':'Upsilon','Φ':'Phi','Χ':'Chi','Ψ':'Psi','Ω':'Omega',
+      '≈':' approx ','≃':' approx ','≅':' approx ','≠':' != ','≤':' <= ','≥':' >= ',
+      '±':' +/- ','×':' x ','⋅':' x ','√':'sqrt','∞':'infinity','∝':' proportional-to ',
+      '→':' -> ','←':' <- ','↔':' <-> ','⇒':' => ','⇐':' <= ',
+      '−':'-','–':'-','—':'-','‑':'-',
+      '“':'"','”':'"','„':'"','‘':"'",'’':"'",'…':'...',
+      '•':'*','·':' - ',' ':' ',
+      'Å':'Angstrom','µ':'mu','€':'EUR'
+    };
+    let text = String(value == null ? '' : value);
+    Object.keys(replacements).forEach(function (key) {
+      text = text.split(key).join(replacements[key]);
+    });
+    // Any remaining non-Latin-1 code point is outside the reliable built-in
+    // Helvetica path. Replace it rather than emitting a broken/black glyph.
+    return text.replace(/[^\x09\x0A\x0D\x20-\xFF]/g, '?').replace(/[ \t]{2,}/g, ' ').trim();
+  }
+
+  function pdfTableRow(row) {
+    return (Array.isArray(row) ? row : []).map(pdfText);
   }
 
   function nfmt(value, digits) {
@@ -1143,8 +1172,8 @@
   function autoTable(doc, head, body, startY, widths) {
     if (typeof doc.autoTable === 'function') {
       doc.autoTable({
-        head: [head.map(pdfText)],
-        body: body.map(function (r) { return r.map(pdfText); }),
+        head: [pdfTableRow(head)],
+        body: body.map(pdfTableRow),
         startY: startY,
         margin: { left: 17, right: 17 },
         styles: { font: 'helvetica', fontSize: 7.7, cellPadding: 1.4, overflow: 'linebreak' },
@@ -1173,8 +1202,8 @@
     ];
     if (typeof doc.autoTable === 'function') {
       doc.autoTable({
-        head: [head],
-        body: paired,
+        head: [pdfTableRow(head)],
+        body: paired.map(pdfTableRow),
         startY: startY,
         margin: { left: 12, right: 12 },
         styles: { font: 'helvetica', fontSize: 6.1, cellPadding: 0.9, overflow: 'linebreak', halign: 'center' },
@@ -1199,8 +1228,8 @@
     }
     if (typeof doc.autoTable === 'function') {
       doc.autoTable({
-        head: [[sv ? 'QUALITY REPORT – fält' : 'QUALITY REPORT – field', sv ? 'Värde' : 'Value', sv ? 'STATUS – fält' : 'STATUS – field', sv ? 'Värde' : 'Value']],
-        body: rows,
+        head: [pdfTableRow([sv ? 'QUALITY REPORT - fält' : 'QUALITY REPORT - field', sv ? 'Värde' : 'Value', sv ? 'STATUS - fält' : 'STATUS - field', sv ? 'Värde' : 'Value'])],
+        body: rows.map(pdfTableRow),
         startY: startY,
         margin: { left: 17, right: 17 },
         styles: { font: 'helvetica', fontSize: 7.3, cellPadding: 1.25, overflow: 'linebreak' },
@@ -1689,6 +1718,7 @@
     close: close,
     buildAnalysisBundle: buildAnalysisBundle,
     buildPdfReportModel: buildPdfReportModel,
+    pdfSafeText: pdfText,
     buildCsv: buildCsv,
     captureSourceDataUrl: captureSourceDataUrl,
     captureGraphDataUrl: captureGraphDataUrl,
