@@ -304,6 +304,60 @@
     };
   }
 
+  function reportableHits(hits, toleranceNm) {
+    const tolerance = Math.max(0.2, Number(toleranceNm) || 1.8);
+    return dedupeHits(Array.isArray(hits) ? hits : []).filter(function (hit) {
+      const delta = Math.abs(Number(hit && hit.deltaNm));
+      return Number.isFinite(delta) && delta <= tolerance + 1e-9;
+    });
+  }
+
+  function profileLineForHit(profile, hit) {
+    const ref = Number(hit && hit.referenceNm);
+    if (!Number.isFinite(ref)) return null;
+    return (Array.isArray(profile && profile.lines) ? profile.lines : []).find(function (line) {
+      return Number.isFinite(Number(line && line.nm)) && Math.abs(Number(line.nm) - ref) < 0.08;
+    }) || null;
+  }
+
+  function applyReportableHitMetrics(row, hits, profile, peaks, toleranceNm) {
+    const accepted = reportableHits(hits, toleranceNm);
+    const deltas = accepted.map(function (hit) { return Math.abs(Number(hit.deltaNm)); }).filter(Number.isFinite);
+    const totalProm = Math.max(1, (Array.isArray(peaks) ? peaks : []).reduce(function (sum, peak) {
+      return sum + getProminence(peak);
+    }, 0));
+    const explainedProm = accepted.reduce(function (sum, hit) {
+      return sum + Math.max(0, Number(hit && hit.prominence) || 0);
+    }, 0);
+    const diagnosticMatched = accepted.filter(function (hit) {
+      const line = profileLineForHit(profile, hit);
+      return line && line.diagnostic !== false;
+    }).length;
+    const broadMatched = Math.max(0, Number(row && (row.matchedPeaks != null ? row.matchedPeaks : row.matchedCount)) || 0);
+    const broadDiagnostic = Math.max(0, Number(row && row.diagnosticMatchedPeaks) || 0);
+    return Object.assign({}, row || {}, {
+      matchedCount: accepted.length,
+      matchedExpected: accepted.length,
+      matchedPeaks: accepted.length,
+      matchCount: accepted.length,
+      medianDeltaNm: deltas.length ? +median(deltas).toFixed(3) : null,
+      avgDeltaNm: deltas.length ? +(deltas.reduce(function (a, b) { return a + b; }, 0) / deltas.length).toFixed(3) : null,
+      explainedProm: +explainedProm.toFixed(3),
+      explainedIntensityPct: +clamp((explainedProm / totalProm) * 100, 0, 100).toFixed(1),
+      explainedPeaks: accepted.length,
+      explainedPeaksPct: +clamp((accepted.length / Math.max(1, (Array.isArray(peaks) ? peaks.length : 0))) * 100, 0, 100).toFixed(1),
+      explainedShare: +clamp(explainedProm / totalProm, 0, 1).toFixed(4),
+      supportLines: accepted.slice().sort(function (a, b) {
+        return Number(a.referenceNm) - Number(b.referenceNm);
+      }).map(function (hit) { return +Number(hit.referenceNm).toFixed(3); }),
+      diagnosticMatchedPeaks: diagnosticMatched,
+      reportableToleranceNm: +Math.max(0.2, Number(toleranceNm) || 1.8).toFixed(6),
+      autoTuneConfirmationMatchedPeaks: broadMatched,
+      autoTuneConfirmationDiagnosticMatchedPeaks: broadDiagnostic,
+      autoTuneConfirmationOnlyPeaks: Math.max(0, broadMatched - accepted.length)
+    });
+  }
+
   function mergeRows(baseRows, profileRows) {
     const profiled = Object.create(null);
     (Array.isArray(profileRows) ? profileRows : []).forEach(function (row) { if (row && row.element) profiled[String(row.element)] = row; });
@@ -391,19 +445,28 @@
     const useAutoTune = autoTuneAtomicPresets.indexOf(String(out.presetId || '')) !== -1 && out.autoTune === true;
     const autoDiagnostics = [];
 
+    const reportableToleranceNm = Math.max(0.2, Number(out.maxDistanceNm) || 1.8);
     profiles.forEach(function (profile) {
       const scored = useAutoTune
         ? scoreProfileAuto(profile, peaks, range)
-        : scoreProfile(profile, peaks, out.maxDistanceNm, range);
+        : scoreProfile(profile, peaks, reportableToleranceNm, range);
       if (!scored || !scored.row) return;
-      scoredRows.push(scored.row);
-      Array.prototype.push.apply(profileHits, scored.hits || []);
+      const acceptedHits = reportableHits(scored.hits || [], reportableToleranceNm);
+      const row = useAutoTune
+        ? applyReportableHitMetrics(scored.row, scored.hits || [], profile, peaks, reportableToleranceNm)
+        : scored.row;
+      scoredRows.push(row);
+      Array.prototype.push.apply(profileHits, acceptedHits);
       if (useAutoTune) {
         autoDiagnostics.push({
           element: profile.element,
           consensusPct: Number(scored.row.autoTuneConsensusPct || 0),
           stabilityPct: Number(scored.row.autoTuneStabilityPct || 0),
           bestPass: scored.row.autoTuneBestPass || null,
+          reportableToleranceNm: +reportableToleranceNm.toFixed(6),
+          reportableMatched: acceptedHits.length,
+          confirmationMatched: Math.max(0, Number(scored.row.matchedPeaks || scored.row.matchedCount) || 0),
+          confirmationOnlyMatched: Math.max(0, (Number(scored.row.matchedPeaks || scored.row.matchedCount) || 0) - acceptedHits.length),
           passes: scored.passes || []
         });
       }
@@ -422,6 +485,9 @@
         mode: 'atomic-fingerprint-consensus',
         thresholdsPct: [5.5, 3.5, 2.0, 1.5],
         tolerancesNm: [1.0, 1.4, 1.8, 3.0],
+        reportableToleranceNm: +reportableToleranceNm.toFixed(6),
+        confirmationToleranceNm: 3.0,
+        confirmationIsScoringOnly: true,
         candidates: autoDiagnostics
       };
       out.scoreSemantics = 'robust-consensus-share';
@@ -431,10 +497,10 @@
     merged.slice(0, 4).forEach(function (row) { topElements[String(row.element || '')] = true; });
     // Smart overlays should stay readable even when a low peak threshold admits
     // many weak/noisy peaks. Keep annotations to the leading refined candidates.
-    out.overlayHits = dedupeHits((out.overlayHits || []).concat(profileHits)).filter(function (hit) {
+    out.overlayHits = reportableHits((out.overlayHits || []).concat(profileHits), reportableToleranceNm).filter(function (hit) {
       return topElements[String(hit && hit.element || '')];
     }).slice(0, 120);
-    out.topHits = dedupeHits((out.topHits || []).concat(profileHits)).filter(function (hit) {
+    out.topHits = reportableHits((out.topHits || []).concat(profileHits), reportableToleranceNm).filter(function (hit) {
       return topElements[String(hit && hit.element || '')];
     }).sort(function (a, b) {
       const ra = merged.findIndex(function (row) { return String(row.element || '') === String(a.element || ''); });
