@@ -88,7 +88,7 @@ Verify:
 https://spectra-pro-ai.<your-workers-subdomain>.workers.dev/health
 ```
 
-The response should report `appVersion: "3.0.0"`.
+The response should report `appVersion: "3.1.7"`.
 
 ## Frontend endpoint
 
@@ -143,7 +143,7 @@ A successful response contains approximately:
 ```json
 {
   "ok": true,
-  "appVersion": "3.0.0",
+  "appVersion": "3.1.7",
   "model": "gpt-5.6-terra",
   "result": {
     "language": "sv",
