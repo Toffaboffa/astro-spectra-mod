@@ -373,7 +373,9 @@
       }
     },
     "visibleConfidenceLabel": "Conf:",
-    "visibleBestHitConfidence": 0.87
+    "visibleBestHitConfidence": 0.87,
+    "visibleDataQualityCount": 22,
+    "visibleStatusCount": 17
   },
   "expected": {
     "hardMatchCapNm": 1.8,
@@ -385,7 +387,10 @@
     "snr": null,
     "sourceLabelSv": "Ne spektralrör (kalibrerat)",
     "sourceBadgeSv": "KÄLLA: Exempel",
-    "bestHitConfidence": 0.87
+    "bestHitConfidence": 0.87,
+    "acceptedTopHitCountAfterHardCap": 37,
+    "analysisLogMaxCount": 12,
+    "reproducibilityRowCount": 13
   },
   "bestAcceptedHit": {
     "element": "Kr",
