@@ -1304,6 +1304,52 @@
     return y + 6;
   }
 
+  function compactSectionTitle(doc, title, x, y) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.2);
+    doc.text(pdfText(title), x, y);
+    return y + 4.6;
+  }
+
+  function compactColumnHeight(doc, lines, width) {
+    const list = Array.isArray(lines) ? lines : [];
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.35);
+    let height = 4.6;
+    list.forEach(function (line) {
+      const wrapped = doc.splitTextToSize(pdfText(line), width);
+      height += Math.max(1, wrapped.length) * 3.0 + 0.45;
+    });
+    return height;
+  }
+
+  function compactColumnBlock(doc, title, lines, x, y, width) {
+    let cursor = compactSectionTitle(doc, title, x, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.35);
+    (Array.isArray(lines) ? lines : []).forEach(function (line) {
+      const wrapped = doc.splitTextToSize(pdfText(line), width);
+      doc.text(wrapped, x, cursor);
+      cursor += Math.max(1, wrapped.length) * 3.0 + 0.45;
+    });
+    return cursor;
+  }
+
+  function estimateResultDetailsPageHeight(featureCount, dqCount, statusCount, qcCount, analysisLogCount, reproducibilityCount) {
+    const featureRows = Math.ceil(Math.max(0, Number(featureCount) || 0) / 2);
+    const qualityRows = Math.max(Math.max(0, Number(dqCount) || 0), Math.max(0, Number(statusCount) || 0));
+    const qcExtra = Math.max(0, Number(qcCount) || 0) ? 6 : 0;
+    const featureHeight = featureRows ? 8 + (featureRows + 1) * 3.55 : 0;
+    const qualityHeight = 8 + (qualityRows + 1) * 3.75 + qcExtra;
+    // Analysis log and reproducibility render side-by-side, so only the taller
+    // column contributes to vertical page height.
+    const columnHeight = 6 + Math.max(
+      Math.max(0, Number(analysisLogCount) || 0) * 5.2,
+      Math.max(0, Number(reproducibilityCount) || 0) * 5.0
+    );
+    return featureHeight + qualityHeight + columnHeight + 12;
+  }
+
   function autoTable(doc, head, body, startY, widths) {
     if (typeof doc.autoTable === 'function') {
       doc.autoTable({
@@ -1340,15 +1386,17 @@
         head: [pdfTableRow(head)],
         body: paired.map(pdfTableRow),
         startY: startY,
-        margin: { left: 12, right: 12 },
-        styles: { font: 'helvetica', fontSize: 6.1, cellPadding: 0.9, overflow: 'linebreak', halign: 'center' },
+        margin: { left: 12, right: 12, bottom: 14 },
+        pageBreak: 'avoid',
+        rowPageBreak: 'avoid',
+        styles: { font: 'helvetica', fontSize: 6.0, cellPadding: 0.48, minCellHeight: 3.2, overflow: 'linebreak', halign: 'center' },
         headStyles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold' },
         columnStyles: {
           0:{cellWidth:20,halign:'left'},1:{cellWidth:14},2:{cellWidth:14},3:{cellWidth:12},4:{cellWidth:14},
           5:{cellWidth:20,halign:'left'},6:{cellWidth:14},7:{cellWidth:14},8:{cellWidth:12},9:{cellWidth:14}
         }
       });
-      return doc.lastAutoTable.finalY + 5;
+      return doc.lastAutoTable.finalY + 3;
     }
     return autoTable(doc, head, paired, startY);
   }
@@ -1359,10 +1407,9 @@
       Array.isArray(status) ? status.length : 0
     );
     const qcCount = Array.isArray(qcFlags) ? qcFlags.length : 0;
-    // Compact AutoTable rows are normally ~4.4-5.0 mm high. Keep a small
-    // safety margin so the block moves as a unit instead of spilling 1-2 rows
-    // onto an almost empty page.
-    return 13 + (rowCount + 1) * 5.1 + (qcCount ? 8 : 0);
+    // The print-tail layout intentionally keeps this table compact so the
+    // analysis log and reproducibility can share the same result-details page.
+    return 10 + (rowCount + 1) * 3.75 + (qcCount ? 6 : 0);
   }
 
   function qualityStatusTable(doc, dq, status, startY, sv) {
@@ -1382,11 +1429,11 @@
         pageBreak: 'avoid',
         rowPageBreak: 'avoid',
         showHead: 'everyPage',
-        styles: { font: 'helvetica', fontSize: 6.8, cellPadding: 0.9, overflow: 'linebreak', minCellHeight: 4.2 },
+        styles: { font: 'helvetica', fontSize: 6.15, cellPadding: 0.52, overflow: 'linebreak', minCellHeight: 3.35 },
         headStyles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold' },
         columnStyles: { 0:{cellWidth:44},1:{cellWidth:38},2:{cellWidth:44},3:{cellWidth:38} }
       });
-      return doc.lastAutoTable.finalY + 4;
+      return doc.lastAutoTable.finalY + 2.5;
     }
     return autoTable(doc, ['Quality','Value','Status','Value'], rows, startY);
   }
@@ -1590,42 +1637,8 @@
     }
 
     const featureRows = Array.isArray(reportModel.matchedFeatureRows) ? reportModel.matchedFeatureRows : matchedFeatureRows(analysis);
-    if (featureRows.length) {
-      if (y > 205) { doc.addPage(); y = 18; }
-      y += 3;
-      y = sectionTitle(doc, sv ? 'Matchade spektrala egenskaper' : 'Matched spectral features', y);
-      y = matchedFeatureTable(doc, featureRows, y, sv);
-    }
-
-    // Quality/Status + analysis log are treated as one print-efficient tail.
-    // Keep the Quality/Status table together when it fits on one page instead
-    // of letting AutoTable spill only a few rows onto a mostly blank page.
     const qc = Array.isArray(analysis.qcFlags) ? analysis.qcFlags : [];
-    const qualityBlockHeight = estimateQualityStatusBlockHeight(dq, status, qc);
-    if (y + qualityBlockHeight > 276) { doc.addPage(); y = 18; }
-    y += 3;
-    y = sectionTitle(doc, sv ? 'Kvalitet och status' : 'Quality and status', y);
-    y = qualityStatusTable(doc, dq, status, y, sv);
-    if (qc.length) {
-      y = addWrapped(doc, (sv ? 'QC-flaggor: ' : 'QC flags: ') + qc.join(', '), 17, y, pageW - 34, { size: 8.1, line: 3.8 });
-    }
-
-    // Do not force a new page here. In the common report shape the detailed
-    // log now shares the same page as Quality/Status, which removes the nearly
-    // empty spill page seen in the old layout.
     const analysisLog = reportModel.analysisLog;
-    if (y > 224) { doc.addPage(); y = 18; }
-    else y += 5;
-    y = sectionTitle(doc, sv ? 'Analyslogg (detaljerad)' : 'Analysis log (detailed)', y);
-    analysisLog.forEach(function (line) {
-      y = addWrappedPaged(doc, '• ' + line, 17, y, pageW - 34, { size: 7.9, line: 3.75, bottom: 276 });
-    });
-
-    // Reproducibility is compact enough to share the report tail when there is
-    // room. If not, start it cleanly rather than orphaning only a few rows.
-    if (y > 165) { doc.addPage(); y = 18; }
-    else y += 5;
-    y = sectionTitle(doc, sv ? 'Reproducerbarhet' : 'Reproducibility', y);
     const sourceMeta = bundle.sourceMetadata || {};
     const sourceLabel = sv
       ? (sourceMeta.sourceLabelSv || sourceMeta.sourceLabel || sourceMeta.fileName || '—')
@@ -1647,21 +1660,52 @@
       [sv ? 'Arbetsläge' : 'Workspace', state.appMode || '—'],
       ['Preset', analysis.presetId || '—']
     ];
-    if (typeof doc.autoTable === 'function') {
-      doc.autoTable({
-        head: [pdfTableRow([sv ? 'Fält' : 'Field', sv ? 'Värde' : 'Value'])],
-        body: repro.map(pdfTableRow),
-        startY: y,
-        margin: { left: 17, right: 17, bottom: 18 },
-        pageBreak: 'avoid',
-        rowPageBreak: 'avoid',
-        styles: { font: 'helvetica', fontSize: 6.9, cellPadding: 0.9, overflow: 'linebreak', minCellHeight: 4.2 },
-        headStyles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold' },
-        columnStyles: { 0:{cellWidth:48}, 1:{cellWidth:128} }
-      });
-    } else {
-      autoTable(doc, [sv ? 'Fält' : 'Field', sv ? 'Värde' : 'Value'], repro, y);
+
+    // Preflight the complete result-details tail as one page. For the normal
+    // line-spectrum report (including the Neon regression shape: ~42 hits), this
+    // intentionally moves the tail to a fresh page and keeps features,
+    // Quality/Status, analysis log and reproducibility together on page 6.
+    const tailEstimate = estimateResultDetailsPageHeight(
+      featureRows.length, dq.length, status.length, qc.length, analysisLog.length, repro.length
+    );
+    if (y + tailEstimate > 276) { doc.addPage(); y = 18; }
+
+    if (featureRows.length) {
+      y = sectionTitle(doc, sv ? 'Matchade spektrala egenskaper' : 'Matched spectral features', y);
+      y = matchedFeatureTable(doc, featureRows, y, sv);
     }
+
+    y += featureRows.length ? 1.5 : 0;
+    y = sectionTitle(doc, sv ? 'Kvalitet och status' : 'Quality and status', y);
+    y = qualityStatusTable(doc, dq, status, y, sv);
+    if (qc.length) {
+      y = addWrapped(doc, (sv ? 'QC-flaggor: ' : 'QC flags: ') + qc.join(', '), 17, y, pageW - 34, { size: 7.3, line: 3.35 });
+    }
+
+    // The verbose machine-oriented JSON remains the complete reproducibility
+    // artifact. The human PDF tail uses two compact columns so the former pages
+    // 6 and 7 become a single readable print page.
+    const logLines = analysisLog.map(function (line) { return '• ' + line; });
+    const reproLines = repro.map(function (row) { return String(row[0]) + ': ' + String(row[1]); });
+    const columnGap = 8;
+    const columnWidth = (pageW - 34 - columnGap) / 2;
+    const leftX = 17;
+    const rightX = leftX + columnWidth + columnGap;
+    const columnsHeight = Math.max(
+      compactColumnHeight(doc, logLines, columnWidth),
+      compactColumnHeight(doc, reproLines, columnWidth)
+    );
+    if (y + 4 + columnsHeight > 278) {
+      // Exceptional high-density reports may still require a clean extra page;
+      // ordinary Gas Tube/Neon reports are dimensioned to remain on page 6.
+      doc.addPage();
+      y = 18;
+    } else {
+      y += 4;
+    }
+    const leftBottom = compactColumnBlock(doc, sv ? 'Analyslogg' : 'Analysis log', logLines, leftX, y, columnWidth);
+    const rightBottom = compactColumnBlock(doc, sv ? 'Reproducerbarhet' : 'Reproducibility', reproLines, rightX, y, columnWidth);
+    y = Math.max(leftBottom, rightBottom);
 
     return doc.output('blob');
   }
@@ -1891,6 +1935,7 @@
     buildAnalysisBundle: buildAnalysisBundle,
     buildPdfReportModel: buildPdfReportModel,
     estimateQualityStatusBlockHeight: estimateQualityStatusBlockHeight,
+    estimateResultDetailsPageHeight: estimateResultDetailsPageHeight,
     pdfSafeText: pdfText,
     pdfSafeNumber: finiteReportNumber,
     buildCsv: buildCsv,
