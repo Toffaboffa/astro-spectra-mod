@@ -93,6 +93,18 @@ context.document = { getElementById: () => null };
 const bundle = context.SpectraPro.exportUi.buildAnalysisBundle();
 const report = context.SpectraPro.exportUi.buildPdfReportModel(bundle);
 
+assert.equal(
+  context.SpectraPro.exportUi.pdfSafeText('λ Δ σ ≈ ± × μ µ α β γ Ω H₂O CO₂ 10⁻³ → ≤ ≥ − – — · Å €'),
+  'lambda Delta sigma approx +/- x mu mu alpha beta gamma Omega H2O CO2 10-3 -> <= >= - - - - Angstrom EUR',
+  'PDF text sanitizer must transliterate scientific Unicode into core-Helvetica-safe text'
+);
+assert.equal(
+  context.SpectraPro.exportUi.pdfSafeText('Noise σ: ≈ 0.30 · Ångström äö'),
+  'Noise sigma: approx 0.30 - Ångström äö',
+  'PDF text sanitizer must preserve supported Swedish Latin characters while replacing unsupported scientific glyphs'
+);
+assert.ok(!/[λΔσ≈μΩ₂₃⁻→≤≥−–—Å]/.test(context.SpectraPro.exportUi.pdfSafeText('λ Δ σ ≈ μ Ω H₂O 10⁻³ → ≤ ≥ − – — Å')), 'unsupported scientific Unicode must not survive into the core Helvetica PDF text path');
+
 assert.equal(bundle.schema, 'spectra-pro-export/v2', 'JSON must remain the complete versioned reproducibility artifact');
 assert.equal(bundle.ai.resultText, longAiText, 'JSON must retain the complete completed AI text');
 assert.equal(report.schema, 'spectra-pro-pdf-report/v1');
@@ -118,6 +130,11 @@ assert.ok(source.includes("sv ? 'Konfigurerat hårdvaruomfång' : 'Configured ha
 assert.ok(source.includes("sv ? 'Kalibrerad täckning' : 'Calibrated coverage'"), 'PDF instrument table must show actual calibrated coverage separately');
 assert.ok(source.includes("if (String(a.presetId || '') === 'smart-fluorescent')"), 'PDF matched-feature selector must special-case Fluorescent accepted hits');
 assert.ok(source.includes('clearNarrowLineHits') && source.includes('optional weaker overlay candidates do not alter the report table'), 'PDF source must document that Fluorescent overlay candidates are visual only');
+assert.ok(source.includes('function pdfTableRow(row)'), 'PDF export must centralize table-cell sanitization');
+assert.ok(source.includes('head: [pdfTableRow(head)]') && source.includes('body: paired.map(pdfTableRow)'), 'matched-feature AutoTable must sanitize both headers and cells');
+assert.ok(source.includes("body: rows.map(pdfTableRow)"), 'quality/status AutoTable must sanitize diagnostic labels such as Noise sigma');
+assert.ok(source.includes("'σ':'sigma'") && source.includes("'≈':' approx '") && source.includes("'±':' +/- '") && source.includes("'×':' x '"), 'PDF sanitizer must cover the scientific symbols that previously rendered incorrectly');
+assert.ok(source.includes(".replace(/[^\\x09\\x0A\\x0D\\x20-\\xFF]/g, '?')"), 'PDF sanitizer must replace any remaining unsupported Unicode instead of emitting broken glyphs');
 assert.ok(report.analysisLog.length <= 12, 'human analysis log must remain bounded');
 assert.equal(bundle.scientificAnalysis.detectedPeakCount, 1, 'scientific export snapshot must preserve the canonical worker peak count');
 assert.equal(bundle.scientificAnalysis.detectedPeaks.length, 1, 'scientific export snapshot must preserve the canonical worker peak list');
