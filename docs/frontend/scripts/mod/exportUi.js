@@ -918,6 +918,61 @@
     return found ? (found.value || found.text || '—') : '—';
   }
 
+  function reportSourceLabel(bundle, sv) {
+    const meta = bundle && bundle.sourceMetadata && typeof bundle.sourceMetadata === 'object'
+      ? bundle.sourceMetadata
+      : {};
+    return String((sv ? meta.sourceLabelSv : meta.sourceLabelEn) || meta.sourceLabel || meta.fileName || meta.sampleId || '').trim();
+  }
+
+  function qualityStatusText(status, sv) {
+    const value = String(status || '').toLowerCase();
+    if (!sv) return value || 'unavailable';
+    const map = {
+      good: 'god',
+      moderate: 'måttlig',
+      poor: 'dålig',
+      unavailable: 'ej tillgänglig',
+      limited: 'begränsad'
+    };
+    return map[value] || value || 'ej tillgänglig';
+  }
+
+  function limitationText(measurementQuality, sv) {
+    const limitation = measurementQuality && measurementQuality.mainLimitation;
+    if (!limitation) return '';
+    const code = String(limitation.code || '');
+    const reason = String(limitation.reason || '');
+    const byReason = {
+      'calibration-fit-residual-not-independent': sv
+        ? 'kalibreringsfitten saknar oberoende residualkontroll'
+        : 'the calibration fit lacks an independent residual check',
+      'analysis-region-calibration-extrapolation': sv
+        ? 'det rapporterade analysområdet använder extrapolerad kalibrering'
+        : 'the reported analysis region uses extrapolated calibration',
+      'analysis-region-includes-extrapolation': sv
+        ? 'det rapporterade analysområdet går utanför kalibreringsankarna'
+        : 'the reported analysis region extends beyond the calibration anchors',
+      'coverage-includes-extrapolation': sv
+        ? 'våglängdstäckningen innehåller kalibreringsextrapolation'
+        : 'wavelength coverage includes calibration extrapolation',
+      'low-snr': sv ? 'låg SNR' : 'low SNR',
+      'limited-snr': sv ? 'begränsad SNR' : 'limited SNR'
+    };
+    if (byReason[reason]) return byReason[reason];
+    const byCode = {
+      calibration: sv ? 'kalibrering' : 'calibration',
+      coverage: sv ? 'våglängdstäckning' : 'wavelength coverage',
+      resolution: sv ? 'instrumentupplösning' : 'instrument resolution',
+      sampling: sv ? 'sampling' : 'sampling',
+      noise: sv ? 'brus/SNR' : 'noise/SNR',
+      saturation: sv ? 'mättnad' : 'saturation',
+      validity: sv ? 'datagiltighet' : 'data validity',
+      features: sv ? 'featuredetektion' : 'feature detection'
+    };
+    return byCode[code] || code || reason;
+  }
+
   function buildAutomaticAbstract(bundle) {
     const sv = language() === 'sv';
     const state = bundle.state || {};
@@ -931,11 +986,21 @@
     const calibrated = !!cal.isCalibrated;
     const snr = lookupDiagnostic(dq, 'snr');
     const sat = lookupDiagnostic(dq, 'sat');
+    const sourceLabel = reportSourceLabel(bundle, sv);
+    const measurementQuality = analysis.measurementQuality || null;
+    const qualityStatus = measurementQuality ? qualityStatusText(measurementQuality.overallStatus, sv) : '';
+    const mainLimitation = measurementQuality ? limitationText(measurementQuality, sv) : '';
 
     if (sv) {
-      parts.push('Denna rapport sammanfattar den aktuella SPECTRA PRO-mätningen. Mätningen innehåller ' + count + ' provpunkter och analyserades med preset ' + preset + '. Våglängdskalibrering var ' + (calibrated ? 'aktiv' : 'inte aktiv') + ' vid exporttillfället.');
+      parts.push('Denna rapport sammanfattar den aktuella SPECTRA PRO-mätningen.' +
+        (sourceLabel ? ' Källidentitet: ' + sourceLabel + '.' : '') +
+        ' Mätningen innehåller ' + count + ' provpunkter och analyserades med preset ' + preset +
+        '. Våglängdskalibrering var ' + (calibrated ? 'aktiv' : 'inte aktiv') + ' vid exporttillfället.');
     } else {
-      parts.push('This report summarizes the current SPECTRA PRO measurement. The measurement contains ' + count + ' sampled points and was analyzed with preset ' + preset + '. Wavelength calibration was ' + (calibrated ? 'active' : 'not active') + ' at export time.');
+      parts.push('This report summarizes the current SPECTRA PRO measurement.' +
+        (sourceLabel ? ' Source identity: ' + sourceLabel + '.' : '') +
+        ' The measurement contains ' + count + ' sampled points and was analyzed with preset ' + preset +
+        '. Wavelength calibration was ' + (calibrated ? 'active' : 'not active') + ' at export time.');
     }
 
     const astro = analysis.resultContext === 'astro' && analysis.astro && typeof analysis.astro === 'object' ? analysis.astro : null;
@@ -964,8 +1029,19 @@
       }
     }
 
-    if (sv) parts.push('Data Quality visar SNR ' + snr + ' och mättnad ' + sat + '. Resultatet bör tolkas tillsammans med kalibrering, instrumentupplösning, signalnivå, QC-flaggor och den fysikaliska lämpligheten hos valt preset.');
-    else parts.push('Data Quality reports SNR ' + snr + ' and saturation ' + sat + '. Results should be interpreted together with calibration, instrument resolution, signal level, QC flags and the physical suitability of the selected preset.');
+    if (sv) {
+      parts.push(
+        (measurementQuality ? 'Measurement Quality är ' + qualityStatus + (mainLimitation ? '; huvudsaklig begränsning är ' + mainLimitation : '') + '. ' : '') +
+        'Kanonisk SNR är ' + snr + ' enligt (P95-P05)/brus-sigma och mättnad är ' + sat +
+        '. Kalibreringsfit, faktisk kalibrerad sampling/täckning, instrumentets FWHM och QC bedöms som separata storheter.'
+      );
+    } else {
+      parts.push(
+        (measurementQuality ? 'Measurement Quality is ' + qualityStatus + (mainLimitation ? '; the main limitation is ' + mainLimitation : '') + '. ' : '') +
+        'Canonical SNR is ' + snr + ' using (P95-P05)/noise sigma and saturation is ' + sat +
+        '. Calibration fit, actual calibrated sampling/coverage, instrument FWHM and QC are treated as separate quantities.'
+      );
+    }
 
     return parts.join(' ');
   }
@@ -990,6 +1066,8 @@
     const dq = bundle.visibleDiagnostics ? bundle.visibleDiagnostics.dataQuality : [];
     const preset = String(analysis.presetId || '—');
     const offset = Number.isFinite(Number(analysis.offsetNm)) ? nfmt(analysis.offsetNm, 3) + ' nm' : (sv ? 'inte tillgänglig' : 'not available');
+    const matchMaeValue = matchMeanAbsResidualNm(analysis);
+    const matchMae = Number.isFinite(matchMaeValue) ? nfmt(matchMaeValue, 3) + ' nm' : (sv ? 'inte tillgänglig' : 'not available');
     const fluorescentOffset = String(analysis.offsetBasis || '') === 'clear-narrow-line-hits' || preset === 'smart-fluorescent';
     const offsetBasisText = fluorescentOffset
       ? (sv ? 'medianen av residualerna för de koherenta smala linjeträffar som accepterats i Fluorescent-resultatet' : 'the median residual of the coherent narrow-line hits accepted in the Fluorescent result')
@@ -998,9 +1076,10 @@
     const maxDist = Number.isFinite(Number(analysis.maxDistanceNm)) ? nfmt(analysis.maxDistanceNm, 2) + ' nm' : (sv ? 'aktuell presetgräns' : 'the active preset limit');
     const snr = lookupDiagnostic(dq, 'snr');
     const sat = lookupDiagnostic(dq, 'sat');
-    const res = lookupDiagnostic(dq, 'res');
     const calState = cal.isCalibrated ? (sv ? 'aktiv' : 'active') : (sv ? 'inte aktiv' : 'not active');
-    const resolution = hw.spectrometerResolutionFwhmNm != null ? nfmt(hw.spectrometerResolutionFwhmNm, 2) + ' nm FWHM' : res;
+    const resolution = hw.spectrometerResolutionFwhmNm != null
+      ? nfmt(hw.spectrometerResolutionFwhmNm, 2) + ' nm FWHM'
+      : (sv ? 'inte tillgänglig' : 'not available');
     const coverageNote = coverageNarrative(analysis, sv);
     const calibrationFitNote = calibrationFitNarrative(analysis, sv);
     const samplingRangeNote = samplingAndRangeNarrative(state, sv);
@@ -1017,35 +1096,35 @@
         'Den aktuella körningen innehåller ' + featureCount + ' uppmätta absorptionsdrag och ' + matchCount + ' kuraterade referensmatchningar. Feature-mått kan omfatta centrum, djup, FWHM, negativ ekvivalent bredd, SNR och kvalitetsflaggor när sampling och datakvalitet räcker.',
         'Radialhastigheten rapporteras som ' + (velocity.state === 'available' ? nfmt(velocity.velocityKmS, 1) + ' ± ' + nfmt(velocity.uncertaintyKmS, 1) + ' km/s' : String(velocity.state || 'ej tillgänglig')) + '. Positivt värde betyder rödförskjutning/bortgående. Ingen barycentrisk eller heliocentrisk korrigering har tillämpats, och jämförelsealignment är inte en radialhastighetsmätning.',
         'Bred stjärnklassevidens är ' + String(stellar.bestClass || stellar.state || 'otillräcklig') + ' med styrka ' + String(stellar.evidenceStrength || 'ej tillgänglig') + '. Resultatet är heuristisk evidens, inte sannolikhet, exakt underklass, luminositetsklass, temperatur eller sammansättning.',
-        'Kalibreringen är ' + calState + ', instrument-/samplingupplösningen anges som ' + resolution + ', SNR som ' + snr + ' och mättnad som ' + sat + '. Dessa begränsningar samt den deterministiska huvudbegränsningen ska följas vid tolkning.' + calibrationFitNote + samplingRangeNote + coverageNote
+        'Kalibreringen är ' + calState + ', instrumentets spektrala upplösning anges som ' + resolution + ', kanonisk SNR som ' + snr + ' och mättnad som ' + sat + '. Kalibrerad sampling och hårdvaruprofilens nominella pixelskala redovisas separat och ska inte användas som synonymer för instrumentets FWHM. Dessa begränsningar samt den deterministiska huvudbegränsningen ska följas vid tolkning.' + calibrationFitNote + samplingRangeNote + coverageNote
       ];
       return [
         'ASTRO uses the same calibrated and preprocessed spectrum as LAB but interprets continuum-normalized absorption features. Continuum state is ' + String(continuum.state || 'unavailable') + ' and the intensity basis is ' + String((analysis.preprocessing && analysis.preprocessing.intensityBasis) || 'uncorrected relative intensity') + '. Uncorrected continuum shape is not used as temperature or class evidence.',
         'The current run contains ' + featureCount + ' measured absorption features and ' + matchCount + ' curated reference matches. Feature measurements may include center, depth, FWHM, negative equivalent width, SNR and quality flags when sampling and data quality support them.',
         'Radial velocity is reported as ' + (velocity.state === 'available' ? nfmt(velocity.velocityKmS, 1) + ' ± ' + nfmt(velocity.uncertaintyKmS, 1) + ' km/s' : String(velocity.state || 'unavailable')) + '. Positive means redshift/receding. No barycentric or heliocentric correction is applied, and comparison alignment is not a radial-velocity measurement.',
         'Broad stellar-class evidence is ' + String(stellar.bestClass || stellar.state || 'insufficient') + ' with strength ' + String(stellar.evidenceStrength || 'unavailable') + '. The result is heuristic evidence, not probability, exact subclass, luminosity class, temperature or composition.',
-        'Calibration is ' + calState + ', instrument/sampling resolution is reported as ' + resolution + ', SNR as ' + snr + ' and saturation as ' + sat + '. These limits and the deterministic dominant limitation should accompany interpretation.' + calibrationFitNote + samplingRangeNote + coverageNote
+        'Calibration is ' + calState + ', instrument spectral resolution is reported as ' + resolution + ', canonical SNR as ' + snr + ' and saturation as ' + sat + '. Calibrated sampling and the hardware profile nominal pixel scale are reported separately and must not be used as synonyms for instrument FWHM. These limits and the deterministic dominant limitation should accompany interpretation.' + calibrationFitNote + samplingRangeNote + coverageNote
       ];
     }
 
     if (sv) {
       return [
         'Analysen bygger på den spektralprofil som extraherats ur den valda strimman i källbilden. Intensitetsdata och, när kalibrering finns, motsvarande våglängdsaxel skickas till SPECTRA PRO:s analysworker. Peak-detektionen bedömer lokala maxima med hänsyn till relativ höjd, prominens och minsta tillåtna separation. I de Smart-presets som stöder Auto tune startar analysen från ett relativt tillåtande peak-urval och omprövar sedan evidensen med stramare trösklar och våglängdstoleranser. Därmed blir identifieringen mindre beroende av ett enda manuellt valt tröskelvärde.',
-        'Matchning mot linje- och banddata sker bara inom den aktuella våglängdstäckningen. För linjebaserad analys används en hård maximal våglängdsavvikelse, här ' + maxDist + ', så att avlägsna bibliotekslinjer inte kan få stöd enbart genom att biblioteket är tätt. Den rapporterade offseten är ' + offset + ' och bygger på ' + offsetBasisText + '. Den fungerar som ett diagnostiskt mått på systematisk förskjutning mellan observerade och refererade våglängder; den ersätter inte en korrekt multipunktskalibrering.',
+        'Matchning mot linje- och banddata sker bara inom den aktuella våglängdstäckningen. För linjebaserad analys används en hård maximal våglängdsavvikelse, här ' + maxDist + ', så att avlägsna bibliotekslinjer inte kan få stöd enbart genom att biblioteket är tätt. Den rapporterade signerade våglängdsoffseten är ' + offset + ' och bygger på ' + offsetBasisText + '; positivt tecken betyder observerad våglängd över referensvärdet och negativt tecken under. Match MAE är ' + matchMae + ' och är medelvärdet av |observerad-referens| för resultatets aktiva träffmängd, alltså ett osignerat mått på matchfelens storlek. Offset och Match MAE beskriver olika egenskaper och ingen av dem ersätter en korrekt multipunktskalibrering.',
         'För atomära Smart-lägen bedöms inte en kandidat efter en ensam närliggande linje. Fingerprint-lagret väger samman flera diagnostiska linjer, våglängdsnärhet, hur stor del av de observerade starka topparna som förklaras, grupper av samverkande linjer och täckning av en kuraterad profil. Förväntade diagnostiska profilinslag som saknas ger en försiktig negativ viktning, och arter med täta eller tvetydiga kataloglinjer får inte automatiskt fördel av att biblioteket innehåller många möjliga sammanträffanden. Score Share normaliserar den positiva kandidatscoren inom just den aktuella körningen och är därför varken sannolikhet, koncentration eller abundans.',
-        'Molekylära lägen använder motsvarande flerbandslogik. Diagnostiska ankare och band bedöms tillsammans, och stöd från flera koherenta band väger tyngre än en isolerad överlappning. I Gas Tube kan atomära och molekylära bidrag förekomma samtidigt. Fluorescent avviker medvetet från linjematchningen: där beskriver SPECTRA PRO i första hand den breda bandformen genom lambda-max, centroid, FWHM, bandområde, asymmetri, shoulders och integrerad baslinjekorrigerad signal. Smala linjekandidater behandlas då endast som sekundär diagnostik.',
-        'Relevanta signaturer eller kluster i den aktuella körningen är: ' + signatures + '. Kalibreringen är ' + calState + ', uppskattad instrument-/samplingupplösning i rapportens diagnostik är ' + resolution + ', SNR anges som ' + snr + ' och mättnadsfältet som ' + sat + '. Dessa värden används tillsammans för att bedöma om en numeriskt bra match också är experimentellt trovärdig. Mättnad kan förstöra peakform och relativa intensiteter, medan låg SNR kan skapa extra lokala maxima eller dölja svaga diagnostiska drag.',
-        'Efter matchningen sammanställs kandidatpoäng, observerade träffar, QC-flaggor och förklarad signalandel till det resultat som visas i LAB. Rapportens spektralbild visar den centrala 25 procenten av bildhöjden för att fokusera på själva dispersionsbandet, medan diagrammet återger den graf som faktiskt visades vid exporten med aktiva annoteringar och overlays. Den detaljerade feature-tabellen redovisar observerad våglängd, referensvåglängd, residual och score/confidence för resultatets matchade träffar. I Fluorescent används endast de koherenta smala linjeträffar som accepterats i resultatet; valfria svagare overlay-kandidater påverkar inte rapporttabellen. SNR definieras konsekvent som (P95-P05)/brus-sigma, där brus-sigma skattas robust från residualer mot ett 5-punkters glidande medelvärde. Resultaten bör ses som reproducerbara förslag givet den uppmätta signalen, valt preset och aktuell kalibrering; ändrad optik, fokus, zoom, gittergeometri eller kamerainställningar kan kräva ny kalibrering innan våglängdsmatchningen åter är tillförlitlig.' + calibrationFitNote + samplingRangeNote + coverageNote
+        'Molekylära lägen använder motsvarande flerbandslogik. Diagnostiska ankare och band bedöms tillsammans, och stöd från flera koherenta band väger tyngre än en isolerad överlappning. I Gas Tube kan atomära och molekylära bidrag förekomma samtidigt. Fluorescent avviker medvetet från vanlig linjematchning: den breda bandformen är primär och beskrivs genom lambda-max, centroid, FWHM, bandområde, asymmetri, shoulders och integrerad baslinjekorrigerad signal. Koherenta smala linjeträffar som accepterats av Fluorescent-resultatet kan ge sekundär linjeevidens och ligger till grund för den rapporterade offseten; svagare valfria overlay-kandidater är visuella och ändrar inte det deterministiska rapportresultatet.',
+        'Relevanta signaturer eller kluster i den aktuella körningen är: ' + signatures + '. Kalibreringen är ' + calState + ', instrumentets spektrala upplösning är ' + resolution + ', kanonisk SNR är ' + snr + ' och mättnadsfältet är ' + sat + '. Kalibrerad sampling, nominell pixelskala och instrumentets FWHM är separata storheter. Dessa värden används tillsammans för att bedöma om en numeriskt bra match också är experimentellt trovärdig. Mättnad kan förstöra peakform och relativa intensiteter, medan låg SNR kan skapa extra lokala maxima eller dölja svaga diagnostiska drag.',
+        'Efter matchningen sammanställs kandidatpoäng, accepterade resultat-träffar, QC-flaggor och förklarad signalandel till det deterministiska LAB-resultatet. Rapportens spektralbild visar den centrala 25 procenten av bildhöjden, medan diagrammet återger den faktiskt visade grafen med aktiva annoteringar och overlays. Feature-tabellen redovisar resultatets matchade träffar; i Fluorescent används endast accepterade koherenta smala linjeträffar och valfria svagare overlay-kandidater ändrar inte tabellen. Kanonisk SNR definieras som (P95-P05)/brus-sigma, där brus-sigma skattas robust från residualer mot ett 5-punkters glidande medelvärde. Kalibreringsfit, kalibrerad sampling, instrument-FWHM och resultatets täckningsklassning redovisas separat för att undvika att ett numeriskt fitvärde misstolkas som fysisk noggrannhet. Resultaten bör ses som reproducerbara förslag givet den uppmätta signalen, valt preset och aktuell kalibrering; ändrad optik, fokus, zoom, gittergeometri eller kamerainställningar kan kräva ny kalibrering innan våglängdsmatchningen åter är tillförlitlig.' + calibrationFitNote + samplingRangeNote + coverageNote
       ];
     }
 
     return [
       'The analysis starts from the spectral profile extracted from the selected stripe in the source image. Intensity data and, when calibration is available, the corresponding wavelength axis are passed to the SPECTRA PRO analysis worker. Peak detection evaluates local maxima using relative height, prominence and minimum separation. In Smart presets that support Auto tune, the analysis begins with a relatively permissive master peak set and then re-evaluates the evidence with stricter peak thresholds and wavelength tolerances. This reduces dependence on one manually chosen threshold.',
-      'Matching against line and band data is limited to the wavelength coverage of the current measurement. Line-based analysis uses a hard maximum wavelength mismatch, here ' + maxDist + ', so distant catalog lines cannot gain support merely because the library is dense. The reported offset is ' + offset + ' and is based on ' + offsetBasisText + '. It is a diagnostic measure of systematic displacement between observed and reference wavelengths; it is not a substitute for valid multipoint calibration.',
+      'Matching against line and band data is limited to the wavelength coverage of the current measurement. Line-based analysis uses a hard maximum wavelength mismatch, here ' + maxDist + ', so distant catalog lines cannot gain support merely because the library is dense. The reported signed wavelength offset is ' + offset + ' and is based on ' + offsetBasisText + '; positive means observed wavelength above the reference value and negative means below. Match MAE is ' + matchMae + ' and is the mean |observed-reference| over the active result hit set, so it is an unsigned measure of match-error magnitude. Offset and Match MAE describe different properties and neither is a substitute for valid multipoint calibration.',
       'For atomic Smart modes, a candidate is not accepted because of one nearby catalog line. The fingerprint layer combines multiple diagnostic lines, wavelength closeness, coverage of strong observed peaks, coherent line groups and coverage of a curated profile. Missing diagnostic profile features apply a cautious penalty, while dense or ambiguous catalog regions are prevented from gaining automatic advantage simply because many unrelated lines exist nearby. Score Share normalizes positive candidate score only within the current run and therefore is not a probability, concentration or abundance estimate.',
-      'Molecular modes apply the corresponding multi-band logic. Diagnostic anchors and bands are evaluated together, and support from several coherent bands carries more weight than an isolated overlap. Gas Tube can retain both atomic and molecular contributors. Fluorescent deliberately follows a different path: SPECTRA PRO primarily characterizes the broadband shape using lambda max, centroid, FWHM, band range, asymmetry, shoulders and integrated baseline-corrected signal. Narrow-line candidates are secondary diagnostics in that mode.',
-      'Relevant signatures or clusters in the current run are: ' + signatures + '. Calibration is ' + calState + ', the instrument/sampling resolution reported by the diagnostics is ' + resolution + ', SNR is ' + snr + ' and the saturation field is ' + sat + '. These values are considered together when deciding whether a numerically attractive match is also experimentally credible. Saturation can destroy peak shape and relative intensity information, whereas low SNR can introduce additional local maxima or hide weak diagnostic features.',
-      'After matching, candidate scores, observed hits, QC flags and explained-signal metrics are assembled into the LAB result. The report source image retains the central 25 percent of image height to focus on the dispersed spectrum, while the graph reproduces the canvas that was actually visible at export time with active annotations and overlays. The detailed feature table reports observed wavelength, reference wavelength, residual and score/confidence for result-bearing matched hits. In Fluorescent, only coherent narrow-line hits accepted in the result are used; optional weaker overlay candidates do not alter the report table. SNR is defined consistently as (P95-P05)/noise sigma, with noise sigma robustly estimated from residuals against a 5-point moving mean. Results should be treated as reproducible best proposals given the measured signal, selected preset and active calibration; changes in optics, focus, zoom, grating geometry or camera settings can require recalibration before wavelength matching is trustworthy again.' + calibrationFitNote + samplingRangeNote + coverageNote
+      'Molecular modes apply the corresponding multi-band logic. Diagnostic anchors and bands are evaluated together, and support from several coherent bands carries more weight than an isolated overlap. Gas Tube can retain both atomic and molecular contributors. Fluorescent deliberately follows a different path: the broadband shape is primary and is characterized using lambda max, centroid, FWHM, band range, asymmetry, shoulders and integrated baseline-corrected signal. Coherent narrow-line hits accepted by the Fluorescent result can provide secondary line evidence and define the reported offset; optional weaker overlay candidates are visual and do not change the deterministic report result.',
+      'Relevant signatures or clusters in the current run are: ' + signatures + '. Calibration is ' + calState + ', instrument spectral resolution is ' + resolution + ', canonical SNR is ' + snr + ' and the saturation field is ' + sat + '. Calibrated sampling, nominal pixel scale and instrument FWHM are separate quantities. These values are considered together when deciding whether a numerically attractive match is also experimentally credible. Saturation can destroy peak shape and relative intensity information, whereas low SNR can introduce additional local maxima or hide weak diagnostic features.',
+      'After matching, candidate scores, accepted result hits, QC flags and explained-signal metrics are assembled into the deterministic LAB result. The report source image retains the central 25 percent of image height, while the graph reproduces the canvas actually visible at export time with active annotations and overlays. The feature table reports result-bearing matched hits; in Fluorescent only accepted coherent narrow-line hits are used and optional weaker overlay candidates do not change the table. Canonical SNR is defined as (P95-P05)/noise sigma, with noise sigma robustly estimated from residuals against a 5-point moving mean. Calibration fit, calibrated sampling, instrument FWHM and result-scoped coverage quality are reported separately so a numerical fit statistic is not mistaken for physical accuracy. Results should be treated as reproducible best proposals given the measured signal, selected preset and active calibration; changes in optics, focus, zoom, grating geometry or camera settings can require recalibration before wavelength matching is trustworthy again.' + calibrationFitNote + samplingRangeNote + coverageNote
     ];
   }
 
