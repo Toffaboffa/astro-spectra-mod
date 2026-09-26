@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const HELP_VERSION = '3.1.6';
+  const HELP_VERSION = '3.1.7';
   let installed = false;
   let lastFocus = null;
 
