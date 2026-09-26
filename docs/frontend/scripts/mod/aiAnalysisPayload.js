@@ -498,6 +498,35 @@
     };
   }
 
+  function compactSourceMetadata(state, frame) {
+    const source = state && state.frame && state.frame.provenance && typeof state.frame.provenance === 'object'
+      ? state.frame.provenance
+      : (frame && frame.provenance && typeof frame.provenance === 'object' ? frame.provenance : null);
+    if (!source) return null;
+    const out = {};
+    const set = function (key, value, max) {
+      const cleaned = cleanString(value, max || 120);
+      if (cleaned) out[key] = cleaned;
+    };
+    set('kind', source.kind, 40);
+    set('sampleId', source.sampleId, 64);
+    set('sourceLabel', source.sourceLabel || source.fileName, 160);
+    set('assetId', source.assetId, 96);
+    set('fileName', source.fileName, 160);
+    set('scientificRole', source.scientificRole, 64);
+    const provenance = source.scientificProvenance && typeof source.scientificProvenance === 'object'
+      ? source.scientificProvenance
+      : null;
+    if (provenance) {
+      set('provider', provenance.provider, 120);
+      set('dataset', provenance.dataset, 120);
+      set('reference', provenance.primaryReference, 140);
+      set('provenanceType', provenance.type, 64);
+      set('provenanceNote', provenance.note, 140);
+    }
+    return Object.keys(out).length ? out : null;
+  }
+
   function buildInstrument(state) {
     const out = compactPrimitiveObject(state.hardware || {}, [
       'profileId', 'profileName', 'spectralRangeMinNm', 'spectralRangeMaxNm',
@@ -552,6 +581,7 @@
     const calibration = buildCalibration(state, frame);
     const analysisContext = resolveAnalysisContext(state, analysis);
     const astro = compactAstro(analysis.astro);
+    const sourceMetadata = compactSourceMetadata(state, frame);
 
     return {
       schema: SCHEMA_VERSION,
@@ -563,6 +593,7 @@
         analysisContext: analysisContext,
         deterministicAnalysis: true,
         frameSource: cleanString((state.frame && state.frame.source) || (frame && frame.source) || '', 48) || null,
+        source: sourceMetadata,
         frameTimestamp: frame && frame.timestamp ? frame.timestamp : null,
         workerResultTimestamp: state.worker && state.worker.lastResultAt ? state.worker.lastResultAt : null
       },
