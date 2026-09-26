@@ -1218,6 +1218,18 @@
     return autoTable(doc, head, paired, startY);
   }
 
+  function estimateQualityStatusBlockHeight(dq, status, qcFlags) {
+    const rowCount = Math.max(
+      Array.isArray(dq) ? dq.length : 0,
+      Array.isArray(status) ? status.length : 0
+    );
+    const qcCount = Array.isArray(qcFlags) ? qcFlags.length : 0;
+    // Compact AutoTable rows are normally ~4.4-5.0 mm high. Keep a small
+    // safety margin so the block moves as a unit instead of spilling 1-2 rows
+    // onto an almost empty page.
+    return 13 + (rowCount + 1) * 5.1 + (qcCount ? 8 : 0);
+  }
+
   function qualityStatusTable(doc, dq, status, startY, sv) {
     const n = Math.max(dq.length, status.length);
     const rows = [];
@@ -1231,12 +1243,15 @@
         head: [pdfTableRow([sv ? 'QUALITY REPORT - fält' : 'QUALITY REPORT - field', sv ? 'Värde' : 'Value', sv ? 'STATUS - fält' : 'STATUS - field', sv ? 'Värde' : 'Value'])],
         body: rows.map(pdfTableRow),
         startY: startY,
-        margin: { left: 17, right: 17 },
-        styles: { font: 'helvetica', fontSize: 7.3, cellPadding: 1.25, overflow: 'linebreak' },
+        margin: { left: 17, right: 17, bottom: 18 },
+        pageBreak: 'avoid',
+        rowPageBreak: 'avoid',
+        showHead: 'everyPage',
+        styles: { font: 'helvetica', fontSize: 6.8, cellPadding: 0.9, overflow: 'linebreak', minCellHeight: 4.2 },
         headStyles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold' },
         columnStyles: { 0:{cellWidth:44},1:{cellWidth:38},2:{cellWidth:44},3:{cellWidth:38} }
       });
-      return doc.lastAutoTable.finalY + 5;
+      return doc.lastAutoTable.finalY + 4;
     }
     return autoTable(doc, ['Quality','Value','Status','Value'], rows, startY);
   }
@@ -1447,26 +1462,34 @@
       y = matchedFeatureTable(doc, featureRows, y, sv);
     }
 
-    // Quality and Status side-by-side
-    if (y > 205) { doc.addPage(); y = 18; }
+    // Quality/Status + analysis log are treated as one print-efficient tail.
+    // Keep the Quality/Status table together when it fits on one page instead
+    // of letting AutoTable spill only a few rows onto a mostly blank page.
+    const qc = Array.isArray(analysis.qcFlags) ? analysis.qcFlags : [];
+    const qualityBlockHeight = estimateQualityStatusBlockHeight(dq, status, qc);
+    if (y + qualityBlockHeight > 276) { doc.addPage(); y = 18; }
     y += 3;
     y = sectionTitle(doc, sv ? 'Kvalitet och status' : 'Quality and status', y);
     y = qualityStatusTable(doc, dq, status, y, sv);
-    const qc = Array.isArray(analysis.qcFlags) ? analysis.qcFlags : [];
     if (qc.length) {
-      y = addWrapped(doc, (sv ? 'QC-flaggor: ' : 'QC flags: ') + qc.join(', '), 17, y, pageW - 34, { size: 8.5 });
+      y = addWrapped(doc, (sv ? 'QC-flaggor: ' : 'QC flags: ') + qc.join(', '), 17, y, pageW - 34, { size: 8.1, line: 3.8 });
     }
 
-    // Detailed log and reproducibility
-    doc.addPage();
-    y = 18;
-    y = sectionTitle(doc, sv ? 'Analyslogg (detaljerad)' : 'Analysis log (detailed)', y);
+    // Do not force a new page here. In the common report shape the detailed
+    // log now shares the same page as Quality/Status, which removes the nearly
+    // empty spill page seen in the old layout.
     const analysisLog = reportModel.analysisLog;
+    if (y > 224) { doc.addPage(); y = 18; }
+    else y += 5;
+    y = sectionTitle(doc, sv ? 'Analyslogg (detaljerad)' : 'Analysis log (detailed)', y);
     analysisLog.forEach(function (line) {
-      y = addWrapped(doc, '• ' + line, 17, y, pageW - 34, { size: 8.5, line: 4.0 });
+      y = addWrappedPaged(doc, '• ' + line, 17, y, pageW - 34, { size: 7.9, line: 3.75, bottom: 276 });
     });
 
-    y += 5;
+    // Reproducibility is compact enough to share the report tail when there is
+    // room. If not, start it cleanly rather than orphaning only a few rows.
+    if (y > 165) { doc.addPage(); y = 18; }
+    else y += 5;
     y = sectionTitle(doc, sv ? 'Reproducerbarhet' : 'Reproducibility', y);
     const sourceMeta = bundle.sourceMetadata || {};
     const sourceLabel = sv
@@ -1489,7 +1512,21 @@
       [sv ? 'Arbetsläge' : 'Workspace', state.appMode || '—'],
       ['Preset', analysis.presetId || '—']
     ];
-    autoTable(doc, [sv ? 'Fält' : 'Field', sv ? 'Värde' : 'Value'], repro, y);
+    if (typeof doc.autoTable === 'function') {
+      doc.autoTable({
+        head: [pdfTableRow([sv ? 'Fält' : 'Field', sv ? 'Värde' : 'Value'])],
+        body: repro.map(pdfTableRow),
+        startY: y,
+        margin: { left: 17, right: 17, bottom: 18 },
+        pageBreak: 'avoid',
+        rowPageBreak: 'avoid',
+        styles: { font: 'helvetica', fontSize: 6.9, cellPadding: 0.9, overflow: 'linebreak', minCellHeight: 4.2 },
+        headStyles: { fillColor: [34,34,34], textColor: [255,255,255], fontStyle: 'bold' },
+        columnStyles: { 0:{cellWidth:48}, 1:{cellWidth:128} }
+      });
+    } else {
+      autoTable(doc, [sv ? 'Fält' : 'Field', sv ? 'Värde' : 'Value'], repro, y);
+    }
 
     return doc.output('blob');
   }
@@ -1718,6 +1755,7 @@
     close: close,
     buildAnalysisBundle: buildAnalysisBundle,
     buildPdfReportModel: buildPdfReportModel,
+    estimateQualityStatusBlockHeight: estimateQualityStatusBlockHeight,
     pdfSafeText: pdfText,
     buildCsv: buildCsv,
     captureSourceDataUrl: captureSourceDataUrl,
