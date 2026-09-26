@@ -638,13 +638,25 @@
     return values.reduce(function (sum, value) { return sum + value; }, 0) / values.length;
   }
 
-  function matchedFeatureRows(analysis) {
+  function deterministicMatchedHits(analysis) {
     const a = analysis || {};
-    let src = [];
-    if (Array.isArray(a.rawTopHits) && a.rawTopHits.length) src = a.rawTopHits;
-    else if (Array.isArray(a.topHits) && a.topHits.length) src = a.topHits;
-    else if (Array.isArray(a.smartFindHits) && a.smartFindHits.length) src = a.smartFindHits;
-    return src.slice(0, 80).map(function (h) {
+    if (String(a.presetId || '') === 'smart-fluorescent') {
+      // Fluorescent report results must be independent of the visual narrow-line
+      // overlay. clearNarrowLineHits is the accepted coherent result set; rawTopHits
+      // may contain optional weak candidates solely because the overlay is enabled.
+      if (Array.isArray(a.clearNarrowLineHits)) return a.clearNarrowLineHits.slice(0, 48);
+      if (Array.isArray(a.topHits)) return a.topHits.slice(0, 48);
+      return [];
+    }
+    if (Array.isArray(a.rawTopHits) && a.rawTopHits.length) return a.rawTopHits.slice(0, 80);
+    if (Array.isArray(a.topHits) && a.topHits.length) return a.topHits.slice(0, 80);
+    if (Array.isArray(a.smartFindHits) && a.smartFindHits.length) return a.smartFindHits.slice(0, 80);
+    return [];
+  }
+
+  function matchedFeatureRows(analysis) {
+    const src = deterministicMatchedHits(analysis);
+    return src.map(function (h) {
       const species = candidateName(h);
       const obs = h.observedNm != null ? h.observedNm : (h.obsNm != null ? h.obsNm : (h.nm_meas != null ? h.nm_meas : h.nm));
       const ref = h.referenceNm != null ? h.referenceNm : (h.refNm != null ? h.refNm : (h.ref_nm != null ? h.ref_nm : null));
@@ -823,7 +835,14 @@
     const detectedPeakCount = (analysis.detectedPeakCount !== null && analysis.detectedPeakCount !== undefined && analysis.detectedPeakCount !== '' && Number.isFinite(Number(analysis.detectedPeakCount)))
       ? Math.max(0, Math.round(Number(analysis.detectedPeakCount)))
       : (analysis.detectedPeakCount === undefined && Array.isArray(analysis.detectedPeaks) ? analysis.detectedPeaks.length : '—');
-    lines.push('Detected peaks=' + String(detectedPeakCount) + '; top hits=' + String(Array.isArray(analysis.topHits) ? analysis.topHits.length : 0) + '; raw hits=' + String(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits.length : 0) + '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
+    if (String(analysis.presetId || '') === 'smart-fluorescent') {
+      lines.push('Detected peaks=' + String(detectedPeakCount) +
+        '; accepted narrow-line hits=' + String(deterministicMatchedHits(analysis).length) +
+        '; narrow-line candidates=' + String(Array.isArray(analysis.narrowLineCandidates) ? analysis.narrowLineCandidates.length : 0) +
+        '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
+    } else {
+      lines.push('Detected peaks=' + String(detectedPeakCount) + '; top hits=' + String(Array.isArray(analysis.topHits) ? analysis.topHits.length : 0) + '; raw hits=' + String(Array.isArray(analysis.rawTopHits) ? analysis.rawTopHits.length : 0) + '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
+    }
     if (analysis.offsetNm != null) {
       const matchMae = matchMeanAbsResidualNm(analysis);
       lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm; basis=' + String(analysis.offsetBasis || 'matcher-residuals') + '; match MAE=' + (Number.isFinite(matchMae) ? nfmt(matchMae, 4) + ' nm' : '—') + '.');
@@ -987,7 +1006,7 @@
         'För atomära Smart-lägen bedöms inte en kandidat efter en ensam närliggande linje. Fingerprint-lagret väger samman flera diagnostiska linjer, våglängdsnärhet, hur stor del av de observerade starka topparna som förklaras, grupper av samverkande linjer och täckning av en kuraterad profil. Förväntade diagnostiska profilinslag som saknas ger en försiktig negativ viktning, och arter med täta eller tvetydiga kataloglinjer får inte automatiskt fördel av att biblioteket innehåller många möjliga sammanträffanden. Score Share normaliserar den positiva kandidatscoren inom just den aktuella körningen och är därför varken sannolikhet, koncentration eller abundans.',
         'Molekylära lägen använder motsvarande flerbandslogik. Diagnostiska ankare och band bedöms tillsammans, och stöd från flera koherenta band väger tyngre än en isolerad överlappning. I Gas Tube kan atomära och molekylära bidrag förekomma samtidigt. Fluorescent avviker medvetet från linjematchningen: där beskriver SPECTRA PRO i första hand den breda bandformen genom lambda-max, centroid, FWHM, bandområde, asymmetri, shoulders och integrerad baslinjekorrigerad signal. Smala linjekandidater behandlas då endast som sekundär diagnostik.',
         'Relevanta signaturer eller kluster i den aktuella körningen är: ' + signatures + '. Kalibreringen är ' + calState + ', uppskattad instrument-/samplingupplösning i rapportens diagnostik är ' + resolution + ', SNR anges som ' + snr + ' och mättnadsfältet som ' + sat + '. Dessa värden används tillsammans för att bedöma om en numeriskt bra match också är experimentellt trovärdig. Mättnad kan förstöra peakform och relativa intensiteter, medan låg SNR kan skapa extra lokala maxima eller dölja svaga diagnostiska drag.',
-        'Efter matchningen sammanställs kandidatpoäng, observerade träffar, QC-flaggor och förklarad signalandel till det resultat som visas i LAB. Rapportens spektralbild visar den centrala 25 procenten av bildhöjden för att fokusera på själva dispersionsbandet, medan diagrammet återger den graf som faktiskt visades vid exporten med aktiva annoteringar och overlays. Den detaljerade feature-tabellen redovisar observerad våglängd, referensvåglängd, residual och score/confidence för de träffar som finns i den aktuella analysen. SNR definieras konsekvent som (P95-P05)/brus-sigma, där brus-sigma skattas robust från residualer mot ett 5-punkters glidande medelvärde. Resultaten bör ses som reproducerbara förslag givet den uppmätta signalen, valt preset och aktuell kalibrering; ändrad optik, fokus, zoom, gittergeometri eller kamerainställningar kan kräva ny kalibrering innan våglängdsmatchningen åter är tillförlitlig.' + calibrationFitNote + samplingRangeNote + coverageNote
+        'Efter matchningen sammanställs kandidatpoäng, observerade träffar, QC-flaggor och förklarad signalandel till det resultat som visas i LAB. Rapportens spektralbild visar den centrala 25 procenten av bildhöjden för att fokusera på själva dispersionsbandet, medan diagrammet återger den graf som faktiskt visades vid exporten med aktiva annoteringar och overlays. Den detaljerade feature-tabellen redovisar observerad våglängd, referensvåglängd, residual och score/confidence för resultatets matchade träffar. I Fluorescent används endast de koherenta smala linjeträffar som accepterats i resultatet; valfria svagare overlay-kandidater påverkar inte rapporttabellen. SNR definieras konsekvent som (P95-P05)/brus-sigma, där brus-sigma skattas robust från residualer mot ett 5-punkters glidande medelvärde. Resultaten bör ses som reproducerbara förslag givet den uppmätta signalen, valt preset och aktuell kalibrering; ändrad optik, fokus, zoom, gittergeometri eller kamerainställningar kan kräva ny kalibrering innan våglängdsmatchningen åter är tillförlitlig.' + calibrationFitNote + samplingRangeNote + coverageNote
       ];
     }
 
@@ -997,7 +1016,7 @@
       'For atomic Smart modes, a candidate is not accepted because of one nearby catalog line. The fingerprint layer combines multiple diagnostic lines, wavelength closeness, coverage of strong observed peaks, coherent line groups and coverage of a curated profile. Missing diagnostic profile features apply a cautious penalty, while dense or ambiguous catalog regions are prevented from gaining automatic advantage simply because many unrelated lines exist nearby. Score Share normalizes positive candidate score only within the current run and therefore is not a probability, concentration or abundance estimate.',
       'Molecular modes apply the corresponding multi-band logic. Diagnostic anchors and bands are evaluated together, and support from several coherent bands carries more weight than an isolated overlap. Gas Tube can retain both atomic and molecular contributors. Fluorescent deliberately follows a different path: SPECTRA PRO primarily characterizes the broadband shape using lambda max, centroid, FWHM, band range, asymmetry, shoulders and integrated baseline-corrected signal. Narrow-line candidates are secondary diagnostics in that mode.',
       'Relevant signatures or clusters in the current run are: ' + signatures + '. Calibration is ' + calState + ', the instrument/sampling resolution reported by the diagnostics is ' + resolution + ', SNR is ' + snr + ' and the saturation field is ' + sat + '. These values are considered together when deciding whether a numerically attractive match is also experimentally credible. Saturation can destroy peak shape and relative intensity information, whereas low SNR can introduce additional local maxima or hide weak diagnostic features.',
-      'After matching, candidate scores, observed hits, QC flags and explained-signal metrics are assembled into the LAB result. The report source image retains the central 25 percent of image height to focus on the dispersed spectrum, while the graph reproduces the canvas that was actually visible at export time with active annotations and overlays. The detailed feature table reports observed wavelength, reference wavelength, residual and score/confidence for the current hits. SNR is defined consistently as (P95-P05)/noise sigma, with noise sigma robustly estimated from residuals against a 5-point moving mean. Results should be treated as reproducible best proposals given the measured signal, selected preset and active calibration; changes in optics, focus, zoom, grating geometry or camera settings can require recalibration before wavelength matching is trustworthy again.' + calibrationFitNote + samplingRangeNote + coverageNote
+      'After matching, candidate scores, observed hits, QC flags and explained-signal metrics are assembled into the LAB result. The report source image retains the central 25 percent of image height to focus on the dispersed spectrum, while the graph reproduces the canvas that was actually visible at export time with active annotations and overlays. The detailed feature table reports observed wavelength, reference wavelength, residual and score/confidence for result-bearing matched hits. In Fluorescent, only coherent narrow-line hits accepted in the result are used; optional weaker overlay candidates do not alter the report table. SNR is defined consistently as (P95-P05)/noise sigma, with noise sigma robustly estimated from residuals against a 5-point moving mean. Results should be treated as reproducible best proposals given the measured signal, selected preset and active calibration; changes in optics, focus, zoom, grating geometry or camera settings can require recalibration before wavelength matching is trustworthy again.' + calibrationFitNote + samplingRangeNote + coverageNote
     ];
   }
 
@@ -1025,6 +1044,10 @@
       abstract: buildAutomaticAbstract(bundle || {}),
       methodNarrative: compactPdfNarrative(buildDetailedNarrative(bundle || {})),
       analysisLog: buildAnalysisLogLines(bundle || {}).slice(0, 12),
+      matchedFeatureRows: matchedFeatureRows(bundle && bundle.state ? bundle.state.analysis : {}),
+      matchedFeatureBasis: bundle && bundle.state && bundle.state.analysis && String(bundle.state.analysis.presetId || '') === 'smart-fluorescent'
+        ? 'accepted-clear-narrow-line-hits'
+        : 'analysis-matched-hits',
       aiInterpretation: {
         included: !!compactAiText,
         label: sv ? 'AI-TOLKNING' : 'OPTIONAL AI INTERPRETATION',
@@ -1387,7 +1410,7 @@
       else y = addWrapped(doc, sv ? 'Inga rankade träffar finns i den aktuella analysen.' : 'No ranked hits are available in the current analysis.', 17, y, pageW - 34, { size: 9 });
     }
 
-    const featureRows = matchedFeatureRows(analysis);
+    const featureRows = Array.isArray(reportModel.matchedFeatureRows) ? reportModel.matchedFeatureRows : matchedFeatureRows(analysis);
     if (featureRows.length) {
       if (y > 205) { doc.addPage(); y = 18; }
       y += 3;
