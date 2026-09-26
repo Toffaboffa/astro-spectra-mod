@@ -467,9 +467,34 @@
     };
   }
 
+  function sourceMetadataSnapshot(state, frame) {
+    const source = state && state.frame && state.frame.provenance && typeof state.frame.provenance === 'object'
+      ? state.frame.provenance
+      : (frame && frame.provenance && typeof frame.provenance === 'object' ? frame.provenance : null);
+    if (!source) return null;
+    return cloneJson(source);
+  }
+
+  function sourceProvenanceSummary(meta) {
+    if (!meta || typeof meta !== 'object') return '';
+    const provenance = meta.scientificProvenance && typeof meta.scientificProvenance === 'object'
+      ? meta.scientificProvenance
+      : null;
+    if (!provenance) return '';
+    const parts = [
+      provenance.provider,
+      provenance.dataset,
+      provenance.type,
+      provenance.primaryReference,
+      provenance.note
+    ].filter(function (value) { return value != null && String(value).trim(); });
+    return parts.join(' · ');
+  }
+
   function buildAnalysisBundle() {
     const state = (sp.store && sp.store.getState) ? sp.store.getState() : {};
     const frame = currentFrame();
+    const sourceMetadata = sourceMetadataSnapshot(state, frame);
     return {
       schema: 'spectra-pro-export/v2',
       generatedAt: new Date().toISOString(),
@@ -483,8 +508,14 @@
         dataQuality: collectInfoLines('spDataQualityText')
       },
       uiControls: collectControls(),
+      sourceMetadata: sourceMetadata,
       frameSummary: frame ? {
         source: frame.source || (state.frame && state.frame.source) || null,
+        sourceKind: sourceMetadata && sourceMetadata.kind ? sourceMetadata.kind : (frame.sourceKind || null),
+        sampleId: sourceMetadata && sourceMetadata.sampleId ? sourceMetadata.sampleId : (frame.sampleId || null),
+        sourceLabel: sourceMetadata && sourceMetadata.sourceLabel ? sourceMetadata.sourceLabel : (frame.sourceLabel || null),
+        fileName: sourceMetadata && sourceMetadata.fileName ? sourceMetadata.fileName : null,
+        assetId: sourceMetadata && sourceMetadata.assetId ? sourceMetadata.assetId : null,
         timestamp: frame.timestamp || null,
         sampleCount: Array.isArray(frame.I) ? frame.I.length : (Array.isArray(frame.px) ? frame.px.length : 0),
         hasWavelengthAxis: Array.isArray(frame.nm) && frame.nm.length > 0,
@@ -775,6 +806,13 @@
       const operations = Array.isArray(analysis.preprocessing.activeOperations) ? analysis.preprocessing.activeOperations : [];
       const warnings = Array.isArray(analysis.preprocessing.warnings) ? analysis.preprocessing.warnings : [];
       lines.push('Preprocessing schema=' + String(analysis.preprocessing.schema || '—') + '; intensity basis=' + String(analysis.preprocessing.intensityBasis || 'uncorrected-relative-intensity') + '; active operations=' + (operations.length ? operations.join(', ') : 'none') + '; warnings=' + (warnings.length ? warnings.join(', ') : 'none') + '.');
+    }
+    const sourceMeta = bundle && bundle.sourceMetadata ? bundle.sourceMetadata : null;
+    if (sourceMeta) {
+      lines.push('Source identity=' + String(sourceMeta.sourceLabel || sourceMeta.fileName || sourceMeta.sampleId || sourceMeta.kind || '—') +
+        '; kind=' + String(sourceMeta.kind || '—') +
+        '; sample=' + String(sourceMeta.sampleId || '—') +
+        '; asset/file=' + String(sourceMeta.assetId || sourceMeta.fileName || sourceMeta.assetPath || '—') + '.');
     }
     lines.push('Calibration=' + (cal.isCalibrated ? 'active' : 'inactive') + '; points=' + String(Array.isArray(cal.points) ? cal.points.length : 0) + '; worker=' + String(worker.status || '—') + '; analysis rate=' + String(worker.analysisHz != null ? worker.analysisHz : '—') + ' Hz.');
     const scaleRange = samplingAndRangeAssessment(state);
@@ -1378,11 +1416,23 @@
 
     y += 5;
     y = sectionTitle(doc, sv ? 'Reproducerbarhet' : 'Reproducibility', y);
+    const sourceMeta = bundle.sourceMetadata || {};
+    const sourceLabel = sv
+      ? (sourceMeta.sourceLabelSv || sourceMeta.sourceLabel || sourceMeta.fileName || '—')
+      : (sourceMeta.sourceLabelEn || sourceMeta.sourceLabel || sourceMeta.fileName || '—');
+    const assetOrFile = sourceMeta.fileName || sourceMeta.assetPath || sourceMeta.assetId || '—';
+    const provenanceSummary = sourceProvenanceSummary(sourceMeta);
     const repro = [
       [sv ? 'Tidsstämpel' : 'Timestamp', bundle.generatedAt],
       ['SPECTRA PRO', bundle.appVersion],
       [sv ? 'Språk' : 'Language', bundle.interfaceLanguage],
-      [sv ? 'Källa' : 'Source', bundle.frameSummary ? (bundle.frameSummary.source || '—') : '—'],
+      [sv ? 'Bildkälla' : 'Frame source', bundle.frameSummary ? (bundle.frameSummary.source || '—') : '—'],
+      [sv ? 'Källidentitet' : 'Source identity', sourceLabel],
+      [sv ? 'Källtyp' : 'Source kind', sourceMeta.kind || '—'],
+      [sv ? 'Exempel-ID' : 'Sample ID', sourceMeta.sampleId || '—'],
+      [sv ? 'Tillgång / fil' : 'Asset / file', assetOrFile],
+      ['SHA-256', sourceMeta.assetSha256 || '—'],
+      [sv ? 'Proveniens' : 'Provenance', provenanceSummary || '—'],
       [sv ? 'Provpunkter' : 'Samples', bundle.frameSummary ? String(bundle.frameSummary.sampleCount || 0) : '0'],
       [sv ? 'Arbetsläge' : 'Workspace', state.appMode || '—'],
       ['Preset', analysis.presetId || '—']
