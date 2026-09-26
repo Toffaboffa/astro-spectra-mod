@@ -143,8 +143,13 @@ catalog is intentionally empty. Correction is not absolute radiometric calibrati
 
 - Explicit `lab-atomic`, `lab-molecular`, `fluorescence` and `astro` contexts.
 - Compact deterministic measurement, calibration, quality and result evidence.
-- Default limits of 112 trace points, 28 prioritized hits, 6 candidates and 600
-  observation characters, with a dense-input CI budget of approximately 2500 tokens.
+- Default limits of 80 trace points, 20 prioritized accepted hits, 6 candidates
+  and 600 observation characters, with a dense-input CI budget of approximately 3500
+  tokens.
+- AI line evidence uses canonical accepted `topHits`; broader `rawTopHits` and
+  excluded diffraction diagnostics are not result evidence.
+- Source identity remains reproducibility provenance and is not exposed to the model as
+  identification evidence.
 - Server-side API key, origin validation, body limits, rate limiting, no-store behavior,
   structured response schema and a non-repetitive 100–170-word output policy.
 - Prompt rules prohibit invented features, probability claims from rankings,

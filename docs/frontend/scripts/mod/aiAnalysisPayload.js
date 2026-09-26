@@ -3,8 +3,8 @@
 
   const sp = global.SpectraPro = global.SpectraPro || {};
   const SCHEMA_VERSION = 'spectra-pro-ai-analysis/v1';
-  const DEFAULT_MAX_TRACE_POINTS = 112;
-  const DEFAULT_MAX_HITS = 28;
+  const DEFAULT_MAX_TRACE_POINTS = 80;
+  const DEFAULT_MAX_HITS = 20;
   const DEFAULT_MAX_CANDIDATES = 6;
   const MAX_OBSERVATION_CHARS = 600;
 
@@ -133,6 +133,20 @@
     return out;
   }
 
+  function compactWinnerComponent(value) {
+    if (value == null) return null;
+    if (typeof value !== 'object') {
+      const label = cleanString(value, 64);
+      return label || null;
+    }
+    const item = compactPrimitiveObject(value, [
+      'element', 'species', 'name', 'label', 'likelyPct', 'scoreSharePct',
+      'explainedIntensityPct', 'explainedPeaksPct', 'bandMinNm', 'bandMaxNm',
+      'bandWidthNm', 'evidenceModel'
+    ]);
+    return Object.keys(item).length ? item : null;
+  }
+
   function compactWinnerBreakdown(winner) {
     if (!winner || typeof winner !== 'object') return null;
     const out = compactPrimitiveObject(winner, [
@@ -140,8 +154,8 @@
       'explainedIntensityPct', 'expectedMissed', 'scoreSemantics', 'evidenceModel'
     ]);
     if (Array.isArray(winner.expectedFound)) out.expectedFound = winner.expectedFound.map(function (v) { return rounded(v, 4); }).filter(function (v) { return v != null; }).slice(0, 16);
-    if (Array.isArray(winner.possibleBands)) out.possibleBands = winner.possibleBands.slice(0, 12).map(function (v) { return cleanString(v, 64); }).filter(Boolean);
-    if (Array.isArray(winner.backgroundComponents)) out.backgroundComponents = winner.backgroundComponents.slice(0, 12).map(function (v) { return cleanString(v, 64); }).filter(Boolean);
+    if (Array.isArray(winner.possibleBands)) out.possibleBands = winner.possibleBands.slice(0, 12).map(compactWinnerComponent).filter(Boolean);
+    if (Array.isArray(winner.backgroundComponents)) out.backgroundComponents = winner.backgroundComponents.slice(0, 12).map(compactWinnerComponent).filter(Boolean);
     if (Array.isArray(winner.secondaryContributors)) {
       out.secondaryContributors = winner.secondaryContributors.slice(0, 4).map(function (row) {
         if (!row || typeof row !== 'object') return null;
@@ -169,7 +183,9 @@
   }
 
   function selectHits(hits, bestSpecies, maxHits) {
-    const list = Array.isArray(hits) ? hits.filter(Boolean) : [];
+    const list = Array.isArray(hits) ? hits.filter(function (hit) {
+      return hit && hit.excludedFromScoring !== true && hit.excludedByDiffraction !== true;
+    }) : [];
     const best = cleanString(bestSpecies, 96);
     const primary = [], secondary = [];
     list.forEach(function (hit) {
@@ -574,7 +590,7 @@
     const candidateRows = Array.isArray(analysis.elementScores) && analysis.elementScores.length ? analysis.elementScores : (Array.isArray(analysis.smartFindGroups) ? analysis.smartFindGroups : []);
     const candidates = candidateRows.slice(0, maxCandidates).map(compactCandidate).filter(Boolean);
     const bestMatch = candidates.length ? candidates[0] : null;
-    const rawHits = Array.isArray(analysis.rawTopHits) && analysis.rawTopHits.length ? analysis.rawTopHits : (Array.isArray(analysis.topHits) ? analysis.topHits : []);
+    const acceptedHits = Array.isArray(analysis.topHits) ? analysis.topHits : [];
     const fluorescence = compactFluorescence(analysis.fluorescenceSummary);
     const narrowHits = Array.isArray(analysis.narrowLineCandidates) ? analysis.narrowLineCandidates.slice(0, 24).map(compactHit).filter(Boolean) : [];
     const trace = buildTrace(frame, maxTracePoints);
@@ -610,7 +626,7 @@
         winnerBreakdown: compactWinnerBreakdown(analysis.winnerBreakdown),
         fluorescence: fluorescence,
         narrowLineCandidates: narrowHits,
-        hits: selectHits(rawHits, bestMatch && bestMatch.species, maxHits),
+        hits: selectHits(acceptedHits, bestMatch && bestMatch.species, maxHits),
         astro: astro,
         referenceComparison: compactReferenceComparison(analysis.referenceComparison)
       },
@@ -618,7 +634,7 @@
       readiness: {
         hasFrame: !!trace,
         calibrated: !!calibration.calibrated,
-        hasAnalysisResult: !!(astro || fluorescence || bestMatch || rawHits.length)
+        hasAnalysisResult: !!(astro || fluorescence || bestMatch || acceptedHits.length)
       }
     };
   }

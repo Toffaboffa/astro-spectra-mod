@@ -33,9 +33,11 @@ and optional observation text. Prompt rules prohibit invented features, probabil
 claims from rankings, unsupported exact stellar classes or abundances, radial-velocity
 overprecision, and use of uncorrected continuum shape as temperature evidence.
 
-Frontend defaults send at most 112 normalized trace points, 28 prioritized hits,
-6 candidates and 600 observation characters. The deterministic dense-input contract
-is capped at 9 kB and approximately 2500 estimated input tokens including instructions
+Frontend defaults send at most 80 normalized trace points, 20 prioritized
+accepted hits, 6 candidates and 600 observation characters. Result evidence uses
+canonical `topHits`; broader raw/diagnostic hits are excluded, and source identity is
+kept as provenance rather than model evidence. The deterministic dense-input contract
+is capped at 9 kB and approximately 3500 estimated input tokens including instructions
 and response schema. Output is targeted at 100–170 words without repeated conclusions.
 
 `GET /health` returns a small non-secret health response with application, model and contract versions. It does not expose or test the secret value.

@@ -375,13 +375,16 @@ The payload can include:
   radial velocity with uncertainty/correction status, and broad stellar-class evidence
 - optional user observation/context
 
-The default payload is deliberately bounded to 112 normalized trace points, 28
-prioritized hits, 6 candidates and 600 characters of optional observation text. A
-dense regression case must stay below 9 kB and approximately 2500 input tokens,
-including scientific instructions and the structured-response schema. The model is
-asked for 100–170 words, uses low reasoning/verbosity and has a 700-token hard output
-limit. Calibration, dominant quality limits and diagnostic evidence are prioritized
-over exhaustive raw lists.
+The default payload is deliberately bounded to 80 normalized trace points, 20
+prioritized accepted hits, 6 candidates and 600 characters of optional observation
+text. AI line evidence is taken from canonical accepted `topHits`; broader
+`rawTopHits` and excluded diffraction diagnostics are not sent as result evidence.
+The complete source metadata remains reproducibility provenance, while identity-bearing
+source names/IDs are withheld from model evidence. A dense regression case must stay
+below 9 kB and approximately 3500 input tokens, including scientific instructions and
+the structured-response schema. The model is asked for 100–170 words, uses low
+reasoning/verbosity and has a 700-token hard output limit. Calibration, dominant
+quality limits and accepted diagnostic evidence are prioritized over exhaustive lists.
 
 The interpretation prompt is designed to distinguish:
 

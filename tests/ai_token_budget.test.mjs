@@ -42,7 +42,16 @@ const state = {
     presetId: 'smart-atomic',
     resultContext: 'lab',
     elementScores: candidates,
-    rawTopHits: hits,
+    topHits: hits,
+    rawTopHits: hits.concat([{
+      species: 'RAW_ONLY',
+      element: 'RAW_ONLY',
+      observedNm: 777,
+      referenceNm: 777.8,
+      deltaNm: -0.8,
+      excludedFromScoring: true,
+      exclusionReason: 'possible-higher-order-diffraction'
+    }]),
     measurementQuality: {
       model: 'measurement-quality-v1',
       overallStatus: 'limited',
@@ -81,7 +90,7 @@ const state = {
 
 const context = { window: null, console, Date, Math, JSON, setTimeout, clearTimeout };
 context.window = context;
-context.SpectraPro = { version: 'v3.0.1', store: { getState: () => state } };
+context.SpectraPro = { version: 'v1.3.8', store: { getState: () => state } };
 vm.createContext(context);
 vm.runInContext(
   fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/aiAnalysisPayload.js'), 'utf8'),
@@ -97,13 +106,14 @@ const estimatedInputTokens = Math.ceil(promptChars / 4);
 const payloadBytes = Buffer.byteLength(JSON.stringify(payload));
 
 assert.deepEqual(Object.assign({}, context.SpectraPro.aiAnalysisPayload.defaults), {
-  maxTracePoints: 112,
-  maxHits: 28,
+  maxTracePoints: 80,
+  maxHits: 20,
   maxCandidates: 6
 });
 assert.equal(payload.observation.length, 600, 'observation context must have a compact hard cap');
-assert.ok(payload.trace.points.length >= 96 && payload.trace.points.length <= 112, 'trace must remain informative but bounded');
-assert.equal(payload.analysis.hits.length, 28, 'only the most relevant bounded hit set should be sent');
+assert.ok(payload.trace.points.length >= 72 && payload.trace.points.length <= 80, 'trace must remain informative but bounded');
+assert.equal(payload.analysis.hits.length, 20, 'only the most relevant bounded accepted-hit set should be sent');
+assert.ok(!payload.analysis.hits.some((hit) => hit.species === 'RAW_ONLY'), 'raw-only/excluded diagnostic hits must never enter AI result evidence');
 assert.equal(payload.analysis.candidates.length, 6, 'candidate evidence should remain bounded');
 assert.ok(payload.analysis.calibrationDiagnostics, 'calibration evidence must survive compaction');
 assert.equal(payload.analysis.calibrationDiagnostics.samplingNmPerPixel, 0.4, 'compact AI payload must preserve canonical calibration sampling');
@@ -113,8 +123,10 @@ assert.equal(payload.analysis.calibrationDiagnostics.exactInterpolation, true, '
 assert.deepEqual(Object.assign({}, payload.analysis.calibrationDiagnostics.extrapolation), { any: false, left: false, right: false }, 'compact AI payload must preserve calibration extrapolation state');
 assert.ok(payload.quality.measurement, 'measurement quality must survive compaction');
 assert.ok(payloadBytes <= 9000, `dense LAB payload exceeded 9 kB: ${payloadBytes}`);
-assert.ok(estimatedInputTokens <= 2500, `estimated dense input exceeded 2500 tokens: ${estimatedInputTokens}`);
+assert.ok(estimatedInputTokens <= 3500, `estimated dense input exceeded 3500 tokens: ${estimatedInputTokens}`);
+assert.equal(promptPackage.responsePolicy.inputTokenBudget, 3500);
 assert.deepEqual(promptPackage.responsePolicy.preferredWordRange, [100, 170]);
+assert.ok(buildDeveloperInstructions().includes('Source metadata is provenance only.'));
 assert.ok(buildDeveloperInstructions().includes('Do not repeat the same fact across fields.'));
 
 console.log(`AI TOKEN BUDGET: ${payloadBytes} bytes, ~${estimatedInputTokens} input tokens, ${payload.trace.points.length} trace points, ${payload.analysis.hits.length} hits, ${payload.analysis.candidates.length} candidates.`);

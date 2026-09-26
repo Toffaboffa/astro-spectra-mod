@@ -41,11 +41,12 @@ separation, radial-velocity uncertainty/correction caveats, broad stellar-class 
 and the ASTRO launch control. It uses only small numeric/JSON fixtures and performs no
 network, browser, image, or model call.
 The AI token-budget suite builds a deliberately dense 1280-sample LAB state and
-requires the transmitted evidence to remain at or below 9 kB and approximately 2500
+requires the transmitted evidence to remain at or below 9 kB and approximately 3500
 input tokens including instructions and response schema. It also locks the compact
-112-point trace, 28-hit, 6-candidate, 600-character observation and 100–170-word
-response contracts. The estimate is deterministic and deliberately conservative; it
-does not call a tokenizer service or model.
+80-point trace, 20 accepted-hit, 6-candidate, 600-character observation and
+100–170-word response contracts, and rejects raw-only/excluded diagnostic hits. The
+estimate is deterministic and deliberately conservative; it does not call a tokenizer
+service or model.
 The UI consolidation suite statically verifies that LAB and ASTRO retain their primary
 workflow controls/results, expert controls remain available in collapsed Advanced
 groups, reference comparison uses progressive disclosure, IDs remain unique, and the
