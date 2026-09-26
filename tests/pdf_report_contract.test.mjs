@@ -112,6 +112,16 @@ const compactQualityHeight = context.SpectraPro.exportUi.estimateQualityStatusBl
 );
 assert.ok(compactQualityHeight < 120, 'compact Quality/Status block estimate must fit comfortably on one A4 page instead of forcing a tiny spill page');
 
+const neonTailHeight = context.SpectraPro.exportUi.estimateResultDetailsPageHeight(
+  42,
+  18,
+  14,
+  0,
+  12,
+  13
+);
+assert.ok(neonTailHeight < 258, 'Neon-like result details (42 accepted hits plus Quality/Status, log and reproducibility) must fit within one A4 content page');
+
 assert.equal(bundle.schema, 'spectra-pro-export/v2', 'JSON must remain the complete versioned reproducibility artifact');
 assert.equal(bundle.ai.resultText, longAiText, 'JSON must retain the complete completed AI text');
 assert.equal(report.schema, 'spectra-pro-pdf-report/v1');
@@ -146,13 +156,15 @@ assert.ok(source.includes('clearNarrowLineHits') && source.includes('optional we
 assert.ok(source.includes('function pdfTableRow(row)'), 'PDF export must centralize table-cell sanitization');
 assert.ok(source.includes('head: [pdfTableRow(head)]') && source.includes('body: paired.map(pdfTableRow)'), 'matched-feature AutoTable must sanitize both headers and cells');
 assert.ok(source.includes("body: rows.map(pdfTableRow)"), 'quality/status AutoTable must sanitize diagnostic labels such as Noise sigma');
-assert.ok(source.includes("pageBreak: 'avoid'") && source.includes("rowPageBreak: 'avoid'"), 'Quality/Status and reproducibility tables must avoid tiny spill pages when the block fits as a unit');
-assert.ok(source.includes('estimateQualityStatusBlockHeight(dq, status, qc)'), 'PDF layout must estimate Quality/Status height before choosing a page');
-assert.ok(source.includes('if (y + qualityBlockHeight > 276) { doc.addPage(); y = 18; }'), 'Quality/Status must move cleanly to a fresh page when remaining space is insufficient');
-assert.ok(source.includes('Do not force a new page here'), 'analysis log should share the Quality/Status tail page when space permits');
-assert.ok(!source.includes("// Detailed log and reproducibility\n    doc.addPage();"), 'the old unconditional page break before the analysis log must not return');
-assert.ok(source.includes("fontSize: 6.8, cellPadding: 0.9"), 'Quality/Status table must use the compact print layout');
-assert.ok(source.includes("fontSize: 6.9, cellPadding: 0.9"), 'reproducibility table must use the compact print layout');
+assert.ok(source.includes("pageBreak: 'avoid'") && source.includes("rowPageBreak: 'avoid'"), 'feature and Quality/Status tables must avoid tiny row spill pages');
+assert.ok(source.includes('estimateResultDetailsPageHeight('), 'PDF layout must preflight the complete result-details tail before choosing a page');
+assert.ok(source.includes('featureRows.length, dq.length, status.length, qc.length, analysisLog.length, repro.length'), 'result-tail preflight must account for accepted features, quality, log and reproducibility');
+assert.ok(source.includes('former pages') && source.includes('become a single readable print page'), 'PDF source must document the six-page result-tail layout goal');
+assert.ok(source.includes("compactColumnBlock(doc, sv ? 'Analyslogg' : 'Analysis log'"), 'analysis log must render in the compact left tail column');
+assert.ok(source.includes("compactColumnBlock(doc, sv ? 'Reproducerbarhet' : 'Reproducibility'"), 'reproducibility must render beside the log instead of forcing a seventh page');
+assert.ok(source.includes("fontSize: 6.15, cellPadding: 0.52"), 'Quality/Status table must use the compact six-page print layout');
+assert.ok(source.includes("fontSize: 6.0, cellPadding: 0.48"), 'matched-feature table must use the compact six-page print layout');
+assert.ok(!source.includes("if (y > 165) { doc.addPage(); y = 18; }"), 'the old reproducibility-only page-break trigger must not return');
 assert.ok(source.includes("'σ':'sigma'") && source.includes("'≈':' approx '") && source.includes("'±':' +/- '") && source.includes("'×':' x '"), 'PDF sanitizer must cover the scientific symbols that previously rendered incorrectly');
 assert.ok(!source.includes('instrument/sampling resolution'), 'English report prose must not conflate instrument resolution with calibrated sampling');
 assert.ok(!source.includes('instrument-/samplingupplösningen'), 'Swedish report prose must not conflate instrument resolution with calibrated sampling');
