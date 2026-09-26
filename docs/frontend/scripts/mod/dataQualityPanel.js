@@ -275,7 +275,7 @@
     return count;
   }
 
-  function bestAnalysisConfidence(state) {
+  function bestAcceptedHitConfidence(state) {
     const hits = (((state || {}).analysis || {}).topHits) || [];
     if (!Array.isArray(hits) || !hits.length) return null;
     let best = null;
@@ -487,7 +487,7 @@
     const fitRmsValue = Number.isFinite(calRmsNm)
       ? (formatMaybe(calRmsNm, 2) + ' nm' + (Number.isFinite(fitDegreesOfFreedom) ? ' · dof ' + String(fitDegreesOfFreedom) : ''))
       : '—';
-    const conf = hasLabAnalysis(st) ? bestAnalysisConfidence(st) : null;
+    const conf = hasLabAnalysis(st) ? bestAcceptedHitConfidence(st) : null;
     const measurementQuality = st.analysis && st.analysis.measurementQuality;
     const mainLimitation = measurementQuality && measurementQuality.mainLimitation;
     const coverageQuality = measurementQuality && measurementQuality.dimensions && measurementQuality.dimensions.coverage;
@@ -508,7 +508,7 @@
       line('Hits/QC:', `${((st.analysis && st.analysis.topHits) || []).length}/${((st.analysis && st.analysis.qcFlags) || []).length}`, 'Top hits / QC flags from the current LAB analysis.', 'analysis'),
       line('Offset:', `${hasLabAnalysis(st) && Number.isFinite(reportedOffsetNm) ? (formatMaybe(reportedOffsetNm, 2) + ' nm') : '—'}`, 'Signed median wavelength residual for the reported analysis result. Positive means observed wavelength is above the reference wavelength; negative means below.', 'analysis'),
       line('Match MAE:', `${hasLabAnalysis(st) ? (formatMaybe(matchMeanAbsResidualNm, 2) + ' nm') : '—'}`, 'Mean absolute wavelength residual across the current matched hits. This ignores sign and is a match-error magnitude, not a systematic wavelength offset.', 'analysis'),
-      line('Conf:', `${Number.isFinite(conf) ? formatMaybe(conf, 2) : '—'}`, 'Best current analysis confidence from the active top-hit set.', 'analysis'),
+      line('Best hit conf:', `${Number.isFinite(conf) ? formatMaybe(conf, 2) : '—'}`, 'Highest confidence value among the currently accepted top hits. This is confidence for one individual line match, not the probability or confidence that the overall Best Match species identification is correct.', 'analysis'),
       line('Noise σ:', `${formatMaybe(noiseMetrics.sigma, 2)}`, 'Robust noise sigma estimated from residuals against a 5-point moving mean.', 'quality'),
       line('SNR:', `${formatMaybe(noiseMetrics.snr, 2)}`, 'Canonical SNR = (P95 - P05) / noise sigma. The same definition is used by worker Measurement Quality, GUI diagnostics, exports and AI context.', 'quality'),
       line('Cal samp:', `${Number.isFinite(calibratedSamplingNmPerPixel) ? calibratedSamplingNmPerPixel.toFixed(3) + ' nm/px' : '—'}`, 'Calibrated wavelength sampling derived from the active px→nm mapping. This is not the same quantity as the hardware profile nominal pixel scale.', 'calibration'),
@@ -520,7 +520,7 @@
       line('Eff. R:', `${Number.isFinite(resolvingPower) ? ('R≈' + Math.round(resolvingPower)) : '—'}`, 'Approximate resolving power R ≈ λ/Δλ.', 'hardware')
     ];
 
-    return { status, dq, metrics: { min, max, avg, dyn, validCount, saturation: satText, snr: snrText, snrValue: noiseMetrics.snr, snrDefinition: noiseMetrics.definition, snrSource: noiseMetrics.source, signalSpanP95P05: noiseMetrics.signalSpanP95P05, reportedOffsetNm: reportedOffsetNm, matchMeanAbsResidualNm: matchMeanAbsResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.snr, resolutionNmPerPx: calibratedSamplingNmPerPixel, calibratedSamplingNmPerPixel: calibratedSamplingNmPerPixel, nominalPixelScaleNmPerPixel: Number.isFinite(nominalPixelScaleNmPerPixel) ? nominalPixelScaleNmPerPixel : null, configuredHardwareRangeMinNm: Number.isFinite(configuredHardwareRangeMinNm) ? configuredHardwareRangeMinNm : null, configuredHardwareRangeMaxNm: Number.isFinite(configuredHardwareRangeMaxNm) ? configuredHardwareRangeMaxNm : null, hardwareFwhmNm: hwFwhmNm, resolvingPower, quickPeakCount: quickPeaks.length, strongPeakCount: strongPeaks, baseline: baseline, headroom, coverageMinNm: coverage.min, coverageMaxNm: coverage.max, bestConfidence: conf, calibrationRmsNm: calRmsNm, calibrationFitRmsNm: calRmsNm, fitDegreesOfFreedom: Number.isFinite(fitDegreesOfFreedom) ? fitDegreesOfFreedom : null, fitResidualStatus: fitResidualStatus, measurementQuality: measurementQuality || null } };
+    return { status, dq, metrics: { min, max, avg, dyn, validCount, saturation: satText, snr: snrText, snrValue: noiseMetrics.snr, snrDefinition: noiseMetrics.definition, snrSource: noiseMetrics.source, signalSpanP95P05: noiseMetrics.signalSpanP95P05, reportedOffsetNm: reportedOffsetNm, matchMeanAbsResidualNm: matchMeanAbsResidualNm, noiseSigma: noiseMetrics.sigma, sn: noiseMetrics.snr, resolutionNmPerPx: calibratedSamplingNmPerPixel, calibratedSamplingNmPerPixel: calibratedSamplingNmPerPixel, nominalPixelScaleNmPerPixel: Number.isFinite(nominalPixelScaleNmPerPixel) ? nominalPixelScaleNmPerPixel : null, configuredHardwareRangeMinNm: Number.isFinite(configuredHardwareRangeMinNm) ? configuredHardwareRangeMinNm : null, configuredHardwareRangeMaxNm: Number.isFinite(configuredHardwareRangeMaxNm) ? configuredHardwareRangeMaxNm : null, hardwareFwhmNm: hwFwhmNm, resolvingPower, quickPeakCount: quickPeaks.length, strongPeakCount: strongPeaks, baseline: baseline, headroom, coverageMinNm: coverage.min, coverageMaxNm: coverage.max, bestHitConfidence: conf, bestConfidence: conf, calibrationRmsNm: calRmsNm, calibrationFitRmsNm: calRmsNm, fitDegreesOfFreedom: Number.isFinite(fitDegreesOfFreedom) ? fitDegreesOfFreedom : null, fitResidualStatus: fitResidualStatus, measurementQuality: measurementQuality || null } };
   }
 
   mod.compute = compute;
