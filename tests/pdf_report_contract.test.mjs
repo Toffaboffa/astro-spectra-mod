@@ -139,6 +139,9 @@ assert.ok(source.includes("sv ? 'Kalibrerad sampling' : 'Calibrated sampling'"),
 assert.ok(source.includes("sv ? 'Konfigurerat hårdvaruomfång' : 'Configured hardware range'"), 'PDF instrument table must label configured hardware range explicitly');
 assert.ok(source.includes("sv ? 'Kalibrerad täckning' : 'Calibrated coverage'"), 'PDF instrument table must show actual calibrated coverage separately');
 assert.ok(source.includes("if (String(a.presetId || '') === 'smart-fluorescent')"), 'PDF matched-feature selector must special-case Fluorescent accepted hits');
+assert.ok(source.includes("if (Array.isArray(a.topHits)) return a.topHits.slice(0, 80);"), 'non-Fluorescent deterministic PDF tables must use canonical topHits');
+assert.ok(source.includes('rawTopHits remains in JSON for reproducibility/diagnostics but must never'), 'PDF source must document that rawTopHits is diagnostic rather than report-result data');
+assert.ok(!source.includes("if (Array.isArray(a.rawTopHits) && a.rawTopHits.length) return a.rawTopHits.slice(0, 80);"), 'rawTopHits must not be the deterministic PDF feature-table source');
 assert.ok(source.includes('clearNarrowLineHits') && source.includes('optional weaker overlay candidates are visual and do not change the deterministic report result'), 'PDF source must document that Fluorescent overlay candidates are visual only');
 assert.ok(source.includes('function pdfTableRow(row)'), 'PDF export must centralize table-cell sanitization');
 assert.ok(source.includes('head: [pdfTableRow(head)]') && source.includes('body: paired.map(pdfTableRow)'), 'matched-feature AutoTable must sanitize both headers and cells');
@@ -258,6 +261,26 @@ if (savedNullSemantics.hardMatchCapNm === undefined) delete state.analysis.hardM
 else state.analysis.hardMatchCapNm = savedNullSemantics.hardMatchCapNm;
 state.analysis.topHits = savedNullSemantics.topHits;
 state.analysis.rawTopHits = savedNullSemantics.rawTopHits;
+
+state.analysis.presetId = 'smart-gastube';
+state.analysis.topHits = [
+  { element: 'Ne', observedNm: 585.12, referenceNm: 585.249, deltaNm: -0.129, confidence: 0.86 },
+  { element: 'Ne', observedNm: 614.18, referenceNm: 614.306, deltaNm: -0.126, confidence: 0.82 }
+];
+state.analysis.rawTopHits = [
+  ...state.analysis.topHits,
+  { element: 'Ne', observedNm: 614.18, referenceNm: 614.306, deltaNm: -0.126, confidence: 0.41, evidencePath: 'duplicate-confirmation' },
+  { element: 'He', observedNm: 703.63, referenceNm: 706.519, deltaNm: -2.889, confidence: 0.22, evidencePath: 'confirmation-only' }
+];
+const gasTubeBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
+const gasTubeReport = context.SpectraPro.exportUi.buildPdfReportModel(gasTubeBundle);
+assert.equal(gasTubeBundle.scientificAnalysis.lab.topHits.length, 2, 'Gas Tube JSON must preserve canonical accepted top hits');
+assert.equal(gasTubeBundle.scientificAnalysis.lab.rawTopHits.length, 4, 'Gas Tube JSON must preserve raw diagnostic hits for reproducibility');
+assert.equal(gasTubeReport.matchedFeatureBasis, 'accepted-top-hits', 'Gas Tube PDF must identify canonical topHits as its deterministic feature basis');
+assert.equal(gasTubeReport.matchedFeatureRows.length, 2, 'Gas Tube PDF feature table must contain accepted topHits only');
+assert.ok(!JSON.stringify(gasTubeReport.matchedFeatureRows).includes('706.519'), 'Gas Tube PDF must exclude confirmation-only raw hits outside the accepted result set');
+assert.ok(gasTubeReport.analysisLog.some((line) => line.includes('accepted top hits=2; raw diagnostic hits=4; report hit basis=accepted-top-hits')), 'Gas Tube PDF log must distinguish accepted result hits from raw diagnostics');
+assert.ok(!gasTubeReport.analysisLog.some((line) => line.includes('; top hits=2; raw hits=4;')), 'old ambiguous Gas Tube top/raw hit wording must not return');
 
 state.frame.provenance = {
   kind: 'bundled-example',
