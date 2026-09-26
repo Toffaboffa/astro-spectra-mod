@@ -26,7 +26,7 @@ importScripts(
   './plasmaProfiles.js?v=3.0.1',
   './molecularEvidencePatch.js?v=3.0.1-artifact-filter-1',
   './atomicProfiles.js?v=3.0.1',
-  './atomicEvidence.js?v=3.0.1-artifact-filter-1',
+  './atomicEvidence.js?v=3.1.7-hard-cap-1',
   './fluorescenceAnalysis.js?v=3.1.7-offset-1',
   './workerRouter.js?v=3.0.1-fluorescence-lines-1'
 );
