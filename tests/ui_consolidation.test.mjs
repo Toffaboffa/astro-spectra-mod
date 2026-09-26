@@ -470,7 +470,7 @@ for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Ad
 }
 assert.ok(spectrapro.includes('analysisWorkerClient.js?v=3.1.7-result-scope-1'), 'published worker client must use the result-scoped LAB quality cache key');
 assert.ok(spectrapro.includes('proBootstrap.js?v=3.1.7-provenance-1'), 'published bootstrap must use the source-provenance cache key');
-assert.ok(spectrapro.includes('dataQualityPanel.js?v=3.1.7-scale-1'), 'published Data Quality module must use the nominal-vs-calibrated scale cache key');
+assert.ok(spectrapro.includes('dataQualityPanel.js?v=3.1.7-hit-confidence-1'), 'published Data Quality module must use the honest-hit-confidence cache key');
 assert.ok(spectrapro.includes('stateStore.js?v=3.1.7-pdf-top-hits-1'), 'published state store must use the accepted-PDF-topHits cache key');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=3.1.7-provenance-1'), 'published image loader must use the source-provenance cache key');
 assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=3.1.7-result-scope-1'"), 'worker client must load the refreshed result-scoped LAB quality worker shell');
