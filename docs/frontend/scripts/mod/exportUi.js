@@ -918,6 +918,20 @@
     return found ? (found.value || found.text || '—') : '—';
   }
 
+  function canonicalSnrText(analysis, dq) {
+    const noise = analysis && analysis.measurementQuality && analysis.measurementQuality.dimensions &&
+      analysis.measurementQuality.dimensions.noise;
+    const value = noise && noise.metrics ? Number(noise.metrics.snr) : NaN;
+    return Number.isFinite(value) ? nfmt(value, 2) : lookupDiagnostic(dq, 'snr');
+  }
+
+  function canonicalSaturationText(analysis, dq) {
+    const saturation = analysis && analysis.measurementQuality && analysis.measurementQuality.dimensions &&
+      analysis.measurementQuality.dimensions.saturation;
+    const fraction = saturation && saturation.metrics ? Number(saturation.metrics.saturationFraction) : NaN;
+    return Number.isFinite(fraction) ? nfmt(fraction * 100, 2) + '%' : lookupDiagnostic(dq, 'sat');
+  }
+
   function reportSourceLabel(bundle, sv) {
     const meta = bundle && bundle.sourceMetadata && typeof bundle.sourceMetadata === 'object'
       ? bundle.sourceMetadata
@@ -984,8 +998,8 @@
     const preset = analysis.presetId || '—';
     const count = frame.sampleCount || 0;
     const calibrated = !!cal.isCalibrated;
-    const snr = lookupDiagnostic(dq, 'snr');
-    const sat = lookupDiagnostic(dq, 'sat');
+    const snr = canonicalSnrText(analysis, dq);
+    const sat = canonicalSaturationText(analysis, dq);
     const sourceLabel = reportSourceLabel(bundle, sv);
     const measurementQuality = analysis.measurementQuality || null;
     const qualityStatus = measurementQuality ? qualityStatusText(measurementQuality.overallStatus, sv) : '';
@@ -1074,8 +1088,8 @@
       : (sv ? 'medianen av residualerna i analysmotorns matchningsmängd före eventuell visningsfiltrering' : 'the median residual of the analysis matcher set before any display filtering');
     const signatures = signatureSummary(analysis, sv);
     const maxDist = Number.isFinite(Number(analysis.maxDistanceNm)) ? nfmt(analysis.maxDistanceNm, 2) + ' nm' : (sv ? 'aktuell presetgräns' : 'the active preset limit');
-    const snr = lookupDiagnostic(dq, 'snr');
-    const sat = lookupDiagnostic(dq, 'sat');
+    const snr = canonicalSnrText(analysis, dq);
+    const sat = canonicalSaturationText(analysis, dq);
     const calState = cal.isCalibrated ? (sv ? 'aktiv' : 'active') : (sv ? 'inte aktiv' : 'not active');
     const resolution = hw.spectrometerResolutionFwhmNm != null
       ? nfmt(hw.spectrometerResolutionFwhmNm, 2) + ' nm FWHM'
