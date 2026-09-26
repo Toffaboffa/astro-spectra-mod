@@ -105,6 +105,13 @@ assert.equal(
 );
 assert.ok(!/[λΔσ≈μΩ₂₃⁻→≤≥−–—Å]/.test(context.SpectraPro.exportUi.pdfSafeText('λ Δ σ ≈ μ Ω H₂O 10⁻³ → ≤ ≥ − – — Å')), 'unsupported scientific Unicode must not survive into the core Helvetica PDF text path');
 
+const compactQualityHeight = context.SpectraPro.exportUi.estimateQualityStatusBlockHeight(
+  Array.from({ length: 18 }, (_, index) => ({ label: 'Q' + index, value: String(index) })),
+  Array.from({ length: 14 }, (_, index) => ({ label: 'S' + index, value: String(index) })),
+  ['LOW_SIGNAL']
+);
+assert.ok(compactQualityHeight < 120, 'compact Quality/Status block estimate must fit comfortably on one A4 page instead of forcing a tiny spill page');
+
 assert.equal(bundle.schema, 'spectra-pro-export/v2', 'JSON must remain the complete versioned reproducibility artifact');
 assert.equal(bundle.ai.resultText, longAiText, 'JSON must retain the complete completed AI text');
 assert.equal(report.schema, 'spectra-pro-pdf-report/v1');
@@ -133,6 +140,13 @@ assert.ok(source.includes('clearNarrowLineHits') && source.includes('optional we
 assert.ok(source.includes('function pdfTableRow(row)'), 'PDF export must centralize table-cell sanitization');
 assert.ok(source.includes('head: [pdfTableRow(head)]') && source.includes('body: paired.map(pdfTableRow)'), 'matched-feature AutoTable must sanitize both headers and cells');
 assert.ok(source.includes("body: rows.map(pdfTableRow)"), 'quality/status AutoTable must sanitize diagnostic labels such as Noise sigma');
+assert.ok(source.includes("pageBreak: 'avoid'") && source.includes("rowPageBreak: 'avoid'"), 'Quality/Status and reproducibility tables must avoid tiny spill pages when the block fits as a unit');
+assert.ok(source.includes('estimateQualityStatusBlockHeight(dq, status, qc)'), 'PDF layout must estimate Quality/Status height before choosing a page');
+assert.ok(source.includes('if (y + qualityBlockHeight > 276) { doc.addPage(); y = 18; }'), 'Quality/Status must move cleanly to a fresh page when remaining space is insufficient');
+assert.ok(source.includes('Do not force a new page here'), 'analysis log should share the Quality/Status tail page when space permits');
+assert.ok(!source.includes("// Detailed log and reproducibility\n    doc.addPage();"), 'the old unconditional page break before the analysis log must not return');
+assert.ok(source.includes("fontSize: 6.8, cellPadding: 0.9"), 'Quality/Status table must use the compact print layout');
+assert.ok(source.includes("fontSize: 6.9, cellPadding: 0.9"), 'reproducibility table must use the compact print layout');
 assert.ok(source.includes("'σ':'sigma'") && source.includes("'≈':' approx '") && source.includes("'±':' +/- '") && source.includes("'×':' x '"), 'PDF sanitizer must cover the scientific symbols that previously rendered incorrectly');
 assert.ok(source.includes(".replace(/[^\\x09\\x0A\\x0D\\x20-\\xFF]/g, '?')"), 'PDF sanitizer must replace any remaining unsupported Unicode instead of emitting broken glyphs');
 assert.ok(report.analysisLog.length <= 12, 'human analysis log must remain bounded');
