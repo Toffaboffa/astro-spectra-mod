@@ -14,7 +14,7 @@ importScripts(
   './calibrationDiagnostics.js?v=3.1.7-fit-dof-1',
   './spectralFeatures.js?v=3.0.1',
   './diffractionArtifacts.js?v=3.0.1-diffraction-1',
-  './measurementQuality.js?v=3.1.7-fit-dof-1',
+  './measurementQuality.js?v=3.1.7-result-scope-1',
   './candidateAnalysis.js?v=3.1.7-offset-1',
   './astroReferences.js?v=3.0.1',
   './astroContinuum.js?v=3.0.1',
