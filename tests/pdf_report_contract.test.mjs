@@ -116,6 +116,8 @@ assert.ok(source.includes("sv ? 'Nominell pixelskala' : 'Nominal pixel scale'"),
 assert.ok(source.includes("sv ? 'Kalibrerad sampling' : 'Calibrated sampling'"), 'PDF instrument table must show calibrated sampling separately');
 assert.ok(source.includes("sv ? 'Konfigurerat hårdvaruomfång' : 'Configured hardware range'"), 'PDF instrument table must label configured hardware range explicitly');
 assert.ok(source.includes("sv ? 'Kalibrerad täckning' : 'Calibrated coverage'"), 'PDF instrument table must show actual calibrated coverage separately');
+assert.ok(source.includes("if (String(a.presetId || '') === 'smart-fluorescent')"), 'PDF matched-feature selector must special-case Fluorescent accepted hits');
+assert.ok(source.includes('clearNarrowLineHits') && source.includes('optional weaker overlay candidates do not alter the report table'), 'PDF source must document that Fluorescent overlay candidates are visual only');
 assert.ok(report.analysisLog.length <= 12, 'human analysis log must remain bounded');
 assert.equal(bundle.scientificAnalysis.detectedPeakCount, 1, 'scientific export snapshot must preserve the canonical worker peak count');
 assert.equal(bundle.scientificAnalysis.detectedPeaks.length, 1, 'scientific export snapshot must preserve the canonical worker peak list');
@@ -160,6 +162,16 @@ state.analysis.clearNarrowLineHits = [
   { element: 'Hg', observedNm: 436.605, referenceNm: 435.833, deltaNm: 0.772 },
   { element: 'Hg', observedNm: 546.697, referenceNm: 546.074, deltaNm: 0.623 }
 ];
+state.analysis.narrowLineCandidates = [
+  { element: 'Hg', observedNm: 404.385, referenceNm: 404.656, deltaNm: -0.271 },
+  { element: 'Hg', observedNm: 436.605, referenceNm: 435.833, deltaNm: 0.772 },
+  { element: 'Hg', observedNm: 546.697, referenceNm: 546.074, deltaNm: 0.623 },
+  { element: 'Hg', observedNm: 576.995, referenceNm: 576.961, deltaNm: 0.034, confidence: 0.2 },
+  { element: 'Ar', observedNm: 696.4, referenceNm: 696.543, deltaNm: -0.143, confidence: 0.1 }
+];
+state.analysis.narrowLineOverlay = false;
+state.analysis.topHits = state.analysis.clearNarrowLineHits.slice();
+state.analysis.rawTopHits = state.analysis.clearNarrowLineHits.slice();
 state.analysis.measurementQuality.overallStatus = 'good';
 state.analysis.measurementQuality.mainLimitation = null;
 state.analysis.measurementQuality.dimensions.coverage = {
@@ -181,8 +193,13 @@ state.analysis.measurementQuality.dimensions.coverage = {
 };
 const fluorescentBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
 const fluorescentReport = context.SpectraPro.exportUi.buildPdfReportModel(fluorescentBundle);
+const fluorescentRowsOverlayOff = JSON.stringify(fluorescentReport.matchedFeatureRows);
+const fluorescentLogOverlayOff = JSON.stringify(fluorescentReport.analysisLog);
 assert.ok(fluorescentReport.methodNarrative.some((line) => line.includes('coherent narrow-line hits accepted in the Fluorescent result')), 'Fluorescent PDF narrative must identify the accepted coherent hit set used for the reported offset');
 assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('basis=clear-narrow-line-hits')), 'PDF analysis log must record machine-readable offset provenance');
+assert.equal(fluorescentReport.matchedFeatureBasis, 'accepted-clear-narrow-line-hits', 'Fluorescent report model must identify accepted clear narrow-line hits as the table basis');
+assert.equal(fluorescentReport.matchedFeatureRows.length, 3, 'Fluorescent matched-feature table must contain only accepted coherent hits when overlay is off');
+assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('accepted narrow-line hits=3; narrow-line candidates=5')), 'Fluorescent analysis log must report accepted hits and candidate count without using overlay-dependent raw-hit count');
 assert.ok(Math.abs(fluorescentBundle.scientificAnalysis.lab.matchMeanAbsResidualNm - 0.5553333333333333) < 1e-12, 'Fluorescent scientific export must compute MAE from the accepted hit residual magnitudes');
 assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('match MAE=0.5553 nm')), 'Fluorescent PDF log must keep +0.623 nm signed offset distinct from 0.5553 nm match MAE');
 assert.ok(fluorescentReport.analysisLog.some((line) => line.includes('full-frame extrapolation=yes')), 'PDF analysis log must retain the full-frame extrapolation warning');
@@ -197,6 +214,17 @@ assert.ok(source.includes("sv ? 'Källtyp' : 'Source kind'"), 'PDF reproducibili
 assert.ok(source.includes("sv ? 'Exempel-ID' : 'Sample ID'"), 'PDF reproducibility table must contain bundled sample ID');
 assert.ok(source.includes("'SHA-256'"), 'PDF reproducibility table must expose bundled asset SHA-256');
 assert.ok(source.includes("sv ? 'Proveniens' : 'Provenance'"), 'PDF reproducibility table must expose scientific provenance');
+
+state.analysis.narrowLineOverlay = true;
+state.analysis.rawTopHits = state.analysis.narrowLineCandidates.slice();
+state.analysis.smartFindHits = state.analysis.narrowLineCandidates.slice();
+const fluorescentOverlayBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
+const fluorescentOverlayReport = context.SpectraPro.exportUi.buildPdfReportModel(fluorescentOverlayBundle);
+assert.equal(fluorescentOverlayReport.matchedFeatureRows.length, 3, 'Enabling the Fluorescent visual overlay must not promote weak candidates into the deterministic PDF result table');
+assert.equal(JSON.stringify(fluorescentOverlayReport.matchedFeatureRows), fluorescentRowsOverlayOff, 'Fluorescent deterministic matched-feature rows must be identical with overlay off or on');
+assert.equal(JSON.stringify(fluorescentOverlayReport.analysisLog), fluorescentLogOverlayOff, 'Fluorescent deterministic PDF analysis log must be identical with overlay off or on');
+assert.equal(fluorescentOverlayReport.matchedFeatureBasis, 'accepted-clear-narrow-line-hits', 'Overlay state must not change the report hit basis');
+assert.ok(!JSON.stringify(fluorescentOverlayReport.matchedFeatureRows).includes('696.400'), 'Weak overlay-only candidates must not enter the deterministic PDF result table');
 
 context.SpectraPro.aiAnalysisUi = null;
 const noAiBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
