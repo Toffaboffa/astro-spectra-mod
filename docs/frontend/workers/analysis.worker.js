@@ -12,6 +12,7 @@ importScripts(
   './spectrumMath.js?v=1.3.8-offset-1',
   './presetResolver.js?v=3.0.1',
   './calibrationDiagnostics.js?v=1.3.8-fit-dof-1',
+  './instrumentResolution.js?v=1.3.9-resolution-1',
   './spectralFeatures.js?v=3.0.1',
   './diffractionArtifacts.js?v=3.0.1-diffraction-1',
   './measurementQuality.js?v=1.3.8-result-scope-1',
