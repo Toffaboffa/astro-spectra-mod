@@ -69,8 +69,10 @@
   function filterAtomicLines(atomLines, preset, range) {
     const allowed = Array.isArray(preset.allowedElements) && preset.allowedElements.length ? Object.create(null) : null;
     if (allowed) preset.allowedElements.forEach(function (element) { allowed[String(element)] = true; });
-    const minNm = Number(range && range.min) || 380;
-    const maxNm = Number(range && range.max) || 900;
+    const rawMinNm = Number(range && range.min);
+    const rawMaxNm = Number(range && range.max);
+    const minNm = Number.isFinite(rawMinNm) ? rawMinNm : 380;
+    const maxNm = Number.isFinite(rawMaxNm) ? rawMaxNm : 900;
     return (Array.isArray(atomLines) ? atomLines : []).filter(function (line) {
       const nm = Number(line && line.nm);
       const element = String(line && line.element || '').trim();
@@ -81,8 +83,10 @@
   function filterMolecularBands(molecularBands, preset, range) {
     const allowed = Array.isArray(preset.allowedMolecules) && preset.allowedMolecules.length ? Object.create(null) : null;
     if (allowed) preset.allowedMolecules.forEach(function (species) { allowed[String(species)] = true; });
-    const minNm = Number(range && range.min) || 380;
-    const maxNm = Number(range && range.max) || 900;
+    const rawMinNm = Number(range && range.min);
+    const rawMaxNm = Number(range && range.max);
+    const minNm = Number.isFinite(rawMinNm) ? rawMinNm : 380;
+    const maxNm = Number.isFinite(rawMaxNm) ? rawMaxNm : 900;
     return (Array.isArray(molecularBands) ? molecularBands : []).filter(function (band) {
       const low = Number(band && band.minNm);
       const high = Number(band && band.maxNm);
