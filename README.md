@@ -265,7 +265,11 @@ This is intended to reduce false source identification caused by dense atomic li
 Molecular analysis uses pattern/band evidence rather than pretending broad molecular structures are isolated atomic lines. Current molecular work includes curated handling for important N₂/N₂⁺ patterns and supporting molecular evidence logic.
 
 ### Gas Tube
-Gas Tube combines source-family restrictions with atomic fingerprint and molecular evidence where relevant. Multiple species may coexist.
+Gas Tube combines source-family restrictions with atomic fingerprints, molecular evidence and curated discharge fingerprints. Multiple species may coexist.
+
+N₂/N₂⁺ retain their established diagnostic profiles. O₂, CO₂ and H₂O use conservative parent-gas inference from coherent discharge products rather than pretending that every observed fragment is direct parent-molecule emission. CO₂ requires multiple CO Ångström-band matches before O I can act as supporting evidence. H₂O requires coherent hydrogen evidence, with OH and O I contributing when those wavelengths are covered. O₂ uses molecular O₂ evidence together with atomic-O support in the applicable measured range. A lone H or O line is therefore not sufficient parent-gas evidence.
+
+Fingerprint coverage is determined from the calibrated frame wavelength domain, not from the wavelength span of detected peaks. References outside the measured domain do not count as missed evidence, so UV/VIS/NIR/IR reference data can coexist without assuming a SPECTRA-1 wavelength range.
 
 ### Fluorescent
 `Fluorescent` is a broadband-analysis mode, not an atomic source-identification mode.
