@@ -2290,7 +2290,7 @@ function ensureHardwarePanel() {
     '    <div id="spHardwareFeedback" class="sp-note sp-note--feedback" aria-live="polite"></div>',
     '  </div>',
     '  <div class="sp-hw-grid">',
-    '    <label class="sp-field sp-hw-field sp-hw-field--preset" title="Choose a known spectrometer profile. Selecting one applies the values immediately.">Spectrometer<select id="spHardwarePreset" class="spctl-select"><option value="">CUSTOM</option><option value="spectra-1">KVANT - Spectra-1</option></select></label>',
+    '    <label class="sp-field sp-hw-field sp-hw-field--preset" title="Choose a known spectrometer profile. Selecting one applies the values immediately.">Spectrometer<select id="spHardwarePreset" class="spctl-select"><option value="">CUSTOM</option></select></label>',
     '    <label class="sp-field sp-hw-field" title="Configured nominal hardware spectral-range start; actual calibrated frame coverage can differ.">Configured range (min)<input id="spHardwareRangeMin" class="spctl-input" type="number" step="any" placeholder="360"></label>',
     '    <label class="sp-field sp-hw-field" title="Configured nominal hardware spectral-range end; actual calibrated frame coverage can differ.">Configured range (max)<input id="spHardwareRangeMax" class="spctl-input" type="number" step="any" placeholder="930"></label>',
     '    <div class="sp-field sp-hw-field sp-hw-field--unit" title="Spectral range unit."><span class="sp-hw-unit-label">Unit</span><span class="sp-hw-unit-value">nm</span></div>',
@@ -2314,17 +2314,61 @@ function ensureHardwarePanel() {
   panel.appendChild(card);
   panel.dataset.built = '1';
 
-  const profiles = {
-    'spectra-1': {
-      profileId: 'spectra-1',
-      profileName: 'KVANT - Spectra-1',
-      spectralRangeMinNm: 360,
-      spectralRangeMaxNm: 930,
-      spectrometerResolutionFwhmNm: 1.8,
-      pixelResolutionNm: 0.5,
-      gratingLinesPerMm: 500
+  const profiles = Object.create(null);
+
+  function normalizeHardwareProfile(profile) {
+    if (!profile || typeof profile !== 'object') return null;
+    const id = String(profile.profileId || '').trim();
+    const name = String(profile.profileName || '').trim();
+    const minNm = Number(profile.spectralRangeMinNm);
+    const maxNm = Number(profile.spectralRangeMaxNm);
+    if (!id || !name || !Number.isFinite(minNm) || !Number.isFinite(maxNm) || !(maxNm > minNm)) return null;
+    const out = Object.assign({}, profile, {
+      profileId: id,
+      profileName: name,
+      spectralRangeMinNm: minNm,
+      spectralRangeMaxNm: maxNm
+    });
+    ['spectrometerResolutionFwhmNm','pixelResolutionNm','gratingLinesPerMm'].forEach(function (key) {
+      const value = Number(out[key]);
+      out[key] = Number.isFinite(value) && value > 0 ? value : null;
+    });
+    return out;
+  }
+
+  function addHardwareProfile(profile) {
+    const normalized = normalizeHardwareProfile(profile);
+    if (!normalized) return false;
+    profiles[normalized.profileId] = normalized;
+    if (ids && ids.preset && !Array.from(ids.preset.options).some(function (option) { return option.value === normalized.profileId; })) {
+      const option = document.createElement('option');
+      option.value = normalized.profileId;
+      option.textContent = normalized.profileName;
+      ids.preset.appendChild(option);
     }
-  };
+    return true;
+  }
+
+  function loadHardwareProfiles() {
+    if (typeof global.fetch !== 'function') return Promise.resolve([]);
+    return global.fetch('../data/hardware_profiles.json').then(function (response) {
+      if (!response.ok) throw new Error('hardware-profile-catalog-load-failed-' + response.status);
+      return response.json();
+    }).then(function (catalog) {
+      if (!catalog || catalog.schema !== 'spectra-pro-hardware-profile-catalog/v1' || !Array.isArray(catalog.profiles)) {
+        throw new Error('invalid-hardware-profile-catalog');
+      }
+      const loaded = [];
+      catalog.profiles.forEach(function (profile) {
+        if (addHardwareProfile(profile)) loaded.push(String(profile.profileId));
+      });
+      fillFormFromState();
+      return loaded;
+    }).catch(function (error) {
+      setFeedback('Hardware profile catalog unavailable: ' + String(error && error.message || error) + '. Custom values remain available.');
+      return [];
+    });
+  }
   const ids = {
     preset: $('spHardwarePreset'),
     rangeMin: $('spHardwareRangeMin'),
@@ -2484,6 +2528,7 @@ function ensureHardwarePanel() {
   });
 
   fillFormFromState();
+  loadHardwareProfiles();
   renderInstrumentResponseStatus(getStoreState());
   return card;
 }
