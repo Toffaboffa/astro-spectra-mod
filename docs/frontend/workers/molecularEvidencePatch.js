@@ -47,7 +47,13 @@
         const strength = clamp(prom / maxProm, 0, 1);
         const localScore = weight * (0.72 * closeness + 0.28 * strength);
         if (!best || localScore > best.localScore) {
-          best = { peak: p, peakKey: idxKey, obsNm: obsNm, refNm: refNm, delta: delta, prom: prom, weight: weight, closeness: closeness, strength: strength, localScore: localScore };
+          best = {
+            peak: p, peakKey: idxKey, obsNm: obsNm, refNm: refNm, delta: delta,
+            prom: prom, weight: weight, closeness: closeness, strength: strength,
+            localScore: localScore,
+            group: String(anchor && anchor.group || ''),
+            emitter: String(anchor && anchor.emitter || '')
+          };
         }
       }
       if (best) {
@@ -73,6 +79,18 @@
     else if (matchedCount >= 4) evidenceFactor = 1.08;
 
     const minStrong = Math.max(2, Number(profile.minimumStrongEvidence) || 2);
+    const matchedGroups = Object.create(null);
+    matches.forEach(function (m) {
+      if (m.group) matchedGroups[m.group] = true;
+    });
+    const groupCount = Object.keys(matchedGroups).length;
+    const requiredGroups = Array.isArray(profile.requiredGroups) ? profile.requiredGroups : [];
+    const hasRequiredGroups = requiredGroups.every(function (group) { return !!matchedGroups[String(group)]; });
+    const minimumEvidenceGroups = Math.max(0, Number(profile.minimumEvidenceGroups) || 0);
+    const strictAccepted = matchedCount >= minStrong &&
+      groupCount >= minimumEvidenceGroups &&
+      hasRequiredGroups;
+    if (profile.strictAcceptance && !strictAccepted) return null;
     if (matchedCount < minStrong) evidenceFactor *= 0.88;
 
     const totalScore = evidenceFactor * (
@@ -103,13 +121,15 @@
         family: 'molecular',
         mode: 'molecular',
         rgbSupport: 0,
-        evidenceModel: 'plasma-diagnostic-v1',
-        evidenceFactor: +evidenceFactor.toFixed(3)
+        evidenceModel: profile.strictAcceptance ? 'gastube-discharge-fingerprint-v1' : 'plasma-diagnostic-v1',
+        evidenceFactor: +evidenceFactor.toFixed(3),
+        evidenceGroups: Object.keys(matchedGroups),
+        strictAccepted: profile.strictAcceptance ? strictAccepted : null
       },
       hits: matches.map(function (m) {
         const conf = clamp((0.35 + 0.65 * m.closeness) * (0.55 + 0.45 * m.strength), 0, 1);
         return {
-          species: species + ' ' + String(profile.label || 'molecular band'),
+          species: species + ' ' + String(m.emitter || profile.label || 'molecular band'),
           element: species,
           referenceNm: +m.refNm.toFixed(3),
           observedNm: +m.obsNm.toFixed(3),
@@ -118,7 +138,9 @@
           confidence: +conf.toFixed(3),
           score: +(m.localScore * 100).toFixed(1),
           kind: 'molecular-band',
-          evidenceModel: 'plasma-diagnostic-v1'
+          emitter: m.emitter || null,
+          evidenceGroup: m.group || null,
+          evidenceModel: profile.strictAcceptance ? 'gastube-discharge-fingerprint-v1' : 'plasma-diagnostic-v1'
         };
       })
     };
@@ -336,9 +358,12 @@
       (String(out.presetId || '') === 'smart-molecular' || String(out.presetId || '') === 'smart-gastube');
     const autoTuneDiagnostics = [];
     Object.keys(catalog.profiles).forEach(function (species) {
+      const profile = catalog.profiles[species];
+      const allowedPresets = Array.isArray(profile && profile.presets) ? profile.presets : null;
+      if (allowedPresets && allowedPresets.indexOf(String(out.presetId || '')) < 0) return;
       const scored = autoTuneMolecular
-        ? scoreDiagnosticProfileAuto(species, catalog.profiles[species], peaks)
-        : scoreDiagnosticProfile(species, catalog.profiles[species], peaks, out.maxDistanceNm);
+        ? scoreDiagnosticProfileAuto(species, profile, peaks)
+        : scoreDiagnosticProfile(species, profile, peaks, out.maxDistanceNm);
       if (!scored || !scored.row || !(scored.row.totalScore > 0)) return;
       diagnostics.push(scored.row);
       Array.prototype.push.apply(diagnosticHits, scored.hits || []);
