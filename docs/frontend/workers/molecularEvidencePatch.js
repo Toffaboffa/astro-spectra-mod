@@ -19,9 +19,16 @@
     return Math.max(0, Number(p && (p.prominence != null ? p.prominence : p.value)) || 0);
   }
 
-  function scoreDiagnosticProfile(species, profile, peaks, hardMaxDistanceNm) {
+  function scoreDiagnosticProfile(species, profile, peaks, hardMaxDistanceNm, observedRange) {
     const peakArr = (Array.isArray(peaks) ? peaks : []).filter(function (p) { return Number.isFinite(Number(p && p.nm)); });
-    const anchors = Array.isArray(profile && profile.anchors) ? profile.anchors : [];
+    const allAnchors = Array.isArray(profile && profile.anchors) ? profile.anchors : [];
+    const rangeMin = Number(observedRange && observedRange.min);
+    const rangeMax = Number(observedRange && observedRange.max);
+    const hasRange = Number.isFinite(rangeMin) && Number.isFinite(rangeMax);
+    const anchors = allAnchors.filter(function (anchor) {
+      const nm = Number(anchor && anchor.nm);
+      return Number.isFinite(nm) && (!hasRange || (nm >= rangeMin && nm <= rangeMax));
+    });
     if (!peakArr.length || !anchors.length) return null;
 
     const tolerance = clamp(Number(hardMaxDistanceNm) || 1, 0.2, 5.0);
@@ -84,9 +91,16 @@
       if (m.group) matchedGroups[m.group] = true;
     });
     const groupCount = Object.keys(matchedGroups).length;
-    const requiredGroups = Array.isArray(profile.requiredGroups) ? profile.requiredGroups : [];
+    const activeGroups = Object.create(null);
+    anchors.forEach(function (anchor) {
+      if (anchor && anchor.group) activeGroups[String(anchor.group)] = true;
+    });
+    const requiredGroups = (Array.isArray(profile.requiredGroups) ? profile.requiredGroups : []).filter(function (group) {
+      return !!activeGroups[String(group)];
+    });
     const hasRequiredGroups = requiredGroups.every(function (group) { return !!matchedGroups[String(group)]; });
-    const minimumEvidenceGroups = Math.max(0, Number(profile.minimumEvidenceGroups) || 0);
+    const configuredMinGroups = Math.max(0, Number(profile.minimumEvidenceGroups) || 0);
+    const minimumEvidenceGroups = Math.min(configuredMinGroups, Object.keys(activeGroups).length);
     const strictAccepted = matchedCount >= minStrong &&
       groupCount >= minimumEvidenceGroups &&
       hasRequiredGroups;
@@ -158,7 +172,7 @@
     return arr.filter(function (p) { return getPeakProminence(p) >= minProm; });
   }
 
-  function scoreDiagnosticProfileAuto(species, profile, peaks) {
+  function scoreDiagnosticProfileAuto(species, profile, peaks, observedRange) {
     const configs = [
       { id: 'strict', threshold: 0.055, tolerance: 1.0, weight: 1.15 },
       { id: 'clean', threshold: 0.035, tolerance: 1.4, weight: 1.00 },
@@ -170,7 +184,7 @@
 
     configs.forEach(function (cfg) {
       const subset = filterPeaksByRelativeThreshold(peaks, cfg.threshold);
-      const scored = subset.length ? scoreDiagnosticProfile(species, profile, subset, cfg.tolerance) : null;
+      const scored = subset.length ? scoreDiagnosticProfile(species, profile, subset, cfg.tolerance, observedRange) : null;
       if (scored && scored.row && Number(scored.row.matchedCount || 0) >= Math.max(2, Number(profile.minimumStrongEvidence) || 2)) anchored = true;
       passes.push({ cfg: cfg, scored: scored, peakCount: subset.length });
     });
@@ -181,7 +195,7 @@
     if (anchored && !profile.strictAcceptance) {
       const cfg = { id: 'confirm', threshold: 0.015, tolerance: 3.0, weight: 0.45 };
       const subset = filterPeaksByRelativeThreshold(peaks, cfg.threshold);
-      passes.push({ cfg: cfg, scored: subset.length ? scoreDiagnosticProfile(species, profile, subset, cfg.tolerance) : null, peakCount: subset.length });
+      passes.push({ cfg: cfg, scored: subset.length ? scoreDiagnosticProfile(species, profile, subset, cfg.tolerance, observedRange) : null, peakCount: subset.length });
     }
 
     const totalWeight = Math.max(0.01, passes.reduce(function (s, p) { return s + Number(p.cfg.weight || 0); }, 0));
@@ -357,6 +371,11 @@
     });
     const diagnostics = [];
     const diagnosticHits = [];
+    const observedNm = peaks.map(function (peak) { return Number(peak && peak.nm); }).filter(Number.isFinite);
+    const observedRange = observedNm.length ? {
+      min: Math.min.apply(null, observedNm),
+      max: Math.max.apply(null, observedNm)
+    } : null;
     const autoTuneMolecular = out.autoTune === true &&
       (String(out.presetId || '') === 'smart-molecular' || String(out.presetId || '') === 'smart-gastube');
     const autoTuneDiagnostics = [];
@@ -365,8 +384,8 @@
       const allowedPresets = Array.isArray(profile && profile.presets) ? profile.presets : null;
       if (allowedPresets && allowedPresets.indexOf(String(out.presetId || '')) < 0) return;
       const scored = autoTuneMolecular
-        ? scoreDiagnosticProfileAuto(species, profile, peaks)
-        : scoreDiagnosticProfile(species, profile, peaks, out.maxDistanceNm);
+        ? scoreDiagnosticProfileAuto(species, profile, peaks, observedRange)
+        : scoreDiagnosticProfile(species, profile, peaks, out.maxDistanceNm, observedRange);
       if (!scored || !scored.row || !(scored.row.totalScore > 0)) return;
       diagnostics.push(scored.row);
       Array.prototype.push.apply(diagnosticHits, scored.hits || []);
