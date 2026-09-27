@@ -371,10 +371,15 @@
     });
     const diagnostics = [];
     const diagnosticHits = [];
-    const observedNm = peaks.map(function (peak) { return Number(peak && peak.nm); }).filter(Number.isFinite);
-    const observedRange = observedNm.length ? {
-      min: Math.min.apply(null, observedNm),
-      max: Math.max.apply(null, observedNm)
+    // Coverage belongs to the calibrated frame, not to the subset of wavelengths
+    // where peaks happened to be detected. Using peak min/max could silently hide
+    // a required fingerprint group and turn missing evidence into acceptance.
+    const frameNm = (frame && Array.isArray(frame.nm) ? frame.nm : []).map(Number).filter(Number.isFinite);
+    const peakNm = peaks.map(function (peak) { return Number(peak && peak.nm); }).filter(Number.isFinite);
+    const coverageNm = frameNm.length ? frameNm : peakNm;
+    const observedRange = coverageNm.length ? {
+      min: Math.min.apply(null, coverageNm),
+      max: Math.max.apply(null, coverageNm)
     } : null;
     const autoTuneMolecular = out.autoTune === true &&
       (String(out.presetId || '') === 'smart-molecular' || String(out.presetId || '') === 'smart-gastube');
