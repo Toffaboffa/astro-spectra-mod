@@ -175,7 +175,10 @@
       passes.push({ cfg: cfg, scored: scored, peakCount: subset.length });
     });
 
-    if (anchored) {
+    // Strict gas-tube identity profiles never use the broad 3 nm confirmation
+    // pass. Their accepted identity evidence stays inside the normal <=1.8 nm
+    // gate; the legacy N2/N2+ diagnostic behavior remains unchanged.
+    if (anchored && !profile.strictAcceptance) {
       const cfg = { id: 'confirm', threshold: 0.015, tolerance: 3.0, weight: 0.45 };
       const subset = filterPeaksByRelativeThreshold(peaks, cfg.threshold);
       passes.push({ cfg: cfg, scored: subset.length ? scoreDiagnosticProfile(species, profile, subset, cfg.tolerance) : null, peakCount: subset.length });
