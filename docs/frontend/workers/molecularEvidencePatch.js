@@ -87,8 +87,11 @@
 
     const minStrong = Math.max(2, Number(profile.minimumStrongEvidence) || 2);
     const matchedGroups = Object.create(null);
+    const matchedGroupCounts = Object.create(null);
     matches.forEach(function (m) {
-      if (m.group) matchedGroups[m.group] = true;
+      if (!m.group) return;
+      matchedGroups[m.group] = true;
+      matchedGroupCounts[m.group] = (matchedGroupCounts[m.group] || 0) + 1;
     });
     const groupCount = Object.keys(matchedGroups).length;
     const activeGroups = Object.create(null);
@@ -98,7 +101,13 @@
     const requiredGroups = (Array.isArray(profile.requiredGroups) ? profile.requiredGroups : []).filter(function (group) {
       return !!activeGroups[String(group)];
     });
-    const hasRequiredGroups = requiredGroups.every(function (group) { return !!matchedGroups[String(group)]; });
+    const requiredGroupMinimums = profile && profile.requiredGroupMinimums && typeof profile.requiredGroupMinimums === 'object'
+      ? profile.requiredGroupMinimums : {};
+    const hasRequiredGroups = requiredGroups.every(function (group) {
+      const key = String(group);
+      const requiredCount = Math.max(1, Number(requiredGroupMinimums[key]) || 1);
+      return Number(matchedGroupCounts[key] || 0) >= requiredCount;
+    });
     const configuredMinGroups = Math.max(0, Number(profile.minimumEvidenceGroups) || 0);
     const minimumEvidenceGroups = Math.min(configuredMinGroups, Object.keys(activeGroups).length);
     const strictAccepted = matchedCount >= minStrong &&
@@ -138,6 +147,7 @@
         evidenceModel: profile.strictAcceptance ? 'gastube-discharge-fingerprint-v1' : 'plasma-diagnostic-v1',
         evidenceFactor: +evidenceFactor.toFixed(3),
         evidenceGroups: Object.keys(matchedGroups),
+        evidenceGroupCounts: matchedGroupCounts,
         strictAccepted: profile.strictAcceptance ? strictAccepted : null
       },
       hits: matches.map(function (m) {
