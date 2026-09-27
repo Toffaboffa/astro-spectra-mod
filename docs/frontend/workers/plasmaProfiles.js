@@ -69,6 +69,7 @@
       minimumStrongEvidence: 3,
       minimumEvidenceGroups: 1,
       requiredGroups: ['co-band'],
+      requiredGroupMinimums: { 'co-band': 2 },
       anchors: [
         { nm: 451.1, weight: 1.10, group: 'co-band', emitter: 'CO Angstrom' },
         { nm: 483.5, weight: 1.20, group: 'co-band', emitter: 'CO Angstrom' },
@@ -86,6 +87,7 @@
       minimumStrongEvidence: 3,
       minimumEvidenceGroups: 2,
       requiredGroups: ['hydrogen'],
+      requiredGroupMinimums: { hydrogen: 2 },
       anchors: [
         { nm: 308.9, weight: 1.40, group: 'oh', emitter: 'OH A-X' },
         { nm: 486.13, weight: 1.05, group: 'hydrogen', emitter: 'H-beta' },
