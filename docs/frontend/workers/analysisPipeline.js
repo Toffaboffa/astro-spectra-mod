@@ -30,6 +30,15 @@
         result.astro.referenceMatches = result.topHits.slice();
       }
     }
+    const instrumentResolution = root.SPECTRA_PRO_instrumentResolution;
+    if (instrumentResolution && typeof instrumentResolution.build === 'function') {
+      result.instrumentResolutionModel = instrumentResolution.build(options && options.hardware || frame && frame.hardware || null, frame);
+      if (typeof instrumentResolution.annotateHits === 'function') {
+        result.topHits = instrumentResolution.annotateHits(result.topHits, result.instrumentResolutionModel);
+        result.overlayHits = instrumentResolution.annotateHits(result.overlayHits, result.instrumentResolutionModel);
+        if (result.astro && typeof result.astro === 'object') result.astro.referenceMatches = result.topHits.slice();
+      }
+    }
     const diffractionArtifacts = root.SPECTRA_PRO_diffractionArtifacts;
     if (diffractionArtifacts && typeof diffractionArtifacts.analyze === 'function') {
       result = diffractionArtifacts.analyze(result, frame, options || {});
