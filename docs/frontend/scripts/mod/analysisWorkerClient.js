@@ -11,7 +11,7 @@
 
   function createAnalysisWorkerClient(options) {
     const opts = Object.assign({
-      workerUrl: '../workers/analysis.worker.js?v=1.3.9-gastube-1',
+      workerUrl: '../workers/analysis.worker.js?v=1.3.8-result-scope-1',
       throttleMs: 300,
       timeoutMs: 3000,
       enabledModes: ['LAB', 'ASTRO']
