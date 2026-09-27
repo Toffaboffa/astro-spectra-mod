@@ -42,6 +42,8 @@ jobs:
         run: node tests/gastube_fingerprint_regression.test.cjs
       - name: Run hardware profile catalog regressions
         run: node tests/hardware_profiles_regression.test.cjs
+      - name: Run instrument resolution regressions
+        run: node tests/instrument_resolution_regression.test.cjs
       - name: Run real Neon export regression pack
         run: node tests/neon_real_export_regression.test.mjs
       - name: Run real N2 export integration regression
