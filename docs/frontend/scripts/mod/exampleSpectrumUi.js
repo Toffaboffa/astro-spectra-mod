@@ -214,7 +214,10 @@
     const preset = $('spHardwarePreset');
 
     if (profileId === SPECTRA1_HARDWARE.profileId) {
-      if (preset && typeof preset.dispatchEvent === 'function' && typeof global.Event === 'function') {
+      const profileOptionReady = preset && Array.from(preset.options || []).some(function (option) {
+        return String(option.value || '') === SPECTRA1_HARDWARE.profileId;
+      });
+      if (profileOptionReady && typeof preset.dispatchEvent === 'function' && typeof global.Event === 'function') {
         preset.value = SPECTRA1_HARDWARE.profileId;
         preset.dispatchEvent(new global.Event('change', { bubbles: true }));
         return true;
