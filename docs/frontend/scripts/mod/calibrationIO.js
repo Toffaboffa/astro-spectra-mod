@@ -134,7 +134,7 @@
     };
   };
 
-  mod.version = '1.3.9';
+  mod.version = '1.4.0';
 })();
 
 /* SPECTRA PRO startup calibration UX */
@@ -142,7 +142,7 @@
   'use strict';
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
-  const UI_VERSION = 'v1.3.9';
+  const UI_VERSION = 'v1.4';
   const CALIBRATION_REMEMBER_STORAGE_KEY = 'spectraPro.startup.calibration';
   const CALIBRATION_REMEMBER_SCHEMA = 'spectra-pro-startup-calibration/v1';
   let rememberCalibrationRequested = false;
