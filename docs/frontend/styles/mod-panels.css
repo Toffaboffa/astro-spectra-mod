@@ -2561,9 +2561,9 @@ label[for="peakSizeLower"],
 /* Startup hardware selection: shown before the calibration reminder. */
 .sp-startup-hardware{
   position:absolute;
-  top:18px;
+  top:50%;
   left:50%;
-  transform:translateX(-50%);
+  transform:translate(-50%,-50%);
   z-index:2490;
   box-sizing:border-box;
   width:min(780px,calc(100% - 48px));
@@ -2635,7 +2635,7 @@ label[for="peakSizeLower"],
 }
 .sp-startup-hardware__continue:hover{background:#224876;}
 @media (max-width:720px){
-  .sp-startup-hardware{top:8px;width:calc(100% - 18px);padding:10px;}
+  .sp-startup-hardware{width:calc(100% - 18px);padding:10px;}
   .sp-startup-hardware__body{grid-template-columns:1fr;}
   .sp-startup-hardware__visuals{grid-template-columns:120px 1fr;grid-template-rows:78px;}
   .sp-startup-hardware__details{grid-template-columns:1fr 1fr;}
