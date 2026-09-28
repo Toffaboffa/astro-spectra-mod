@@ -36,7 +36,7 @@ jobs:
 
           H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36'}
           targets=[
-            ('stellarnet-blue-wave','https://www.stellarnet.us/spectrometers/uv-vis-spectrometers/blue-wave/', ['blue-wave','blue wave','spectrometer']),
+            ('stellarnet-blue-wave','https://www.shopstellarnet.com/blue-wave-spectrometers-1/', ['blue-wave','blue wave','spectrometer']),
             ('hamamatsu-c12880ma','https://www.hamamatsu.com/jp/en/product/optical-sensors/spectrometers/mini-spectrometer/C12880MA.html', ['c12880ma']),
             ('hamamatsu-c11708ma','https://www.hamamatsu.com/us/en/product/optical-sensors/spectrometers/mini-spectrometer/C11708MA.html', ['c11708ma','c10988ma']),
           ]
@@ -149,7 +149,7 @@ jobs:
             {
               'file':'stellarnet-blue-wave.jpg',
               'profiles':['stellarnet-blue-wave-vis-25'],
-              'sourcePage':'https://www.stellarnet.us/spectrometers/uv-vis-spectrometers/blue-wave/',
+              'sourcePage':'https://www.shopstellarnet.com/blue-wave-spectrometers-1/',
               'sourceKind':'manufacturer-product-page',
               'processingNote':'Product image discovered from manufacturer page and normalized to 640x480.'
             },
