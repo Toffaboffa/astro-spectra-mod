@@ -479,13 +479,14 @@ assert.ok(renderStatusSource.includes("const diffractionOverlayInput = $('spTogg
 assert.ok(bootstrap.includes('Initial UI render failed; analysis listeners will still be registered.'), 'a UI render failure must not abort LAB/ASTRO listener registration');
 assert.ok(spectrapro.includes('proBootstrap.js?v=1.3.9'), 'published bootstrap must use a cache key that includes the LAB init fix');
 assert.ok(spectrapro.includes('mod-panels.css?v=1.3.9'), 'published ASTRO control styles must use a fresh cache key');
-assert.ok(spectrapro.includes('mod-panels.css?v=1.3.9-startup-3'), 'startup hardware popup styles must use a fresh cache key');
+assert.ok(spectrapro.includes('mod-panels.css?v=1.3.9-startup-4'), 'startup hardware popup styles must use a fresh cache key');
 assert.ok(styles.includes('width:min(780px,calc(100% - 48px));'), 'desktop Select Hardware popup must use the expanded review width');
 assert.ok(styles.includes('top:50%;') && styles.includes('left:50%;') && styles.includes('transform:translate(-50%,-50%);'), 'Select Hardware popup must be centered horizontally and vertically over the graph');
 assert.ok(!styles.includes('.sp-startup-hardware{top:8px;'), 'responsive overrides must not move the startup hardware popup away from graph center');
 assert.ok(styles.includes('grid-template-columns:250px minmax(0,1fr);'), 'desktop startup hardware popup must reserve a larger product-visual column');
 assert.ok(styles.includes('grid-template-rows:64px 176px;'), 'desktop startup hardware popup must give the product image more vertical space');
 assert.ok(styles.includes('.sp-startup-hardware__image{background:#fff;}'), 'product image canvas must render on white to match normalized product assets');
+assert.ok(styles.includes('.sp-startup-hardware__logo--white img{filter:grayscale(1) brightness(0) invert(1) contrast(1.08);opacity:.97;}'), 'dark manufacturer wordmarks must render as high-contrast white UI logos');
 assert.ok(!fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/aiAnalysisUi.js'), 'utf8').includes('sp-ai-launch__badge'), 'AI Interpretation must not show a NEW badge');
 assert.ok(graphScript.includes('&& !numericFrame'), 'static numeric spectra must stop the live camera animation loop');
 assert.ok(imageLoading.includes('resetBundledExampleStateForCamera()'), 'loading an external image must leave bundled-example calibration and preview state');
@@ -551,7 +552,7 @@ for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Ad
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
 }
 assert.ok(spectrapro.includes('analysisWorkerClient.js?v=1.3.9-result-scope-1'), 'published worker client must use the result-scoped LAB quality cache key');
-assert.ok(spectrapro.includes('proBootstrap.js?v=1.3.9-startup-2'), 'published bootstrap must use the startup-selection cache key');
+assert.ok(spectrapro.includes('proBootstrap.js?v=1.3.9-startup-3'), 'published bootstrap must use the startup-selection cache key');
 assert.ok(spectrapro.includes('dataQualityPanel.js?v=1.3.9-result-consistency-1'), 'published Data Quality module must use the result-consistency cache key');
 assert.ok(spectrapro.includes('stateStore.js?v=1.3.9-result-consistency-1'), 'published state store must refresh dynamic result/export assets');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=1.3.9-provenance-1'), 'published image loader must use the source-provenance cache key');
