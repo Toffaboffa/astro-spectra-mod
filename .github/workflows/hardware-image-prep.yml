@@ -115,7 +115,7 @@ jobs:
                       "file": "spectra-1.jpg",
                       "profiles": ["spectra-1"],
                       "sourceKind": "user-provided",
-                      "sourceUrl": null,
+                      "sourceUrl": None,
                       "sourcePage": "https://www.forschool.eu/spectrometry/58275-spectra-1-high-resolution-spectrometer.html"
                   },
                   {
@@ -127,7 +127,7 @@ jobs:
                   {
                       "file": "pasco-ps-2600a.jpg",
                       "profiles": ["pasco-ps-2600a"],
-                      "sourceUrl": "https://www.lennoxeducational.ie/26977-medium_default/wireless-spectrometer.jpg",
+                      "sourceUrl": "https://static-data2.manualslib.com/product-images/859/3026737/pasco-ps-2600a.jpg",
                       "sourcePage": "https://www.pasco.com/products/sensors/wireless/wireless-spectrometer-vis"
                   },
                   {
