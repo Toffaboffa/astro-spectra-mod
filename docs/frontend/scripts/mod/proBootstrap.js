@@ -2454,11 +2454,11 @@ function ensureHardwarePanel() {
     return {
       profileId: ids.preset && ids.preset.value ? String(ids.preset.value) : '',
       profileName: ids.preset && ids.preset.value && profiles[ids.preset.value] ? profiles[ids.preset.value].profileName : '',
-      spectralRangeMinNm: Number(ids.rangeMin && ids.rangeMin.value),
-      spectralRangeMaxNm: Number(ids.rangeMax && ids.rangeMax.value),
-      spectrometerResolutionFwhmNm: Number(ids.fwhm && ids.fwhm.value),
-      pixelResolutionNm: Number(ids.pixelRes && ids.pixelRes.value),
-      gratingLinesPerMm: Number(ids.grating && ids.grating.value)
+      spectralRangeMinNm: ids.rangeMin && ids.rangeMin.value !== '' ? Number(ids.rangeMin.value) : null,
+      spectralRangeMaxNm: ids.rangeMax && ids.rangeMax.value !== '' ? Number(ids.rangeMax.value) : null,
+      spectrometerResolutionFwhmNm: ids.fwhm && ids.fwhm.value !== '' ? Number(ids.fwhm.value) : null,
+      pixelResolutionNm: ids.pixelRes && ids.pixelRes.value !== '' ? Number(ids.pixelRes.value) : null,
+      gratingLinesPerMm: ids.grating && ids.grating.value !== '' ? Number(ids.grating.value) : null
     };
   }
 
@@ -2520,9 +2520,9 @@ function ensureHardwarePanel() {
     const profile = profiles[key];
     if (ids.rangeMin) ids.rangeMin.value = String(profile.spectralRangeMinNm);
     if (ids.rangeMax) ids.rangeMax.value = String(profile.spectralRangeMaxNm);
-    if (ids.fwhm) ids.fwhm.value = String(profile.spectrometerResolutionFwhmNm);
-    if (ids.pixelRes) ids.pixelRes.value = String(profile.pixelResolutionNm);
-    if (ids.grating) ids.grating.value = String(profile.gratingLinesPerMm);
+    if (ids.fwhm) ids.fwhm.value = profile.spectrometerResolutionFwhmNm != null ? String(profile.spectrometerResolutionFwhmNm) : '';
+    if (ids.pixelRes) ids.pixelRes.value = profile.pixelResolutionNm != null ? String(profile.pixelResolutionNm) : '';
+    if (ids.grating) ids.grating.value = profile.gratingLinesPerMm != null ? String(profile.gratingLinesPerMm) : '';
     applyHardware(profile, 'proBootstrap.hardware.profile');
     setFeedback('Applied ' + profile.profileName + '.');
   });
