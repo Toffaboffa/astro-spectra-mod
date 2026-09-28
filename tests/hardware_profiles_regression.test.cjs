@@ -16,6 +16,9 @@ assert.ok(Array.isArray(catalog.profiles) && catalog.profiles.length >= 10, 'har
 const ids = new Set();
 for (const profile of catalog.profiles) {
   assert.ok(profile.profileId && profile.profileName, 'every hardware profile needs stable identity');
+  assert.ok(profile.imageUrl, profile.profileId + ' needs a startup product image');
+  const imagePath = path.resolve(root, 'docs/frontend/data', profile.imageUrl);
+  assert.ok(fs.existsSync(imagePath), profile.profileId + ' product image must exist: ' + profile.imageUrl);
   assert.ok(!ids.has(profile.profileId), 'hardware profile IDs must be unique: ' + profile.profileId);
   ids.add(profile.profileId);
   assert.ok(Number.isFinite(Number(profile.spectralRangeMinNm)), profile.profileId + ' needs a finite range start');
