@@ -2351,7 +2351,7 @@ function ensureHardwarePanel() {
 
   function loadHardwareProfiles() {
     if (typeof window.fetch !== 'function') return Promise.resolve([]);
-    return window.fetch('../data/hardware_profiles.json').then(function (response) {
+    return window.fetch('../data/hardware_profiles.json?v=1.3.9-startup-2').then(function (response) {
       if (!response.ok) throw new Error('hardware-profile-catalog-load-failed-' + response.status);
       return response.json();
     }).then(function (catalog) {
@@ -2560,19 +2560,33 @@ function ensureHardwarePanel() {
 
   function renderStartupHardwareAsset(host, url, placeholderText, altText) {
     if (!host) return;
-    host.innerHTML = '';
-    if (url) {
-      const img = document.createElement('img');
-      img.src = String(url);
-      img.alt = String(altText || placeholderText || '');
-      img.loading = 'lazy';
-      host.appendChild(img);
+
+    function showPlaceholder() {
+      host.innerHTML = '';
+      const placeholder = document.createElement('div');
+      placeholder.className = 'sp-startup-hardware__placeholder';
+      placeholder.textContent = String(placeholderText || '');
+      host.appendChild(placeholder);
+    }
+
+    if (!url) {
+      showPlaceholder();
       return;
     }
-    const placeholder = document.createElement('div');
-    placeholder.className = 'sp-startup-hardware__placeholder';
-    placeholder.textContent = String(placeholderText || '');
-    host.appendChild(placeholder);
+
+    host.innerHTML = '';
+    const img = document.createElement('img');
+    try {
+      img.src = new URL(String(url), document.baseURI).href;
+    } catch (_) {
+      showPlaceholder();
+      return;
+    }
+    img.alt = String(altText || placeholderText || '');
+    img.loading = 'eager';
+    img.decoding = 'async';
+    img.addEventListener('error', showPlaceholder, { once: true });
+    host.appendChild(img);
   }
 
   function hardwareStartupMetric(label, value) {
