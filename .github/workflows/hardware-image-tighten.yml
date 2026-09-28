@@ -1,0 +1,110 @@
+name: Tighten desktop product images
+
+on:
+  push:
+    branches:
+      - startup-hardware-calibration-ux
+    paths:
+      - .github/workflows/hardware-image-tighten.yml
+
+permissions:
+  contents: write
+
+jobs:
+  tighten:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: startup-hardware-calibration-ux
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --quiet pillow
+      - name: Tighten low-occupancy product assets
+        shell: bash
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+
+          base=Path('docs/frontend/assets/hardware')
+          names=['spectra-1.jpg','stellarnet-blue-wave.jpg','hamamatsu-c12880ma.jpg','hamamatsu-c11708ma.jpg']
+
+          def foreground_box(im):
+            rgb=im.convert('RGB')
+            px=rgb.load()
+            mask=Image.new('L',rgb.size,0)
+            mp=mask.load()
+            for y in range(rgb.height):
+              for x in range(rgb.width):
+                r,g,b=px[x,y]
+                # All normalized product assets use a white canvas. Include even pale device
+                # surfaces while ignoring JPEG noise close to white.
+                distance=(255-r)+(255-g)+(255-b)
+                spread=max(r,g,b)-min(r,g,b)
+                if distance>24 or spread>10:
+                  mp[x,y]=255
+            return mask.getbbox()
+
+          for name in names:
+            path=base/name
+            im=Image.open(path).convert('RGB')
+            box=foreground_box(im)
+            assert box, name
+            l,t,r,b=box
+            bw, bh=r-l, b-t
+            pad_x=max(12,int(bw*0.08))
+            pad_y=max(12,int(bh*0.08))
+            crop=im.crop((max(0,l-pad_x),max(0,t-pad_y),min(im.width,r+pad_x),min(im.height,b+pad_y)))
+            crop.thumbnail((570,390),Image.Resampling.LANCZOS)
+            canvas=Image.new('RGB',(640,480),'white')
+            canvas.paste(crop,((640-crop.width)//2,(480-crop.height)//2))
+            canvas.save(path,'JPEG',quality=86,optimize=True,progressive=True)
+            print(name,'source_box',box,'crop',crop.size)
+          PY
+      - name: Report resulting occupancy
+        shell: bash
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          base=Path('docs/frontend/assets/hardware')
+          for name in ['spectra-1.jpg','stellarnet-blue-wave.jpg','hamamatsu-c12880ma.jpg','hamamatsu-c11708ma.jpg']:
+            im=Image.open(base/name).convert('RGB')
+            px=im.load(); mask=Image.new('L',im.size,0); mp=mask.load()
+            for y in range(im.height):
+              for x in range(im.width):
+                r,g,b=px[x,y]
+                if (255-r)+(255-g)+(255-b)>36 or max(r,g,b)-min(r,g,b)>12:
+                  mp[x,y]=255
+            box=mask.getbbox()
+            l,t,r,b=box; bw=r-l; bh=b-t
+            print(f'{name}: bbox={box} width={bw/im.width:.3f} height={bh/im.height:.3f} area={(bw*bh)/(im.width*im.height):.3f}')
+          PY
+      - name: Record normalization note
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('docs/frontend/assets/hardware/sources.json')
+          data=json.loads(p.read_text(encoding='utf-8'))
+          for item in data.get('assets',[]):
+            if item.get('file') in {'spectra-1.jpg','stellarnet-blue-wave.jpg','hamamatsu-c12880ma.jpg','hamamatsu-c11708ma.jpg'}:
+              note=item.get('processingNote','')
+              addition='Desktop popup crop tightened from the normalized source to improve visible product occupancy.'
+              item['processingNote']=(note+' '+addition).strip()
+          p.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          PY
+      - name: Commit tightened assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/hardware-image-tighten.yml
+          git add docs/frontend/assets/hardware
+          git commit -m "Tighten desktop hardware product images"
+          git push origin HEAD:startup-hardware-calibration-ux
