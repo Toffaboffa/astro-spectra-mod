@@ -50,6 +50,22 @@
     };
   }
 
+  function independentEvidenceCount(wavelengths, model) {
+    const resolution = finitePositive(model && model.effectiveResolutionFwhmNm);
+    const values = (Array.isArray(wavelengths) ? wavelengths : []).map(Number).filter(Number.isFinite).sort(function (a, b) { return a - b; });
+    if (!values.length) return 0;
+    if (!resolution) return values.length;
+    let count = 1;
+    let clusterEdge = values[0];
+    for (let index = 1; index < values.length; index += 1) {
+      if (values[index] - clusterEdge >= resolution) {
+        count += 1;
+        clusterEdge = values[index];
+      }
+    }
+    return count;
+  }
+
   function annotateHits(hits, model) {
     const arr = Array.isArray(hits) ? hits.map(function (hit) { return Object.assign({}, hit); }) : [];
     const resolution = finitePositive(model && model.effectiveResolutionFwhmNm);
@@ -82,6 +98,7 @@
   root.SPECTRA_PRO_instrumentResolution = {
     model: MODEL,
     build: build,
+    independentEvidenceCount: independentEvidenceCount,
     annotateHits: annotateHits
   };
 })(typeof self !== 'undefined' ? self : this);
