@@ -2519,6 +2519,217 @@ function ensureHardwarePanel() {
     ids.summary.textContent = parts.length ? parts.join(' · ') : 'No hardware profile applied yet.';
   }
 
+  const STARTUP_HARDWARE_STORAGE_KEY = 'spectraPro.startup.hardware';
+
+  function readRememberedStartupHardware() {
+    try {
+      const raw = window.localStorage && window.localStorage.getItem(STARTUP_HARDWARE_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || parsed.remember !== true || typeof parsed.profileId !== 'string') return null;
+      return parsed;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeRememberedStartupHardware(profileId, remember) {
+    try {
+      if (!window.localStorage) return;
+      if (!remember) {
+        window.localStorage.removeItem(STARTUP_HARDWARE_STORAGE_KEY);
+        return;
+      }
+      window.localStorage.setItem(STARTUP_HARDWARE_STORAGE_KEY, JSON.stringify({
+        remember: true,
+        profileId: String(profileId || '')
+      }));
+    } catch (_) {}
+  }
+
+  function announceStartupHardwareReady(profileId) {
+    window.__spectraStartupHardwareReady = true;
+    try {
+      window.dispatchEvent(new CustomEvent('spectra:startup-hardware-ready', {
+        detail: { profileId: String(profileId || '') }
+      }));
+    } catch (_) {
+      try { window.dispatchEvent(new Event('spectra:startup-hardware-ready')); } catch (_) {}
+    }
+  }
+
+  function renderStartupHardwareAsset(host, url, placeholderText, altText) {
+    if (!host) return;
+    host.innerHTML = '';
+    if (url) {
+      const img = document.createElement('img');
+      img.src = String(url);
+      img.alt = String(altText || placeholderText || '');
+      img.loading = 'lazy';
+      host.appendChild(img);
+      return;
+    }
+    const placeholder = document.createElement('div');
+    placeholder.className = 'sp-startup-hardware__placeholder';
+    placeholder.textContent = String(placeholderText || '');
+    host.appendChild(placeholder);
+  }
+
+  function hardwareStartupMetric(label, value) {
+    return '<div class="sp-startup-hardware__metric"><span>' + escapeHtml(label) + '</span><b>' + escapeHtml(value) + '</b></div>';
+  }
+
+  function renderStartupHardwareDetails(profile) {
+    const details = $('spStartupHardwareDetails');
+    const logo = $('spStartupHardwareLogo');
+    const image = $('spStartupHardwareImage');
+    if (!details) return;
+
+    if (!profile) {
+      details.innerHTML = [
+        hardwareStartupMetric('Manufacturer', 'None selected'),
+        hardwareStartupMetric('Model', '—'),
+        hardwareStartupMetric('Configured range', '—'),
+        hardwareStartupMetric('Resolution (FWHM)', '—'),
+        hardwareStartupMetric('Nominal pixel scale', '—'),
+        hardwareStartupMetric('Grating density', '—')
+      ].join('');
+      renderStartupHardwareAsset(logo, '', 'Company logo', 'Company logo');
+      renderStartupHardwareAsset(image, '', 'Hardware image', 'Hardware image');
+      return;
+    }
+
+    const minNm = finiteHardwareValue(profile.spectralRangeMinNm);
+    const maxNm = finiteHardwareValue(profile.spectralRangeMaxNm);
+    const fwhm = finiteHardwareValue(profile.spectrometerResolutionFwhmNm);
+    const pixelRes = finiteHardwareValue(profile.pixelResolutionNm);
+    const grating = finiteHardwareValue(profile.gratingLinesPerMm);
+    details.innerHTML = [
+      hardwareStartupMetric('Manufacturer', profile.manufacturer || 'Not specified'),
+      hardwareStartupMetric('Model', profile.model || profile.profileName || 'Not specified'),
+      hardwareStartupMetric('Configured range', minNm != null && maxNm != null ? (minNm + '–' + maxNm + ' nm') : 'Not specified'),
+      hardwareStartupMetric('Resolution (FWHM)', fwhm != null ? (fwhm + ' nm') : 'Not specified'),
+      hardwareStartupMetric('Nominal pixel scale', pixelRes != null ? (pixelRes + ' nm/px') : 'Not specified'),
+      hardwareStartupMetric('Grating density', grating != null ? (grating + ' lines/mm') : 'Not specified')
+    ].join('');
+    renderStartupHardwareAsset(logo, profile.logoUrl || '', profile.manufacturer ? (profile.manufacturer + ' logo') : 'Company logo', (profile.manufacturer || '') + ' logo');
+    renderStartupHardwareAsset(image, profile.imageUrl || '', profile.model ? (profile.model + ' image') : 'Hardware image', profile.profileName || profile.model || 'Spectrometer');
+  }
+
+  function populateStartupHardwareSelect(select) {
+    if (!select) return;
+    select.innerHTML = '';
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = 'None';
+    select.appendChild(none);
+    Object.keys(profiles).forEach(function (profileId) {
+      const profile = profiles[profileId];
+      const option = document.createElement('option');
+      option.value = profileId;
+      option.textContent = profile.profileName;
+      select.appendChild(option);
+    });
+    select.value = '';
+  }
+
+  function ensureStartupHardwarePrompt() {
+    let prompt = $('spStartupHardwarePrompt');
+    if (prompt) return prompt;
+
+    const host = document.getElementById('graphWindowContainer') || document.getElementById('graphWindow') || document.body;
+    if (!host) return null;
+
+    prompt = el('div', 'sp-startup-hardware');
+    prompt.id = 'spStartupHardwarePrompt';
+    prompt.setAttribute('role', 'dialog');
+    prompt.setAttribute('aria-modal', 'false');
+    prompt.setAttribute('aria-labelledby', 'spStartupHardwareTitle');
+    prompt.innerHTML = [
+      '<div class="sp-startup-hardware__head">',
+      '  <div>',
+      '    <div class="sp-startup-hardware__title" id="spStartupHardwareTitle">Select Hardware</div>',
+      '    <div class="sp-startup-hardware__hint">Choose the spectrometer used for this session, or continue with None.</div>',
+      '  </div>',
+      '</div>',
+      '<div class="sp-startup-hardware__body">',
+      '  <div class="sp-startup-hardware__visuals">',
+      '    <div id="spStartupHardwareLogo" class="sp-startup-hardware__logo"></div>',
+      '    <div id="spStartupHardwareImage" class="sp-startup-hardware__image"></div>',
+      '  </div>',
+      '  <div class="sp-startup-hardware__config">',
+      '    <label class="sp-startup-hardware__select-label">Hardware',
+      '      <select id="spStartupHardwareSelect" class="spctl-select"><option value="">None</option></select>',
+      '    </label>',
+      '    <div id="spStartupHardwareDetails" class="sp-startup-hardware__details"></div>',
+      '  </div>',
+      '</div>',
+      '<div class="sp-startup-hardware__footer">',
+      '  <label class="sp-startup-hardware__remember"><input type="checkbox" id="spStartupRememberHardware"> Remember hardware</label>',
+      '  <button type="button" id="spStartupHardwareContinue" class="sp-startup-hardware__continue">Continue</button>',
+      '</div>'
+    ].join('');
+
+    host.appendChild(prompt);
+    const select = $('spStartupHardwareSelect');
+    populateStartupHardwareSelect(select);
+    renderStartupHardwareDetails(null);
+
+    select && select.addEventListener('change', function () {
+      renderStartupHardwareDetails(profiles[String(select.value || '')] || null);
+    });
+
+    const continueButton = $('spStartupHardwareContinue');
+    continueButton && continueButton.addEventListener('click', function () {
+      const profileId = select ? String(select.value || '') : '';
+      const profile = profileId ? profiles[profileId] : null;
+
+      if (profile) {
+        if (ids.preset) ids.preset.value = profileId;
+        if (ids.rangeMin) ids.rangeMin.value = String(profile.spectralRangeMinNm);
+        if (ids.rangeMax) ids.rangeMax.value = String(profile.spectralRangeMaxNm);
+        if (ids.fwhm) ids.fwhm.value = profile.spectrometerResolutionFwhmNm != null ? String(profile.spectrometerResolutionFwhmNm) : '';
+        if (ids.pixelRes) ids.pixelRes.value = profile.pixelResolutionNm != null ? String(profile.pixelResolutionNm) : '';
+        if (ids.grating) ids.grating.value = profile.gratingLinesPerMm != null ? String(profile.gratingLinesPerMm) : '';
+        applyHardware(profile, 'proBootstrap.hardware.startup');
+      } else {
+        if (ids.preset) ids.preset.value = '';
+        [ids.rangeMin, ids.rangeMax, ids.fwhm, ids.pixelRes, ids.grating].forEach(function (field) { if (field) field.value = ''; });
+        applyHardware({}, 'proBootstrap.hardware.startup.none');
+      }
+
+      const remember = !!($('spStartupRememberHardware') && $('spStartupRememberHardware').checked);
+      writeRememberedStartupHardware(profileId, remember);
+      if (prompt && prompt.parentNode) prompt.parentNode.removeChild(prompt);
+      announceStartupHardwareReady(profileId);
+    });
+
+    return prompt;
+  }
+
+  function beginStartupHardwareSelection() {
+    window.__spectraStartupHardwareFlowInstalled = true;
+    const remembered = readRememberedStartupHardware();
+    if (remembered) {
+      const profileId = String(remembered.profileId || '');
+      if (!profileId) {
+        applyHardware({}, 'proBootstrap.hardware.startup.remembered-none');
+        announceStartupHardwareReady('');
+        return;
+      }
+      const profile = profiles[profileId];
+      if (profile) {
+        if (ids.preset) ids.preset.value = profileId;
+        applyHardware(profile, 'proBootstrap.hardware.startup.remembered');
+        fillFormFromState();
+        announceStartupHardwareReady(profileId);
+        return;
+      }
+      writeRememberedStartupHardware('', false);
+    }
+    ensureStartupHardwarePrompt();
+  }
+
   $('spHardwareApplyBtn') && $('spHardwareApplyBtn').addEventListener('click', function () {
     const next = applyHardware(readForm(), 'proBootstrap.hardware.apply');
     setFeedback(next.profileName ? ('Applied ' + next.profileName + '.') : 'Applied custom hardware values.');
@@ -2543,7 +2754,8 @@ function ensureHardwarePanel() {
   });
 
   fillFormFromState();
-  loadHardwareProfiles();
+  window.__spectraStartupHardwareFlowInstalled = true;
+  loadHardwareProfiles().then(beginStartupHardwareSelection);
   renderInstrumentResponseStatus(getStoreState());
   return card;
 }
