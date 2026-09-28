@@ -179,3 +179,5 @@ jobs:
           git add -A
           git commit -m "Add first hardware product image batch"
           git push origin HEAD:startup-hardware-calibration-ux
+
+# rerun-after-chunk-repair
