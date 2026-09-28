@@ -226,7 +226,7 @@ export default {
       return json({
         ok: true,
         service: 'spectra-pro-ai',
-        appVersion: '1.3.8',
+        appVersion: '1.3.9',
         model: String(env.OPENAI_MODEL || 'gpt-5.6-terra'),
         promptContract: PROMPT_CONTRACT_VERSION,
         responseContract: RESPONSE_CONTRACT_VERSION
@@ -294,7 +294,7 @@ export default {
       const interpreted = await interpretWithOpenAI(promptPackage, env);
       return json({
         ok: true,
-        appVersion: '1.3.8',
+        appVersion: '1.3.9',
         runId,
         startedAt,
         completedAt: new Date().toISOString(),
