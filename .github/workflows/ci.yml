@@ -38,6 +38,8 @@ jobs:
         run: node tests/calibration_runtime_regression.test.mjs
       - name: Run startup flow runtime regressions
         run: node tests/startup_flow_runtime_regression.test.mjs
+      - name: Run startup flow browser regression
+        run: node tests/startup_flow_browser_regression.test.mjs
       - name: Run compact scientific analysis regressions
         run: node tests/analysis_regression.test.js
       - name: Run gas-tube fingerprint regressions
