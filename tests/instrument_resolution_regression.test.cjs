@@ -25,9 +25,9 @@ assert.equal(coarse.effectiveResolutionFwhmNm, 12);
 assert.equal(coarse.undersampled, false);
 
 const hits = [
-  { refNm: 500.0, obsNm: 500.1 },
-  { refNm: 500.3, obsNm: 500.4 },
-  { refNm: 510.0, obsNm: 510.1 }
+  { referenceNm: 500.0, observedNm: 500.1 },
+  { referenceNm: 500.3, observedNm: 500.4 },
+  { referenceNm: 510.0, observedNm: 510.1 }
 ];
 const fineHits = model.annotateHits(hits, fine);
 assert.equal(fineHits[0].resolutionBlendRisk, true, 'lines closer than FWHM should be marked as blend-risk');
