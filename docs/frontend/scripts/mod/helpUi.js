@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const HELP_VERSION = '1.3.8';
+  const HELP_VERSION = '1.3.9';
   let installed = false;
   let lastFocus = null;
 
@@ -213,7 +213,7 @@
     ];
 
     const hardwareRows = [
-      ['Spectrometer', 'Drop-down: CUSTOM / known profile', 'Chooses a predefined hardware profile or manual values.', 'Selecting KVANT - Spectra-1 immediately fills/applies its known specifications. CUSTOM means manually entered metadata.'],
+      ['Spectrometer', 'Drop-down: CUSTOM / known profile', 'Chooses a predefined hardware profile or manual values.', 'The central starter catalog includes KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu profiles. CUSTOM supports any other spectrometer or delivered configuration. Selecting a profile fills its documented nominal metadata; configuration-dependent or unknown fields remain blank rather than being inferred.'],
       ['Range (min)', 'Number input, nm', 'Configured lower wavelength limit of the spectrometer.', 'Used for hardware context and derived coverage/resolution information; it is not a replacement for calibration.'],
       ['Range (max)', 'Number input, nm', 'Configured upper wavelength limit.', 'Should reflect the instrument, not merely the current visible graph crop.'],
       ['Resolution', 'Number input, nm FWHM', 'Instrument spectral resolution expressed as full width at half maximum.', 'Smaller FWHM means finer spectral resolving ability. This is hardware metadata, not the width of every measured peak.'],
@@ -223,7 +223,8 @@
       ['Load custom JSON/CSV', 'Button + file selector', 'Loads a user-supplied relative instrument-response profile.', 'JSON uses the SPECTRA response-profile schema. CSV/text supplies wavelength and positive relative-response values. Use only a traceable measured response curve; an invalid, non-monotonic, uncovered or hardware-incompatible profile is rejected/unavailable.'],
       ['Response status', 'Read-only text', 'Reports the selected response profile and whether correction is applied, unavailable or uncorrected.', 'Check this before interpreting continuum shape. Response correction is a preprocessing step and does not create wavelength calibration.'],
       ['Apply', 'Button', 'Stores the current hardware form values.', 'Use after entering CUSTOM values.'],
-      ['Clear', 'Button', 'Clears the active hardware metadata.', 'Derived hardware fields such as FWHM/Eff. R may then become unavailable.']
+      ['Clear', 'Button', 'Clears the active hardware metadata.', 'Derived hardware fields such as FWHM/Eff. R may then become unavailable.'],
+      ['Profile scope', 'Reference', 'Explains what a hardware profile does and does not define.', 'A hardware profile supplies nominal instrument metadata only. The active wavelength calibration defines the measured wavelength axis, and instrument-response correction requires a separate compatible measured response profile.']
     ];
 
     const astroRows = [
@@ -390,7 +391,7 @@
         preset('Lamp (Hg/Ar/Ne)', 'Main-compatible focused lamp matching.', 'Keeps the original local Hg/Ar/Ne/Kr/Xe workflow available. Gas Tube is the newer choice when coherent atomic and molecular evidence is preferred.') +
         preset('Atomic', 'Narrow atomic emission lines.', 'Uses curated multi-line fingerprints for H, He, Ne, Ar, Kr, Xe, Hg and O plus supporting library evidence.') +
         preset('Molecular', 'Band systems.', 'Uses multiple diagnostic bands and molecular-profile logic. One coincident band is weak evidence; coherent systems are stronger.') +
-        preset('Gas Tube', 'Discharge tubes / mixed gas-like spectra.', 'Auto tune is enabled by default and evaluates several peak-threshold and wavelength-tolerance combinations, then ranks the stable fingerprint consensus. The same approach is available for Atomic and Molecular presets; manual controls remain available for diagnostics. Combines atomic fingerprints with source-family restrictions and can coexist with molecular contributors.') +
+        preset('Gas Tube', 'Discharge tubes / mixed gas-like spectra.', 'Auto tune is enabled by default and evaluates several peak-threshold and wavelength-tolerance combinations, then ranks stable fingerprint evidence. Curated discharge fingerprints include N₂/N₂⁺ plus conservative O₂, CO₂ and H₂O parent-gas inference. CO₂ requires multiple CO-band fragments; H₂O requires coherent hydrogen evidence with OH/O support where covered; O₂ requires molecular O₂ plus atomic-O support when that diagnostic region is covered. References outside the calibrated frame do not count as missed evidence. Fragment lines alone are not treated as proof of the parent gas.') +
         preset('Flame', 'Flame or mixed-emitter spectra.', 'Designed for flame-type conditions where atomic emitters and background/molecular contributions can coexist.') +
         preset('Fluorescent', 'Broad fluorescence.', 'Primary output is broadband shape: λmax, centroid, FWHM, band width, asymmetry, shoulders and integrated signal. Clear coherent narrow-line matches are secondary evidence and are shown automatically in the graph.') +
       '</div></section>' +

@@ -134,7 +134,7 @@
     };
   };
 
-  mod.version = '1.3.8';
+  mod.version = '1.3.9';
 })();
 
 /* SPECTRA PRO startup calibration UX */
@@ -142,7 +142,7 @@
   'use strict';
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
-  const UI_VERSION = 'v1.3.8';
+  const UI_VERSION = 'v1.3.9';
   let wasCalibrated = false;
   let loadPromptDismissed = false;
   let axisPromptShown = false;

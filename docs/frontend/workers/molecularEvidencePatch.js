@@ -19,9 +19,16 @@
     return Math.max(0, Number(p && (p.prominence != null ? p.prominence : p.value)) || 0);
   }
 
-  function scoreDiagnosticProfile(species, profile, peaks, hardMaxDistanceNm) {
+  function scoreDiagnosticProfile(species, profile, peaks, hardMaxDistanceNm, observedRange) {
     const peakArr = (Array.isArray(peaks) ? peaks : []).filter(function (p) { return Number.isFinite(Number(p && p.nm)); });
-    const anchors = Array.isArray(profile && profile.anchors) ? profile.anchors : [];
+    const allAnchors = Array.isArray(profile && profile.anchors) ? profile.anchors : [];
+    const rangeMin = Number(observedRange && observedRange.min);
+    const rangeMax = Number(observedRange && observedRange.max);
+    const hasRange = Number.isFinite(rangeMin) && Number.isFinite(rangeMax);
+    const anchors = allAnchors.filter(function (anchor) {
+      const nm = Number(anchor && anchor.nm);
+      return Number.isFinite(nm) && (!hasRange || (nm >= rangeMin && nm <= rangeMax));
+    });
     if (!peakArr.length || !anchors.length) return null;
 
     const tolerance = clamp(Number(hardMaxDistanceNm) || 1, 0.2, 5.0);
@@ -47,7 +54,13 @@
         const strength = clamp(prom / maxProm, 0, 1);
         const localScore = weight * (0.72 * closeness + 0.28 * strength);
         if (!best || localScore > best.localScore) {
-          best = { peak: p, peakKey: idxKey, obsNm: obsNm, refNm: refNm, delta: delta, prom: prom, weight: weight, closeness: closeness, strength: strength, localScore: localScore };
+          best = {
+            peak: p, peakKey: idxKey, obsNm: obsNm, refNm: refNm, delta: delta,
+            prom: prom, weight: weight, closeness: closeness, strength: strength,
+            localScore: localScore,
+            group: String(anchor && anchor.group || ''),
+            emitter: String(anchor && anchor.emitter || '')
+          };
         }
       }
       if (best) {
@@ -73,6 +86,34 @@
     else if (matchedCount >= 4) evidenceFactor = 1.08;
 
     const minStrong = Math.max(2, Number(profile.minimumStrongEvidence) || 2);
+    const matchedGroups = Object.create(null);
+    const matchedGroupCounts = Object.create(null);
+    matches.forEach(function (m) {
+      if (!m.group) return;
+      matchedGroups[m.group] = true;
+      matchedGroupCounts[m.group] = (matchedGroupCounts[m.group] || 0) + 1;
+    });
+    const groupCount = Object.keys(matchedGroups).length;
+    const activeGroups = Object.create(null);
+    anchors.forEach(function (anchor) {
+      if (anchor && anchor.group) activeGroups[String(anchor.group)] = true;
+    });
+    const requiredGroups = (Array.isArray(profile.requiredGroups) ? profile.requiredGroups : []).filter(function (group) {
+      return !!activeGroups[String(group)];
+    });
+    const requiredGroupMinimums = profile && profile.requiredGroupMinimums && typeof profile.requiredGroupMinimums === 'object'
+      ? profile.requiredGroupMinimums : {};
+    const hasRequiredGroups = requiredGroups.every(function (group) {
+      const key = String(group);
+      const requiredCount = Math.max(1, Number(requiredGroupMinimums[key]) || 1);
+      return Number(matchedGroupCounts[key] || 0) >= requiredCount;
+    });
+    const configuredMinGroups = Math.max(0, Number(profile.minimumEvidenceGroups) || 0);
+    const minimumEvidenceGroups = Math.min(configuredMinGroups, Object.keys(activeGroups).length);
+    const strictAccepted = matchedCount >= minStrong &&
+      groupCount >= minimumEvidenceGroups &&
+      hasRequiredGroups;
+    if (profile.strictAcceptance && !strictAccepted) return null;
     if (matchedCount < minStrong) evidenceFactor *= 0.88;
 
     const totalScore = evidenceFactor * (
@@ -103,13 +144,16 @@
         family: 'molecular',
         mode: 'molecular',
         rgbSupport: 0,
-        evidenceModel: 'plasma-diagnostic-v1',
-        evidenceFactor: +evidenceFactor.toFixed(3)
+        evidenceModel: profile.strictAcceptance ? 'gastube-discharge-fingerprint-v1' : 'plasma-diagnostic-v1',
+        evidenceFactor: +evidenceFactor.toFixed(3),
+        evidenceGroups: Object.keys(matchedGroups),
+        evidenceGroupCounts: matchedGroupCounts,
+        strictAccepted: profile.strictAcceptance ? strictAccepted : null
       },
       hits: matches.map(function (m) {
         const conf = clamp((0.35 + 0.65 * m.closeness) * (0.55 + 0.45 * m.strength), 0, 1);
         return {
-          species: species + ' ' + String(profile.label || 'molecular band'),
+          species: species + ' ' + String(m.emitter || profile.label || 'molecular band'),
           element: species,
           referenceNm: +m.refNm.toFixed(3),
           observedNm: +m.obsNm.toFixed(3),
@@ -118,7 +162,9 @@
           confidence: +conf.toFixed(3),
           score: +(m.localScore * 100).toFixed(1),
           kind: 'molecular-band',
-          evidenceModel: 'plasma-diagnostic-v1'
+          emitter: m.emitter || null,
+          evidenceGroup: m.group || null,
+          evidenceModel: profile.strictAcceptance ? 'gastube-discharge-fingerprint-v1' : 'plasma-diagnostic-v1'
         };
       })
     };
@@ -136,7 +182,7 @@
     return arr.filter(function (p) { return getPeakProminence(p) >= minProm; });
   }
 
-  function scoreDiagnosticProfileAuto(species, profile, peaks) {
+  function scoreDiagnosticProfileAuto(species, profile, peaks, observedRange) {
     const configs = [
       { id: 'strict', threshold: 0.055, tolerance: 1.0, weight: 1.15 },
       { id: 'clean', threshold: 0.035, tolerance: 1.4, weight: 1.00 },
@@ -148,15 +194,18 @@
 
     configs.forEach(function (cfg) {
       const subset = filterPeaksByRelativeThreshold(peaks, cfg.threshold);
-      const scored = subset.length ? scoreDiagnosticProfile(species, profile, subset, cfg.tolerance) : null;
+      const scored = subset.length ? scoreDiagnosticProfile(species, profile, subset, cfg.tolerance, observedRange) : null;
       if (scored && scored.row && Number(scored.row.matchedCount || 0) >= Math.max(2, Number(profile.minimumStrongEvidence) || 2)) anchored = true;
       passes.push({ cfg: cfg, scored: scored, peakCount: subset.length });
     });
 
-    if (anchored) {
+    // Strict gas-tube identity profiles never use the broad 3 nm confirmation
+    // pass. Their accepted identity evidence stays inside the normal <=1.8 nm
+    // gate; the legacy N2/N2+ diagnostic behavior remains unchanged.
+    if (anchored && !profile.strictAcceptance) {
       const cfg = { id: 'confirm', threshold: 0.015, tolerance: 3.0, weight: 0.45 };
       const subset = filterPeaksByRelativeThreshold(peaks, cfg.threshold);
-      passes.push({ cfg: cfg, scored: subset.length ? scoreDiagnosticProfile(species, profile, subset, cfg.tolerance) : null, peakCount: subset.length });
+      passes.push({ cfg: cfg, scored: subset.length ? scoreDiagnosticProfile(species, profile, subset, cfg.tolerance, observedRange) : null, peakCount: subset.length });
     }
 
     const totalWeight = Math.max(0.01, passes.reduce(function (s, p) { return s + Number(p.cfg.weight || 0); }, 0));
@@ -332,13 +381,26 @@
     });
     const diagnostics = [];
     const diagnosticHits = [];
+    // Coverage belongs to the calibrated frame, not to the subset of wavelengths
+    // where peaks happened to be detected. Using peak min/max could silently hide
+    // a required fingerprint group and turn missing evidence into acceptance.
+    const frameNm = (frame && Array.isArray(frame.nm) ? frame.nm : []).map(Number).filter(Number.isFinite);
+    const peakNm = peaks.map(function (peak) { return Number(peak && peak.nm); }).filter(Number.isFinite);
+    const coverageNm = frameNm.length ? frameNm : peakNm;
+    const observedRange = coverageNm.length ? {
+      min: Math.min.apply(null, coverageNm),
+      max: Math.max.apply(null, coverageNm)
+    } : null;
     const autoTuneMolecular = out.autoTune === true &&
       (String(out.presetId || '') === 'smart-molecular' || String(out.presetId || '') === 'smart-gastube');
     const autoTuneDiagnostics = [];
     Object.keys(catalog.profiles).forEach(function (species) {
+      const profile = catalog.profiles[species];
+      const allowedPresets = Array.isArray(profile && profile.presets) ? profile.presets : null;
+      if (allowedPresets && allowedPresets.indexOf(String(out.presetId || '')) < 0) return;
       const scored = autoTuneMolecular
-        ? scoreDiagnosticProfileAuto(species, catalog.profiles[species], peaks)
-        : scoreDiagnosticProfile(species, catalog.profiles[species], peaks, out.maxDistanceNm);
+        ? scoreDiagnosticProfileAuto(species, profile, peaks, observedRange)
+        : scoreDiagnosticProfile(species, profile, peaks, out.maxDistanceNm, observedRange);
       if (!scored || !scored.row || !(scored.row.totalScore > 0)) return;
       diagnostics.push(scored.row);
       Array.prototype.push.apply(diagnosticHits, scored.hits || []);

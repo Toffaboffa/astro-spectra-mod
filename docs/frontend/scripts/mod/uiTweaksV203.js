@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = 'v1.3.8';
+  const VERSION = 'v1.3.9';
   let initialStripeCentered = false;
   let helpClickBound = false;
   let helpPausedByHelp = false;

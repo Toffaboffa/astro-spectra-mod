@@ -38,6 +38,12 @@ jobs:
         run: node tests/calibration_runtime_regression.test.mjs
       - name: Run compact scientific analysis regressions
         run: node tests/analysis_regression.test.js
+      - name: Run gas-tube fingerprint regressions
+        run: node tests/gastube_fingerprint_regression.test.cjs
+      - name: Run hardware profile catalog regressions
+        run: node tests/hardware_profiles_regression.test.cjs
+      - name: Run instrument resolution regressions
+        run: node tests/instrument_resolution_regression.test.cjs
       - name: Run real Neon export regression pack
         run: node tests/neon_real_export_regression.test.mjs
       - name: Run real N2 export integration regression
@@ -110,7 +116,7 @@ jobs:
           assert "yNormalized: 0.543" in fluorescent_block, "Fluorescent sample must keep the measured stripe position"
           assert "icon: SAMPLE_ICONS.cyan" not in n2_block + ne_block, "Cyan icon must remain exclusive to the Argon sample"
           assert "chunk-" not in module
-          assert "const VERSION = '1.3.8';" in module
+          assert "const VERSION = '1.3.9';" in module
           assert "solar-tsis1-hsrs-visible-0p2nm.json" in module
 
           export_ui = Path("docs/frontend/scripts/mod/exportUi.js").read_text(encoding="utf-8")

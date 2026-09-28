@@ -5,6 +5,7 @@ Run the compact deterministic scientific regression suite with:
 ```text
 node tests/main_compatibility.test.mjs
 node tests/analysis_regression.test.js
+node tests/gastube_fingerprint_regression.test.cjs
 node tests/neon_real_export_regression.test.mjs
 node tests/n2_real_export_regression.test.mjs
 node tests/ai_context_regression.test.mjs
@@ -36,6 +37,7 @@ reference handling, smoothing, processed-signal worker consumption and provenanc
 The instrument-response case verifies relative correction recovery, interpolation,
 full-coverage and calibration guards, hardware applicability, amplification limiting,
 custom CSV parsing and explicit corrected/uncorrected intensity semantics.
+The gas-tube fingerprint regression verifies conservative positive and negative O₂, CO₂ and H₂O discharge cases, calibrated-frame range awareness, rejection of fragment-only false positives, UV-capable H₂O evidence and isolation of discharge-parent inference to the Gas Tube preset.
 The real Neon export regression locks the reviewed hard-cap, result-scoped calibration
 coverage, accepted-hit PDF basis, localized source identity and six-page report-tail
 contract from the 2026-09-26 Neon export.
@@ -110,3 +112,6 @@ or visual reference asset is used.
 known relative input/output values. It is test data, not a measured hardware profile.
 `sample_ai_contexts.json` contains only compact synthetic context and ASTRO evidence
 used to verify AI payload and prompt behavior; it is not an empirical spectrum.
+
+
+The instrument-resolution regression verifies calibrated sampling precedence, blend-risk annotation, independent-evidence clustering, and that coarse resolution does not widen the spectral identity hard cap.

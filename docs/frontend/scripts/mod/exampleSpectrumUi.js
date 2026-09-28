@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '1.3.8';
+  const VERSION = '1.3.9';
   const BUTTON_ID = 'spLoadExampleBtn';
   const OVERLAY_ID = 'spExampleChooserOverlay';
   const STYLE_ID = 'spExampleChooserStyle';
@@ -214,7 +214,10 @@
     const preset = $('spHardwarePreset');
 
     if (profileId === SPECTRA1_HARDWARE.profileId) {
-      if (preset && typeof preset.dispatchEvent === 'function' && typeof global.Event === 'function') {
+      const profileOptionReady = preset && Array.from(preset.options || []).some(function (option) {
+        return String(option.value || '') === SPECTRA1_HARDWARE.profileId;
+      });
+      if (profileOptionReady && typeof preset.dispatchEvent === 'function' && typeof global.Event === 'function') {
         preset.value = SPECTRA1_HARDWARE.profileId;
         preset.dispatchEvent(new global.Event('change', { bubbles: true }));
         return true;
