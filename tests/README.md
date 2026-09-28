@@ -112,3 +112,6 @@ or visual reference asset is used.
 known relative input/output values. It is test data, not a measured hardware profile.
 `sample_ai_contexts.json` contains only compact synthetic context and ASTRO evidence
 used to verify AI payload and prompt behavior; it is not an empirical spectrum.
+
+
+The instrument-resolution regression verifies calibrated sampling precedence, blend-risk annotation, independent-evidence clustering, and that coarse resolution does not widen the spectral identity hard cap.
