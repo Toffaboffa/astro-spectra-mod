@@ -213,6 +213,7 @@
     ];
 
     const hardwareRows = [
+      ['Startup Select Hardware', 'Startup popup', 'Appears before the calibration reminder and starts with None selected.', 'Selecting a known spectrometer previews its nominal manufacturer/model/range/resolution/sampling/grating data. The popup also reserves a company-logo area and hardware-image area. Remember hardware stores the selected profile ID in localStorage and skips this popup on later loads until site storage is cleared.'],
       ['Spectrometer', 'Drop-down: CUSTOM / known profile', 'Chooses a predefined hardware profile or manual values.', 'The central starter catalog includes KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu profiles. CUSTOM supports any other spectrometer or delivered configuration. Selecting a profile fills its documented nominal metadata; configuration-dependent or unknown fields remain blank rather than being inferred.'],
       ['Range (min)', 'Number input, nm', 'Configured lower wavelength limit of the spectrometer.', 'Used for hardware context and derived coverage/resolution information; it is not a replacement for calibration.'],
       ['Range (max)', 'Number input, nm', 'Configured upper wavelength limit.', 'Should reflect the instrument, not merely the current visible graph crop.'],
@@ -250,7 +251,7 @@
       ['Reset', 'Button', 'Clears/reset calibration point inputs.', 'Use when starting a new calibration.'],
       ['Sort', 'Button', 'Sorts calibration point pairs.', 'Helps keep the point list ordered and easier to inspect.'],
       ['Record', 'Button', 'Returns from the calibration-side settings view to graph/recording.', 'Navigation only.'],
-      ['Startup prompt Yes / No', 'Prompt buttons', 'When no calibration is active, Yes opens the calibration-file workflow; No dismisses the prompt.', 'Choose No when intentionally working in pixels. Wavelength-based matching should wait until calibration is valid.']
+      ['Startup prompt Yes / No', 'Prompt buttons', 'After the hardware startup step, when no calibration is active, Yes opens the calibration-file workflow; No dismisses the prompt.', 'Remember calibration suppresses this startup reminder on later loads until site storage is cleared. It remembers only the reminder choice; it does not reopen or persist access to a local calibration file. Choose No when intentionally working in pixels. Wavelength-based matching should wait until calibration is valid.']
     ];
 
     return '<section class="sp-help-section"><h2>Controls reference</h2><p>This section documents the main interactive controls currently present in the Recording interface. Controls that appear only in specific states are marked as optional/context-dependent.</p></section>' +
