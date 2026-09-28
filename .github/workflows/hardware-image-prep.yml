@@ -29,10 +29,15 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/hardware-src docs/frontend/assets/hardware
           UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36'
+          echo 'SOURCE: Spectra-1'
           curl -A "$UA" -L --fail --retry 3 'https://kvant-laser.de/wp-content/uploads/2025/08/schulungs-und-bildungsmaterial-laser-astro-physik_3.webp' -o /tmp/hardware-src/spectra-1.webp
+          echo 'SOURCE: Vernier'
           curl -A "$UA" -L --fail --retry 3 'https://www.carolina.com/images/product/large/118044.jpg' -o /tmp/hardware-src/vernier.jpg
+          echo 'SOURCE: PASCO'
           curl -A "$UA" -L --fail --retry 3 'https://www.lennoxeducational.ie/26977-medium_default/wireless-spectrometer.jpg' -o /tmp/hardware-src/pasco.jpg
+          echo 'SOURCE: Ocean ST'
           curl -A "$UA" -L --fail --retry 3 'https://www.eastwestsvc.com/wp-content/uploads/2022/09/Ocean-ST.png' -o /tmp/hardware-src/ocean.png
+          echo 'SOURCE: Avantes'
           curl -A "$UA" -L --fail --retry 3 'https://img.instrumenthive.com/raw_images/IH-029481-1.webp' -o /tmp/hardware-src/avantes.webp
       - name: Normalize product photos
         shell: bash
