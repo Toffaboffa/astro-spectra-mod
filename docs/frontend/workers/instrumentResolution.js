@@ -62,12 +62,12 @@
     }
 
     return arr.map(function (hit, index) {
-      const ref = Number(hit && hit.refNm);
+      const ref = Number(hit && (hit.referenceNm != null ? hit.referenceNm : hit.refNm));
       let nearest = null;
       if (Number.isFinite(ref)) {
         arr.forEach(function (other, otherIndex) {
           if (otherIndex === index) return;
-          const otherRef = Number(other && other.refNm);
+          const otherRef = Number(other && (other.referenceNm != null ? other.referenceNm : other.refNm));
           if (!Number.isFinite(otherRef)) return;
           const separation = Math.abs(ref - otherRef);
           if (nearest === null || separation < nearest) nearest = separation;
