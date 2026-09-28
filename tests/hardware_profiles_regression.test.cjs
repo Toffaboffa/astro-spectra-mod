@@ -22,6 +22,11 @@ for (const profile of catalog.profiles) {
   assert.ok(fs.existsSync(imagePath), profile.profileId + ' product image must exist: ' + profile.imageUrl);
   const imageBytes = fs.readFileSync(imagePath);
   assert.ok(imageBytes.length > 4 && imageBytes[0] === 0xff && imageBytes[1] === 0xd8, profile.profileId + ' product image must be a readable JPEG asset');
+  assert.ok(profile.logoUrl && profile.logoUrl.startsWith('../assets/hardware/logos/'), profile.profileId + ' needs a bundled manufacturer logo');
+  const logoPath = path.resolve(root, 'docs/frontend/data', profile.logoUrl);
+  assert.ok(fs.existsSync(logoPath), profile.profileId + ' manufacturer logo must exist: ' + profile.logoUrl);
+  const logoBytes = fs.readFileSync(logoPath);
+  assert.ok(logoBytes.length > 8 && logoBytes[0] === 0x89 && logoBytes[1] === 0x50 && logoBytes[2] === 0x4e && logoBytes[3] === 0x47, profile.profileId + ' manufacturer logo must be a readable PNG asset');
   assert.ok(!ids.has(profile.profileId), 'hardware profile IDs must be unique: ' + profile.profileId);
   ids.add(profile.profileId);
   assert.ok(Number.isFinite(Number(profile.spectralRangeMinNm)), profile.profileId + ' needs a finite range start');
@@ -31,6 +36,9 @@ for (const profile of catalog.profiles) {
   if (profile.pixelResolutionNm != null) assert.ok(Number(profile.pixelResolutionNm) > 0, profile.profileId + ' pixel scale must be positive');
   if (profile.gratingLinesPerMm != null) assert.ok(Number(profile.gratingLinesPerMm) > 0, profile.profileId + ' grating density must be positive');
 }
+
+const uniqueLogoUrls = new Set(catalog.profiles.map((profile) => profile.logoUrl));
+assert.equal(uniqueLogoUrls.size, 8, 'hardware catalog must reuse exactly one normalized logo per supported manufacturer');
 
 for (const required of ['spectra-1','vernier-gdx-svispl','pasco-ps-2600a','pasco-uv-vis','ocean-st-uv-25','ocean-st-vis-25','ocean-st-nir-25','thorlabs-ccs100','thorlabs-ccs175','thorlabs-ccs200','avantes-uls2048cl-evo-custom','stellarnet-blue-wave-vis-25','hamamatsu-c12880ma','hamamatsu-c11708ma']) {
   assert.ok(ids.has(required), 'missing starter hardware profile: ' + required);
@@ -49,6 +57,7 @@ assert.ok(bootstrap.includes("window.dispatchEvent(new CustomEvent('spectra:star
 assert.ok(bootstrap.includes("'Company logo'") && bootstrap.includes("'Hardware image'"), 'startup hardware popup must reserve logo and hardware-image placeholders');
 assert.ok(bootstrap.includes("hardwareStartupMetric('Manufacturer'") && bootstrap.includes("hardwareStartupMetric('Configured range'"), 'startup hardware selection must preview profile metadata');
 assert.ok(bootstrap.includes("renderStartupHardwareAsset(image, profile.imageUrl || ''"), 'startup hardware popup must render each selected profile imageUrl');
+assert.ok(bootstrap.includes("renderStartupHardwareAsset(logo, profile.logoUrl || ''"), 'startup hardware popup must render each selected manufacturer logoUrl');
 assert.ok(bootstrap.includes("new URL(String(url), document.baseURI).href"), 'startup hardware images must resolve relative asset URLs against the published page');
 assert.ok(bootstrap.includes("img.addEventListener('error', showPlaceholder"), 'startup hardware images must fall back to a placeholder if an asset cannot load');
 assert.ok(bootstrap.includes("img.loading = 'eager'"), 'visible startup hardware images must load eagerly');
