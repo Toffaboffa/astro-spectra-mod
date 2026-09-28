@@ -2593,11 +2593,20 @@ function ensureHardwarePanel() {
     return '<div class="sp-startup-hardware__metric"><span>' + escapeHtml(label) + '</span><b>' + escapeHtml(value) + '</b></div>';
   }
 
+  function startupHardwareLogoUsesWhite(profile) {
+    const manufacturer = String(profile && profile.manufacturer || '').trim();
+    if (!manufacturer) return false;
+    return manufacturer !== 'PASCO' && manufacturer !== 'StellarNet';
+  }
+
   function renderStartupHardwareDetails(profile) {
     const details = $('spStartupHardwareDetails');
     const logo = $('spStartupHardwareLogo');
     const image = $('spStartupHardwareImage');
     if (!details) return;
+    if (logo && logo.classList) {
+      logo.classList.toggle('sp-startup-hardware__logo--white', startupHardwareLogoUsesWhite(profile));
+    }
 
     if (!profile) {
       details.innerHTML = [
