@@ -102,7 +102,7 @@ for (const required of ['spectra-1','vernier-gdx-svispl','pasco-ps-2600a','pasco
   assert.ok(ids.has(required), 'missing starter hardware profile: ' + required);
 }
 
-assert.ok(bootstrap.includes("window.fetch('../data/hardware_profiles.json?v=1.3.9-startup-2')"), 'hardware UI must load a cache-busted central catalog with the browser global');
+assert.ok(bootstrap.includes("window.fetch('../data/hardware_profiles.json?v=1.4.0-startup-2')"), 'hardware UI must load a cache-busted central catalog with the browser global');
 assert.ok(!bootstrap.includes('global.fetch'), 'browser hardware loading must not depend on an undefined Node-style global');
 assert.ok(bootstrap.includes('<option value="">CUSTOM</option>'), 'manual CUSTOM hardware must remain available');
 assert.ok(!bootstrap.includes('<option value="spectra-1">KVANT - Spectra-1</option>'), 'known hardware options must not be hard-coded into the UI markup');
@@ -130,7 +130,7 @@ assert.ok(bootstrap.includes("if (value === null || value === undefined || value
 assert.ok(!bootstrap.includes('Number.isFinite(Number(hw.spectrometerResolutionFwhmNm))'), 'summary/form rendering must not coerce null hardware values through Number(null)');
 assert.ok(readme.includes('KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu'), 'README must document the multi-spectrometer starter catalog');
 assert.ok(readme.includes('CUSTOM'), 'README must document custom spectrometer support');
-assert.ok(help.includes("const HELP_VERSION = '1.3.9';"), 'in-app HELP version must match v1.3.9 documentation');
+assert.ok(help.includes("const HELP_VERSION = '1.4';"), 'in-app HELP version must match v1.4 documentation');
 assert.ok(help.includes('KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu'), 'in-app HELP must document the multi-spectrometer starter catalog');
 assert.ok(help.includes('instrument-response correction requires a separate compatible measured response profile'), 'HELP must keep hardware metadata separate from response correction');
 const thorlabsLogoSource = (hardwareSources.logos || []).find((item) => item.manufacturer === 'Thorlabs');
