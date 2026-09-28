@@ -7,8 +7,9 @@
       "profiles": [
         "spectra-1"
       ],
-      "sourceUrl": "https://kvant-laser.de/wp-content/uploads/2025/08/schulungs-und-bildungsmaterial-laser-astro-physik_3.webp",
-      "sourcePage": "https://kvant-laser.de/online-shop/lasermodule/education/spektrometrie/spectra-1-high-resolution-spectrometer/"
+      "sourceKind": "user-provided",
+      "sourceUrl": null,
+      "sourcePage": "https://www.forschool.eu/spectrometry/58275-spectra-1-high-resolution-spectrometer.html"
     },
     {
       "file": "vernier-gdx-svispl.jpg",
@@ -23,7 +24,7 @@
       "profiles": [
         "pasco-ps-2600a"
       ],
-      "sourceUrl": "https://www.lennoxeducational.ie/26977-medium_default/wireless-spectrometer.jpg",
+      "sourceUrl": "https://static-data2.manualslib.com/product-images/859/3026737/pasco-ps-2600a.jpg",
       "sourcePage": "https://www.pasco.com/products/sensors/wireless/wireless-spectrometer-vis"
     },
     {
