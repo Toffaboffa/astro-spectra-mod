@@ -479,8 +479,10 @@ assert.ok(renderStatusSource.includes("const diffractionOverlayInput = $('spTogg
 assert.ok(bootstrap.includes('Initial UI render failed; analysis listeners will still be registered.'), 'a UI render failure must not abort LAB/ASTRO listener registration');
 assert.ok(spectrapro.includes('proBootstrap.js?v=1.3.9'), 'published bootstrap must use a cache key that includes the LAB init fix');
 assert.ok(spectrapro.includes('mod-panels.css?v=1.3.9'), 'published ASTRO control styles must use a fresh cache key');
-assert.ok(spectrapro.includes('mod-panels.css?v=1.3.9-startup-2'), 'startup hardware popup styles must use a fresh cache key');
+assert.ok(spectrapro.includes('mod-panels.css?v=1.3.9-startup-3'), 'startup hardware popup styles must use a fresh cache key');
 assert.ok(styles.includes('width:min(780px,calc(100% - 48px));'), 'desktop Select Hardware popup must use the expanded review width');
+assert.ok(styles.includes('top:50%;') && styles.includes('left:50%;') && styles.includes('transform:translate(-50%,-50%);'), 'Select Hardware popup must be centered horizontally and vertically over the graph');
+assert.ok(!styles.includes('.sp-startup-hardware{top:8px;'), 'responsive overrides must not move the startup hardware popup away from graph center');
 assert.ok(styles.includes('grid-template-columns:250px minmax(0,1fr);'), 'desktop startup hardware popup must reserve a larger product-visual column');
 assert.ok(styles.includes('grid-template-rows:64px 176px;'), 'desktop startup hardware popup must give the product image more vertical space');
 assert.ok(styles.includes('.sp-startup-hardware__image{background:#fff;}'), 'product image canvas must render on white to match normalized product assets');
