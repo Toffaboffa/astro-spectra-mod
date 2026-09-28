@@ -129,7 +129,7 @@
       "spectralRangeMinNm": 350,
       "spectralRangeMaxNm": 700,
       "spectrometerResolutionFwhmNm": 0.5,
-      "pixelResolutionNm": 0.1,
+      "pixelResolutionNm": null,
       "gratingLinesPerMm": 1200,
       "specificationBasis": "manufacturer-upper-bound",
       "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF"
@@ -142,7 +142,7 @@
       "spectralRangeMinNm": 500,
       "spectralRangeMaxNm": 1000,
       "spectrometerResolutionFwhmNm": 0.6,
-      "pixelResolutionNm": 0.1667,
+      "pixelResolutionNm": null,
       "gratingLinesPerMm": 830,
       "specificationBasis": "manufacturer-upper-bound",
       "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF"
@@ -155,7 +155,7 @@
       "spectralRangeMinNm": 200,
       "spectralRangeMaxNm": 1000,
       "spectrometerResolutionFwhmNm": 2,
-      "pixelResolutionNm": 0.25,
+      "pixelResolutionNm": null,
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-upper-bound",
       "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF"
