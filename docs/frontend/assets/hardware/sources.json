@@ -139,8 +139,9 @@
     {
       "file": "logos/thorlabs.png",
       "manufacturer": "Thorlabs",
-      "sourcePage": "https://media.thorlabs.com/contentassets/e92d618c92c94cea9096b3f231859611/etn043886-d02.pdf",
-      "sourceKind": "manufacturer-document-logo"
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Thorlabs_logo.png",
+      "sourceKind": "brand-wordmark-mirror",
+      "processingNote": "Clean transparent THORLABS wordmark; Commons identifies https://www.thorlabs.com/ as the source. Normalized to a transparent 320x120 UI asset."
     },
     {
       "file": "logos/avantes.png",
