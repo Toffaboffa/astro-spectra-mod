@@ -41,7 +41,6 @@ jobs:
             ('pasco','PASCO','https://www.pasco.com/',['pasco']),
             ('ocean-optics','Ocean Optics','https://www.oceanoptics.com/',['ocean','logo']),
             ('avantes','Avantes','https://www.avantes.com/',['avantes']),
-            ('stellarnet','StellarNet','https://www.stellarnet.us/stellarnet-dealers-worldwide/',['stellarnet','snlogo']),
             ('hamamatsu','Hamamatsu Photonics','https://www.hamamatsu.com/',['hamamatsu']),
           ]
 
@@ -115,6 +114,37 @@ jobs:
               print('CANDIDATES',label,candidates[:8])
               raise SystemExit('No usable official logo discovered for '+label)
             print('SELECTED',label,*selected)
+
+          # StellarNet's current site hides its logo from static HTML. Extract the official logo
+          # from the first page of StellarNet's own spectrometer features manual.
+          import fitz
+          stellar_pdf='https://www.stellarnet.us/wp-content/uploads/06-Spectrometer-Upgrades-and-Features.pdf'
+          rr=requests.get(stellar_pdf,headers=H,timeout=40)
+          rr.raise_for_status()
+          doc=fitz.open(stream=rr.content,filetype='pdf')
+          page=doc[0]
+          pix=page.get_pixmap(matrix=fitz.Matrix(2.4,2.4),alpha=False)
+          from PIL import Image
+          im=Image.open(io.BytesIO(pix.tobytes('png'))).convert('RGB')
+          w,h=im.size
+          # Logo is in the upper-left of the manual page.
+          crop=im.crop((0,0,int(w*0.48),int(h*0.22)))
+          px=crop.load()
+          mask=Image.new('L',crop.size,0)
+          mp=mask.load()
+          for y in range(crop.height):
+            for x in range(crop.width):
+              r,g,b=px[x,y]
+              if min(r,g,b)<238 or max(r,g,b)-min(r,g,b)>15:
+                mp[x,y]=255
+          box=mask.getbbox()
+          if not box:
+            raise SystemExit('Could not isolate StellarNet logo from official manual')
+          l,t,r,b=box
+          pad=18
+          crop=crop.crop((max(0,l-pad),max(0,t-pad),min(crop.width,r+pad),min(crop.height,b+pad)))
+          crop.save('/tmp/logo-src/stellarnet.png','PNG')
+          print('SELECTED StellarNet',stellar_pdf,'official manual logo')
 
           # Thorlabs does not expose a normal header logo image in the current site HTML.
           # Extract the official red wordmark from the first page of Thorlabs' own OEM brochure.
@@ -234,7 +264,7 @@ jobs:
             {'file':'logos/ocean-optics.png','manufacturer':'Ocean Optics','sourcePage':'https://www.oceanoptics.com/','sourceKind':'manufacturer-site-logo'},
             {'file':'logos/thorlabs.png','manufacturer':'Thorlabs','sourcePage':'https://www.thorlabs.com/','sourceKind':'manufacturer-site-logo'},
             {'file':'logos/avantes.png','manufacturer':'Avantes','sourcePage':'https://www.avantes.com/','sourceKind':'manufacturer-site-logo'},
-            {'file':'logos/stellarnet.png','manufacturer':'StellarNet','sourcePage':'https://www.stellarnet.us/stellarnet-dealers-worldwide/','sourceKind':'manufacturer-site-logo'},
+            {'file':'logos/stellarnet.png','manufacturer':'StellarNet','sourcePage':'https://www.stellarnet.us/wp-content/uploads/06-Spectrometer-Upgrades-and-Features.pdf','sourceKind':'manufacturer-document-logo'},
             {'file':'logos/hamamatsu.png','manufacturer':'Hamamatsu Photonics','sourcePage':'https://www.hamamatsu.com/','sourceKind':'manufacturer-site-logo'}
           ]
           prov_path.write_text(json.dumps(prov,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
