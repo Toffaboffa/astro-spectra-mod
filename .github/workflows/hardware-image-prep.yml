@@ -34,7 +34,7 @@ jobs:
           echo 'SOURCE: Vernier'
           curl -A "$UA" -L --fail --retry 3 'https://www.carolina.com/images/product/large/118044.jpg' -o /tmp/hardware-src/vernier.jpg
           echo 'SOURCE: PASCO'
-          curl -A "$UA" -L --fail --retry 3 'https://www.lennoxeducational.ie/26977-medium_default/wireless-spectrometer.jpg' -o /tmp/hardware-src/pasco.jpg
+          curl -A "$UA" -L --fail --retry 3 'https://static-data2.manualslib.com/product-images/859/3026737/pasco-ps-2600a.jpg' -o /tmp/hardware-src/pasco.jpg
           echo 'SOURCE: Ocean ST'
           curl -A "$UA" -L --fail --retry 3 'https://www.eastwestsvc.com/wp-content/uploads/2022/09/Ocean-ST.png' -o /tmp/hardware-src/ocean.png
           echo 'SOURCE: Avantes'
