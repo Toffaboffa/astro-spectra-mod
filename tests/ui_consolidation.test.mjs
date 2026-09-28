@@ -325,7 +325,7 @@ assert.ok(!dataQualityPanel.includes("line('Res:'"), 'calibrated sampling must n
 
 assert.ok(bootstrap.includes('Configured range (min)') && bootstrap.includes('Configured range (max)'), 'Hardware panel must label profile wavelength range as configured rather than measured coverage');
 assert.ok(bootstrap.includes('Nominal pixel scale<input id="spHardwarePixelRes"'), 'Hardware panel must label pixelResolutionNm as nominal pixel scale');
-assert.ok(bootstrap.includes("Nominal pixel scale: ' + hw.pixelResolutionNm + ' nm/px'"), 'Hardware summary must identify the nominal pixel scale and units explicitly');
+assert.ok(bootstrap.includes("Nominal pixel scale: ' + pixelRes + ' nm/px'"), 'Hardware summary must identify the nominal pixel scale and units explicitly');
 assert.ok(bootstrap.includes("graphXAxisSel && graphXAxisSel.addEventListener('change'"), 'persistent X-axis must control the legacy graph axis directly');
 assert.ok(bootstrap.includes("const pxRadio = $('toggleXLabelsPx');") && bootstrap.includes("const nmRadio = $('toggleXLabelsNm');"), 'persistent X-axis must stay wired to the real graph axis controls');
 assert.ok(bootstrap.includes("graphYAxisSel && graphYAxisSel.addEventListener('change'"), 'persistent Y-axis must update display state directly');
