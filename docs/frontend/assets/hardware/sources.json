@@ -109,5 +109,55 @@
       "sourceKind": "manufacturer-product-page",
       "processingNote": "Product image discovered from manufacturer page and normalized to 640x480."
     }
+  ],
+  "logos": [
+    {
+      "file": "logos/kvant.png",
+      "manufacturer": "KVANT",
+      "sourcePage": "https://www.kvant.sk/",
+      "sourceKind": "manufacturer-site-logo"
+    },
+    {
+      "file": "logos/vernier.png",
+      "manufacturer": "Vernier",
+      "sourcePage": "https://www.vernier.com/",
+      "sourceKind": "manufacturer-site-logo"
+    },
+    {
+      "file": "logos/pasco.png",
+      "manufacturer": "PASCO",
+      "sourcePage": "https://www.pasco.com/",
+      "sourceKind": "manufacturer-site-logo"
+    },
+    {
+      "file": "logos/ocean-optics.png",
+      "manufacturer": "Ocean Optics",
+      "sourcePage": "https://www.oceanoptics.com/",
+      "sourceKind": "manufacturer-site-logo"
+    },
+    {
+      "file": "logos/thorlabs.png",
+      "manufacturer": "Thorlabs",
+      "sourcePage": "https://media.thorlabs.com/contentassets/e92d618c92c94cea9096b3f231859611/etn043886-d02.pdf",
+      "sourceKind": "manufacturer-document-logo"
+    },
+    {
+      "file": "logos/avantes.png",
+      "manufacturer": "Avantes",
+      "sourcePage": "https://www.avantes.com/",
+      "sourceKind": "manufacturer-site-logo"
+    },
+    {
+      "file": "logos/stellarnet.png",
+      "manufacturer": "StellarNet",
+      "sourcePage": "https://www.stellarnet.us/wp-content/uploads/06-Spectrometer-Upgrades-and-Features.pdf",
+      "sourceKind": "manufacturer-document-logo"
+    },
+    {
+      "file": "logos/hamamatsu.png",
+      "manufacturer": "Hamamatsu Photonics",
+      "sourcePage": "https://www.hamamatsu.com/",
+      "sourceKind": "manufacturer-site-logo"
+    }
   ]
 }

@@ -13,7 +13,8 @@
       "pixelResolutionNm": 0.5,
       "gratingLinesPerMm": 500,
       "specificationBasis": "existing-project-profile",
-      "imageUrl": "../assets/hardware/spectra-1.jpg"
+      "imageUrl": "../assets/hardware/spectra-1.jpg",
+      "logoUrl": "../assets/hardware/logos/kvant.png"
     },
     {
       "profileId": "vernier-gdx-svispl",
@@ -27,7 +28,8 @@
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer",
       "source": "https://www.vernier.com/manuals/gdx-svispl/",
-      "imageUrl": "../assets/hardware/vernier-gdx-svispl.jpg"
+      "imageUrl": "../assets/hardware/vernier-gdx-svispl.jpg",
+      "logoUrl": "../assets/hardware/logos/vernier.png"
     },
     {
       "profileId": "vernier-gdx-spec-vis",
@@ -41,7 +43,8 @@
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer",
       "source": "https://www.vernier.com/manuals/gdx-spec-vis/",
-      "imageUrl": "../assets/hardware/vernier-gdx-spec-vis.jpg"
+      "imageUrl": "../assets/hardware/vernier-gdx-spec-vis.jpg",
+      "logoUrl": "../assets/hardware/logos/vernier.png"
     },
     {
       "profileId": "vernier-gdx-spec-fuv",
@@ -55,7 +58,8 @@
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer",
       "source": "https://www.vernier.com/manuals/gdx-spec-fuv/",
-      "imageUrl": "../assets/hardware/vernier-gdx-spec-fuv.jpg"
+      "imageUrl": "../assets/hardware/vernier-gdx-spec-fuv.jpg",
+      "logoUrl": "../assets/hardware/logos/vernier.png"
     },
     {
       "profileId": "pasco-ps-2600a",
@@ -69,7 +73,8 @@
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer",
       "source": "https://www.pasco.com/products/sensors/wireless/wireless-spectrometer-vis",
-      "imageUrl": "../assets/hardware/pasco-ps-2600a.jpg"
+      "imageUrl": "../assets/hardware/pasco-ps-2600a.jpg",
+      "logoUrl": "../assets/hardware/logos/pasco.png"
     },
     {
       "profileId": "pasco-uv-vis",
@@ -83,7 +88,8 @@
       "gratingLinesPerMm": 500,
       "specificationBasis": "manufacturer",
       "source": "https://www.pasco.com/products/guides/spectrometers",
-      "imageUrl": "../assets/hardware/pasco-uv-vis.jpg"
+      "imageUrl": "../assets/hardware/pasco-uv-vis.jpg",
+      "logoUrl": "../assets/hardware/logos/pasco.png"
     },
     {
       "profileId": "ocean-st-uv-25",
@@ -98,7 +104,8 @@
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-typical",
       "source": "https://www.oceanoptics.com/spectrometers/microspectrometers/",
-      "imageUrl": "../assets/hardware/ocean-st.jpg"
+      "imageUrl": "../assets/hardware/ocean-st.jpg",
+      "logoUrl": "../assets/hardware/logos/ocean-optics.png"
     },
     {
       "profileId": "ocean-st-vis-25",
@@ -113,7 +120,8 @@
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-typical",
       "source": "https://www.oceanoptics.com/spectrometer/st-vis/",
-      "imageUrl": "../assets/hardware/ocean-st.jpg"
+      "imageUrl": "../assets/hardware/ocean-st.jpg",
+      "logoUrl": "../assets/hardware/logos/ocean-optics.png"
     },
     {
       "profileId": "ocean-st-nir-25",
@@ -128,7 +136,8 @@
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-typical",
       "source": "https://www.oceanoptics.com/spectrometers/microspectrometers/",
-      "imageUrl": "../assets/hardware/ocean-st.jpg"
+      "imageUrl": "../assets/hardware/ocean-st.jpg",
+      "logoUrl": "../assets/hardware/logos/ocean-optics.png"
     },
     {
       "profileId": "thorlabs-ccs100",
@@ -142,7 +151,8 @@
       "gratingLinesPerMm": 1200,
       "specificationBasis": "manufacturer-upper-bound",
       "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF",
-      "imageUrl": "../assets/hardware/thorlabs-ccs-series.jpg"
+      "imageUrl": "../assets/hardware/thorlabs-ccs-series.jpg",
+      "logoUrl": "../assets/hardware/logos/thorlabs.png"
     },
     {
       "profileId": "thorlabs-ccs175",
@@ -156,7 +166,8 @@
       "gratingLinesPerMm": 830,
       "specificationBasis": "manufacturer-upper-bound",
       "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF",
-      "imageUrl": "../assets/hardware/thorlabs-ccs-series.jpg"
+      "imageUrl": "../assets/hardware/thorlabs-ccs-series.jpg",
+      "logoUrl": "../assets/hardware/logos/thorlabs.png"
     },
     {
       "profileId": "thorlabs-ccs200",
@@ -170,7 +181,8 @@
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-upper-bound",
       "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF",
-      "imageUrl": "../assets/hardware/thorlabs-ccs-series.jpg"
+      "imageUrl": "../assets/hardware/thorlabs-ccs-series.jpg",
+      "logoUrl": "../assets/hardware/logos/thorlabs.png"
     },
     {
       "profileId": "avantes-uls2048cl-evo-custom",
@@ -185,7 +197,8 @@
       "specificationBasis": "manufacturer-configurable",
       "configurationNote": "Resolution and actual spectral span depend on grating and slit; enter the delivered configuration values.",
       "source": "https://www.avantes.com/products/spectrometers/starline/avaspec-uls/avaspec-uls2048cl-evo/",
-      "imageUrl": "../assets/hardware/avantes-uls2048cl-evo.jpg"
+      "imageUrl": "../assets/hardware/avantes-uls2048cl-evo.jpg",
+      "logoUrl": "../assets/hardware/logos/avantes.png"
     },
     {
       "profileId": "stellarnet-blue-wave-vis-25",
@@ -200,7 +213,8 @@
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-model-table",
       "source": "https://www.stellarnet.us/spectrometers/uv-vis-spectrometers/blue-wave/",
-      "imageUrl": "../assets/hardware/stellarnet-blue-wave.jpg"
+      "imageUrl": "../assets/hardware/stellarnet-blue-wave.jpg",
+      "logoUrl": "../assets/hardware/logos/stellarnet.png"
     },
     {
       "profileId": "hamamatsu-c12880ma",
@@ -214,7 +228,8 @@
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer-typical",
       "source": "https://www.hamamatsu.com/jp/en/product/optical-sensors/spectrometers/mini-spectrometer/C12880MA.html",
-      "imageUrl": "../assets/hardware/hamamatsu-c12880ma.jpg"
+      "imageUrl": "../assets/hardware/hamamatsu-c12880ma.jpg",
+      "logoUrl": "../assets/hardware/logos/hamamatsu.png"
     },
     {
       "profileId": "hamamatsu-c11708ma",
@@ -228,7 +243,8 @@
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer-typical",
       "source": "https://www.hamamatsu.com/content/dam/hamamatsu-photonics/sites/documents/99_SALES_LIBRARY/ssd/c10988ma-01_etc_kacc1169e.pdf",
-      "imageUrl": "../assets/hardware/hamamatsu-c11708ma.jpg"
+      "imageUrl": "../assets/hardware/hamamatsu-c11708ma.jpg",
+      "logoUrl": "../assets/hardware/logos/hamamatsu.png"
     }
   ]
 }
