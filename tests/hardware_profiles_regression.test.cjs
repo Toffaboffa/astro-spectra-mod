@@ -35,6 +35,13 @@ assert.ok(!bootstrap.includes('global.fetch'), 'browser hardware loading must no
 assert.ok(bootstrap.includes('<option value="">CUSTOM</option>'), 'manual CUSTOM hardware must remain available');
 assert.ok(!bootstrap.includes('<option value="spectra-1">KVANT - Spectra-1</option>'), 'known hardware options must not be hard-coded into the UI markup');
 assert.ok(bootstrap.includes("store.update('hardware'"), 'hardware profiles must continue to use canonical state.hardware');
+assert.ok(bootstrap.includes('Select Hardware'), 'startup must present a dedicated hardware selection popup');
+assert.ok(bootstrap.includes('<option value="">None</option>'), 'startup hardware selection must default to None');
+assert.ok(bootstrap.includes('Remember hardware'), 'startup hardware selection must expose a Remember hardware checkbox');
+assert.ok(bootstrap.includes("const STARTUP_HARDWARE_STORAGE_KEY = 'spectraPro.startup.hardware';"), 'remembered hardware must use stable localStorage state');
+assert.ok(bootstrap.includes("window.dispatchEvent(new CustomEvent('spectra:startup-hardware-ready'"), 'hardware startup must explicitly release the calibration step');
+assert.ok(bootstrap.includes("'Company logo'") && bootstrap.includes("'Hardware image'"), 'startup hardware popup must reserve logo and hardware-image placeholders');
+assert.ok(bootstrap.includes("hardwareStartupMetric('Manufacturer'") && bootstrap.includes("hardwareStartupMetric('Configured range'"), 'startup hardware selection must preview profile metadata');
 assert.ok(bootstrap.includes("ids.fwhm && ids.fwhm.value !== '' ? Number(ids.fwhm.value) : null"), 'blank FWHM must remain null rather than becoming zero');
 assert.ok(bootstrap.includes("profile.spectrometerResolutionFwhmNm != null ? String(profile.spectrometerResolutionFwhmNm) : ''"), 'unknown profile FWHM must render as a blank field');
 assert.ok(bootstrap.includes("profile.pixelResolutionNm != null ? String(profile.pixelResolutionNm) : ''"), 'unknown profile pixel scale must render as a blank field');
