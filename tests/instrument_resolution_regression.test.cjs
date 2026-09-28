@@ -42,5 +42,9 @@ const pipeline = fs.readFileSync(path.join(root, 'docs/frontend/workers/analysis
 const candidate = fs.readFileSync(path.join(root, 'docs/frontend/workers/candidateAnalysis.js'), 'utf8');
 assert.ok(pipeline.includes('instrumentResolutionModel'), 'analysis result must expose the resolution model');
 assert.ok(candidate.includes('const hardMaxDistanceNm = autoTuneEnabled ? 1.8 : requestedMaxDistanceNm;'), 'resolution work must not widen the existing Auto Tune identity hard cap');
+const atomic = fs.readFileSync(path.join(root, 'docs/frontend/workers/atomicEvidence.js'), 'utf8');
+const molecular = fs.readFileSync(path.join(root, 'docs/frontend/workers/molecularEvidencePatch.js'), 'utf8');
+assert.ok(!atomic.includes('evidenceIndependenceFactor'), 'instrument resolution must remain diagnostic-only for atomic scoring');
+assert.ok(!molecular.includes('evidenceIndependenceFactor'), 'instrument resolution must remain diagnostic-only for molecular scoring');
 
 console.log('Instrument resolution regression: PASS');
