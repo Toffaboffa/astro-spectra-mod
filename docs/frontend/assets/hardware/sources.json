@@ -1,0 +1,164 @@
+{
+  "schema": "spectra-pro-hardware-image-sources/v1",
+  "note": "Product-photo sources used to prepare normalized 640x480 UI assets. Images remain attributable to their respective source owners/manufacturers.",
+  "assets": [
+    {
+      "file": "spectra-1.jpg",
+      "profiles": [
+        "spectra-1"
+      ],
+      "sourceKind": "user-provided",
+      "sourceUrl": null,
+      "sourcePage": "https://www.forschool.eu/spectrometry/58275-spectra-1-high-resolution-spectrometer.html",
+      "processingNote": "Desktop popup crop tightened from the normalized source to improve visible product occupancy."
+    },
+    {
+      "file": "vernier-gdx-svispl.jpg",
+      "profiles": [
+        "vernier-gdx-svispl"
+      ],
+      "sourceUrl": "https://www.carolina.com/images/product/large/118044.jpg",
+      "sourcePage": "https://www.vernier.com/product/go-direct-spectrovis-plus-spectrophotometer/"
+    },
+    {
+      "file": "pasco-ps-2600a.jpg",
+      "profiles": [
+        "pasco-ps-2600a"
+      ],
+      "sourceUrl": "https://static-data2.manualslib.com/product-images/859/3026737/pasco-ps-2600a.jpg",
+      "sourcePage": "https://www.pasco.com/products/sensors/wireless/wireless-spectrometer-vis"
+    },
+    {
+      "file": "ocean-st.jpg",
+      "profiles": [
+        "ocean-st-uv-25",
+        "ocean-st-vis-25",
+        "ocean-st-nir-25"
+      ],
+      "sourceUrl": "https://www.eastwestsvc.com/wp-content/uploads/2022/09/Ocean-ST.png",
+      "sourcePage": "https://www.oceanoptics.com/spectrometers/microspectrometers/"
+    },
+    {
+      "file": "avantes-uls2048cl-evo.jpg",
+      "profiles": [
+        "avantes-uls2048cl-evo-custom"
+      ],
+      "sourceUrl": "https://img.instrumenthive.com/raw_images/IH-029481-1.webp",
+      "sourcePage": "https://www.avantes.com/products/spectrometers/starline/avaspec-uls/avaspec-uls2048cl-evo/"
+    },
+    {
+      "file": "vernier-gdx-spec-vis.jpg",
+      "profiles": [
+        "vernier-gdx-spec-vis"
+      ],
+      "sourceUrl": "https://www.fybikon.no/image/dataloggingsutstyr/go-direct-selvstendige-sensorer/28145-gdx-spec-vis.hero.001.jpg",
+      "sourcePage": "https://www.vernier.com/product/go-direct-visible-spectrophotometer/"
+    },
+    {
+      "file": "vernier-gdx-spec-fuv.jpg",
+      "profiles": [
+        "vernier-gdx-spec-fuv"
+      ],
+      "sourceUrl": "https://labstuff.eu/images/product_images/original_images/GoDirect_Fluo_UVVIS_a.jpg",
+      "sourcePage": "https://www.vernier.com/products/spectrometers/"
+    },
+    {
+      "file": "pasco-uv-vis.jpg",
+      "profiles": [
+        "pasco-uv-vis"
+      ],
+      "sourceUrl": "https://tecnoedu.com/Pasco/img/SE3607F.jpg",
+      "sourcePage": "https://www.pasco.com/products/lab-apparatus/chemistry/se-3607",
+      "processingNote": "Cropped source composite to the SE-3607 instrument before 640x480 normalization."
+    },
+    {
+      "file": "thorlabs-ccs-series.jpg",
+      "profiles": [
+        "thorlabs-ccs100",
+        "thorlabs-ccs175"
+      ],
+      "sourceUrl": "https://www.optolab.ftn.uns.ac.rs/images/EQUIPMENT/img/CCD_Spectrometer_A1-780.jpg",
+      "sourcePage": "https://www.thorlabs.com/catalogpages/Obsolete/2025/CCS100.pdf",
+      "photoSourcePage": "https://www.optolab.ftn.uns.ac.rs/index.php/equipment/optoelectronic-equipment-and-devices/light-analysis/223-ccs200",
+      "representativeFamilyImage": true,
+      "processingNote": "CCS200 laboratory product photo used as representative image of the physically shared CCS-series enclosure."
+    },
+    {
+      "file": "stellarnet-blue-wave.jpg",
+      "profiles": [
+        "stellarnet-blue-wave-vis-25"
+      ],
+      "sourcePage": "https://www.shopstellarnet.com/blue-wave-spectrometers-1/",
+      "sourceKind": "manufacturer-product-page",
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy."
+    },
+    {
+      "file": "hamamatsu-c12880ma.jpg",
+      "profiles": [
+        "hamamatsu-c12880ma"
+      ],
+      "sourcePage": "https://www.hamamatsu.com/jp/en/product/optical-sensors/spectrometers/mini-spectrometer/C12880MA.html",
+      "sourceKind": "manufacturer-product-page",
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy."
+    },
+    {
+      "file": "hamamatsu-c11708ma.jpg",
+      "profiles": [
+        "hamamatsu-c11708ma"
+      ],
+      "sourcePage": "https://www.hamamatsu.com/us/en/product/optical-sensors/spectrometers/mini-spectrometer/C11708MA.html",
+      "sourceKind": "manufacturer-product-page",
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy."
+    }
+  ],
+  "logos": [
+    {
+      "file": "logos/kvant.png",
+      "manufacturer": "KVANT",
+      "sourcePage": "https://www.kvant.sk/",
+      "sourceKind": "manufacturer-site-logo"
+    },
+    {
+      "file": "logos/vernier.png",
+      "manufacturer": "Vernier",
+      "sourcePage": "https://www.vernier.com/",
+      "sourceKind": "manufacturer-site-logo"
+    },
+    {
+      "file": "logos/pasco.png",
+      "manufacturer": "PASCO",
+      "sourcePage": "https://www.pasco.com/",
+      "sourceKind": "manufacturer-site-logo"
+    },
+    {
+      "file": "logos/ocean-optics.png",
+      "manufacturer": "Ocean Optics",
+      "sourcePage": "https://www.oceanoptics.com/",
+      "sourceKind": "manufacturer-site-logo"
+    },
+    {
+      "file": "logos/thorlabs.png",
+      "manufacturer": "Thorlabs",
+      "sourcePage": "https://media.thorlabs.com/contentassets/e92d618c92c94cea9096b3f231859611/etn043886-d02.pdf",
+      "sourceKind": "manufacturer-document-logo"
+    },
+    {
+      "file": "logos/avantes.png",
+      "manufacturer": "Avantes",
+      "sourcePage": "https://www.avantes.com/",
+      "sourceKind": "manufacturer-site-logo"
+    },
+    {
+      "file": "logos/stellarnet.png",
+      "manufacturer": "StellarNet",
+      "sourcePage": "https://www.stellarnet.us/wp-content/uploads/06-Spectrometer-Upgrades-and-Features.pdf",
+      "sourceKind": "manufacturer-document-logo"
+    },
+    {
+      "file": "logos/hamamatsu.png",
+      "manufacturer": "Hamamatsu Photonics",
+      "sourcePage": "https://www.hamamatsu.com/",
+      "sourceKind": "manufacturer-site-logo"
+    }
+  ]
+}
