@@ -1,0 +1,75 @@
+name: Hardware visual QA metrics
+
+on:
+  push:
+    branches:
+      - startup-hardware-calibration-ux
+    paths:
+      - .github/workflows/hardware-visual-qa.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: startup-hardware-calibration-ux
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --quiet pillow
+      - name: Measure visual occupancy
+        shell: bash
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          import json
+
+          base=Path('docs/frontend/assets/hardware')
+          catalog=json.loads(Path('docs/frontend/data/hardware_profiles.json').read_text())
+          seen_images=[]
+          for p in catalog['profiles']:
+            fn=Path(p['imageUrl']).name
+            if fn not in seen_images: seen_images.append(fn)
+
+          print('PRODUCT_IMAGES')
+          for fn in seen_images:
+            im=Image.open(base/fn).convert('RGB')
+            px=im.load()
+            mask=Image.new('L',im.size,0); mp=mask.load()
+            for y in range(im.height):
+              for x in range(im.width):
+                r,g,b=px[x,y]
+                # product content differs materially from the normalized white canvas
+                if min(r,g,b)<238 or max(r,g,b)-min(r,g,b)>14:
+                  mp[x,y]=255
+            box=mask.getbbox()
+            if box:
+              l,t,r,b=box; bw=r-l; bh=b-t
+              print(f'{fn}: bbox={box} width={bw/im.width:.3f} height={bh/im.height:.3f} area={(bw*bh)/(im.width*im.height):.3f}')
+            else:
+              print(f'{fn}: EMPTY')
+
+          print('LOGOS')
+          for fp in sorted((base/'logos').glob('*.png')):
+            im=Image.open(fp).convert('RGBA')
+            alpha=im.getchannel('A')
+            abox=alpha.getbbox()
+            rgb=Image.new('RGB',im.size,'white'); rgb.paste(im,mask=alpha)
+            px=rgb.load(); mask=Image.new('L',rgb.size,0); mp=mask.load()
+            for y in range(rgb.height):
+              for x in range(rgb.width):
+                r,g,b=px[x,y]
+                if min(r,g,b)<238 or max(r,g,b)-min(r,g,b)>14:
+                  mp[x,y]=255
+            box=mask.getbbox() or abox
+            if box:
+              l,t,r,b=box; bw=r-l; bh=b-t
+              print(f'{fp.name}: bbox={box} width={bw/im.width:.3f} height={bh/im.height:.3f} area={(bw*bh)/(im.width*im.height):.3f}')
+            else:
+              print(f'{fp.name}: EMPTY')
+          PY
