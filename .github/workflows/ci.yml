@@ -36,6 +36,8 @@ jobs:
         run: node tests/main_compatibility.test.mjs
       - name: Run calibration runtime regressions
         run: node tests/calibration_runtime_regression.test.mjs
+      - name: Run startup flow runtime regressions
+        run: node tests/startup_flow_runtime_regression.test.mjs
       - name: Run compact scientific analysis regressions
         run: node tests/analysis_regression.test.js
       - name: Run gas-tube fingerprint regressions
