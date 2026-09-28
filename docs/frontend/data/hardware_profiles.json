@@ -12,7 +12,8 @@
       "spectrometerResolutionFwhmNm": 1.8,
       "pixelResolutionNm": 0.5,
       "gratingLinesPerMm": 500,
-      "specificationBasis": "existing-project-profile"
+      "specificationBasis": "existing-project-profile",
+      "imageUrl": "../assets/hardware/spectra-1.jpg"
     },
     {
       "profileId": "vernier-gdx-svispl",
@@ -25,7 +26,8 @@
       "pixelResolutionNm": 1,
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer",
-      "source": "https://www.vernier.com/manuals/gdx-svispl/"
+      "source": "https://www.vernier.com/manuals/gdx-svispl/",
+      "imageUrl": "../assets/hardware/vernier-gdx-svispl.jpg"
     },
     {
       "profileId": "vernier-gdx-spec-vis",
@@ -64,7 +66,8 @@
       "pixelResolutionNm": 0.4,
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer",
-      "source": "https://www.pasco.com/products/sensors/wireless/wireless-spectrometer-vis"
+      "source": "https://www.pasco.com/products/sensors/wireless/wireless-spectrometer-vis",
+      "imageUrl": "../assets/hardware/pasco-ps-2600a.jpg"
     },
     {
       "profileId": "pasco-uv-vis",
@@ -91,7 +94,8 @@
       "pixelResolutionNm": null,
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-typical",
-      "source": "https://www.oceanoptics.com/spectrometers/microspectrometers/"
+      "source": "https://www.oceanoptics.com/spectrometers/microspectrometers/",
+      "imageUrl": "../assets/hardware/ocean-st.jpg"
     },
     {
       "profileId": "ocean-st-vis-25",
@@ -105,7 +109,8 @@
       "pixelResolutionNm": null,
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-typical",
-      "source": "https://www.oceanoptics.com/spectrometer/st-vis/"
+      "source": "https://www.oceanoptics.com/spectrometer/st-vis/",
+      "imageUrl": "../assets/hardware/ocean-st.jpg"
     },
     {
       "profileId": "ocean-st-nir-25",
@@ -119,7 +124,8 @@
       "pixelResolutionNm": null,
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-typical",
-      "source": "https://www.oceanoptics.com/spectrometers/microspectrometers/"
+      "source": "https://www.oceanoptics.com/spectrometers/microspectrometers/",
+      "imageUrl": "../assets/hardware/ocean-st.jpg"
     },
     {
       "profileId": "thorlabs-ccs100",
@@ -172,7 +178,8 @@
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer-configurable",
       "configurationNote": "Resolution and actual spectral span depend on grating and slit; enter the delivered configuration values.",
-      "source": "https://www.avantes.com/products/spectrometers/starline/avaspec-uls/avaspec-uls2048cl-evo/"
+      "source": "https://www.avantes.com/products/spectrometers/starline/avaspec-uls/avaspec-uls2048cl-evo/",
+      "imageUrl": "../assets/hardware/avantes-uls2048cl-evo.jpg"
     },
     {
       "profileId": "stellarnet-blue-wave-vis-25",

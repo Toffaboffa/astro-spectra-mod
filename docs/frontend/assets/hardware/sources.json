@@ -1,0 +1,48 @@
+{
+  "schema": "spectra-pro-hardware-image-sources/v1",
+  "note": "Product-photo sources used to prepare normalized 640x480 UI assets. Images remain attributable to their respective source owners/manufacturers.",
+  "assets": [
+    {
+      "file": "spectra-1.jpg",
+      "profiles": [
+        "spectra-1"
+      ],
+      "sourceUrl": "https://kvant-laser.de/wp-content/uploads/2025/08/schulungs-und-bildungsmaterial-laser-astro-physik_3.webp",
+      "sourcePage": "https://kvant-laser.de/online-shop/lasermodule/education/spektrometrie/spectra-1-high-resolution-spectrometer/"
+    },
+    {
+      "file": "vernier-gdx-svispl.jpg",
+      "profiles": [
+        "vernier-gdx-svispl"
+      ],
+      "sourceUrl": "https://www.carolina.com/images/product/large/118044.jpg",
+      "sourcePage": "https://www.vernier.com/product/go-direct-spectrovis-plus-spectrophotometer/"
+    },
+    {
+      "file": "pasco-ps-2600a.jpg",
+      "profiles": [
+        "pasco-ps-2600a"
+      ],
+      "sourceUrl": "https://www.lennoxeducational.ie/26977-medium_default/wireless-spectrometer.jpg",
+      "sourcePage": "https://www.pasco.com/products/sensors/wireless/wireless-spectrometer-vis"
+    },
+    {
+      "file": "ocean-st.jpg",
+      "profiles": [
+        "ocean-st-uv-25",
+        "ocean-st-vis-25",
+        "ocean-st-nir-25"
+      ],
+      "sourceUrl": "https://www.eastwestsvc.com/wp-content/uploads/2022/09/Ocean-ST.png",
+      "sourcePage": "https://www.oceanoptics.com/spectrometers/microspectrometers/"
+    },
+    {
+      "file": "avantes-uls2048cl-evo.jpg",
+      "profiles": [
+        "avantes-uls2048cl-evo-custom"
+      ],
+      "sourceUrl": "https://img.instrumenthive.com/raw_images/IH-029481-1.webp",
+      "sourcePage": "https://www.avantes.com/products/spectrometers/starline/avaspec-uls/avaspec-uls2048cl-evo/"
+    }
+  ]
+}
