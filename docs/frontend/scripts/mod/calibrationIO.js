@@ -403,7 +403,9 @@
 
   function queueAxisQuestionAfterHardwareReady() {
     runAfterStartupHardwareReady(function () {
-      queueAxisQuestionAfterHardwareReady();
+      window.setTimeout(function () {
+        if (!axisPromptSuppressed()) showAxisQuestion();
+      }, 70);
     });
   }
 
@@ -419,9 +421,7 @@
         axisPromptShown = true;
         return;
       }
-      window.setTimeout(function () {
-        if (!axisPromptSuppressed()) showAxisQuestion();
-      }, 70);
+      queueAxisQuestionAfterHardwareReady();
     } else if (!calibrated) {
       wasCalibrated = false;
       axisPromptShown = false;
