@@ -21,7 +21,7 @@
     });
   }
 
-  function scoreProfile(profile, peaks, hardMaxDistanceNm, range, resolutionModel) {
+  function scoreProfile(profile, peaks, hardMaxDistanceNm, range) {
     const peakArr = (Array.isArray(peaks) ? peaks : []).filter(function (p) { return Number.isFinite(Number(p && p.nm)); });
     const lines = activeLines(profile, range);
     if (!profile || !peakArr.length || !lines.length) return null;
@@ -67,11 +67,6 @@
 
     if (!matches.length) return null;
 
-    const resolutionApi = root.SPECTRA_PRO_instrumentResolution;
-    const independentEvidenceCount = resolutionApi && typeof resolutionApi.independentEvidenceCount === 'function'
-      ? resolutionApi.independentEvidenceCount(matches.map(function (m) { return m.refNm; }), resolutionModel)
-      : matches.length;
-    const evidenceIndependenceFactor = matches.length ? clamp(independentEvidenceCount / matches.length, 0.35, 1) : 1;
     const matchedWeight = matches.reduce(function (s, m) { return s + m.weight; }, 0);
     const weightedEvidence = matches.reduce(function (s, m) { return s + m.localScore; }, 0);
     const explainedProm = matches.reduce(function (s, m) { return s + m.prom; }, 0);
@@ -96,12 +91,11 @@
 
     const minimumEvidence = Math.max(2, Number(profile.minimumEvidence) || 2);
     let evidenceFactor = 1;
-    if (independentEvidenceCount === 1) evidenceFactor = 0.16;
-    else if (independentEvidenceCount === 2) evidenceFactor = 0.58;
-    else if (independentEvidenceCount === 3) evidenceFactor = 0.86;
-    else if (independentEvidenceCount >= 6) evidenceFactor = 1.10;
-    if (independentEvidenceCount < minimumEvidence) evidenceFactor *= 0.82;
-    evidenceFactor *= evidenceIndependenceFactor;
+    if (matches.length === 1) evidenceFactor = 0.16;
+    else if (matches.length === 2) evidenceFactor = 0.58;
+    else if (matches.length === 3) evidenceFactor = 0.86;
+    else if (matches.length >= 6) evidenceFactor = 1.10;
+    if (matches.length < minimumEvidence) evidenceFactor *= 0.82;
 
     const missingWeight = Math.max(0, totalWeight - matchedWeight);
     const totalScore = evidenceFactor * (
@@ -127,8 +121,6 @@
       element: profile.element,
       totalScore: +totalScore.toFixed(3),
       matchedCount: matches.length,
-      independentEvidenceCount: independentEvidenceCount,
-      evidenceIndependenceFactor: +evidenceIndependenceFactor.toFixed(4),
       matchedExpected: matches.length,
       matchedPeaks: matches.length,
       matchCount: matches.length,
@@ -205,7 +197,7 @@
     });
   }
 
-  function scoreProfileAuto(profile, peaks, range, resolutionModel) {
+  function scoreProfileAuto(profile, peaks, range) {
     const configs = [
       { id: 'strict', threshold: 0.055, tolerance: 1.0, weight: 1.15 },
       { id: 'clean', threshold: 0.035, tolerance: 1.4, weight: 1.00 },
@@ -219,7 +211,7 @@
       const subset = filterPeaksByRelativeThreshold(peaks, cfg.threshold);
       const anchor = subset.length ? hasDiagnosticAnchor(profile, subset, cfg.tolerance, range) : false;
       if (anchor) anchored = true;
-      const scored = subset.length ? scoreProfile(profile, subset, cfg.tolerance, range, resolutionModel) : null;
+      const scored = subset.length ? scoreProfile(profile, subset, cfg.tolerance, range) : null;
       passes.push({ cfg: cfg, scored: scored, subsetCount: subset.length, anchor: anchor });
     });
 
@@ -229,7 +221,7 @@
     if (anchored) {
       const cfg = { id: 'confirm', threshold: 0.015, tolerance: 3.0, weight: 0.45 };
       const subset = filterPeaksByRelativeThreshold(peaks, cfg.threshold);
-      passes.push({ cfg: cfg, scored: subset.length ? scoreProfile(profile, subset, cfg.tolerance, range, resolutionModel) : null, subsetCount: subset.length });
+      passes.push({ cfg: cfg, scored: subset.length ? scoreProfile(profile, subset, cfg.tolerance, range) : null, subsetCount: subset.length });
     }
 
     const totalWeight = Math.max(0.01, passes.reduce(function (s, p) { return s + Number(p.cfg.weight || 0); }, 0));
@@ -449,10 +441,6 @@
     const scoredRows = [];
     const profileHits = [];
 
-    const resolutionApi = root.SPECTRA_PRO_instrumentResolution;
-    const resolutionModel = resolutionApi && typeof resolutionApi.build === 'function'
-      ? resolutionApi.build(options && options.hardware || frame && frame.hardware || null, frame)
-      : null;
     const autoTuneAtomicPresets = ['smart-gastube', 'smart-atomic'];
     const useAutoTune = autoTuneAtomicPresets.indexOf(String(out.presetId || '')) !== -1 && out.autoTune === true;
     const autoDiagnostics = [];
@@ -460,8 +448,8 @@
     const reportableToleranceNm = Math.max(0.2, Number(out.maxDistanceNm) || 1.8);
     profiles.forEach(function (profile) {
       const scored = useAutoTune
-        ? scoreProfileAuto(profile, peaks, range, resolutionModel)
-        : scoreProfile(profile, peaks, reportableToleranceNm, range, resolutionModel);
+        ? scoreProfileAuto(profile, peaks, range)
+        : scoreProfile(profile, peaks, reportableToleranceNm, range);
       if (!scored || !scored.row) return;
       const acceptedHits = reportableHits(scored.hits || [], reportableToleranceNm);
       const row = useAutoTune
