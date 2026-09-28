@@ -9,6 +9,7 @@ const catalog = JSON.parse(fs.readFileSync(path.join(root, 'docs/frontend/data/h
 const bootstrap = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/proBootstrap.js'), 'utf8');
 const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
 const help = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/helpUi.js'), 'utf8');
+const hardwareSources = JSON.parse(fs.readFileSync(path.join(root, 'docs/frontend/assets/hardware/sources.json'), 'utf8'));
 
 assert.equal(catalog.schema, 'spectra-pro-hardware-profile-catalog/v1');
 assert.ok(Array.isArray(catalog.profiles) && catalog.profiles.length >= 10, 'hardware catalog should expose a useful global starter set');
@@ -58,6 +59,8 @@ assert.ok(bootstrap.includes("'Company logo'") && bootstrap.includes("'Hardware 
 assert.ok(bootstrap.includes("hardwareStartupMetric('Manufacturer'") && bootstrap.includes("hardwareStartupMetric('Configured range'"), 'startup hardware selection must preview profile metadata');
 assert.ok(bootstrap.includes("renderStartupHardwareAsset(image, profile.imageUrl || ''"), 'startup hardware popup must render each selected profile imageUrl');
 assert.ok(bootstrap.includes("renderStartupHardwareAsset(logo, profile.logoUrl || ''"), 'startup hardware popup must render each selected manufacturer logoUrl');
+assert.ok(bootstrap.includes("return manufacturer !== 'PASCO' && manufacturer !== 'StellarNet';"), 'startup logo renderer must preserve PASCO and StellarNet native branding while whitening darker wordmarks');
+assert.ok(bootstrap.includes("logo.classList.toggle('sp-startup-hardware__logo--white'"), 'startup logo renderer must apply the white-wordmark class per profile');
 assert.ok(bootstrap.includes("new URL(String(url), document.baseURI).href"), 'startup hardware images must resolve relative asset URLs against the published page');
 assert.ok(bootstrap.includes("img.addEventListener('error', showPlaceholder"), 'startup hardware images must fall back to a placeholder if an asset cannot load');
 assert.ok(bootstrap.includes("img.loading = 'eager'"), 'visible startup hardware images must load eagerly');
@@ -72,5 +75,8 @@ assert.ok(readme.includes('CUSTOM'), 'README must document custom spectrometer s
 assert.ok(help.includes("const HELP_VERSION = '1.3.9';"), 'in-app HELP version must match v1.3.9 documentation');
 assert.ok(help.includes('KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu'), 'in-app HELP must document the multi-spectrometer starter catalog');
 assert.ok(help.includes('instrument-response correction requires a separate compatible measured response profile'), 'HELP must keep hardware metadata separate from response correction');
+const thorlabsLogoSource = (hardwareSources.logos || []).find((item) => item.manufacturer === 'Thorlabs');
+assert.ok(thorlabsLogoSource && thorlabsLogoSource.sourcePage === 'https://commons.wikimedia.org/wiki/File:Thorlabs_logo.png', 'Thorlabs UI logo must use the clean wordmark source rather than a brochure/photo crop');
+assert.ok(String(thorlabsLogoSource.processingNote || '').includes('Clean transparent THORLABS wordmark'), 'Thorlabs logo provenance must document the repaired transparent wordmark');
 
 console.log('Hardware profile catalog regression: PASS');
