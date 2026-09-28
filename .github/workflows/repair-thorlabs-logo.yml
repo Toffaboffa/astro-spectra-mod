@@ -30,10 +30,27 @@ jobs:
           from PIL import Image
           from pathlib import Path
 
-          url='https://upload.wikimedia.org/wikipedia/commons/1/1c/Thorlabs_logo.png'
-          r=requests.get(url,headers={'User-Agent':'Mozilla/5.0'},timeout=45)
-          r.raise_for_status()
-          im=Image.open(io.BytesIO(r.content)).convert('RGBA')
+          urls=[
+            'https://upload.wikimedia.org/wikipedia/commons/1/1c/Thorlabs_logo.png',
+            'https://images.seeklogo.com/logo-png/34/1/thorlabs-logo-png_seeklogo-345911.png',
+            'https://www.greenteg.com/_next/image?q=75&url=https%3A%2F%2Fcms.greenteg.com%2Fuploads%2Fgreenteg_history_thorlabs_2017_b6fd6ec001.jpg&w=1080'
+          ]
+          content=None
+          chosen=None
+          for url in urls:
+            try:
+              r=requests.get(url,headers={'User-Agent':'Mozilla/5.0 (compatible; SPECTRA-PRO asset preparation)'},timeout=45)
+              if r.ok and len(r.content)>1000:
+                content=r.content
+                chosen=url
+                break
+              print('THORLABS_SOURCE_REJECTED',url,r.status_code,len(r.content))
+            except Exception as exc:
+              print('THORLABS_SOURCE_ERROR',url,type(exc).__name__)
+          if not content:
+            raise SystemExit('No clean Thorlabs wordmark mirror could be downloaded')
+          print('THORLABS_SOURCE_SELECTED',chosen)
+          im=Image.open(io.BytesIO(content)).convert('RGBA')
           abox=im.getchannel('A').getbbox()
           if abox:
             im=im.crop(abox)
