@@ -36,7 +36,7 @@ jobs:
           echo 'SOURCE: PASCO UV-Vis'
           curl -A "$UA" -L --fail --retry 3 'https://tecnoedu.com/Pasco/img/SE3607F.jpg' -o /tmp/hardware-src/pasco-uvvis.jpg
           echo 'SOURCE: Thorlabs CCS series'
-          curl -A "$UA" -L --fail --retry 3 'https://www.thorlabs.com/images/GuideImages/8133_CCS175_SGL.jpg' -o /tmp/hardware-src/thorlabs-ccs.jpg
+          curl -A "$UA" -L --fail --retry 3 'https://www.optolab.ftn.uns.ac.rs/images/EQUIPMENT/img/CCD_Spectrometer_A1-780.jpg' -o /tmp/hardware-src/thorlabs-ccs.jpg
       - name: Normalize product photos
         shell: bash
         run: |
@@ -134,10 +134,11 @@ jobs:
               {
                   "file": "thorlabs-ccs-series.jpg",
                   "profiles": ["thorlabs-ccs100","thorlabs-ccs175"],
-                  "sourceUrl": "https://www.thorlabs.com/images/GuideImages/8133_CCS175_SGL.jpg",
+                  "sourceUrl": "https://www.optolab.ftn.uns.ac.rs/images/EQUIPMENT/img/CCD_Spectrometer_A1-780.jpg",
                   "sourcePage": "https://www.thorlabs.com/catalogpages/Obsolete/2025/CCS100.pdf",
+                  "photoSourcePage": "https://www.optolab.ftn.uns.ac.rs/index.php/equipment/optoelectronic-equipment-and-devices/light-analysis/223-ccs200",
                   "representativeFamilyImage": True,
-                  "processingNote": "Official CCS175 guide photo used as representative image of the physically shared CCS-series enclosure; external model caption cropped away."
+                  "processingNote": "CCS200 laboratory product photo used as representative image of the physically shared CCS-series enclosure."
               }
           ])
           sources_path.write_text(json.dumps(provenance, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
