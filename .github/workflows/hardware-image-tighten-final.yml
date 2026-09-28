@@ -1,0 +1,98 @@
+name: Tighten desktop product images final
+
+on:
+  push:
+    branches:
+      - startup-hardware-calibration-ux
+    paths:
+      - .github/workflows/hardware-image-tighten-final.yml
+
+permissions:
+  contents: write
+
+jobs:
+  tighten:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: startup-hardware-calibration-ux
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --quiet pillow
+      - name: Scale tightened product assets to desktop display area
+        shell: bash
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+
+          base=Path('docs/frontend/assets/hardware')
+          names=['spectra-1.jpg','stellarnet-blue-wave.jpg','hamamatsu-c12880ma.jpg','hamamatsu-c11708ma.jpg']
+
+          def foreground_box(im):
+            rgb=im.convert('RGB'); px=rgb.load()
+            mask=Image.new('L',rgb.size,0); mp=mask.load()
+            for y in range(rgb.height):
+              for x in range(rgb.width):
+                r,g,b=px[x,y]
+                distance=(255-r)+(255-g)+(255-b)
+                spread=max(r,g,b)-min(r,g,b)
+                if distance>24 or spread>10:
+                  mp[x,y]=255
+            return mask.getbbox()
+
+          for name in names:
+            path=base/name
+            im=Image.open(path).convert('RGB')
+            box=foreground_box(im); assert box, name
+            l,t,r,b=box; bw=r-l; bh=b-t
+            pad_x=max(12,int(bw*0.08)); pad_y=max(12,int(bh*0.08))
+            crop=im.crop((max(0,l-pad_x),max(0,t-pad_y),min(im.width,r+pad_x),min(im.height,b+pad_y)))
+            scale=min(570/crop.width,390/crop.height)
+            new_size=(max(1,round(crop.width*scale)),max(1,round(crop.height*scale)))
+            crop=crop.resize(new_size,Image.Resampling.LANCZOS)
+            canvas=Image.new('RGB',(640,480),'white')
+            canvas.paste(crop,((640-crop.width)//2,(480-crop.height)//2))
+            canvas.save(path,'JPEG',quality=86,optimize=True,progressive=True)
+            print(name,'box',box,'scaled',new_size)
+          PY
+      - name: Validate desktop occupancy
+        shell: bash
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          base=Path('docs/frontend/assets/hardware')
+          limits={
+            'spectra-1.jpg':0.28,
+            'stellarnet-blue-wave.jpg':0.25,
+            'hamamatsu-c12880ma.jpg':0.28,
+            'hamamatsu-c11708ma.jpg':0.28,
+          }
+          for name,min_area in limits.items():
+            im=Image.open(base/name).convert('RGB')
+            px=im.load(); mask=Image.new('L',im.size,0); mp=mask.load()
+            for y in range(im.height):
+              for x in range(im.width):
+                r,g,b=px[x,y]
+                if (255-r)+(255-g)+(255-b)>36 or max(r,g,b)-min(r,g,b)>12:
+                  mp[x,y]=255
+            box=mask.getbbox(); assert box,name
+            l,t,r,b=box; bw=r-l; bh=b-t
+            area=(bw*bh)/(im.width*im.height)
+            print(f'{name}: bbox={box} width={bw/im.width:.3f} height={bh/im.height:.3f} area={area:.3f}')
+            assert area>=min_area,(name,area,min_area)
+          PY
+      - name: Commit final desktop crops
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/hardware-image-tighten-final.yml
+          git add docs/frontend/assets/hardware
+          git commit -m "Scale desktop hardware product crops"
+          git push origin HEAD:startup-hardware-calibration-ux
