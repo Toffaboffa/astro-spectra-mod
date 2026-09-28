@@ -309,6 +309,20 @@ function createRuntime({
   assert.equal(rt.promptText(), 'Not Calibrated. Load Calibrationfile now?', 'calibration prompt must appear after remembered hardware is applied');
 }
 
+// 2b) Remembered None is a real remembered hardware choice: skip the popup,
+// apply an empty hardware state, then continue to calibration.
+{
+  const rt = createRuntime({ rememberHardware: '' });
+  rt.beginHardware();
+  rt.runTimers();
+  assert.equal(rt.hardwarePromptCount, 0, 'remembered None must skip the hardware popup');
+  assert.equal(rt.appliedHardware.length, 1, 'remembered None must apply an empty hardware state');
+  assert.deepEqual(rt.appliedHardware[0].payload, {});
+  assert.equal(rt.appliedHardware[0].source, 'proBootstrap.hardware.startup.remembered-none');
+  assert.equal(rt.context.__spectraStartupHardwareReady, true, 'remembered None must release the startup gate');
+  assert.equal(rt.promptText(), 'Not Calibrated. Load Calibrationfile now?', 'calibration must follow remembered None');
+}
+
 // 3) Only calibration remembered: hardware popup still appears; after hardware-ready the
 // canonical calibration API restores the points and the Not Calibrated prompt stays suppressed.
 {
@@ -415,6 +429,8 @@ function createRuntime({
 for (const raw of [
   '1',
   '{"schema":"spectra-pro-startup-calibration/v1","remember":true,"points":[{"px":"bad","nm":400}]}',
+  '{"schema":"spectra-pro-startup-calibration/v1","remember":true,"points":[{"px":10,"nm":400}]}',
+  '{"schema":"spectra-pro-startup-calibration/v1","remember":true,"points":[{"px":10,"nm":400},{"px":10,"nm":500}]}',
   '{not-json'
 ]) {
   const rt = createRuntime({ rawCalibrationStorage: raw });
@@ -424,6 +440,28 @@ for (const raw of [
   rt.runTimers();
   assert.equal(rt.context.localStorage.getItem('spectraPro.startup.calibration'), null, 'invalid remembered calibration must be cleared');
   assert.equal(rt.promptText(), 'Not Calibrated. Load Calibrationfile now?', 'invalid remembered calibration must fall back to the ordinary startup reminder');
+}
+
+// Explicit calibration reset must also forget the startup calibration. Otherwise a
+// reload would silently resurrect a calibration the user deliberately reset.
+{
+  const rt = createRuntime({ rememberHardware: 'spectra-1', rememberCalibration: true });
+  rt.beginHardware();
+  rt.runTimers();
+  assert.ok(rt.context.localStorage.getItem('spectraPro.startup.calibration'), 'precondition: remembered calibration must exist');
+  assert.equal(rt.promptText(), 'Switch x-axis to wavelength?', 'restored calibration should reach the wavelength follow-up before reset');
+
+  rt.emitCalibration({
+    isCalibrated: false,
+    calibrated: false,
+    points: [],
+    coefficients: [],
+    origin: 'none',
+    source: 'reset'
+  });
+
+  assert.equal(rt.context.localStorage.getItem('spectraPro.startup.calibration'), null, 'explicit reset must clear remembered calibration');
+  assert.equal(rt.promptText(), null, 'reset must dismiss a stale wavelength-axis follow-up');
 }
 
 // A remembered user calibration must not be overwritten by temporary sample calibration.
@@ -445,4 +483,4 @@ for (const raw of [
   assert.deepEqual(after.points, before.points, 'sample calibration must not overwrite remembered user calibration');
 }
 
-console.log('STARTUP FLOW RUNTIME: persistent calibration restore, four remember scenarios and wavelength handoff passed.');
+console.log('STARTUP FLOW RUNTIME: startup matrix, remembered None, invalid payloads, reset semantics and wavelength handoff passed.');
