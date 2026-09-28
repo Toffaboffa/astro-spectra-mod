@@ -1,0 +1,113 @@
+name: Repair Thorlabs logo
+
+on:
+  push:
+    branches:
+      - v1.4-startup-polish
+    paths:
+      - .github/workflows/repair-thorlabs-logo.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v1.4-startup-polish
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --quiet pillow pymupdf requests
+      - name: Extract official Thorlabs wordmark
+        shell: bash
+        run: |
+          python - <<'PY'
+          import io, requests, fitz
+          from PIL import Image
+          from pathlib import Path
+
+          url='https://www.thorlabs.com/images/TabImages/Thorlabs_OEM_Brochure_0116.pdf'
+          r=requests.get(url,headers={'User-Agent':'Mozilla/5.0'},timeout=45)
+          r.raise_for_status()
+          doc=fitz.open(stream=r.content,filetype='pdf')
+          page=doc[0]
+          pix=page.get_pixmap(matrix=fitz.Matrix(3.0,3.0),alpha=False)
+          im=Image.open(io.BytesIO(pix.tobytes('png'))).convert('RGB')
+          w,h=im.size
+
+          # Official brochure cover has the THORLABS wordmark in the bottom-right.
+          region=im.crop((int(w*0.55),int(h*0.72),w,h))
+          px=region.load()
+          mask=Image.new('L',region.size,0)
+          mp=mask.load()
+          for y in range(region.height):
+            for x in range(region.width):
+              rr,gg,bb=px[x,y]
+              # Keep visible ink and discard the white page.
+              if (255-rr)+(255-gg)+(255-bb) > 55:
+                mp[x,y]=255
+
+          box=mask.getbbox()
+          if not box:
+            raise SystemExit('No Thorlabs wordmark pixels found in official brochure region')
+          l,t,rgt,btm=box
+          crop=region.crop((max(0,l-18),max(0,t-18),min(region.width,rgt+18),min(region.height,btm+18))).convert('RGBA')
+
+          # Turn near-white page pixels transparent while preserving the official wordmark shape.
+          data=[]
+          for rr,gg,bb,aa in crop.getdata():
+            d=(255-rr)+(255-gg)+(255-bb)
+            if d < 45:
+              data.append((255,255,255,0))
+            else:
+              alpha=max(0,min(255,int((d-30)*3.0)))
+              data.append((rr,gg,bb,alpha))
+          crop.putdata(data)
+          abox=crop.getchannel('A').getbbox()
+          if not abox:
+            raise SystemExit('Thorlabs transparency extraction produced no logo')
+          crop=crop.crop(abox)
+          crop.thumbnail((280,88),Image.Resampling.LANCZOS)
+          canvas=Image.new('RGBA',(320,120),(0,0,0,0))
+          canvas.alpha_composite(crop,((320-crop.width)//2,(120-crop.height)//2))
+          out=Path('docs/frontend/assets/hardware/logos/thorlabs.png')
+          canvas.save(out,'PNG',optimize=True)
+
+          alpha=canvas.getchannel('A')
+          bbox=alpha.getbbox()
+          print('THORLABS_OUTPUT',canvas.size,'bbox',bbox,'source_crop',crop.size)
+          if not bbox:
+            raise SystemExit('Thorlabs logo output empty')
+          bw=bbox[2]-bbox[0]; bh=bbox[3]-bbox[1]
+          if bw < 110 or bh < 18 or bw > 300 or bh > 105:
+            raise SystemExit(f'Unexpected Thorlabs logo occupancy: {bbox}')
+          PY
+      - name: Update provenance
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('docs/frontend/assets/hardware/sources.json')
+          data=json.loads(p.read_text(encoding='utf-8'))
+          for item in data.get('logos',[]):
+            if item.get('manufacturer')=='Thorlabs':
+              item['sourcePage']='https://www.thorlabs.com/images/TabImages/Thorlabs_OEM_Brochure_0116.pdf'
+              item['sourceKind']='manufacturer-document-logo'
+              item['processingNote']='Official THORLABS wordmark extracted from the OEM Solutions brochure cover and normalized to a transparent 320x120 UI asset.'
+          p.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          PY
+      - name: Commit repaired logo
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/repair-thorlabs-logo.yml
+          git add docs/frontend/assets/hardware/logos/thorlabs.png docs/frontend/assets/hardware/sources.json
+          git commit -m "Repair Thorlabs manufacturer logo"
+          git push origin HEAD:v1.4-startup-polish
