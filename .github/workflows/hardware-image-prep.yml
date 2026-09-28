@@ -29,7 +29,7 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/hardware-src docs/frontend/assets/hardware
           UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36'
-          curl -A "$UA" -L --fail --retry 3 'https://skola.kvant.cz/3075429-large_default/spectra-1-spektrometr-s-vysokym-rozlisenim.jpg' -o /tmp/hardware-src/spectra-1.jpg
+          curl -A "$UA" -L --fail --retry 3 'https://kvant-laser.de/wp-content/uploads/2025/08/schulungs-und-bildungsmaterial-laser-astro-physik_3.webp' -o /tmp/hardware-src/spectra-1.webp
           curl -A "$UA" -L --fail --retry 3 'https://www.carolina.com/images/product/large/118044.jpg' -o /tmp/hardware-src/vernier.jpg
           curl -A "$UA" -L --fail --retry 3 'https://www.lennoxeducational.ie/26977-medium_default/wireless-spectrometer.jpg' -o /tmp/hardware-src/pasco.jpg
           curl -A "$UA" -L --fail --retry 3 'https://www.eastwestsvc.com/wp-content/uploads/2022/09/Ocean-ST.png' -o /tmp/hardware-src/ocean.png
@@ -42,7 +42,7 @@ jobs:
           from pathlib import Path
 
           items = {
-              "spectra-1": "/tmp/hardware-src/spectra-1.jpg",
+              "spectra-1": "/tmp/hardware-src/spectra-1.webp",
               "vernier-gdx-svispl": "/tmp/hardware-src/vernier.jpg",
               "pasco-ps-2600a": "/tmp/hardware-src/pasco.jpg",
               "ocean-st": "/tmp/hardware-src/ocean.png",
@@ -109,8 +109,8 @@ jobs:
                   {
                       "file": "spectra-1.jpg",
                       "profiles": ["spectra-1"],
-                      "sourceUrl": "https://skola.kvant.cz/3075429-large_default/spectra-1-spektrometr-s-vysokym-rozlisenim.jpg",
-                      "sourcePage": "https://skola.kvant.cz/optika-a-lasery/68028-spectra-1-spektrometr-s-vysokym-rozlisenim.html"
+                      "sourceUrl": "https://kvant-laser.de/wp-content/uploads/2025/08/schulungs-und-bildungsmaterial-laser-astro-physik_3.webp",
+                      "sourcePage": "https://kvant-laser.de/online-shop/lasermodule/education/spektrometrie/spectra-1-high-resolution-spectrometer/"
                   },
                   {
                       "file": "vernier-gdx-svispl.jpg",
