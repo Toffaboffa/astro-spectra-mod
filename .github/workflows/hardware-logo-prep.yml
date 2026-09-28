@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install tooling
-        run: python -m pip install --quiet pillow requests beautifulsoup4 cairosvg pymupdf
+        run: python -m pip install --quiet pillow requests beautifulsoup4 cairosvg pymupdf opencv-python-headless numpy
       - name: Discover official manufacturer logos
         shell: bash
         run: |
@@ -147,38 +147,44 @@ jobs:
           print('SELECTED StellarNet',stellar_pdf,'official manual logo')
 
           # Thorlabs does not expose a normal header logo image in the current site HTML.
-          # Extract the official red wordmark from the first page of Thorlabs' own OEM brochure.
-          import fitz
-          pdf_url='https://www.thorlabs.com/images/TabImages/Thorlabs_OEM_Brochure_0116.pdf'
+          # Extract the official red wordmark from Thorlabs' own technical document cover.
+          import fitz, cv2, numpy as np
+          pdf_url='https://media.thorlabs.com/contentassets/e92d618c92c94cea9096b3f231859611/etn043886-d02.pdf'
           rr=requests.get(pdf_url,headers=H,timeout=40)
           rr.raise_for_status()
           doc=fitz.open(stream=rr.content,filetype='pdf')
           page=doc[0]
-          pix=page.get_pixmap(matrix=fitz.Matrix(2.4,2.4),alpha=False)
-          png=pix.tobytes('png')
+          pix=page.get_pixmap(matrix=fitz.Matrix(2.5,2.5),alpha=False)
           from PIL import Image
-          im=Image.open(io.BytesIO(png)).convert('RGB')
+          im=Image.open(io.BytesIO(pix.tobytes('png'))).convert('RGB')
           w,h=im.size
-          crop=im.crop((int(w*0.42),int(h*0.48),w,h))
-          px=crop.load()
-          mask=Image.new('L',crop.size,0)
-          mp=mask.load()
-          red_count=0
-          for y in range(crop.height):
-            for x in range(crop.width):
-              r,g,b=px[x,y]
-              # Isolate the red THORLABS wordmark; ignore neutral body text/background.
-              if r>90 and r>g*1.12 and r>b*1.12 and (r-g)>18:
-                mp[x,y]=255
-                red_count += 1
-          box=mask.getbbox()
-          if not box or red_count < 40:
-            raise SystemExit('Could not isolate Thorlabs logo from official brochure')
-          l,t,r,b=box
+          crop=im.crop((0,int(h*0.58),int(w*0.78),h))
+          arr=np.array(crop)
+          r=arr[:,:,0].astype(np.int16)
+          g=arr[:,:,1].astype(np.int16)
+          b=arr[:,:,2].astype(np.int16)
+          mask=((r>90)&((r-g)>22)&((r-b)>18)).astype(np.uint8)*255
+          n,labels,stats,centroids=cv2.connectedComponentsWithStats(mask,8)
+          keep=[]
+          for i in range(1,n):
+            x,y,cw,ch,area=stats[i]
+            if area < 14: continue
+            if ch <= 4 and cw > ch*8: continue
+            if cw > ch*18: continue
+            keep.append((x,y,cw,ch,area))
+          if not keep:
+            raise SystemExit('Could not isolate Thorlabs logo from official document')
+          # The wordmark letters form a compact cluster; keep components in the same vertical band
+          # as the largest non-line red component and union their bounds.
+          seed=max(keep,key=lambda q:q[4])
+          sy=seed[1]+seed[3]/2
+          cluster=[q for q in keep if abs((q[1]+q[3]/2)-sy) < max(45,seed[3]*2.5)]
+          l=min(q[0] for q in cluster); t=min(q[1] for q in cluster)
+          rrgt=max(q[0]+q[2] for q in cluster); btm=max(q[1]+q[3] for q in cluster)
           pad=24
-          crop=crop.crop((max(0,l-pad),max(0,t-pad),min(crop.width,r+pad),min(crop.height,b+pad)))
+          crop=crop.crop((max(0,l-pad),max(0,t-pad),min(crop.width,rrgt+pad),min(crop.height,btm+pad)))
           crop.save('/tmp/logo-src/thorlabs.png','PNG')
-          print('SELECTED Thorlabs',pdf_url,'official PDF cover logo')
+          print('SELECTED Thorlabs',pdf_url,'official document logo')
           PY
       - name: Normalize logos
         shell: bash
@@ -264,7 +270,7 @@ jobs:
             {'file':'logos/vernier.png','manufacturer':'Vernier','sourcePage':'https://www.vernier.com/','sourceKind':'manufacturer-site-logo'},
             {'file':'logos/pasco.png','manufacturer':'PASCO','sourcePage':'https://www.pasco.com/','sourceKind':'manufacturer-site-logo'},
             {'file':'logos/ocean-optics.png','manufacturer':'Ocean Optics','sourcePage':'https://www.oceanoptics.com/','sourceKind':'manufacturer-site-logo'},
-            {'file':'logos/thorlabs.png','manufacturer':'Thorlabs','sourcePage':'https://www.thorlabs.com/','sourceKind':'manufacturer-site-logo'},
+            {'file':'logos/thorlabs.png','manufacturer':'Thorlabs','sourcePage':'https://media.thorlabs.com/contentassets/e92d618c92c94cea9096b3f231859611/etn043886-d02.pdf','sourceKind':'manufacturer-document-logo'},
             {'file':'logos/avantes.png','manufacturer':'Avantes','sourcePage':'https://www.avantes.com/','sourceKind':'manufacturer-site-logo'},
             {'file':'logos/stellarnet.png','manufacturer':'StellarNet','sourcePage':'https://www.stellarnet.us/wp-content/uploads/06-Spectrometer-Upgrades-and-Features.pdf','sourceKind':'manufacturer-document-logo'},
             {'file':'logos/hamamatsu.png','manufacturer':'Hamamatsu Photonics','sourcePage':'https://www.hamamatsu.com/','sourceKind':'manufacturer-site-logo'}
