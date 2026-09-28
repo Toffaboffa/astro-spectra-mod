@@ -504,10 +504,12 @@ assert.ok(cameraScript.includes('async function goLiveCamera(options = {})'), 'L
 assert.ok(cameraScript.includes("sp.coreHooks.on('graphFrame', handleAutoPauseFrame)"), 'Auto Pause must monitor the real graph-frame stream');
 assert.ok(cameraScript.includes('AUTO_PAUSE_TARGET_INTENSITY = 240'), 'Auto Pause target must default to 240');
 assert.ok(cameraScript.includes('AUTO_PAUSE_TRIGGER_INTENSITY = 238'), 'Auto Pause must trigger when the live spectrum reaches the near-clipping threshold');
+assert.ok(cameraScript.includes('async function configureOptionalManualExposure'), 'camera startup must isolate optional exposure configuration from stream acquisition');
+assert.ok(cameraScript.includes('Optional manual exposure mode is unavailable; keeping the live stream.'), 'unsupported manual exposure must keep a working camera stream alive');
 assert.ok(!cameraScript.includes('AUTO_PAUSE_MAX_INTENSITY'), 'Auto Pause must not ignore frames that overshoot the target');
 assert.ok(cameraScript.includes('if (peak >= AUTO_PAUSE_TRIGGER_INTENSITY)'), 'Auto Pause must treat every threshold crossing, including saturation, as a capture condition');
 assert.ok(cameraScript.includes("pauseVideo({ autoPause: true })"), 'Auto Pause must freeze through the normal Pause path');
-assert.ok(spectrapro.includes('cameraScript.js?v=1.3.9'), 'published camera controller must use the Auto Pause cache key');
+assert.ok(spectrapro.includes('cameraScript.js?v=1.3.9-hotfix-1'), 'published camera controller must use the startup-hotfix cache key');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=1.3.9'), 'published image loader must use the stable source-control cache key');
 assert.ok(examples.includes('calibrationPointsEqual(activePoints, points)'), 'sample calibration must verify that the configured points actually became active');
 assert.ok(!examples.includes('syncCalibrationShell(points)'), 'samples must not maintain a private CALIBRATE synchronization path');
@@ -533,7 +535,7 @@ for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Ad
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
 }
 assert.ok(spectrapro.includes('analysisWorkerClient.js?v=1.3.9-result-scope-1'), 'published worker client must use the result-scoped LAB quality cache key');
-assert.ok(spectrapro.includes('proBootstrap.js?v=1.3.9-provenance-1'), 'published bootstrap must use the source-provenance cache key');
+assert.ok(spectrapro.includes('proBootstrap.js?v=1.3.9-provenance-2'), 'published bootstrap must use the startup-hotfix cache key');
 assert.ok(spectrapro.includes('dataQualityPanel.js?v=1.3.9-result-consistency-1'), 'published Data Quality module must use the result-consistency cache key');
 assert.ok(spectrapro.includes('stateStore.js?v=1.3.9-result-consistency-1'), 'published state store must refresh dynamic result/export assets');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=1.3.9-provenance-1'), 'published image loader must use the source-provenance cache key');
