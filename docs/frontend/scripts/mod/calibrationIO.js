@@ -366,6 +366,26 @@
     return false;
   }
 
+  function runAfterStartupHardwareReady(callback) {
+    if (typeof callback !== 'function') return;
+    if (window.__spectraStartupHardwareReady) {
+      callback();
+      return;
+    }
+
+    let settled = false;
+    function runOnce() {
+      if (settled) return;
+      settled = true;
+      callback();
+    }
+
+    window.addEventListener('spectra:startup-hardware-ready', runOnce, { once: true });
+    window.setTimeout(function () {
+      if (!window.__spectraStartupHardwareFlowInstalled && !window.__spectraStartupHardwareReady) runOnce();
+    }, 900);
+  }
+
   function showAxisQuestion() {
     if (axisPromptShown || axisPromptSuppressed()) return;
     if (isWavelengthAxisSelected()) {
@@ -378,6 +398,12 @@
       switchXAxisToWavelength();
     }, function () {
       hidePrompt();
+    });
+  }
+
+  function queueAxisQuestionAfterHardwareReady() {
+    runAfterStartupHardwareReady(function () {
+      queueAxisQuestionAfterHardwareReady();
     });
   }
 
@@ -438,16 +464,7 @@
     window.setTimeout(updateVersionBadge, 0);
     window.setTimeout(updateVersionBadge, 250);
 
-    window.addEventListener('spectra:startup-hardware-ready', queueInitialCalibrationQuestion, { once: true });
-    if (window.__spectraStartupHardwareReady) {
-      queueInitialCalibrationQuestion();
-    } else {
-      window.setTimeout(function () {
-        if (!window.__spectraStartupHardwareFlowInstalled && !window.__spectraStartupHardwareReady) {
-          queueInitialCalibrationQuestion();
-        }
-      }, 900);
-    }
+    runAfterStartupHardwareReady(queueInitialCalibrationQuestion);
   }
 
   if (document.readyState === 'loading') {
