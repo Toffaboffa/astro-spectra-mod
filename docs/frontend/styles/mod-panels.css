@@ -2621,7 +2621,7 @@ label[for="peakSizeLower"],
   background:rgba(255,255,255,.025);
 }
 .sp-startup-hardware__metric span{color:#91aac6;font-size:10px;}
-.sp-startup-hardware__metric b{margin-top:1px;overflow:hidden;text-overflow:ellipsis;color:#eefaff;font-size:11px;font-weight:650;}
+.sp-startup-hardware__metric b{margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#eefaff;font-size:11px;font-weight:650;}
 .sp-startup-hardware__footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(120,180,255,.16);}
 .sp-startup-hardware__remember{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;}
 .sp-startup-hardware__remember input{margin:0;accent-color:#35c7d8;}
