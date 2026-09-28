@@ -13,6 +13,7 @@ const hardwareSources = JSON.parse(fs.readFileSync(path.join(root, 'docs/fronten
 
 assert.equal(catalog.schema, 'spectra-pro-hardware-profile-catalog/v1');
 assert.ok(Array.isArray(catalog.profiles) && catalog.profiles.length >= 10, 'hardware catalog should expose a useful global starter set');
+assert.equal(catalog.profiles.length, 16, 'startup hardware catalog must contain exactly the 16 reviewed profiles');
 
 const ids = new Set();
 for (const profile of catalog.profiles) {
@@ -37,6 +38,44 @@ for (const profile of catalog.profiles) {
   if (profile.pixelResolutionNm != null) assert.ok(Number(profile.pixelResolutionNm) > 0, profile.profileId + ' pixel scale must be positive');
   if (profile.gratingLinesPerMm != null) assert.ok(Number(profile.gratingLinesPerMm) > 0, profile.profileId + ' grating density must be positive');
 }
+
+const expectedHardwareContract = {
+  'spectra-1': ['KVANT', 'Spectra-1', 360, 930, 1.8, 0.5, 500],
+  'vernier-gdx-svispl': ['Vernier', 'Go Direct SpectroVis Plus', 380, 950, 5, 1, null],
+  'vernier-gdx-spec-vis': ['Vernier', 'Go Direct Visible Spectrophotometer', 380, 950, 3, 1, null],
+  'vernier-gdx-spec-fuv': ['Vernier', 'Go Direct Fluorescence/UV-VIS Spectrophotometer', 220, 850, 3, 1, null],
+  'pasco-ps-2600a': ['PASCO', 'PS-2600A', 390, 950, 3, 0.4, null],
+  'pasco-uv-vis': ['PASCO', 'UV-Vis Spectrometer', 180, 1050, 1.5, 0.3, 500],
+  'ocean-st-uv-25': ['Ocean Optics', 'ST-UV', 185, 650, 2.2, null, 600],
+  'ocean-st-vis-25': ['Ocean Optics', 'ST-VIS', 350, 810, 2.2, null, 600],
+  'ocean-st-nir-25': ['Ocean Optics', 'ST-NIR', 645, 1085, 2.2, null, 600],
+  'thorlabs-ccs100': ['Thorlabs', 'CCS100', 350, 700, 0.5, null, 1200],
+  'thorlabs-ccs175': ['Thorlabs', 'CCS175', 500, 1000, 0.6, null, 830],
+  'thorlabs-ccs200': ['Thorlabs', 'CCS200', 200, 1000, 2, null, 600],
+  'avantes-uls2048cl-evo-custom': ['Avantes', 'AvaSpec-ULS2048CL-EVO', 200, 1100, null, null, null],
+  'stellarnet-blue-wave-vis-25': ['StellarNet', 'BLUE-Wave VIS', 350, 1150, 1, null, 600],
+  'hamamatsu-c12880ma': ['Hamamatsu Photonics', 'C12880MA', 340, 850, 12, null, null],
+  'hamamatsu-c11708ma': ['Hamamatsu Photonics', 'C11708MA', 640, 1050, 15, null, null]
+};
+
+for (const profile of catalog.profiles) {
+  const expected = expectedHardwareContract[profile.profileId];
+  assert.ok(expected, 'unexpected startup hardware profile: ' + profile.profileId);
+  assert.deepEqual(
+    [
+      profile.manufacturer,
+      profile.model,
+      profile.spectralRangeMinNm,
+      profile.spectralRangeMaxNm,
+      profile.spectrometerResolutionFwhmNm,
+      profile.pixelResolutionNm,
+      profile.gratingLinesPerMm
+    ],
+    expected,
+    profile.profileId + ' startup metadata changed from the reviewed contract'
+  );
+}
+assert.equal(Object.keys(expectedHardwareContract).length, catalog.profiles.length, 'every reviewed startup profile must be represented exactly once');
 
 const uniqueLogoUrls = new Set(catalog.profiles.map((profile) => profile.logoUrl));
 assert.equal(uniqueLogoUrls.size, 8, 'hardware catalog must reuse exactly one normalized logo per supported manufacturer');
@@ -75,6 +114,7 @@ assert.ok(bootstrap.includes("const STARTUP_HARDWARE_STORAGE_KEY = 'spectraPro.s
 assert.ok(bootstrap.includes("window.dispatchEvent(new CustomEvent('spectra:startup-hardware-ready'"), 'hardware startup must explicitly release the calibration step');
 assert.ok(bootstrap.includes("'Company logo'") && bootstrap.includes("'Hardware image'"), 'startup hardware popup must reserve logo and hardware-image placeholders');
 assert.ok(bootstrap.includes("hardwareStartupMetric('Manufacturer'") && bootstrap.includes("hardwareStartupMetric('Configured range'"), 'startup hardware selection must preview profile metadata');
+assert.ok(bootstrap.includes('<b title="' + "' + safeValue + '" + '">' + "' + safeValue + '" + '</b>'), 'startup hardware metadata must preserve the full value in a hover title while keeping layout stable');
 assert.ok(bootstrap.includes("renderStartupHardwareAsset(image, profile.imageUrl || ''"), 'startup hardware popup must render each selected profile imageUrl');
 assert.ok(bootstrap.includes("renderStartupHardwareAsset(logo, profile.logoUrl || ''"), 'startup hardware popup must render each selected manufacturer logoUrl');
 assert.ok(bootstrap.includes("return manufacturer !== 'PASCO' && manufacturer !== 'StellarNet';"), 'startup logo renderer must preserve PASCO and StellarNet native branding while whitening darker wordmarks');
