@@ -29,8 +29,8 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/hardware-src docs/frontend/assets/hardware
           UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36'
-          echo 'SOURCE: Spectra-1'
-          curl -A "$UA" -L --fail --retry 3 'https://kvant-laser.de/wp-content/uploads/2025/08/schulungs-und-bildungsmaterial-laser-astro-physik_3.webp' -o /tmp/hardware-src/spectra-1.webp
+          echo 'SOURCE: Spectra-1 (user-provided exact product photo)'
+          cat .tmp-hardware/spectra1-q40.part* | tr -d '\n' | base64 -d > /tmp/hardware-src/spectra-1.jpg
           echo 'SOURCE: Vernier'
           curl -A "$UA" -L --fail --retry 3 'https://www.carolina.com/images/product/large/118044.jpg' -o /tmp/hardware-src/vernier.jpg
           echo 'SOURCE: PASCO'
@@ -47,7 +47,7 @@ jobs:
           from pathlib import Path
 
           items = {
-              "spectra-1": "/tmp/hardware-src/spectra-1.webp",
+              "spectra-1": "/tmp/hardware-src/spectra-1.jpg",
               "vernier-gdx-svispl": "/tmp/hardware-src/vernier.jpg",
               "pasco-ps-2600a": "/tmp/hardware-src/pasco.jpg",
               "ocean-st": "/tmp/hardware-src/ocean.png",
@@ -114,8 +114,9 @@ jobs:
                   {
                       "file": "spectra-1.jpg",
                       "profiles": ["spectra-1"],
-                      "sourceUrl": "https://kvant-laser.de/wp-content/uploads/2025/08/schulungs-und-bildungsmaterial-laser-astro-physik_3.webp",
-                      "sourcePage": "https://kvant-laser.de/online-shop/lasermodule/education/spektrometrie/spectra-1-high-resolution-spectrometer/"
+                      "sourceKind": "user-provided",
+                      "sourceUrl": null,
+                      "sourcePage": "https://www.forschool.eu/spectrometry/58275-spectra-1-high-resolution-spectrometer.html"
                   },
                   {
                       "file": "vernier-gdx-svispl.jpg",
@@ -171,9 +172,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f .tmp-hardware/test.txt
+          rm -rf .tmp-hardware
+          rm -f .github/workflows/hardware-image-prep.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/frontend/assets/hardware docs/frontend/data/hardware_profiles.json .tmp-hardware/test.txt
+          git add -A
           git commit -m "Add first hardware product image batch"
           git push origin HEAD:startup-hardware-calibration-ux
