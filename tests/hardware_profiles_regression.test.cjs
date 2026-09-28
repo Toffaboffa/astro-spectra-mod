@@ -41,6 +41,24 @@ for (const profile of catalog.profiles) {
 const uniqueLogoUrls = new Set(catalog.profiles.map((profile) => profile.logoUrl));
 assert.equal(uniqueLogoUrls.size, 8, 'hardware catalog must reuse exactly one normalized logo per supported manufacturer');
 
+const uniqueImageUrls = new Set(catalog.profiles.map((profile) => profile.imageUrl));
+assert.equal(uniqueImageUrls.size, 12, 'hardware catalog must use the 12 verified product/family image assets');
+
+const verifiedAssets = hardwareSources.assets || [];
+assert.equal(verifiedAssets.length, 12, 'product-image provenance must cover every unique hardware image asset');
+for (const asset of verifiedAssets) {
+  assert.equal(asset.verifiedAgainstOfficialProductMaterial, true, asset.file + ' must be explicitly verified against official product material');
+  assert.equal(asset.verifiedDate, '2026-09-28', asset.file + ' must record the product-image verification date');
+  assert.ok(asset.verificationNote, asset.file + ' must document what was verified');
+}
+const stellarProductSource = verifiedAssets.find((asset) => asset.file === 'stellarnet-blue-wave.jpg');
+assert.ok(stellarProductSource, 'StellarNet BLUE-Wave product image provenance is required');
+assert.equal(stellarProductSource.sourceKind, 'manufacturer-product-image', 'StellarNet BLUE-Wave must use a direct manufacturer product image');
+assert.equal(stellarProductSource.sourcePage, 'https://www.stellarnet.us/spectrometers/uv-vis-spectrometers/blue-wave/', 'StellarNet BLUE-Wave verification must point to the manufacturer product page');
+assert.equal(stellarProductSource.sourceUrl, 'https://www.stellarnet.us/wp-content/uploads/BLUE-Wave-Spectrometer-side.jpg', 'StellarNet BLUE-Wave must use the clean official side product photo');
+assert.ok(String(stellarProductSource.processingNote || '').includes('no product geometry altered'), 'StellarNet product-image processing must explicitly preserve hardware geometry');
+
+
 for (const required of ['spectra-1','vernier-gdx-svispl','pasco-ps-2600a','pasco-uv-vis','ocean-st-uv-25','ocean-st-vis-25','ocean-st-nir-25','thorlabs-ccs100','thorlabs-ccs175','thorlabs-ccs200','avantes-uls2048cl-evo-custom','stellarnet-blue-wave-vis-25','hamamatsu-c12880ma','hamamatsu-c11708ma']) {
   assert.ok(ids.has(required), 'missing starter hardware profile: ' + required);
 }
