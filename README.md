@@ -118,10 +118,14 @@ These values provide instrument context and derived diagnostics. They do **not**
 
 The HARDWARE selector loads a central starter catalog from `docs/frontend/data/hardware_profiles.json`. It currently includes profiles for **KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu**, while **CUSTOM** remains available for any other spectrometer or delivered configuration. Configuration-dependent or undocumented fields are intentionally left blank rather than inferred. The calibrated wavelength grid remains authoritative for the actual measurement coverage and sampling.
 
+At startup, SPECTRA PRO now shows **Select Hardware** before the calibration reminder. The selector starts at **None**, previews the selected profile's nominal manufacturer/model/range/resolution/sampling/grating metadata, and reserves visual placeholders for a company logo and hardware image. **Remember hardware** stores the selected profile ID in browser `localStorage`; on later loads that profile is applied automatically and the hardware startup popup is skipped until site storage is cleared.
+
 Hardware profiles are also separate from instrument-response correction. Selecting a spectrometer does not fabricate a response curve or radiometric calibration; relative-response correction requires its own compatible measured response profile.
 
 ### CALIBRATE
 Uses the existing SPECTRA calibration engine through the PRO shell. It supports editable multipoint pixel ↔ wavelength anchors, fitting, file load/save, fit diagnostics, and calibration-quality information.
+
+The startup calibration reminder appears only after the hardware startup step has completed. Its **Remember calibration** checkbox stores only the choice to suppress that reminder in browser `localStorage`; it does not and cannot silently reopen a local calibration file. Manual calibration controls remain available at all times.
 
 ### LAB
 Runs spectral analysis in a Web Worker so the UI remains responsive. LAB libraries load automatically on first entry.
