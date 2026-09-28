@@ -143,10 +143,12 @@
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
   const UI_VERSION = 'v1.3.9';
+  const CALIBRATION_REMEMBER_STORAGE_KEY = 'spectraPro.startup.calibration';
   let wasCalibrated = false;
   let loadPromptDismissed = false;
   let axisPromptShown = false;
   let suppressAxisPromptUntil = 0;
+  let initialCalibrationQueued = false;
 
   function isUsableCalibration(state) {
     const cal = state && typeof state === 'object' ? state : {};
@@ -170,6 +172,22 @@
     return false;
   }
 
+  function calibrationPromptRemembered() {
+    try {
+      return !!(window.localStorage && window.localStorage.getItem(CALIBRATION_REMEMBER_STORAGE_KEY) === '1');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function rememberCalibrationPrompt(remember) {
+    try {
+      if (!window.localStorage) return;
+      if (remember) window.localStorage.setItem(CALIBRATION_REMEMBER_STORAGE_KEY, '1');
+      else window.localStorage.removeItem(CALIBRATION_REMEMBER_STORAGE_KEY);
+    } catch (_) {}
+  }
+
 
   function installPromptCss() {
     if (document.getElementById('spCalibrationPromptStyle')) return;
@@ -186,6 +204,8 @@
       'box-shadow:0 4px 16px rgba(0,0,0,.38);backdrop-filter:blur(3px);',
       '}',
       '.sp-calibration-prompt__text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.sp-calibration-prompt__remember{display:flex;align-items:center;gap:5px;white-space:nowrap;font-weight:500;font-size:12px;}',
+      '.sp-calibration-prompt__remember input{margin:0;accent-color:#35c7d8;}',
       '.sp-calibration-prompt__buttons{display:flex;gap:6px;flex:0 0 auto;}',
       '.sp-calibration-prompt__btn{',
       'border:1px solid rgba(105,215,229,.55);border-radius:6px;padding:3px 10px;',
@@ -213,12 +233,13 @@
     if (old && old.parentNode) old.parentNode.removeChild(old);
   }
 
-  function showPrompt(text, onYes, onNo) {
+  function showPrompt(text, onYes, onNo, options) {
     installPromptCss();
     const host = document.getElementById('graphWindowContainer') || document.getElementById('graphWindow');
     if (!host) return false;
     hidePrompt();
 
+    const opts = options || {};
     const box = document.createElement('div');
     box.id = 'spCalibrationPrompt';
     box.className = 'sp-calibration-prompt';
@@ -229,6 +250,27 @@
     label.className = 'sp-calibration-prompt__text';
     label.textContent = text;
 
+    let rememberCheckbox = null;
+    if (opts.rememberLabel) {
+      const rememberLabel = document.createElement('label');
+      rememberLabel.className = 'sp-calibration-prompt__remember';
+      rememberCheckbox = document.createElement('input');
+      rememberCheckbox.type = 'checkbox';
+      rememberCheckbox.id = opts.rememberId || 'spCalibrationRemember';
+      rememberLabel.appendChild(rememberCheckbox);
+      rememberLabel.appendChild(document.createTextNode(' ' + String(opts.rememberLabel)));
+      box.appendChild(label);
+      box.appendChild(rememberLabel);
+    } else {
+      box.appendChild(label);
+    }
+
+    function commitRememberChoice() {
+      if (typeof opts.onRemember === 'function') {
+        opts.onRemember(!!(rememberCheckbox && rememberCheckbox.checked));
+      }
+    }
+
     const buttons = document.createElement('div');
     buttons.className = 'sp-calibration-prompt__buttons';
 
@@ -237,6 +279,7 @@
     yes.className = 'sp-calibration-prompt__btn';
     yes.textContent = 'Yes';
     yes.addEventListener('click', function () {
+      commitRememberChoice();
       if (typeof onYes === 'function') onYes();
     });
 
@@ -245,13 +288,13 @@
     no.className = 'sp-calibration-prompt__btn sp-calibration-prompt__btn--no';
     no.textContent = 'No';
     no.addEventListener('click', function () {
+      commitRememberChoice();
       if (typeof onNo === 'function') onNo();
       else hidePrompt();
     });
 
     buttons.appendChild(yes);
     buttons.appendChild(no);
-    box.appendChild(label);
     box.appendChild(buttons);
     host.appendChild(box);
     return true;
@@ -361,13 +404,23 @@
 
 
   function showInitialCalibrationQuestion() {
-    if (loadPromptDismissed || isCalibratedNow()) return;
+    if (loadPromptDismissed || isCalibratedNow() || calibrationPromptRemembered()) return;
     showPrompt('Not Calibrated. Load Calibrationfile now?', function () {
       requestCalibrationFile();
     }, function () {
       loadPromptDismissed = true;
       hidePrompt();
+    }, {
+      rememberId: 'spCalibrationRemember',
+      rememberLabel: 'Remember calibration',
+      onRemember: rememberCalibrationPrompt
     });
+  }
+
+  function queueInitialCalibrationQuestion() {
+    if (initialCalibrationQueued) return;
+    initialCalibrationQueued = true;
+    window.setTimeout(showInitialCalibrationQuestion, 80);
   }
 
   function installCalibrationUx() {
@@ -384,7 +437,17 @@
     // The logo badge is created by uiPanels at DOM ready. Run once more after it.
     window.setTimeout(updateVersionBadge, 0);
     window.setTimeout(updateVersionBadge, 250);
-    window.setTimeout(showInitialCalibrationQuestion, 300);
+
+    window.addEventListener('spectra:startup-hardware-ready', queueInitialCalibrationQuestion, { once: true });
+    if (window.__spectraStartupHardwareReady) {
+      queueInitialCalibrationQuestion();
+    } else {
+      window.setTimeout(function () {
+        if (!window.__spectraStartupHardwareFlowInstalled && !window.__spectraStartupHardwareReady) {
+          queueInitialCalibrationQuestion();
+        }
+      }, 900);
+    }
   }
 
   if (document.readyState === 'loading') {
