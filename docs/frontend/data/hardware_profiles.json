@@ -40,7 +40,8 @@
       "pixelResolutionNm": 1,
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer",
-      "source": "https://www.vernier.com/manuals/gdx-spec-vis/"
+      "source": "https://www.vernier.com/manuals/gdx-spec-vis/",
+      "imageUrl": "../assets/hardware/vernier-gdx-spec-vis.jpg"
     },
     {
       "profileId": "vernier-gdx-spec-fuv",
@@ -53,7 +54,8 @@
       "pixelResolutionNm": 1,
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer",
-      "source": "https://www.vernier.com/manuals/gdx-spec-fuv/"
+      "source": "https://www.vernier.com/manuals/gdx-spec-fuv/",
+      "imageUrl": "../assets/hardware/vernier-gdx-spec-fuv.jpg"
     },
     {
       "profileId": "pasco-ps-2600a",
@@ -80,7 +82,8 @@
       "pixelResolutionNm": 0.3,
       "gratingLinesPerMm": 500,
       "specificationBasis": "manufacturer",
-      "source": "https://www.pasco.com/products/guides/spectrometers"
+      "source": "https://www.pasco.com/products/guides/spectrometers",
+      "imageUrl": "../assets/hardware/pasco-uv-vis.jpg"
     },
     {
       "profileId": "ocean-st-uv-25",
@@ -138,7 +141,8 @@
       "pixelResolutionNm": null,
       "gratingLinesPerMm": 1200,
       "specificationBasis": "manufacturer-upper-bound",
-      "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF"
+      "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF",
+      "imageUrl": "../assets/hardware/thorlabs-ccs-series.jpg"
     },
     {
       "profileId": "thorlabs-ccs175",
@@ -151,7 +155,8 @@
       "pixelResolutionNm": null,
       "gratingLinesPerMm": 830,
       "specificationBasis": "manufacturer-upper-bound",
-      "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF"
+      "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF",
+      "imageUrl": "../assets/hardware/thorlabs-ccs-series.jpg"
     },
     {
       "profileId": "thorlabs-ccs200",

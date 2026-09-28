@@ -44,6 +44,43 @@
       ],
       "sourceUrl": "https://img.instrumenthive.com/raw_images/IH-029481-1.webp",
       "sourcePage": "https://www.avantes.com/products/spectrometers/starline/avaspec-uls/avaspec-uls2048cl-evo/"
+    },
+    {
+      "file": "vernier-gdx-spec-vis.jpg",
+      "profiles": [
+        "vernier-gdx-spec-vis"
+      ],
+      "sourceUrl": "https://www.fybikon.no/image/dataloggingsutstyr/go-direct-selvstendige-sensorer/28145-gdx-spec-vis.hero.001.jpg",
+      "sourcePage": "https://www.vernier.com/product/go-direct-visible-spectrophotometer/"
+    },
+    {
+      "file": "vernier-gdx-spec-fuv.jpg",
+      "profiles": [
+        "vernier-gdx-spec-fuv"
+      ],
+      "sourceUrl": "https://labstuff.eu/images/product_images/original_images/GoDirect_Fluo_UVVIS_a.jpg",
+      "sourcePage": "https://www.vernier.com/products/spectrometers/"
+    },
+    {
+      "file": "pasco-uv-vis.jpg",
+      "profiles": [
+        "pasco-uv-vis"
+      ],
+      "sourceUrl": "https://tecnoedu.com/Pasco/img/SE3607F.jpg",
+      "sourcePage": "https://www.pasco.com/products/lab-apparatus/chemistry/se-3607",
+      "processingNote": "Cropped source composite to the SE-3607 instrument before 640x480 normalization."
+    },
+    {
+      "file": "thorlabs-ccs-series.jpg",
+      "profiles": [
+        "thorlabs-ccs100",
+        "thorlabs-ccs175"
+      ],
+      "sourceUrl": "https://www.optolab.ftn.uns.ac.rs/images/EQUIPMENT/img/CCD_Spectrometer_A1-780.jpg",
+      "sourcePage": "https://www.thorlabs.com/catalogpages/Obsolete/2025/CCS100.pdf",
+      "photoSourcePage": "https://www.optolab.ftn.uns.ac.rs/index.php/equipment/optoelectronic-equipment-and-devices/light-analysis/223-ccs200",
+      "representativeFamilyImage": true,
+      "processingNote": "CCS200 laboratory product photo used as representative image of the physically shared CCS-series enclosure."
     }
   ]
 }
