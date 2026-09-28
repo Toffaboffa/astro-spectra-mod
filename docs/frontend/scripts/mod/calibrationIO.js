@@ -526,6 +526,12 @@
     } else if (!calibrated) {
       wasCalibrated = false;
       axisPromptShown = false;
+      const source = payload && typeof payload === 'object' ? String(payload.source || '').toLowerCase() : '';
+      if (source === 'reset') {
+        hidePrompt();
+        rememberCalibrationRequested = false;
+        clearRememberedCalibration();
+      }
     }
   }
 
