@@ -41,7 +41,7 @@ jobs:
             ('pasco','PASCO','https://www.pasco.com/',['pasco']),
             ('ocean-optics','Ocean Optics','https://www.oceanoptics.com/',['ocean','logo']),
             ('avantes','Avantes','https://www.avantes.com/',['avantes']),
-            ('stellarnet','StellarNet','https://www.stellarnet.us/',['stellarnet']),
+            ('stellarnet','StellarNet','https://www.stellarnet.us/stellarnet-dealers-worldwide/',['stellarnet','snlogo']),
             ('hamamatsu','Hamamatsu Photonics','https://www.hamamatsu.com/',['hamamatsu']),
           ]
 
@@ -234,7 +234,7 @@ jobs:
             {'file':'logos/ocean-optics.png','manufacturer':'Ocean Optics','sourcePage':'https://www.oceanoptics.com/','sourceKind':'manufacturer-site-logo'},
             {'file':'logos/thorlabs.png','manufacturer':'Thorlabs','sourcePage':'https://www.thorlabs.com/','sourceKind':'manufacturer-site-logo'},
             {'file':'logos/avantes.png','manufacturer':'Avantes','sourcePage':'https://www.avantes.com/','sourceKind':'manufacturer-site-logo'},
-            {'file':'logos/stellarnet.png','manufacturer':'StellarNet','sourcePage':'https://www.stellarnet.us/','sourceKind':'manufacturer-site-logo'},
+            {'file':'logos/stellarnet.png','manufacturer':'StellarNet','sourcePage':'https://www.stellarnet.us/stellarnet-dealers-worldwide/','sourceKind':'manufacturer-site-logo'},
             {'file':'logos/hamamatsu.png','manufacturer':'Hamamatsu Photonics','sourcePage':'https://www.hamamatsu.com/','sourceKind':'manufacturer-site-logo'}
           ]
           prov_path.write_text(json.dumps(prov,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
