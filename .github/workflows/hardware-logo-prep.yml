@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install tooling
-        run: python -m pip install --quiet pillow requests beautifulsoup4 cairosvg
+        run: python -m pip install --quiet pillow requests beautifulsoup4 cairosvg pymupdf
       - name: Discover official manufacturer logos
         shell: bash
         run: |
@@ -40,7 +40,6 @@ jobs:
             ('vernier','Vernier','https://www.vernier.com/',['vernier']),
             ('pasco','PASCO','https://www.pasco.com/',['pasco']),
             ('ocean-optics','Ocean Optics','https://www.oceanoptics.com/',['ocean','logo']),
-            ('thorlabs','Thorlabs','https://www.thorlabs.com/',['thorlabs']),
             ('avantes','Avantes','https://www.avantes.com/',['avantes']),
             ('stellarnet','StellarNet','https://www.stellarnet.us/',['stellarnet']),
             ('hamamatsu','Hamamatsu Photonics','https://www.hamamatsu.com/',['hamamatsu']),
@@ -116,6 +115,38 @@ jobs:
               print('CANDIDATES',label,candidates[:8])
               raise SystemExit('No usable official logo discovered for '+label)
             print('SELECTED',label,*selected)
+
+          # Thorlabs does not expose a normal header logo image in the current site HTML.
+          # Extract the official red wordmark from the first page of Thorlabs' own OEM brochure.
+          import fitz
+          pdf_url='https://www.thorlabs.com/images/TabImages/Thorlabs_OEM_Brochure_0116.pdf'
+          rr=requests.get(pdf_url,headers=H,timeout=40)
+          rr.raise_for_status()
+          doc=fitz.open(stream=rr.content,filetype='pdf')
+          page=doc[0]
+          pix=page.get_pixmap(matrix=fitz.Matrix(2.4,2.4),alpha=False)
+          png=pix.tobytes('png')
+          from PIL import Image
+          im=Image.open(io.BytesIO(png)).convert('RGB')
+          w,h=im.size
+          crop=im.crop((int(w*0.58),int(h*0.72),w,int(h*0.98)))
+          px=crop.load()
+          mask=Image.new('L',crop.size,0)
+          mp=mask.load()
+          for y in range(crop.height):
+            for x in range(crop.width):
+              r,g,b=px[x,y]
+              # isolate Thorlabs' red wordmark while ignoring black body text
+              if r>110 and r>g*1.25 and r>b*1.25:
+                mp[x,y]=255
+          box=mask.getbbox()
+          if not box:
+            raise SystemExit('Could not isolate Thorlabs logo from official brochure')
+          l,t,r,b=box
+          pad=18
+          crop=crop.crop((max(0,l-pad),max(0,t-pad),min(crop.width,r+pad),min(crop.height,b+pad)))
+          crop.save('/tmp/logo-src/thorlabs.png','PNG')
+          print('SELECTED Thorlabs',pdf_url,'official PDF cover logo')
           PY
       - name: Normalize logos
         shell: bash
