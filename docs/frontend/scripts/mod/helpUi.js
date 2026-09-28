@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const HELP_VERSION = '1.3.9';
+  const HELP_VERSION = '1.4';
   let installed = false;
   let lastFocus = null;
 
@@ -251,7 +251,7 @@
       ['Reset', 'Button', 'Clears/reset calibration point inputs.', 'Use when starting a new calibration.'],
       ['Sort', 'Button', 'Sorts calibration point pairs.', 'Helps keep the point list ordered and easier to inspect.'],
       ['Record', 'Button', 'Returns from the calibration-side settings view to graph/recording.', 'Navigation only.'],
-      ['Startup prompt Yes / No', 'Prompt buttons', 'After the hardware startup step, when no calibration is active, Yes opens the calibration-file workflow; No dismisses the prompt.', 'Remember calibration suppresses this startup reminder on later loads until site storage is cleared. It remembers only the reminder choice; it does not reopen or persist access to a local calibration file. Choose No when intentionally working in pixels. Wavelength-based matching should wait until calibration is valid.']
+      ['Startup prompt Yes / No', 'Prompt buttons', 'After the hardware startup step, when no calibration is active, Yes opens the calibration-file workflow; No dismisses the prompt.', 'Remember calibration stores the validated calibration points in localStorage. On later loads the points are restored through the canonical calibration engine, which recomputes the fit and activates the normal calibration state. The original local calibration file is not stored or reopened. Invalid or legacy stored data is cleared and this prompt returns. Temporary bundled-sample calibration never overwrites the remembered user calibration. Choose No when intentionally working in pixels. Wavelength-based matching should wait until calibration is valid.']
     ];
 
     return '<section class="sp-help-section"><h2>Controls reference</h2><p>This section documents the main interactive controls currently present in the Recording interface. Controls that appear only in specific states are marked as optional/context-dependent.</p></section>' +

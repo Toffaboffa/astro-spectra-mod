@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v1.3.9**
+**Current UI version: v1.4**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
@@ -44,7 +44,7 @@ The detailed implementation and reproducibility contract is maintained in `Funct
 
 ## Built-in spectrum examples
 
-SPECTRA PRO v1.3.9 includes a **Load Example** button in the Source panel. The N₂, Ne and fluorescent-tube spectrum images use the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
+SPECTRA PRO v1.4 includes a **Load Example** button in the Source panel. The N₂, Ne and fluorescent-tube spectrum images use the normal still-image pipeline, so stripe extraction, graph rendering, calibration and LAB analysis use the same code paths as a user-loaded image.
 
 The bundled catalog contains N₂ and Ne spectral-tube measurements, a warm-white Philips MASTER TL5 HE 28W/830 fluorescent-tube measurement, a measured Argon RGB profile and a compact numeric solar spectrum for ASTRO. The N₂ and Ne samples keep their original 1280×720 PNG sources. The fluorescent source spectrum is likewise kept pixel-exact: its original 1280×180 pixels are centered unchanged on a black 1280×720 canvas, with no rescaling or recoloring. Its chooser card uses the dedicated white fluorescent-tube icon. Clicking a card selects it; **Load sample** confirms and loads the selection.
 
@@ -72,7 +72,7 @@ SPECTRA PRO starts in **English on every page load**. A compact **EN / SV** swit
 - **SV** translates the visible application UI to Swedish at runtime.
 - Analysis data, wavelengths, units, chemical symbols, species labels and the scientific result values are not rewritten as language content.
 - AI Interpretation output is intentionally independent of the UI language and continues to follow the language of the user's observation when that language can be identified.
-- The language choice is not persisted across reloads in v1.3.9; English is always the clean baseline after a new load.
+- The language choice is not persisted across reloads in v1.4; English is always the clean baseline after a new load.
 
 The translation layer is isolated from calibration, graph rendering and worker analysis. It observes the application UI only while Swedish is active, so the normal English path keeps the same behavior as before the language feature.
 
@@ -80,7 +80,7 @@ The translation layer is isolated from calibration, graph rendering and worker a
 
 ## Unified export
 
-SPECTRA PRO v1.3.9 uses the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
+SPECTRA PRO v1.4 uses the visually buried CORE export entry point with a global **EXPORT** control beside the Dark/Ref capture controls in the left source panel. The Dark/Ref buttons are arranged as two centered, symmetric rows and the larger export button remains available regardless of the active PRO workspace.
 
 The export dialog can generate any combination of:
 
@@ -125,7 +125,7 @@ Hardware profiles are also separate from instrument-response correction. Selecti
 ### CALIBRATE
 Uses the existing SPECTRA calibration engine through the PRO shell. It supports editable multipoint pixel ↔ wavelength anchors, fitting, file load/save, fit diagnostics, and calibration-quality information.
 
-The startup calibration reminder appears only after the hardware startup step has completed. Its **Remember calibration** checkbox stores only the choice to suppress that reminder in browser `localStorage`; it does not and cannot silently reopen a local calibration file. Manual calibration controls remain available at all times.
+The startup calibration reminder appears only after the hardware startup step has completed. **Remember calibration** now persists the validated calibration point set in browser `localStorage`. On a later load SPECTRA PRO restores those points through the canonical calibration engine, which recomputes the fit/coefficients and republishes the normal calibration state. The original local calibration file is not retained or reopened. Legacy/invalid stored calibration data is discarded and the ordinary Not Calibrated reminder is shown instead. Temporary bundled-sample calibration is never allowed to overwrite the remembered user calibration.
 
 ### LAB
 Runs spectral analysis in a Web Worker so the UI remains responsive. LAB libraries load automatically on first entry.

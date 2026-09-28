@@ -246,7 +246,7 @@ function ensureHost() {
         },
         loadedAt: Date.now(),
         scaffold: false,
-        version: '1.3.9'
+        version: '1.4.0'
       };
     } else {
       const mods = v15.registry.modules || (v15.registry.modules = {});
@@ -255,7 +255,7 @@ function ensureHost() {
       });
       v15.registry.loadedAt = v15.registry.loadedAt || Date.now();
       v15.registry.scaffold = false;
-      v15.registry.version = '1.3.9';
+      v15.registry.version = '1.4.0';
     }
     return v15.registry;
   }
@@ -2351,7 +2351,7 @@ function ensureHardwarePanel() {
 
   function loadHardwareProfiles() {
     if (typeof window.fetch !== 'function') return Promise.resolve([]);
-    return window.fetch('../data/hardware_profiles.json?v=1.3.9-startup-2').then(function (response) {
+    return window.fetch('../data/hardware_profiles.json?v=1.4.0-startup-2').then(function (response) {
       if (!response.ok) throw new Error('hardware-profile-catalog-load-failed-' + response.status);
       return response.json();
     }).then(function (catalog) {
@@ -2590,7 +2590,14 @@ function ensureHardwarePanel() {
   }
 
   function hardwareStartupMetric(label, value) {
-    return '<div class="sp-startup-hardware__metric"><span>' + escapeHtml(label) + '</span><b>' + escapeHtml(value) + '</b></div>';
+    const safeValue = escapeHtml(value);
+    return '<div class="sp-startup-hardware__metric"><span>' + escapeHtml(label) + '</span><b title="' + safeValue + '">' + safeValue + '</b></div>';
+  }
+
+  function startupHardwareLogoUsesWhite(profile) {
+    const manufacturer = String(profile && profile.manufacturer || '').trim();
+    if (!manufacturer) return false;
+    return manufacturer !== 'PASCO' && manufacturer !== 'StellarNet';
   }
 
   function renderStartupHardwareDetails(profile) {
@@ -2598,6 +2605,9 @@ function ensureHardwarePanel() {
     const logo = $('spStartupHardwareLogo');
     const image = $('spStartupHardwareImage');
     if (!details) return;
+    if (logo && logo.classList) {
+      logo.classList.toggle('sp-startup-hardware__logo--white', startupHardwareLogoUsesWhite(profile));
+    }
 
     if (!profile) {
       details.innerHTML = [

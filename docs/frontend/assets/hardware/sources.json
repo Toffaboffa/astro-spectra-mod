@@ -10,7 +10,10 @@
       "sourceKind": "user-provided",
       "sourceUrl": null,
       "sourcePage": "https://www.forschool.eu/spectrometry/58275-spectra-1-high-resolution-spectrometer.html",
-      "processingNote": "Desktop popup crop tightened from the normalized source to improve visible product occupancy."
+      "processingNote": "Desktop popup crop tightened from the normalized source to improve visible product occupancy.",
+      "verificationNote": "Verified against the real SPECTRA-1 unit and current product reference.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     },
     {
       "file": "vernier-gdx-svispl.jpg",
@@ -18,7 +21,10 @@
         "vernier-gdx-svispl"
       ],
       "sourceUrl": "https://www.carolina.com/images/product/large/118044.jpg",
-      "sourcePage": "https://www.vernier.com/product/go-direct-spectrovis-plus-spectrophotometer/"
+      "sourcePage": "https://www.vernier.com/product/go-direct-spectrovis-plus-spectrophotometer/",
+      "verificationNote": "Verified against Vernier GDX-SVISPL product/manual imagery.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     },
     {
       "file": "pasco-ps-2600a.jpg",
@@ -26,7 +32,10 @@
         "pasco-ps-2600a"
       ],
       "sourceUrl": "https://static-data2.manualslib.com/product-images/859/3026737/pasco-ps-2600a.jpg",
-      "sourcePage": "https://www.pasco.com/products/sensors/wireless/wireless-spectrometer-vis"
+      "sourcePage": "https://www.pasco.com/products/sensors/wireless/wireless-spectrometer-vis",
+      "verificationNote": "Verified against PASCO PS-2600A product imagery.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     },
     {
       "file": "ocean-st.jpg",
@@ -36,7 +45,10 @@
         "ocean-st-nir-25"
       ],
       "sourceUrl": "https://www.eastwestsvc.com/wp-content/uploads/2022/09/Ocean-ST.png",
-      "sourcePage": "https://www.oceanoptics.com/spectrometers/microspectrometers/"
+      "sourcePage": "https://www.oceanoptics.com/spectrometers/microspectrometers/",
+      "verificationNote": "Verified against Ocean Optics ST product sheet/catalog. ST-UV, ST-VIS and ST-NIR share the same ST enclosure.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     },
     {
       "file": "avantes-uls2048cl-evo.jpg",
@@ -44,7 +56,10 @@
         "avantes-uls2048cl-evo-custom"
       ],
       "sourceUrl": "https://img.instrumenthive.com/raw_images/IH-029481-1.webp",
-      "sourcePage": "https://www.avantes.com/products/spectrometers/starline/avaspec-uls/avaspec-uls2048cl-evo/"
+      "sourcePage": "https://www.avantes.com/products/spectrometers/starline/avaspec-uls/avaspec-uls2048cl-evo/",
+      "verificationNote": "Verified against Avantes AvaSpec-ULS2048CL-EVO product literature.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     },
     {
       "file": "vernier-gdx-spec-vis.jpg",
@@ -52,7 +67,10 @@
         "vernier-gdx-spec-vis"
       ],
       "sourceUrl": "https://www.fybikon.no/image/dataloggingsutstyr/go-direct-selvstendige-sensorer/28145-gdx-spec-vis.hero.001.jpg",
-      "sourcePage": "https://www.vernier.com/product/go-direct-visible-spectrophotometer/"
+      "sourcePage": "https://www.vernier.com/product/go-direct-visible-spectrophotometer/",
+      "verificationNote": "Verified against Vernier GDX-SPEC-VIS product/manual imagery.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     },
     {
       "file": "vernier-gdx-spec-fuv.jpg",
@@ -60,7 +78,10 @@
         "vernier-gdx-spec-fuv"
       ],
       "sourceUrl": "https://labstuff.eu/images/product_images/original_images/GoDirect_Fluo_UVVIS_a.jpg",
-      "sourcePage": "https://www.vernier.com/products/spectrometers/"
+      "sourcePage": "https://www.vernier.com/products/spectrometers/",
+      "verificationNote": "Verified against Vernier GDX-SPEC-FUV product/manual imagery.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     },
     {
       "file": "pasco-uv-vis.jpg",
@@ -69,7 +90,10 @@
       ],
       "sourceUrl": "https://tecnoedu.com/Pasco/img/SE3607F.jpg",
       "sourcePage": "https://www.pasco.com/products/lab-apparatus/chemistry/se-3607",
-      "processingNote": "Cropped source composite to the SE-3607 instrument before 640x480 normalization."
+      "processingNote": "Cropped source composite to the SE-3607 instrument before 640x480 normalization.",
+      "verificationNote": "Verified against PASCO SE-3607 product imagery.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     },
     {
       "file": "thorlabs-ccs-series.jpg",
@@ -81,16 +105,23 @@
       "sourcePage": "https://www.thorlabs.com/catalogpages/Obsolete/2025/CCS100.pdf",
       "photoSourcePage": "https://www.optolab.ftn.uns.ac.rs/index.php/equipment/optoelectronic-equipment-and-devices/light-analysis/223-ccs200",
       "representativeFamilyImage": true,
-      "processingNote": "CCS200 laboratory product photo used as representative image of the physically shared CCS-series enclosure."
+      "processingNote": "CCS200 laboratory product photo used as representative image of the physically shared CCS-series enclosure.",
+      "verificationNote": "Verified against Thorlabs CCS100/CCS175/CCS200 catalog imagery. The three legacy CCS models share the compact red CCS-family enclosure.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     },
     {
       "file": "stellarnet-blue-wave.jpg",
       "profiles": [
         "stellarnet-blue-wave-vis-25"
       ],
-      "sourcePage": "https://www.shopstellarnet.com/blue-wave-spectrometers-1/",
-      "sourceKind": "manufacturer-product-page",
-      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy."
+      "sourcePage": "https://www.stellarnet.us/spectrometers/uv-vis-spectrometers/blue-wave/",
+      "sourceKind": "manufacturer-product-image",
+      "processingNote": "Official BLUE-Wave side product photo normalized to 640x480; no product geometry altered.",
+      "verificationNote": "Replaced with a clean official BLUE-Wave enclosure photo from the StellarNet manufacturer product page.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28",
+      "sourceUrl": "https://www.stellarnet.us/wp-content/uploads/BLUE-Wave-Spectrometer-side.jpg"
     },
     {
       "file": "hamamatsu-c12880ma.jpg",
@@ -99,7 +130,10 @@
       ],
       "sourcePage": "https://www.hamamatsu.com/jp/en/product/optical-sensors/spectrometers/mini-spectrometer/C12880MA.html",
       "sourceKind": "manufacturer-product-page",
-      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy."
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy.",
+      "verificationNote": "Verified against Hamamatsu C12880MA product imagery.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     },
     {
       "file": "hamamatsu-c11708ma.jpg",
@@ -108,7 +142,10 @@
       ],
       "sourcePage": "https://www.hamamatsu.com/us/en/product/optical-sensors/spectrometers/mini-spectrometer/C11708MA.html",
       "sourceKind": "manufacturer-product-page",
-      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy."
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy.",
+      "verificationNote": "Verified against Hamamatsu C11708MA product imagery.",
+      "verifiedAgainstOfficialProductMaterial": true,
+      "verifiedDate": "2026-09-28"
     }
   ],
   "logos": [
@@ -139,8 +176,9 @@
     {
       "file": "logos/thorlabs.png",
       "manufacturer": "Thorlabs",
-      "sourcePage": "https://media.thorlabs.com/contentassets/e92d618c92c94cea9096b3f231859611/etn043886-d02.pdf",
-      "sourceKind": "manufacturer-document-logo"
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Thorlabs_logo.png",
+      "sourceKind": "brand-wordmark-mirror",
+      "processingNote": "Clean transparent THORLABS wordmark; Commons identifies https://www.thorlabs.com/ as the source. Normalized to a transparent 320x120 UI asset."
     },
     {
       "file": "logos/avantes.png",

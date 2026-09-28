@@ -134,7 +134,7 @@
     };
   };
 
-  mod.version = '1.3.9';
+  mod.version = '1.4.0';
 })();
 
 /* SPECTRA PRO startup calibration UX */
@@ -142,8 +142,10 @@
   'use strict';
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
-  const UI_VERSION = 'v1.3.9';
+  const UI_VERSION = 'v1.4';
   const CALIBRATION_REMEMBER_STORAGE_KEY = 'spectraPro.startup.calibration';
+  const CALIBRATION_REMEMBER_SCHEMA = 'spectra-pro-startup-calibration/v1';
+  let rememberCalibrationRequested = false;
   let wasCalibrated = false;
   let loadPromptDismissed = false;
   let axisPromptShown = false;
@@ -172,20 +174,115 @@
     return false;
   }
 
-  function calibrationPromptRemembered() {
+  function clearRememberedCalibration() {
     try {
-      return !!(window.localStorage && window.localStorage.getItem(CALIBRATION_REMEMBER_STORAGE_KEY) === '1');
+      if (window.localStorage) window.localStorage.removeItem(CALIBRATION_REMEMBER_STORAGE_KEY);
+    } catch (_) {}
+  }
+
+  function normalizeRememberedCalibrationPoints(points) {
+    const raw = Array.isArray(points) ? points : [];
+    if (raw.length < 2 || raw.length > 15) return null;
+    const normalized = [];
+    const seenPx = new Set();
+    for (let i = 0; i < raw.length; i += 1) {
+      const px = Number(raw[i] && raw[i].px);
+      const nm = Number(raw[i] && raw[i].nm);
+      if (!Number.isFinite(px) || !Number.isFinite(nm) || seenPx.has(px)) return null;
+      seenPx.add(px);
+      normalized.push({ px: px, nm: nm });
+    }
+    normalized.sort(function (a, b) { return a.px - b.px; });
+    return normalized;
+  }
+
+  function readRememberedCalibration() {
+    try {
+      if (!window.localStorage) return null;
+      const raw = window.localStorage.getItem(CALIBRATION_REMEMBER_STORAGE_KEY);
+      if (!raw) return null;
+
+      // v1.3.9 stored only "1", which suppressed the reminder without preserving
+      // any calibration data. Treat that legacy value as stale rather than silently
+      // claiming that a calibration was restored.
+      if (raw === '1') {
+        clearRememberedCalibration();
+        return null;
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || parsed.schema !== CALIBRATION_REMEMBER_SCHEMA || parsed.remember !== true) {
+        clearRememberedCalibration();
+        return null;
+      }
+      const points = normalizeRememberedCalibrationPoints(parsed.points);
+      if (!points) {
+        clearRememberedCalibration();
+        return null;
+      }
+      return {
+        schema: CALIBRATION_REMEMBER_SCHEMA,
+        remember: true,
+        points: points,
+        savedAt: Number(parsed.savedAt) || null
+      };
+    } catch (_) {
+      clearRememberedCalibration();
+      return null;
+    }
+  }
+
+  function writeRememberedCalibration(state) {
+    try {
+      if (!rememberCalibrationRequested || !window.localStorage || !isUsableCalibration(state)) return false;
+      if (String(state && state.origin || '').toLowerCase() === 'sample') return false;
+      const points = normalizeRememberedCalibrationPoints(state && state.points);
+      if (!points) return false;
+      window.localStorage.setItem(CALIBRATION_REMEMBER_STORAGE_KEY, JSON.stringify({
+        schema: CALIBRATION_REMEMBER_SCHEMA,
+        remember: true,
+        points: points,
+        savedAt: Date.now()
+      }));
+      return true;
     } catch (_) {
       return false;
     }
   }
 
   function rememberCalibrationPrompt(remember) {
+    rememberCalibrationRequested = !!remember;
+    if (!rememberCalibrationRequested) {
+      clearRememberedCalibration();
+      return;
+    }
     try {
-      if (!window.localStorage) return;
-      if (remember) window.localStorage.setItem(CALIBRATION_REMEMBER_STORAGE_KEY, '1');
-      else window.localStorage.removeItem(CALIBRATION_REMEMBER_STORAGE_KEY);
+      const core = window.SpectraCore && window.SpectraCore.calibration;
+      if (core && typeof core.getState === 'function') writeRememberedCalibration(core.getState());
     } catch (_) {}
+  }
+
+  function restoreRememberedCalibration() {
+    const saved = readRememberedCalibration();
+    if (!saved) {
+      rememberCalibrationRequested = false;
+      return false;
+    }
+
+    rememberCalibrationRequested = true;
+    try {
+      const core = window.SpectraCore && window.SpectraCore.calibration;
+      if (!core || typeof core.applyPoints !== 'function') return false;
+      const restored = core.applyPoints(saved.points, {
+        origin: 'user',
+        source: 'startup-remembered-calibration'
+      });
+      if (restored && isUsableCalibration(restored)) return true;
+    } catch (_) {}
+
+    rememberCalibrationRequested = false;
+    clearRememberedCalibration();
+    return false;
   }
 
 
@@ -414,6 +511,10 @@
       ? isUsableCalibration(payload)
       : isCalibratedNow();
 
+    if (calibrated && rememberCalibrationRequested && payload && typeof payload === 'object') {
+      writeRememberedCalibration(payload);
+    }
+
     if (calibrated && !wasCalibrated) {
       wasCalibrated = true;
       hidePrompt();
@@ -425,12 +526,18 @@
     } else if (!calibrated) {
       wasCalibrated = false;
       axisPromptShown = false;
+      const source = payload && typeof payload === 'object' ? String(payload.source || '').toLowerCase() : '';
+      if (source === 'reset') {
+        hidePrompt();
+        rememberCalibrationRequested = false;
+        clearRememberedCalibration();
+      }
     }
   }
 
 
   function showInitialCalibrationQuestion() {
-    if (loadPromptDismissed || isCalibratedNow() || calibrationPromptRemembered()) return;
+    if (loadPromptDismissed || isCalibratedNow()) return;
     showPrompt('Not Calibrated. Load Calibrationfile now?', function () {
       requestCalibrationFile();
     }, function () {
@@ -464,7 +571,11 @@
     window.setTimeout(updateVersionBadge, 0);
     window.setTimeout(updateVersionBadge, 250);
 
-    runAfterStartupHardwareReady(queueInitialCalibrationQuestion);
+    runAfterStartupHardwareReady(function () {
+      restoreRememberedCalibration();
+      wasCalibrated = isCalibratedNow();
+      queueInitialCalibrationQuestion();
+    });
   }
 
   if (document.readyState === 'loading') {

@@ -2561,9 +2561,9 @@ label[for="peakSizeLower"],
 /* Startup hardware selection: shown before the calibration reminder. */
 .sp-startup-hardware{
   position:absolute;
-  top:18px;
+  top:50%;
   left:50%;
-  transform:translateX(-50%);
+  transform:translate(-50%,-50%);
   z-index:2490;
   box-sizing:border-box;
   width:min(780px,calc(100% - 48px));
@@ -2594,6 +2594,7 @@ label[for="peakSizeLower"],
 }
 .sp-startup-hardware__logo img,
 .sp-startup-hardware__image img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;}
+.sp-startup-hardware__logo--white img{filter:grayscale(1) brightness(0) invert(1) contrast(1.08);opacity:.97;}
 .sp-startup-hardware__image{background:#fff;}
 .sp-startup-hardware__logo{padding:4px 8px;box-sizing:border-box;}
 .sp-startup-hardware__placeholder{padding:8px;text-align:center;color:#8fa9c6;font-size:11px;}
@@ -2620,7 +2621,7 @@ label[for="peakSizeLower"],
   background:rgba(255,255,255,.025);
 }
 .sp-startup-hardware__metric span{color:#91aac6;font-size:10px;}
-.sp-startup-hardware__metric b{margin-top:1px;overflow:hidden;text-overflow:ellipsis;color:#eefaff;font-size:11px;font-weight:650;}
+.sp-startup-hardware__metric b{margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#eefaff;font-size:11px;font-weight:650;}
 .sp-startup-hardware__footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(120,180,255,.16);}
 .sp-startup-hardware__remember{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;}
 .sp-startup-hardware__remember input{margin:0;accent-color:#35c7d8;}
@@ -2635,7 +2636,7 @@ label[for="peakSizeLower"],
 }
 .sp-startup-hardware__continue:hover{background:#224876;}
 @media (max-width:720px){
-  .sp-startup-hardware{top:8px;width:calc(100% - 18px);padding:10px;}
+  .sp-startup-hardware{width:calc(100% - 18px);padding:10px;}
   .sp-startup-hardware__body{grid-template-columns:1fr;}
   .sp-startup-hardware__visuals{grid-template-columns:120px 1fr;grid-template-rows:78px;}
   .sp-startup-hardware__details{grid-template-columns:1fr 1fr;}
