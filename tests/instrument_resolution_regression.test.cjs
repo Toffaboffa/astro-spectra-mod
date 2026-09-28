@@ -23,6 +23,8 @@ const coarse = model.build({ spectrometerResolutionFwhmNm: 12, pixelResolutionNm
 assert.equal(coarse.samplingSource, 'hardware-profile');
 assert.equal(coarse.effectiveResolutionFwhmNm, 12);
 assert.equal(coarse.undersampled, false);
+assert.equal(model.independentEvidenceCount([500.0, 500.3, 510.0], fine), 2, 'sub-FWHM references must collapse to one independent evidence cluster');
+assert.equal(model.independentEvidenceCount([500.0, 500.3, 510.0], coarse), 1, 'a coarse instrument must not count unresolved reference structure as independent evidence');
 
 const hits = [
   { referenceNm: 500.0, observedNm: 500.1 },
