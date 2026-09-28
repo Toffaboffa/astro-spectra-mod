@@ -7,6 +7,8 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'docs/frontend/data/hardware_profiles.json'), 'utf8'));
 const bootstrap = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/proBootstrap.js'), 'utf8');
+const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+const help = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/helpUi.js'), 'utf8');
 
 assert.equal(catalog.schema, 'spectra-pro-hardware-profile-catalog/v1');
 assert.ok(Array.isArray(catalog.profiles) && catalog.profiles.length >= 10, 'hardware catalog should expose a useful global starter set');
@@ -36,5 +38,10 @@ assert.ok(bootstrap.includes("ids.fwhm && ids.fwhm.value !== '' ? Number(ids.fwh
 assert.ok(bootstrap.includes("profile.spectrometerResolutionFwhmNm != null ? String(profile.spectrometerResolutionFwhmNm) : ''"), 'unknown profile FWHM must render as a blank field');
 assert.ok(bootstrap.includes("profile.pixelResolutionNm != null ? String(profile.pixelResolutionNm) : ''"), 'unknown profile pixel scale must render as a blank field');
 assert.ok(bootstrap.includes("profile.gratingLinesPerMm != null ? String(profile.gratingLinesPerMm) : ''"), 'unknown profile grating density must render as a blank field');
+assert.ok(readme.includes('KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu'), 'README must document the multi-spectrometer starter catalog');
+assert.ok(readme.includes('CUSTOM'), 'README must document custom spectrometer support');
+assert.ok(help.includes("const HELP_VERSION = '1.3.9';"), 'in-app HELP version must match v1.3.9 documentation');
+assert.ok(help.includes('KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu'), 'in-app HELP must document the multi-spectrometer starter catalog');
+assert.ok(help.includes('instrument-response correction requires a separate compatible measured response profile'), 'HELP must keep hardware metadata separate from response correction');
 
 console.log('Hardware profile catalog regression: PASS');
