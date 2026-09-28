@@ -9,7 +9,8 @@
       ],
       "sourceKind": "user-provided",
       "sourceUrl": null,
-      "sourcePage": "https://www.forschool.eu/spectrometry/58275-spectra-1-high-resolution-spectrometer.html"
+      "sourcePage": "https://www.forschool.eu/spectrometry/58275-spectra-1-high-resolution-spectrometer.html",
+      "processingNote": "Desktop popup crop tightened from the normalized source to improve visible product occupancy."
     },
     {
       "file": "vernier-gdx-svispl.jpg",
@@ -89,7 +90,7 @@
       ],
       "sourcePage": "https://www.shopstellarnet.com/blue-wave-spectrometers-1/",
       "sourceKind": "manufacturer-product-page",
-      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480."
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy."
     },
     {
       "file": "hamamatsu-c12880ma.jpg",
@@ -98,7 +99,7 @@
       ],
       "sourcePage": "https://www.hamamatsu.com/jp/en/product/optical-sensors/spectrometers/mini-spectrometer/C12880MA.html",
       "sourceKind": "manufacturer-product-page",
-      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480."
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy."
     },
     {
       "file": "hamamatsu-c11708ma.jpg",
@@ -107,7 +108,7 @@
       ],
       "sourcePage": "https://www.hamamatsu.com/us/en/product/optical-sensors/spectrometers/mini-spectrometer/C11708MA.html",
       "sourceKind": "manufacturer-product-page",
-      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480."
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480. Desktop popup crop tightened from the normalized source to improve visible product occupancy."
     }
   ],
   "logos": [
