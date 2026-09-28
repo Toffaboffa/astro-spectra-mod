@@ -169,7 +169,8 @@
       "pixelResolutionNm": null,
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-upper-bound",
-      "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF"
+      "source": "https://www.thorlabs.com/catalogpages/V21/1605.PDF",
+      "imageUrl": "../assets/hardware/thorlabs-ccs-series.jpg"
     },
     {
       "profileId": "avantes-uls2048cl-evo-custom",
@@ -198,7 +199,8 @@
       "pixelResolutionNm": null,
       "gratingLinesPerMm": 600,
       "specificationBasis": "manufacturer-model-table",
-      "source": "https://www.stellarnet.us/spectrometers/uv-vis-spectrometers/blue-wave/"
+      "source": "https://www.stellarnet.us/spectrometers/uv-vis-spectrometers/blue-wave/",
+      "imageUrl": "../assets/hardware/stellarnet-blue-wave.jpg"
     },
     {
       "profileId": "hamamatsu-c12880ma",
@@ -211,7 +213,8 @@
       "pixelResolutionNm": null,
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer-typical",
-      "source": "https://www.hamamatsu.com/jp/en/product/optical-sensors/spectrometers/mini-spectrometer/C12880MA.html"
+      "source": "https://www.hamamatsu.com/jp/en/product/optical-sensors/spectrometers/mini-spectrometer/C12880MA.html",
+      "imageUrl": "../assets/hardware/hamamatsu-c12880ma.jpg"
     },
     {
       "profileId": "hamamatsu-c11708ma",
@@ -224,7 +227,8 @@
       "pixelResolutionNm": null,
       "gratingLinesPerMm": null,
       "specificationBasis": "manufacturer-typical",
-      "source": "https://www.hamamatsu.com/content/dam/hamamatsu-photonics/sites/documents/99_SALES_LIBRARY/ssd/c10988ma-01_etc_kacc1169e.pdf"
+      "source": "https://www.hamamatsu.com/content/dam/hamamatsu-photonics/sites/documents/99_SALES_LIBRARY/ssd/c10988ma-01_etc_kacc1169e.pdf",
+      "imageUrl": "../assets/hardware/hamamatsu-c11708ma.jpg"
     }
   ]
 }

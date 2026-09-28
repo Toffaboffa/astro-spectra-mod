@@ -81,6 +81,33 @@
       "photoSourcePage": "https://www.optolab.ftn.uns.ac.rs/index.php/equipment/optoelectronic-equipment-and-devices/light-analysis/223-ccs200",
       "representativeFamilyImage": true,
       "processingNote": "CCS200 laboratory product photo used as representative image of the physically shared CCS-series enclosure."
+    },
+    {
+      "file": "stellarnet-blue-wave.jpg",
+      "profiles": [
+        "stellarnet-blue-wave-vis-25"
+      ],
+      "sourcePage": "https://www.shopstellarnet.com/blue-wave-spectrometers-1/",
+      "sourceKind": "manufacturer-product-page",
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480."
+    },
+    {
+      "file": "hamamatsu-c12880ma.jpg",
+      "profiles": [
+        "hamamatsu-c12880ma"
+      ],
+      "sourcePage": "https://www.hamamatsu.com/jp/en/product/optical-sensors/spectrometers/mini-spectrometer/C12880MA.html",
+      "sourceKind": "manufacturer-product-page",
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480."
+    },
+    {
+      "file": "hamamatsu-c11708ma.jpg",
+      "profiles": [
+        "hamamatsu-c11708ma"
+      ],
+      "sourcePage": "https://www.hamamatsu.com/us/en/product/optical-sensors/spectrometers/mini-spectrometer/C11708MA.html",
+      "sourceKind": "manufacturer-product-page",
+      "processingNote": "Product image discovered from manufacturer page and normalized to 640x480."
     }
   ]
 }
