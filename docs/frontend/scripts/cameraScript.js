@@ -167,6 +167,33 @@ function refreshActiveSourceMetrics() {
 })();
 
 
+async function configureOptionalManualExposure(videoTrack, capabilities) {
+    if (!videoTrack || !capabilities || !('exposureMode' in capabilities)) return false;
+    try {
+        await videoTrack.applyConstraints({ advanced: [{ exposureMode: 'manual' }] });
+        if ('exposureTime' in capabilities) {
+            const { min, max, step } = capabilities.exposureTime;
+            updateExposureSlider(min, max, step);
+            try {
+                await videoTrack.applyConstraints({
+                    advanced: [{ exposureTime: exposureValues[exposureSlider.value] }]
+                });
+            } catch (error) {
+                console.warn('[SPECTRA camera] Initial manual exposure time was not accepted; keeping the live stream.', error);
+            }
+            exposureSlider.onchange = () => {
+                videoTrack.applyConstraints({
+                    advanced: [{ exposureTime: parseFloat(exposureValues[exposureSlider.value]) }]
+                }).catch(error => console.warn('[SPECTRA camera] Manual exposure update was not accepted.', error));
+            };
+        }
+        return true;
+    } catch (error) {
+        console.warn('[SPECTRA camera] Optional manual exposure mode is unavailable; keeping the live stream.', error);
+        return false;
+    }
+}
+
 /**
  * Start streaming video from the specified deviceId
  * @param deviceId
@@ -185,65 +212,49 @@ async function startStream(deviceId) {
         }
     };
 
+    let stream;
     try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        try {
-            const previous = liveVideo.srcObject;
-            if (previous && previous !== stream && typeof previous.getTracks === 'function') {
-                previous.getTracks().forEach(track => track.stop());
-            }
-        } catch (_) {}
-
-        liveVideo.srcObject = stream;
-        if (deviceId) cameraUsed = deviceId;
-
-        const videoTrack = stream.getVideoTracks()[0];
-        const capabilities = videoTrack && typeof videoTrack.getCapabilities === 'function'
-            ? videoTrack.getCapabilities()
-            : {};
-
-        if (videoTrack && 'exposureMode' in capabilities) {
-            await videoTrack.applyConstraints({ advanced: [{ exposureMode: 'manual' }] });
-
-            if ('exposureTime' in capabilities) {
-                const { min, max, step } = capabilities.exposureTime;
-                updateExposureSlider(min, max, step);
-                await videoTrack.applyConstraints({
-                    advanced: [{ exposureTime: exposureValues[exposureSlider.value] }]
-                });
-            }
-            exposureSlider.onchange = () => {
-                if ('exposureTime' in capabilities) {
-                    videoTrack.applyConstraints({
-                        advanced: [{ exposureTime: parseFloat(exposureValues[exposureSlider.value]) }]
-                    });
-                }
-            };
-        } else {
-            const exposureElement = document.getElementById('cameraExposure');
-            if (exposureElement) exposureElement.remove();
-            showInfoPopup("exposureUnsupportedBrowser", "acknowledge");
-        }
-
-        liveVideo.onloadedmetadata = () => {
-            cameraOutputWidth = liveVideo.videoWidth;
-            cameraOutputHeight = liveVideo.videoHeight;
-            document.getElementById("stripeWidthRange").max = cameraOutputHeight;
-            document.getElementById("stripePlacementRange").max = cameraOutputHeight;
-            document.getElementById("stripePlacementRange").value = cameraOutputHeight * yPercentage;
-            document.getElementById("stripePlacementValue").textContent = getStripePositionRangeText();
-
-            if (liveVideo.videoWidth === 1280) {
-                document.getElementById("videoMainWindow").style.height = "214px";
-            }
-            if (videoElement === liveVideo) plotRGBLineFromCamera();
-        };
-
-        return true;
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
     } catch (error) {
         callError("cameraNotFoundError");
         return false;
     }
+
+    try {
+        const previous = liveVideo.srcObject;
+        if (previous && previous !== stream && typeof previous.getTracks === 'function') {
+            previous.getTracks().forEach(track => track.stop());
+        }
+    } catch (_) {}
+
+    liveVideo.srcObject = stream;
+    if (deviceId) cameraUsed = deviceId;
+
+    const videoTrack = stream.getVideoTracks()[0];
+    const capabilities = videoTrack && typeof videoTrack.getCapabilities === 'function'
+        ? videoTrack.getCapabilities()
+        : {};
+    const manualExposureReady = await configureOptionalManualExposure(videoTrack, capabilities);
+    if (!manualExposureReady) {
+        const exposureElement = document.getElementById('cameraExposure');
+        if (exposureElement) exposureElement.remove();
+    }
+
+    liveVideo.onloadedmetadata = () => {
+        cameraOutputWidth = liveVideo.videoWidth;
+        cameraOutputHeight = liveVideo.videoHeight;
+        document.getElementById("stripeWidthRange").max = cameraOutputHeight;
+        document.getElementById("stripePlacementRange").max = cameraOutputHeight;
+        document.getElementById("stripePlacementRange").value = cameraOutputHeight * yPercentage;
+        document.getElementById("stripePlacementValue").textContent = getStripePositionRangeText();
+
+        if (liveVideo.videoWidth === 1280) {
+            document.getElementById("videoMainWindow").style.height = "214px";
+        }
+        if (videoElement === liveVideo) plotRGBLineFromCamera();
+    };
+
+    return true;
 }
 
 /**

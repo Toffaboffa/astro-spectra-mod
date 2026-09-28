@@ -30,7 +30,8 @@ for (const required of ['spectra-1','vernier-gdx-svispl','pasco-ps-2600a','pasco
   assert.ok(ids.has(required), 'missing starter hardware profile: ' + required);
 }
 
-assert.ok(bootstrap.includes("global.fetch('../data/hardware_profiles.json')"), 'hardware UI must load the central catalog');
+assert.ok(bootstrap.includes("window.fetch('../data/hardware_profiles.json')"), 'hardware UI must load the central catalog with the browser global');
+assert.ok(!bootstrap.includes('global.fetch'), 'browser hardware loading must not depend on an undefined Node-style global');
 assert.ok(bootstrap.includes('<option value="">CUSTOM</option>'), 'manual CUSTOM hardware must remain available');
 assert.ok(!bootstrap.includes('<option value="spectra-1">KVANT - Spectra-1</option>'), 'known hardware options must not be hard-coded into the UI markup');
 assert.ok(bootstrap.includes("store.update('hardware'"), 'hardware profiles must continue to use canonical state.hardware');
@@ -38,6 +39,8 @@ assert.ok(bootstrap.includes("ids.fwhm && ids.fwhm.value !== '' ? Number(ids.fwh
 assert.ok(bootstrap.includes("profile.spectrometerResolutionFwhmNm != null ? String(profile.spectrometerResolutionFwhmNm) : ''"), 'unknown profile FWHM must render as a blank field');
 assert.ok(bootstrap.includes("profile.pixelResolutionNm != null ? String(profile.pixelResolutionNm) : ''"), 'unknown profile pixel scale must render as a blank field');
 assert.ok(bootstrap.includes("profile.gratingLinesPerMm != null ? String(profile.gratingLinesPerMm) : ''"), 'unknown profile grating density must render as a blank field');
+assert.ok(bootstrap.includes("if (value === null || value === undefined || value === '') return null;"), 'nullable hardware values must remain null instead of coercing to zero');
+assert.ok(!bootstrap.includes('Number.isFinite(Number(hw.spectrometerResolutionFwhmNm))'), 'summary/form rendering must not coerce null hardware values through Number(null)');
 assert.ok(readme.includes('KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu'), 'README must document the multi-spectrometer starter catalog');
 assert.ok(readme.includes('CUSTOM'), 'README must document custom spectrometer support');
 assert.ok(help.includes("const HELP_VERSION = '1.3.9';"), 'in-app HELP version must match v1.3.9 documentation');

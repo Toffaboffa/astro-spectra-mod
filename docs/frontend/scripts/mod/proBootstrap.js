@@ -2350,8 +2350,8 @@ function ensureHardwarePanel() {
   }
 
   function loadHardwareProfiles() {
-    if (typeof global.fetch !== 'function') return Promise.resolve([]);
-    return global.fetch('../data/hardware_profiles.json').then(function (response) {
+    if (typeof window.fetch !== 'function') return Promise.resolve([]);
+    return window.fetch('../data/hardware_profiles.json').then(function (response) {
       if (!response.ok) throw new Error('hardware-profile-catalog-load-failed-' + response.status);
       return response.json();
     }).then(function (catalog) {
@@ -2462,11 +2462,16 @@ function ensureHardwarePanel() {
     };
   }
 
+  function finiteHardwareValue(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : null;
+  }
+
   function normalizeHardware(raw) {
     const next = Object.assign({ profileId: '', profileName: '', appliedAt: Date.now() }, raw || {});
     ['spectralRangeMinNm','spectralRangeMaxNm','spectrometerResolutionFwhmNm','pixelResolutionNm','gratingLinesPerMm'].forEach(function (k) {
-      const v = Number(next[k]);
-      next[k] = Number.isFinite(v) ? v : null;
+      next[k] = finiteHardwareValue(next[k]);
     });
     return next;
   }
@@ -2474,12 +2479,17 @@ function ensureHardwarePanel() {
   function fillFormFromState() {
     const st = getStoreState();
     const hw = (st && st.hardware) ? st.hardware : {};
+    const rangeMin = finiteHardwareValue(hw.spectralRangeMinNm);
+    const rangeMax = finiteHardwareValue(hw.spectralRangeMaxNm);
+    const fwhm = finiteHardwareValue(hw.spectrometerResolutionFwhmNm);
+    const pixelRes = finiteHardwareValue(hw.pixelResolutionNm);
+    const grating = finiteHardwareValue(hw.gratingLinesPerMm);
     if (ids.preset) ids.preset.value = hw.profileId || '';
-    if (ids.rangeMin) ids.rangeMin.value = Number.isFinite(Number(hw.spectralRangeMinNm)) ? String(hw.spectralRangeMinNm) : '';
-    if (ids.rangeMax) ids.rangeMax.value = Number.isFinite(Number(hw.spectralRangeMaxNm)) ? String(hw.spectralRangeMaxNm) : '';
-    if (ids.fwhm) ids.fwhm.value = Number.isFinite(Number(hw.spectrometerResolutionFwhmNm)) ? String(hw.spectrometerResolutionFwhmNm) : '';
-    if (ids.pixelRes) ids.pixelRes.value = Number.isFinite(Number(hw.pixelResolutionNm)) ? String(hw.pixelResolutionNm) : '';
-    if (ids.grating) ids.grating.value = Number.isFinite(Number(hw.gratingLinesPerMm)) ? String(hw.gratingLinesPerMm) : '';
+    if (ids.rangeMin) ids.rangeMin.value = rangeMin != null ? String(rangeMin) : '';
+    if (ids.rangeMax) ids.rangeMax.value = rangeMax != null ? String(rangeMax) : '';
+    if (ids.fwhm) ids.fwhm.value = fwhm != null ? String(fwhm) : '';
+    if (ids.pixelRes) ids.pixelRes.value = pixelRes != null ? String(pixelRes) : '';
+    if (ids.grating) ids.grating.value = grating != null ? String(grating) : '';
     renderSummary();
   }
 
@@ -2495,12 +2505,17 @@ function ensureHardwarePanel() {
     if (!ids.summary) return;
     const st = getStoreState();
     const hw = (st && st.hardware) ? st.hardware : {};
+    const rangeMin = finiteHardwareValue(hw.spectralRangeMinNm);
+    const rangeMax = finiteHardwareValue(hw.spectralRangeMaxNm);
+    const fwhm = finiteHardwareValue(hw.spectrometerResolutionFwhmNm);
+    const pixelRes = finiteHardwareValue(hw.pixelResolutionNm);
+    const grating = finiteHardwareValue(hw.gratingLinesPerMm);
     const parts = [];
     if (hw.profileName) parts.push('Profile: ' + hw.profileName);
-    if (Number.isFinite(Number(hw.spectralRangeMinNm)) && Number.isFinite(Number(hw.spectralRangeMaxNm))) parts.push('Configured range: ' + hw.spectralRangeMinNm + '–' + hw.spectralRangeMaxNm + ' nm');
-    if (Number.isFinite(Number(hw.spectrometerResolutionFwhmNm))) parts.push('FWHM: <' + hw.spectrometerResolutionFwhmNm + ' nm');
-    if (Number.isFinite(Number(hw.pixelResolutionNm))) parts.push('Nominal pixel scale: ' + hw.pixelResolutionNm + ' nm/px');
-    if (Number.isFinite(Number(hw.gratingLinesPerMm))) parts.push('Grating: ' + hw.gratingLinesPerMm + ' lines/mm');
+    if (rangeMin != null && rangeMax != null) parts.push('Configured range: ' + rangeMin + '–' + rangeMax + ' nm');
+    if (fwhm != null) parts.push('FWHM: <' + fwhm + ' nm');
+    if (pixelRes != null) parts.push('Nominal pixel scale: ' + pixelRes + ' nm/px');
+    if (grating != null) parts.push('Grating: ' + grating + ' lines/mm');
     ids.summary.textContent = parts.length ? parts.join(' · ') : 'No hardware profile applied yet.';
   }
 
