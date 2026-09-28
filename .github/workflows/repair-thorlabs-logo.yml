@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m pip install --quiet pillow pymupdf requests
+      - run: python -m pip install --quiet pillow pymupdf requests opencv-python-headless numpy
       - name: Extract official Thorlabs wordmark
         shell: bash
         run: |
@@ -39,38 +39,50 @@ jobs:
           im=Image.open(io.BytesIO(pix.tobytes('png'))).convert('RGB')
           w,h=im.size
 
-          # Official brochure cover has the THORLABS wordmark in the bottom-right.
-          region=im.crop((int(w*0.55),int(h*0.72),w,h))
-          px=region.load()
-          mask=Image.new('L',region.size,0)
-          mp=mask.load()
-          for y in range(region.height):
-            for x in range(region.width):
-              rr,gg,bb=px[x,y]
-              # Keep visible ink and discard the white page.
-              if (255-rr)+(255-gg)+(255-bb) > 55:
-                mp[x,y]=255
+          import numpy as np, cv2
+          arr=np.array(im)
+          rr=arr[:,:,0].astype(np.int16)
+          gg=arr[:,:,1].astype(np.int16)
+          bb=arr[:,:,2].astype(np.int16)
 
-          box=mask.getbbox()
-          if not box:
-            raise SystemExit('No Thorlabs wordmark pixels found in official brochure region')
-          l,t,rgt,btm=box
-          crop=region.crop((max(0,l-18),max(0,t-18),min(region.width,rgt+18),min(region.height,btm+18))).convert('RGBA')
+          # Find the official red THORLABS wordmark anywhere on the cover instead of
+          # relying on a guessed page crop. Dilate horizontally so the letters become
+          # one logical component.
+          red=((rr>70)&((rr-gg)>20)&((rr-bb)>20)).astype(np.uint8)*255
+          joined=cv2.dilate(red,cv2.getStructuringElement(cv2.MORPH_RECT,(35,7)),iterations=1)
+          n,labels,stats,centroids=cv2.connectedComponentsWithStats(joined,8)
+          candidates=[]
+          for i in range(1,n):
+            x,y,cw,ch,area=stats[i]
+            if area<80 or cw<70 or ch<8: continue
+            # Logo candidate should be a wide, shallow red component, not the tall
+            # decorative red band on the left side of the brochure.
+            ratio=cw/max(1,ch)
+            if ratio<2.0: continue
+            score=cw*ch + x*0.15 + y*0.05
+            candidates.append((score,x,y,cw,ch,area,ratio))
+          print('THORLABS_CANDIDATES',sorted(candidates,reverse=True)[:12])
+          if not candidates:
+            raise SystemExit('No plausible red Thorlabs wordmark candidate found')
 
-          # Turn near-white page pixels transparent while preserving the official wordmark shape.
+          _,x,y,cw,ch,area,ratio=max(candidates)
+          pad_x=max(18,int(cw*0.06)); pad_y=max(14,int(ch*0.35))
+          region=im.crop((max(0,x-pad_x),max(0,y-pad_y),min(w,x+cw+pad_x),min(h,y+ch+pad_y))).convert('RGBA')
+
+          # Make the white page transparent while preserving the official red mark.
           data=[]
-          for rr,gg,bb,aa in crop.getdata():
-            d=(255-rr)+(255-gg)+(255-bb)
+          for pr,pg,pb,pa in region.getdata():
+            d=(255-pr)+(255-pg)+(255-pb)
             if d < 45:
               data.append((255,255,255,0))
             else:
-              alpha=max(0,min(255,int((d-30)*3.0)))
-              data.append((rr,gg,bb,alpha))
-          crop.putdata(data)
-          abox=crop.getchannel('A').getbbox()
+              alpha=max(0,min(255,int((d-30)*3.2)))
+              data.append((pr,pg,pb,alpha))
+          region.putdata(data)
+          abox=region.getchannel('A').getbbox()
           if not abox:
             raise SystemExit('Thorlabs transparency extraction produced no logo')
-          crop=crop.crop(abox)
+          crop=region.crop(abox)
           crop.thumbnail((280,88),Image.Resampling.LANCZOS)
           canvas=Image.new('RGBA',(320,120),(0,0,0,0))
           canvas.alpha_composite(crop,((320-crop.width)//2,(120-crop.height)//2))
