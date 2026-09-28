@@ -51,9 +51,22 @@ jobs:
             raise SystemExit('No clean Thorlabs wordmark mirror could be downloaded')
           print('THORLABS_SOURCE_SELECTED',chosen)
           im=Image.open(io.BytesIO(content)).convert('RGBA')
+          # Mirrors may wrap the mark in an opaque white canvas. Convert only that
+          # neutral page background to transparency before trimming the wordmark.
+          pixels=[]
+          for pr,pg,pb,pa in im.getdata():
+            if pa == 0:
+              pixels.append((pr,pg,pb,0))
+              continue
+            if min(pr,pg,pb) > 238 and (max(pr,pg,pb)-min(pr,pg,pb)) < 12:
+              pixels.append((255,255,255,0))
+            else:
+              pixels.append((pr,pg,pb,pa))
+          im.putdata(pixels)
           abox=im.getchannel('A').getbbox()
-          if abox:
-            im=im.crop(abox)
+          if not abox:
+            raise SystemExit('Downloaded Thorlabs mirror contains no visible wordmark')
+          im=im.crop(abox)
           im.thumbnail((280,88),Image.Resampling.LANCZOS)
           canvas=Image.new('RGBA',(320,120),(0,0,0,0))
           canvas.alpha_composite(im,((320-im.width)//2,(120-im.height)//2))
