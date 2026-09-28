@@ -125,7 +125,7 @@ Hardware profiles are also separate from instrument-response correction. Selecti
 ### CALIBRATE
 Uses the existing SPECTRA calibration engine through the PRO shell. It supports editable multipoint pixel ↔ wavelength anchors, fitting, file load/save, fit diagnostics, and calibration-quality information.
 
-The startup calibration reminder appears only after the hardware startup step has completed. Its **Remember calibration** checkbox stores only the choice to suppress that reminder in browser `localStorage`; it does not and cannot silently reopen a local calibration file. Manual calibration controls remain available at all times.
+The startup calibration reminder appears only after the hardware startup step has completed. **Remember calibration** now persists the validated calibration point set in browser `localStorage`. On a later load SPECTRA PRO restores those points through the canonical calibration engine, which recomputes the fit/coefficients and republishes the normal calibration state. The original local calibration file is not retained or reopened. Legacy/invalid stored calibration data is discarded and the ordinary Not Calibrated reminder is shown instead. Temporary bundled-sample calibration is never allowed to overwrite the remembered user calibration.
 
 ### LAB
 Runs spectral analysis in a Web Worker so the UI remains responsive. LAB libraries load automatically on first entry.
