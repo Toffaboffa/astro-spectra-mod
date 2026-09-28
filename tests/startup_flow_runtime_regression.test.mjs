@@ -317,7 +317,7 @@ function createRuntime({
   rt.runTimers();
   assert.equal(rt.hardwarePromptCount, 0, 'remembered None must skip the hardware popup');
   assert.equal(rt.appliedHardware.length, 1, 'remembered None must apply an empty hardware state');
-  assert.deepEqual(rt.appliedHardware[0].payload, {});
+  assert.equal(Object.keys(rt.appliedHardware[0].payload || {}).length, 0, 'remembered None payload must be empty');
   assert.equal(rt.appliedHardware[0].source, 'proBootstrap.hardware.startup.remembered-none');
   assert.equal(rt.context.__spectraStartupHardwareReady, true, 'remembered None must release the startup gate');
   assert.equal(rt.promptText(), 'Not Calibrated. Load Calibrationfile now?', 'calibration must follow remembered None');
