@@ -2590,7 +2590,8 @@ function ensureHardwarePanel() {
   }
 
   function hardwareStartupMetric(label, value) {
-    return '<div class="sp-startup-hardware__metric"><span>' + escapeHtml(label) + '</span><b>' + escapeHtml(value) + '</b></div>';
+    const safeValue = escapeHtml(value);
+    return '<div class="sp-startup-hardware__metric"><span>' + escapeHtml(label) + '</span><b title="' + safeValue + '">' + safeValue + '</b></div>';
   }
 
   function startupHardwareLogoUsesWhite(profile) {
