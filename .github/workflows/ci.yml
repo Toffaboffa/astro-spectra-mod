@@ -58,6 +58,8 @@ jobs:
         run: node tests/ai_token_budget.test.mjs
       - name: Run UI consolidation regressions
         run: node tests/ui_consolidation.test.mjs
+      - name: Run i18n runtime regressions
+        run: node tests/i18n_runtime_regression.test.mjs
       - name: Run export reproducibility regressions
         run: node tests/export_reproducibility.test.mjs
       - name: Run PDF report contract regressions
