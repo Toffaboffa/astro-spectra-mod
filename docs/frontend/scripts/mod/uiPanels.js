@@ -1,8 +1,9 @@
 (function (global) {
   'use strict';
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = 'v1.4';
-  sp.version = VERSION;
+  const APP_VERSION = '1.4.0';
+  const DISPLAY_VERSION = 'v' + APP_VERSION;
+  sp.version = APP_VERSION;
 
   function createModeTabs(container) {
     if (!container) return null;
@@ -160,8 +161,8 @@
       badge.className = 'sp-version-badge';
       host.appendChild(badge);
     }
-    badge.textContent = VERSION;
-    badge.title = 'SPECTRA PRO ' + VERSION;
+    badge.textContent = DISPLAY_VERSION;
+    badge.title = 'SPECTRA PRO ' + DISPLAY_VERSION;
   }
 
   function installVersionBadgeCss() {
