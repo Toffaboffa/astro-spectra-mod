@@ -130,7 +130,7 @@ assert.ok(bootstrap.includes("if (value === null || value === undefined || value
 assert.ok(!bootstrap.includes('Number.isFinite(Number(hw.spectrometerResolutionFwhmNm))'), 'summary/form rendering must not coerce null hardware values through Number(null)');
 assert.ok(readme.includes('KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu'), 'README must document the multi-spectrometer starter catalog');
 assert.ok(readme.includes('CUSTOM'), 'README must document custom spectrometer support');
-assert.ok(help.includes("const HELP_VERSION = '1.4';"), 'in-app HELP version must match v1.4 documentation');
+assert.ok(help.includes("const HELP_VERSION = '1.4.0';"), 'in-app HELP version must match canonical v1.4.0 documentation');
 assert.ok(help.includes('KVANT, Vernier, PASCO, Ocean Optics, Thorlabs, Avantes, StellarNet and Hamamatsu'), 'in-app HELP must document the multi-spectrometer starter catalog');
 assert.ok(help.includes('instrument-response correction requires a separate compatible measured response profile'), 'HELP must keep hardware metadata separate from response correction');
 const thorlabsLogoSource = (hardwareSources.logos || []).find((item) => item.manufacturer === 'Thorlabs');
