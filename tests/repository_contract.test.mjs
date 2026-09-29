@@ -31,6 +31,7 @@ const spectraproPage = read('docs/frontend/pages/spectrapro.html');
 assert.ok(spectraproPage.includes('?v=1.4.0'), 'canonical application page must publish 1.4.0 cache keys');
 assert.ok(spectraproPage.includes('calibrationScript.js?v=1.4.0'), 'canonical calibration engine must use the v1.4 release cache key');
 assert.ok(!spectraproPage.includes('phase1-bridge'), 'duplicate calibration bridge must not return');
+assert.ok(!spectraproPage.includes('languageScript.js'), 'canonical application page must not load the retired query-parameter language loader');
 
 const lateUiVersionSources = [
   'docs/frontend/scripts/mod/uiTweaksV203.js',
@@ -42,6 +43,14 @@ for (const relative of lateUiVersionSources) {
   assert.ok(source.includes('1.4'), relative + ' must carry the v1.4 app version');
   assert.ok(!source.includes('3.0.8'), relative + ' must not downgrade the runtime app version to v3.0.8');
 }
+const stateStore = read('docs/frontend/scripts/mod/stateStore.js');
+const i18nUi = read('docs/frontend/scripts/mod/i18nUi.js');
+assert.ok(stateStore.includes("script.src = '../scripts/mod/i18nUi.js?v=' + AI_ASSET_VERSION;"), 'modern EN/SV interface must remain loaded through the canonical state-store asset loader');
+assert.ok(i18nUi.includes("currentLanguage = 'en';"), 'modern i18n must keep English as the initial interface language');
+assert.ok(i18nUi.includes("String(lang || '').toLowerCase() === 'sv' ? 'sv' : 'en'"), 'modern i18n must keep the explicit EN/SV switch');
+assert.ok(!i18nUi.includes('URLSearchParams'), 'modern i18n must not rewrite query parameters');
+assert.ok(!i18nUi.includes('window.location') && !i18nUi.includes('global.location'), 'modern i18n must not redirect or replace the current URL');
+
 const calibrationEngine = read('docs/frontend/scripts/calibrationScript.js');
 assert.ok(calibrationEngine.includes('commitCalibrationStateToSpectraPro'), 'calibration engine must directly commit canonical PRO state');
 assert.ok(calibrationEngine.includes("sp.store.update('calibration', canonical"), 'calibration engine must not depend on an event listener to populate PRO store');
@@ -82,7 +91,9 @@ const removedPlaceholders = [
   'docs/frontend/scripts/mod/smoothing.js', 'docs/frontend/scripts/mod/speciesSearch.js',
   'docs/frontend/workers/autoMode.js', 'docs/frontend/workers/bandMatcher.js',
   'docs/frontend/workers/downsample.js', 'docs/frontend/workers/offsetEstimate.js',
-  'docs/frontend/styles/mod-panels.css.bak'
+  'docs/frontend/styles/mod-panels.css.bak',
+  'docs/frontend/scripts/languageScript.js',
+  'docs/frontend/languages/en.json', 'docs/frontend/languages/sv.json'
 ];
 for (const relative of removedPlaceholders) assert.equal(fs.existsSync(path.join(root, relative)), false, relative + ' must not return as dead scaffold');
 
