@@ -1344,6 +1344,113 @@ function testAtomicAutoTuneHardCapSeparation() {
   }), 'The 3 nm confirmation pass must remain auditable after accepted-hit filtering');
 }
 
+function testPrimaryEvidenceGate() {
+  const pipeline = worker.SPECTRA_PRO_analysisPipeline;
+  assert.ok(pipeline && typeof pipeline.qualifyPrimaryEvidence === 'function', 'Primary-evidence gate must be exposed by the shared analysis pipeline');
+
+  const singleExtrapolated = {
+    ok: true,
+    calibrated: true,
+    presetId: 'smart-gastube',
+    mode: 'lab',
+    elementScores: [{
+      element: 'O',
+      mode: 'atomic',
+      evidenceModel: 'atomic-fingerprint-v1+auto',
+      scoreSharePct: 25,
+      likelyPct: 25,
+      matchedPeaks: 1,
+      diagnosticMatchedPeaks: 1,
+      diagnosticExpected: 3
+    }],
+    winnerBreakdown: {
+      primaryEmitter: 'O',
+      primaryLikelyPct: 25,
+      evidenceModel: 'atomic-fingerprint-v1+auto'
+    },
+    topHits: [{
+      element: 'O',
+      observedNm: 844.582,
+      referenceNm: 844.650,
+      deltaNm: -0.068,
+      extrapolated: true
+    }],
+    calibrationDiagnostics: {
+      anchorWavelengthCoverageNm: { min: 388.86, max: 837.76 }
+    },
+    instrumentResolutionModel: {
+      effectiveResolutionFwhmNm: 1.8
+    },
+    measurementQuality: {
+      overallStatus: 'poor',
+      mainLimitation: {
+        code: 'calibration',
+        status: 'poor',
+        reason: 'analysis-region-calibration-extrapolation'
+      }
+    }
+  };
+
+  const rejected = pipeline.qualifyPrimaryEvidence(singleExtrapolated);
+  assert.equal(rejected.model, 'primary-evidence-gate-v1');
+  assert.equal(rejected.applicable, true);
+  assert.equal(rejected.reportable, false, 'A single extrapolated O line must not be promoted to Best Match');
+  assert.equal(rejected.reason, 'single-line-evidence-in-calibration-extrapolation');
+  assert.equal(rejected.acceptedHitCount, 1);
+  assert.equal(rejected.independentEvidenceCount, 1);
+  assert.equal(rejected.inAnchorIndependentEvidenceCount, 0);
+  assert.equal(rejected.extrapolatedHitCount, 1);
+
+  const coherentHelium = {
+    ok: true,
+    calibrated: true,
+    presetId: 'smart-gastube',
+    mode: 'lab',
+    elementScores: [{
+      element: 'He',
+      mode: 'atomic',
+      evidenceModel: 'atomic-fingerprint-v1+auto',
+      scoreSharePct: 54,
+      likelyPct: 54,
+      matchedPeaks: 3,
+      diagnosticMatchedPeaks: 2,
+      diagnosticExpected: 4
+    }],
+    winnerBreakdown: {
+      primaryEmitter: 'He',
+      primaryLikelyPct: 54,
+      evidenceModel: 'atomic-fingerprint-v1+auto'
+    },
+    topHits: [
+      { element: 'He', observedNm: 447.2, referenceNm: 447.148, deltaNm: 0.052, extrapolated: false },
+      { element: 'He', observedNm: 587.6, referenceNm: 587.562, deltaNm: 0.038, extrapolated: false },
+      { element: 'He', observedNm: 667.9, referenceNm: 667.815, deltaNm: 0.085, extrapolated: false }
+    ],
+    calibrationDiagnostics: {
+      anchorWavelengthCoverageNm: { min: 388.86, max: 837.76 }
+    },
+    instrumentResolutionModel: {
+      effectiveResolutionFwhmNm: 1.8
+    },
+    measurementQuality: {
+      overallStatus: 'moderate',
+      mainLimitation: {
+        code: 'calibration',
+        status: 'moderate',
+        reason: 'calibration-fit-residual-not-independent'
+      }
+    }
+  };
+
+  const accepted = pipeline.qualifyPrimaryEvidence(coherentHelium);
+  assert.equal(accepted.reportable, true, 'Coherent multi-line in-anchor evidence should remain eligible for Best Match');
+  assert.equal(accepted.reason, 'coherent-multi-line-evidence');
+  assert.equal(accepted.acceptedHitCount, 3);
+  assert.equal(accepted.independentEvidenceCount, 3);
+  assert.equal(accepted.inAnchorIndependentEvidenceCount, 3);
+  assert.equal(accepted.extrapolatedHitCount, 0);
+}
+
 function testSharedAnalysisInfrastructure() {
   const math = worker.SPECTRA_PRO_spectrumMath;
   const presets = worker.SPECTRA_PRO_presetResolver;
@@ -1593,7 +1700,8 @@ const groups = [
   ['ASTRO radial velocity', testRadialVelocity],
   ['shared analysis infrastructure', testSharedAnalysisInfrastructure],
   ['atomic auto-tune diagnostic anchor', testAtomicAutoTuneDiagnosticAnchor],
-  ['atomic auto-tune hard-cap separation', testAtomicAutoTuneHardCapSeparation]
+  ['atomic auto-tune hard-cap separation', testAtomicAutoTuneHardCapSeparation],
+  ['primary Best Match evidence gate', testPrimaryEvidenceGate]
 ];
 
 groups.forEach(function (entry) {
