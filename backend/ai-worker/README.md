@@ -15,7 +15,7 @@ The browser never receives `OPENAI_API_KEY`. SPECTRA PRO sends its compact `spec
 - SPECTRA PRO schema and array-size validation
 - no request/payload logging
 - `Cache-Control: no-store`
-- context-aware scientific prompt contract `spectra-pro-interpretation/v6`
+- context-aware scientific prompt contract `spectra-pro-interpretation/v11`
 - strict response contract `spectra-pro-ai-response/v1`
 - account-level Secrets Store binding `OPENAI_API_KEY` -> secret `SpectraPRO`
 - OpenAI Responses API with Structured Outputs (`text.format` JSON schema)
@@ -41,6 +41,21 @@ is capped at 9 kB and approximately 3500 estimated input tokens including instru
 and response schema. Output is targeted at 100–170 words without repeated conclusions.
 
 `GET /health` returns a small non-secret health response with application, model and contract versions. It does not expose or test the secret value.
+
+## Continuous integration
+
+The repository CI runs this Worker as an actual Node/Cloudflare package rather than using the old placeholder Python job. The backend job uses Node.js 20, installs the Worker dependencies, runs the local request/contract/connector tests, and then executes `wrangler deploy --dry-run` through `npm run check`.
+
+The backend tests do **not** call the live OpenAI API and do not require production Cloudflare secrets. OpenAI connector behavior is tested with mocked `fetch` responses; the Wrangler step validates that the Worker and its configuration can build for deployment without publishing anything.
+
+Local equivalent:
+
+```bash
+cd backend/ai-worker
+npm install --no-audit --no-fund
+npm test
+npm run check
+```
 
 ## OpenAI configuration
 
