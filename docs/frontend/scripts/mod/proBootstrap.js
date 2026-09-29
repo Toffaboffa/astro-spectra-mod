@@ -3583,10 +3583,19 @@ function renderLabPanel() {
       '</div>';
     }).join('');
     const winner = elementScores[0] || null;
+    const primaryEvidence = winnerBreakdown && winnerBreakdown.primaryEvidence && typeof winnerBreakdown.primaryEvidence === 'object'
+      ? winnerBreakdown.primaryEvidence
+      : null;
+    const winnerReportable = !(primaryEvidence && primaryEvidence.applicable === true && primaryEvidence.reportable === false);
     const winnerText = winner
-      ? ('<div class="sp-es-summary" title="Most likely winner according to the current Smart score.">Winner: <b>' + escapeHtml(formatChemicalLabel(String(winner.element || '?'))) + '</b> • ' + escapeHtml(String(Math.max(1, Math.min(99, Math.round(Number(winner.likelyPct || 0))))) + '%') +
+      ? ('<div class="sp-es-summary" title="' + escapeHtml(winnerReportable
+          ? 'Best current Smart-match supported by the primary-evidence gate.'
+          : ('Top-ranked candidate only. Best Match is not established: ' + String(primaryEvidence.reason || 'insufficient-evidence'))) + '">' +
+         (winnerReportable ? 'Best match: ' : 'Top candidate: ') +
+         '<b>' + escapeHtml(formatChemicalLabel(String(winner.element || '?'))) + '</b> • ' + escapeHtml(String(Math.max(1, Math.min(99, Math.round(Number(winner.likelyPct || 0))))) + '%') +
          ' · Ep ' + escapeHtml(String(Number.isFinite(Number(winner.explainedPeaksPct)) ? Number(winner.explainedPeaksPct).toFixed(0) : '0')) + '%'
          + ' · Ei ' + escapeHtml(String(Number.isFinite(Number(winner.explainedIntensityPct)) ? Number(winner.explainedIntensityPct).toFixed(0) : '0')) + '%'
+         + (winnerReportable ? '' : ' · Insufficient evidence for Best Match')
          + '</div>')
       : '';
     var breakdownText = '';
@@ -3600,8 +3609,11 @@ function renderLabPanel() {
       var bg = Array.isArray(winnerBreakdown.backgroundComponents) ? winnerBreakdown.backgroundComponents.slice(0, 2).map(function (it) {
         return formatChemicalLabel(String(it.element || '?'));
       }).join(', ') : '';
-      breakdownText = '<div class="sp-hit-meta sp-hit-meta--qc" title="Smart summary: primary emitter, secondary contributors, possible bands and background.">' +
-        'Primary: ' + escapeHtml(formatChemicalLabel(String(winnerBreakdown.primaryEmitter || '?'))) +
+      breakdownText = '<div class="sp-hit-meta sp-hit-meta--qc" title="' + escapeHtml(winnerReportable
+          ? 'Smart summary: qualified primary emitter, secondary contributors, possible bands and background.'
+          : ('Smart summary: top-ranked candidate is not qualified as Best Match: ' + String(primaryEvidence && primaryEvidence.reason || 'insufficient-evidence'))) + '">' +
+        (winnerReportable ? 'Primary: ' : 'Top candidate: ') + escapeHtml(formatChemicalLabel(String(winnerBreakdown.primaryEmitter || '?'))) +
+        (winnerReportable ? '' : ' · Best Match not established') +
         (secondary ? (' · Secondary: ' + escapeHtml(secondary)) : '') +
         (bands ? (' · Bands: ' + escapeHtml(bands)) : '') +
         (bg ? (' · Bg: ' + escapeHtml(bg)) : '') +
