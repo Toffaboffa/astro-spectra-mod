@@ -607,6 +607,12 @@ assert.ok(!exportUi.includes("if (Array.isArray(a.rawTopHits) && a.rawTopHits.le
 assert.ok(!exportUi.includes('instrument/sampling resolution') && !exportUi.includes('instrument-/samplingupplösningen'), 'PDF prose must not conflate instrument FWHM with calibrated sampling');
 assert.ok(exportUi.includes('Source identity: ') && exportUi.includes('Källidentitet: '), 'deterministic abstract must use persisted source identity when available');
 
+assert.ok(uiPanels.includes("'Top candidate: '") && uiPanels.includes('Insufficient evidence for Best Match'), 'LAB summary must distinguish a gated top candidate from Best Match');
+assert.ok(bootstrap.includes("'Top candidate: '") && bootstrap.includes('Best Match not established'), 'primary result rendering must not call a gated candidate Primary/Best Match');
+assert.ok(exportUi.includes('primaryEvidenceAssessment') && exportUi.includes('Best Match is not established because'), 'deterministic report must carry the Best Match gate');
+assert.ok(i18n.includes("'Top candidate': 'Högst rankad kandidat'"), 'Best Match gate status must remain translatable to Swedish');
+assert.ok(i18n.includes("'Insufficient evidence for Best Match': 'Otillräcklig evidens för Bästa matchning'"), 'Best Match rejection text must remain translatable');
+
 assert.ok(helpUi.includes("const HELP_VERSION = '1.4';"), 'HELP must publish the same v1.4 release version as the application');
 for (const term of [
   'Live', 'Auto Pause', 'Saturation', 'Overlays → Diffraction', 'Overlays → Extrapolation',
