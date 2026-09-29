@@ -74,6 +74,26 @@ assert.ok(bootstrap316.includes('class="sp-core-settings-row sp-core-settings-ro
 assert.ok(!bootstrap316.includes('sp-form-grid sp-form-grid--core-8'), 'obsolete CORE 8-column markup must not return');
 assert.ok(uiTweaks.includes('badge.textContent = VERSION;'), 'version badge write must remain tied to the release version');
 
+const ciWorkflow = read('.github/workflows/ci.yml');
+const backendJobStart = ciWorkflow.indexOf('  backend-tests:');
+const frontendJobStart = ciWorkflow.indexOf('  frontend-smoke:');
+assert.ok(backendJobStart >= 0 && frontendJobStart > backendJobStart, 'CI must define a dedicated backend-tests job');
+const backendCi = ciWorkflow.slice(backendJobStart, frontendJobStart);
+assert.ok(backendCi.includes('actions/setup-node@v4'), 'backend CI must use Node rather than the obsolete Python placeholder');
+assert.ok(backendCi.includes('node-version: "20"'), 'backend CI must run on Node 20');
+assert.ok(backendCi.includes('working-directory: backend/ai-worker'), 'backend CI must execute inside the Cloudflare Worker package');
+assert.ok(backendCi.includes('npm install --no-audit --no-fund'), 'backend CI must install Worker dependencies');
+assert.ok(backendCi.includes('npm test'), 'backend CI must run Worker unit/contract tests');
+assert.ok(backendCi.includes('npm run check'), 'backend CI must run Wrangler dry-run build validation');
+assert.ok(!backendCi.includes('setup-python') && !backendCi.includes('pytest'), 'backend CI must not regress to the old Python/pytest no-op job');
+
+const backendPackage = JSON.parse(read('backend/ai-worker/package.json'));
+assert.equal(backendPackage.scripts.test, 'node --test tests/*.test.mjs', 'AI Worker package must expose its backend test suite');
+assert.equal(backendPackage.scripts.check, 'wrangler deploy --dry-run', 'AI Worker check must validate the Cloudflare build with Wrangler');
+assert.ok(fs.existsSync(path.join(root, 'backend/ai-worker/tests/worker.test.mjs')), 'backend Worker request tests must remain in the repository');
+assert.ok(fs.existsSync(path.join(root, 'backend/ai-worker/tests/contracts.test.mjs')), 'backend prompt/response contract tests must remain in the repository');
+assert.ok(fs.existsSync(path.join(root, 'backend/ai-worker/tests/openaiClient.test.mjs')), 'backend OpenAI connector tests must remain in the repository');
+
 const aiWorker = read('backend/ai-worker/src/index.js');
 assert.ok(aiWorker.includes("appVersion: '1.4.0'"), 'AI Worker responses must expose application release 1.4.0');
 const aiWorkerPackage = JSON.parse(read('backend/ai-worker/package.json'));
