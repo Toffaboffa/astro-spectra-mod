@@ -7,23 +7,21 @@ on:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend/ai-worker
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: "3.11"
-      - name: Backend smoke / tests (skip if no backend)
-        shell: bash
-        run: |
-          set -e
-          if [ ! -d backend ]; then
-            echo "No backend/ directory yet. Skipping backend-tests."
-            exit 0
-          fi
-          cd backend
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f pytest.ini ] || [ -d tests ]; then pytest -q; else echo "No backend tests found."; fi
+          node-version: "20"
+      - name: Install Worker dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run Worker unit and contract tests
+        run: npm test
+      - name: Validate Cloudflare Worker build
+        run: npm run check
 
   frontend-smoke:
     runs-on: ubuntu-latest
