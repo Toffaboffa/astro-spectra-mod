@@ -1,6 +1,6 @@
 # SPECTRA PRO
 
-**Current UI version: v1.4**
+**Current application version: v1.4.0**
 
 SPECTRA PRO is a browser-based spectroscopy workstation built on the original SPECTRA recording workflow. It keeps the direct camera → stripe → spectrum interaction model, then adds calibration, worker-based analysis, data-quality diagnostics, source-specific spectral interpretation, optional AI interpretation, an integrated help/manual system, and runtime English/Swedish UI switching.
 
@@ -681,7 +681,7 @@ When modifying the application:
 
 ## Documentation status
 
-`README.md` describes the current high-level v3.0.1 architecture and visible functionality.
+`README.md` describes the current high-level v1.4.0 architecture and visible functionality. Runtime application metadata and analysis-worker metadata both use the canonical semantic version `1.4.0`; cache-busting suffixes such as `-versioning-1` are asset revisions, not application versions.
 
 `FunctionSpec.md` is the synchronized implementation and reproducibility contract. It distinguishes **IMPLEMENTED**, **EXPERIMENTAL** and **PLANNED** behavior and records the deterministic validation boundary.
 
@@ -689,8 +689,7 @@ When modifying the application:
 
 The completed stages 1–16 implementation roadmap is preserved under
 `docs/archive/CODEX_ANALYSIS_ASTRO_ROADMAP_COMPLETED.md`. `V3_RELEASE_PLAN.md`
-records the final release gates. Version 3.0.0 must not be tagged until the deferred
-desktop runtime acceptance has been completed manually.
+is preserved as historical planning material and retains its original 3.0.0 release-gate language; it does not define the current application version.
 
 ---
 
