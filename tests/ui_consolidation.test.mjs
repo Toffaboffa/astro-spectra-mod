@@ -566,6 +566,24 @@ assert.ok(spectrapro.includes('imageLoadingScript.js?v=1.4.0-provenance-1'), 'pu
 assert.ok(spectrapro.includes('framePreview.js?v=1.4.0-source-ui-1'), 'published frame preview must use the source-identity UI cache key');
 assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=1.4.0-best-match-gate-1'"), 'worker client must load the refreshed Best Match gate worker shell');
 assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.4.0-best-match-gate-1';"), 'dynamic export/AI/i18n modules must use the Best Match gate cache key');
+assert.ok(!spectrapro.includes('languageScript.js'), 'canonical app must not load the retired query-parameter language loader');
+assert.ok(stateStore.includes("script.id = 'spI18nUiLoader';") && stateStore.includes("script.src = '../scripts/mod/i18nUi.js?v=' + AI_ASSET_VERSION;"), 'modern i18n must remain dynamically loaded by stateStore');
+assert.ok(i18n.includes("currentLanguage = 'en';") && i18n.includes("data-lang=\"en\"") && i18n.includes("data-lang=\"sv\""), 'modern i18n must retain the EN/SV switch with English as initial language');
+assert.ok(!i18n.includes('URLSearchParams') && !i18n.includes('window.location') && !i18n.includes('global.location'), 'modern i18n must not redirect or rewrite query parameters');
+for (const pair of [
+  ["'Pause': 'Pausa'", 'Pause'],
+  ["'Refresh': 'Uppdatera'", 'Refresh'],
+  ["'Load Image': 'Ladda bild'", 'Load Image'],
+  ["'Compare images': 'Jämför bilder'", 'Compare images'],
+  ["'Stripe Width': 'Remsbredd'", 'Stripe Width'],
+  ["'Stripe Place': 'Remsposition'", 'Stripe Place'],
+  ["'Adjust Exposure:': 'Justera exponering:'", 'Adjust Exposure'],
+  ["'Reference Graph': 'Referensgraf'", 'Reference Graph'],
+  ["'Add Reference': 'Lägg till referens'", 'Add Reference']
+]) {
+  assert.ok(i18n.includes(pair[0]), 'modern i18n must translate core static control: ' + pair[1]);
+}
+
 assert.ok(workerClient.includes('analysisNext.rawMatchOffsetNm = Number.isFinite(rawOffsetValue) ? rawOffsetValue : null;'), 'worker results must preserve the broader matcher offset separately');
 assert.ok(workerClient.includes('analysisNext.offsetBasis = msg.payload.offsetBasis') && workerClient.includes("? 'matcher-residuals' : null);"), 'worker results must persist wavelength-offset provenance and clear it when no offset exists');
 assert.ok(workerClient.includes('analysisNext.detectedPeaks = detectedPeaks;'), 'worker results must persist the canonical detected peak list in analysis state');
