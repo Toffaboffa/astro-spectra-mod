@@ -23,7 +23,7 @@ importScripts(
   './astroAnalysis.js?v=3.0.1',
   './stellarClassification.js?v=3.0.1',
   './referenceComparison.js?v=3.0.1',
-  './analysisPipeline.js?v=3.0.1-diffraction-1',
+  './analysisPipeline.js?v=1.4.0-best-match-gate-1',
   './plasmaProfiles.js?v=1.4.0-gastube-1',
   './molecularEvidencePatch.js?v=1.4.0-gastube-1',
   './atomicProfiles.js?v=3.0.1',
