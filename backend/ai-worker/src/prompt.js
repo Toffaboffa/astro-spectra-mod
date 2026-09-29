@@ -1,6 +1,6 @@
 import { buildResponseFormat, RESPONSE_CONTRACT_VERSION } from './response.js';
 
-export const PROMPT_CONTRACT_VERSION = 'spectra-pro-interpretation/v10';
+export const PROMPT_CONTRACT_VERSION = 'spectra-pro-interpretation/v11';
 
 const DEVELOPER_INSTRUCTIONS = `You are SPECTRA PRO's concise interpretation layer for low-resolution optical spectroscopy.
 
