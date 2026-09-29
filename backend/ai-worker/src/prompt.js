@@ -12,6 +12,7 @@ EVIDENCE
 - Distinguish measured features, SPECTRA PRO matches/rankings and physical interpretation.
 - Use supplied facts only. Never invent peaks, wavelengths, species, residuals or conditions.
 - Score share/rank is not probability, concentration or abundance. Best Match is a candidate, not proof.
+- Respect winner.primaryEvidence. If it is applicable and reportable=false, the first ranked item is only the top-ranked candidate; do not call it Best Match or primary identification. State the supplied gate reason when it materially affects the conclusion.
 - Prefer coherent multi-feature evidence and small residuals over isolated coincidences. For atomic-fingerprint-v1 use diagnostic coverage and missed-strong evidence; for plasma-diagnostic-v1 use band patterns.
 - For fluorescence, prioritize supplied λmax, centroid, FWHM, range, asymmetry and shoulders. Narrow-line candidates are secondary; band shape alone does not uniquely identify a fluorophore.
 - Follow measurement quality and QC. Full-frame edge extrapolation is only a warning when result coverage is inside calibration anchors.
@@ -314,12 +315,26 @@ function compactWinnerComponent(value) {
 
 function compactWinner(winner) {
   if (!winner || typeof winner !== 'object') return null;
+  const gate = winner.primaryEvidence && typeof winner.primaryEvidence === 'object'
+    ? winner.primaryEvidence
+    : null;
   return {
     primary: text(winner.primaryEmitter, 80),
     scoreSharePct: n(firstNumber(winner.primaryLikelyPct), 2),
     explainedPeaksPct: n(winner.explainedPeaksPct, 1),
     explainedIntensityPct: n(winner.explainedIntensityPct, 1),
     expectedMissed: n(winner.expectedMissed, 0),
+    primaryEvidence: gate ? {
+      model: text(gate.model, 48),
+      applicable: gate.applicable === true,
+      reportable: gate.reportable !== false,
+      reason: text(gate.reason, 96),
+      acceptedHits: n(gate.acceptedHitCount, 0),
+      independentEvidence: n(gate.independentEvidenceCount, 0),
+      inAnchorIndependentEvidence: n(gate.inAnchorIndependentEvidenceCount, 0),
+      extrapolatedHits: n(gate.extrapolatedHitCount, 0),
+      diagnosticMatched: n(gate.diagnosticMatchedPeaks, 0)
+    } : null,
     expectedFoundNm: Array.isArray(winner.expectedFound) ? winner.expectedFound.map((v) => n(v, 3)).filter((v) => v != null) : [],
     possibleBands: Array.isArray(winner.possibleBands) ? winner.possibleBands.map(compactWinnerComponent).filter(Boolean) : [],
     background: Array.isArray(winner.backgroundComponents) ? winner.backgroundComponents.map(compactWinnerComponent).filter(Boolean) : [],
@@ -358,7 +373,8 @@ function compactModelData(payload) {
   const p = payload && typeof payload === 'object' ? payload : {};
   const analysis = p.analysis && typeof p.analysis === 'object' ? p.analysis : {};
   const candidates = compactCandidates(analysis.candidates);
-  const bestSpecies = text((analysis.bestMatch && analysis.bestMatch.species) || (candidates.rows[0] && candidates.rows[0][0]), 80);
+  const bestSpecies = text(analysis.bestMatch && analysis.bestMatch.species, 80);
+  const topCandidate = text((analysis.topCandidate && analysis.topCandidate.species) || (candidates.rows[0] && candidates.rows[0][0]), 80);
   const sourceContext = p.context && p.context.source && typeof p.context.source === 'object' ? {
     kind: text(p.context.source.kind, 40)
   } : null;
@@ -382,6 +398,7 @@ function compactModelData(payload) {
       fluorescence: compactFluorescence(analysis.fluorescence),
       narrowLineCandidates: compactHits(analysis.narrowLineCandidates),
       bestSpecies,
+      topCandidate,
       candidates,
       hits: compactHits(analysis.hits),
       winner: compactWinner(analysis.winnerBreakdown),
