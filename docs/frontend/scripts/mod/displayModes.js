@@ -9,5 +9,5 @@
   mod.DISPLAY_MODES = DISPLAY_MODES.slice();
   mod.getDisplayModes = function () { return DISPLAY_MODES.slice(); };
   mod.getDefaultDisplayMode = function () { return 'NORMAL'; };
-  mod.version = '3.0.1';
+  mod.version = '1.4.0';
 })();

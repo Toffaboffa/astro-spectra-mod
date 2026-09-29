@@ -142,7 +142,8 @@
   'use strict';
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
-  const UI_VERSION = 'v1.4';
+  const APP_VERSION = '1.4.0';
+  const DISPLAY_VERSION = 'v' + APP_VERSION;
   const CALIBRATION_REMEMBER_STORAGE_KEY = 'spectraPro.startup.calibration';
   const CALIBRATION_REMEMBER_SCHEMA = 'spectra-pro-startup-calibration/v1';
   let rememberCalibrationRequested = false;
@@ -317,11 +318,11 @@
   }
 
   function updateVersionBadge() {
-    sp.version = UI_VERSION;
+    sp.version = APP_VERSION;
     const badge = document.getElementById('spVersionBadge');
     if (badge) {
-      badge.textContent = UI_VERSION;
-      badge.title = 'SPECTRA PRO ' + UI_VERSION;
+      badge.textContent = DISPLAY_VERSION;
+      badge.title = 'SPECTRA PRO ' + DISPLAY_VERSION;
     }
   }
 

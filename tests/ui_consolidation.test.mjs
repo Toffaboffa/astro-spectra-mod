@@ -546,7 +546,7 @@ assert.ok(calibrationIo.includes('function queueAxisQuestionAfterHardwareReady()
 assert.ok(calibrationIo.includes('queueAxisQuestionAfterHardwareReady();'), 'calibration changes must defer the wavelength-axis popup until hardware startup is complete');
 assert.ok(calibrationIo.includes("window.addEventListener('spectra:startup-hardware-ready', runOnce, { once: true });"), 'all startup follow-up prompts must share the hardware-ready gate');
 assert.ok(!calibrationIo.includes("runAfterStartupHardwareReady(function () {\n      queueAxisQuestionAfterHardwareReady();"), 'wavelength-axis deferral must not recurse into itself');
-assert.ok(spectrapro.includes('calibrationIO.js?v=1.4.0-startup-3'), 'published calibration startup UX must use a fresh cache key');
+assert.ok(spectrapro.includes('calibrationIO.js?v=1.4.0-versioning-1'), 'published calibration UI must use the normalized versioning cache key');
 assert.ok(!calibrationIo.includes('__spectraPromptBound'), 'calibration file import must not use the old timing guess');
 assert.ok(uiPanels.includes("'calibration',"), 'root calibration state updates must reanalyze static images');
 assert.ok(stateStore.includes("exampleSpectrumUi.js?v=' + AI_ASSET_VERSION"), 'dynamic sample loader must use the release cache key');
@@ -558,16 +558,25 @@ assert.ok(!graphScript.includes("resizeCanvasToDisplaySize(graphCtx, graphCanvas
 for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Advanced: reference spectrum comparison', 'Continuum diagnostics']) {
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
 }
-assert.ok(spectrapro.includes('analysisWorkerClient.js?v=1.4.0-best-match-gate-1'), 'published worker client must refresh the Best Match evidence-gate worker');
+assert.ok(spectrapro.includes('analysisWorkerClient.js?v=1.4.0-versioning-1'), 'published worker client must use the normalized runtime cache key');
 assert.ok(spectrapro.includes('proBootstrap.js?v=1.4.0-best-match-gate-1'), 'published bootstrap must refresh Best Match gate presentation');
 assert.ok(spectrapro.includes('dataQualityPanel.js?v=1.4.0-result-consistency-1'), 'published Data Quality module must use the result-consistency cache key');
-assert.ok(spectrapro.includes('stateStore.js?v=1.4.0-best-match-gate-1'), 'published state store must refresh dynamic AI/export/i18n Best Match gate assets');
+assert.ok(spectrapro.includes('stateStore.js?v=1.4.0-versioning-1'), 'published state store must refresh normalized dynamic asset versions');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=1.4.0-provenance-1'), 'published image loader must use the source-provenance cache key');
 assert.ok(spectrapro.includes('framePreview.js?v=1.4.0-source-ui-1'), 'published frame preview must use the source-identity UI cache key');
-assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=1.4.0-best-match-gate-1'"), 'worker client must load the refreshed Best Match gate worker shell');
-assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.4.0-best-match-gate-1';"), 'dynamic export/AI/i18n modules must use the Best Match gate cache key');
+assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=1.4.0-analysis-1'"), 'worker client must load the canonical 1.4.0 analysis worker namespace');
+assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.4.0-versioning-1';"), 'dynamic export/AI/i18n modules must use the normalized 1.4.0 asset namespace');
 assert.ok(!spectrapro.includes('languageScript.js'), 'canonical app must not load the retired query-parameter language loader');
 assert.ok(stateStore.includes("script.id = 'spI18nUiLoader';") && stateStore.includes("script.src = '../scripts/mod/i18nUi.js?v=' + AI_ASSET_VERSION;"), 'modern i18n must remain dynamically loaded by stateStore');
+assert.ok(stateStore.includes("../scripts/mod/uiTweaks.js?v=' + AI_ASSET_VERSION"), 'dynamic UI tweaks loader must use the unversioned module filename');
+assert.ok(!stateStore.includes('uiTweaksV203.js'), 'legacy version-numbered UI tweaks filename must not return');
+for (const asset of ['displayModes.js','yAxisController.js','peakControls.js','graphAppearance.js','cameraCapabilities.js']) {
+  assert.ok(spectrapro.includes(asset + '?v=1.4.0-versioning-1'), asset + ' must use the normalized runtime cache key');
+}
+assert.ok(uiPanels.includes("const APP_VERSION = '1.4.0';") && uiPanels.includes("sp.version = APP_VERSION;"), 'UI panels must expose canonical app metadata 1.4.0 without a display prefix');
+assert.ok(exportUi.includes("const VERSION = '1.4.0';") && exportUi.includes('appVersion: sp.version || VERSION'), 'export metadata must use canonical app version 1.4.0');
+assert.ok(i18n.includes("const VERSION = '1.4.0';"), 'i18n module metadata must use canonical app version 1.4.0');
+
 assert.ok(i18n.includes("currentLanguage = 'en';") && i18n.includes("data-lang=\"en\"") && i18n.includes("data-lang=\"sv\""), 'modern i18n must retain the EN/SV switch with English as initial language');
 assert.ok(!i18n.includes('URLSearchParams') && !i18n.includes('window.location') && !i18n.includes('global.location'), 'modern i18n must not redirect or rewrite query parameters');
 for (const pair of [
@@ -631,7 +640,7 @@ assert.ok(exportUi.includes('primaryEvidenceAssessment') && exportUi.includes('B
 assert.ok(i18n.includes("'Top candidate': 'Högst rankad kandidat'"), 'Best Match gate status must remain translatable to Swedish');
 assert.ok(i18n.includes("'Insufficient evidence for Best Match': 'Otillräcklig evidens för Bästa matchning'"), 'Best Match rejection text must remain translatable');
 
-assert.ok(helpUi.includes("const HELP_VERSION = '1.4';"), 'HELP must publish the same v1.4 release version as the application');
+assert.ok(helpUi.includes("const HELP_VERSION = '1.4.0';"), 'HELP must publish the canonical v1.4.0 release version');
 for (const term of [
   'Live', 'Auto Pause', 'Saturation', 'Overlays → Diffraction', 'Overlays → Extrapolation',
   'Peak Inspector', 'EN / SV', 'Ar spectral tube', 'Fluorescent tube', 'KVANT - Spectra-1',

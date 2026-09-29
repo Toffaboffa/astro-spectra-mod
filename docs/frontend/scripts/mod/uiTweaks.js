@@ -2,7 +2,8 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = 'v1.4';
+  const APP_VERSION = '1.4.0';
+  const DISPLAY_VERSION = 'v' + APP_VERSION;
   let initialStripeCentered = false;
   let helpClickBound = false;
   let helpPausedByHelp = false;
@@ -10,11 +11,11 @@
   let helpCloseObserver = null;
 
   function updateVersionBadge() {
-    sp.version = VERSION;
+    sp.version = APP_VERSION;
     const badge = document.getElementById('spVersionBadge');
     if (!badge) return false;
-    badge.textContent = VERSION;
-    badge.title = 'SPECTRA PRO ' + VERSION;
+    badge.textContent = DISPLAY_VERSION;
+    badge.title = 'SPECTRA PRO ' + DISPLAY_VERSION;
     return true;
   }
 
@@ -142,9 +143,9 @@
 
   function patchHelpVersion() {
     try {
-      if (sp.helpUi) sp.helpUi.version = VERSION.replace(/^v/, '');
+      if (sp.helpUi) sp.helpUi.version = APP_VERSION;
       const guideVersion = document.querySelector('#spHelpOverlay .sp-help-version b');
-      if (guideVersion) guideVersion.textContent = VERSION;
+      if (guideVersion) guideVersion.textContent = DISPLAY_VERSION;
     } catch (_) {}
   }
 

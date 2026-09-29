@@ -2,7 +2,7 @@
   'use strict';
 
   const bus = (global.SpectraPro && global.SpectraPro.eventBus) || null;
-  const AI_ASSET_VERSION = '1.4.0-best-match-gate-1';
+  const AI_ASSET_VERSION = '1.4.0-versioning-1';
 
   const defaultPresetCatalog = {
     groups: [
@@ -218,7 +218,7 @@
   if (global.document && !global.document.getElementById('spUiTweaksV203Loader')) {
     const script = global.document.createElement('script');
     script.id = 'spUiTweaksV203Loader';
-    script.src = '../scripts/mod/uiTweaksV203.js?v=' + AI_ASSET_VERSION;
+    script.src = '../scripts/mod/uiTweaks.js?v=' + AI_ASSET_VERSION;
     script.defer = true;
     (global.document.head || global.document.documentElement).appendChild(script);
   }

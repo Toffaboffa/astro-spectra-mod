@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const context = { console, setTimeout, clearTimeout };
 context.window = context;
 context.SpectraPro = {
-  version: '3.0.1',
+  version: '1.4.0',
   store: {
     getState() {
       return state;

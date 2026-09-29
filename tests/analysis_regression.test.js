@@ -350,7 +350,7 @@ function testStellarClassEvidence() {
   const classifier = worker.SPECTRA_PRO_stellarClassification;
   const astroUiSource = fs.readFileSync(path.join(repoRoot, 'docs', 'frontend', 'scripts', 'mod', 'proBootstrap.js'), 'utf8');
   const workerEntrySource = fs.readFileSync(path.join(workerDir, 'analysis.worker.js'), 'utf8');
-  assert.ok(workerEntrySource.includes("'./stellarClassification.js?v=3.0.1'"), 'Browser worker should load the stellar-class module');
+  assert.ok(workerEntrySource.includes("'./stellarClassification.js?v=' + WORKER_ASSET_VERSION"), 'Browser worker should load stellar classification through the canonical worker cache namespace');
   assert.ok(astroUiSource.includes('spAstroClassification'), 'ASTRO panel should expose stellar-class evidence');
   assert.ok(astroUiSource.includes('Compatible range:'), 'ASTRO panel should render a compatible class range');
   assert.ok(astroUiSource.includes('Insufficient class evidence'), 'ASTRO panel should render a cautious insufficient-data state');
@@ -470,7 +470,7 @@ function testReferenceSpectrumComparison() {
   const workerEntrySource = fs.readFileSync(path.join(workerDir, 'analysis.worker.js'), 'utf8');
   const uiSource = fs.readFileSync(path.join(repoRoot, 'docs', 'frontend', 'scripts', 'mod', 'proBootstrap.js'), 'utf8');
   const graphSource = fs.readFileSync(path.join(repoRoot, 'docs', 'frontend', 'scripts', 'graphScript.js'), 'utf8');
-  assert.ok(workerEntrySource.includes("'./referenceComparison.js?v=3.0.1'"), 'Browser worker should load reference comparison');
+  assert.ok(workerEntrySource.includes("'./referenceComparison.js?v=' + WORKER_ASSET_VERSION"), 'Browser worker should load reference comparison through the canonical worker cache namespace');
   assert.ok(uiSource.toLowerCase().includes('reference spectrum comparison'), 'LAB/ASTRO UI should expose reference comparison controls');
   assert.ok(uiSource.includes("ensureReferenceComparisonCard(referenceMount, 'Lab')"), 'LAB should expose the shared comparison card in its Advanced popup');
   assert.ok(uiSource.includes("ensureReferenceComparisonCard($('spAstroReferenceMount'), 'Astro')"), 'ASTRO should expose the shared comparison card in its Advanced popup');
