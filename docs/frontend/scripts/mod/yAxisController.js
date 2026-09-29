@@ -9,5 +9,5 @@
   mod.Y_AXIS_MODES = Y_AXIS_MODES.slice();
   mod.getModes = function () { return Y_AXIS_MODES.slice(); };
   mod.getDefaultMode = function () { return 'AUTO'; };
-  mod.version = '3.0.1';
+  mod.version = '1.4.0';
 })();
