@@ -192,6 +192,9 @@
     'BAND FEATURES': 'BANDEGENSKAPER',
     'FLUORESCENCE SUMMARY': 'FLUORESCENSSAMMANFATTNING',
     'Best match': 'Bästa matchning',
+    'Top candidate': 'Högst rankad kandidat',
+    'Insufficient evidence for Best Match': 'Otillräcklig evidens för Bästa matchning',
+    'Best Match not established': 'Bästa matchning inte fastställd',
     'Primary': 'Primär',
     'Secondary': 'Sekundär',
     'Evidence': 'Evidens',
@@ -418,6 +421,9 @@
 
   const patterns = [
     [/^Best match:\s*/i, 'Bästa matchning: '],
+    [/^Top candidate:\s*/i, 'Högst rankad kandidat: '],
+    [/Insufficient evidence for Best Match/gi, 'Otillräcklig evidens för Bästa matchning'],
+    [/Best Match not established/gi, 'Bästa matchning inte fastställd'],
     [/^Best class evidence:\s*/i, 'Bästa klassevidens: '],
     [/^Compatible range:\s*/i, 'Kompatibelt intervall: '],
     [/^Reasons:\s*/i, 'Skäl: '],

@@ -147,12 +147,34 @@
     return Object.keys(item).length ? item : null;
   }
 
+  function compactPrimaryEvidence(value) {
+    if (!value || typeof value !== 'object') return null;
+    const out = compactPrimitiveObject(value, [
+      'model', 'applicable', 'candidate', 'reportable', 'reason',
+      'acceptedHitCount', 'independentEvidenceCount', 'inAnchorHitCount',
+      'inAnchorIndependentEvidenceCount', 'extrapolatedHitCount',
+      'diagnosticMatchedPeaks', 'diagnosticExpected', 'scoreSharePct'
+    ]);
+    if (value.anchorRangeNm && typeof value.anchorRangeNm === 'object') {
+      out.anchorRangeNm = {
+        min: rounded(value.anchorRangeNm.min, 4),
+        max: rounded(value.anchorRangeNm.max, 4)
+      };
+    }
+    if (value.mainLimitation && typeof value.mainLimitation === 'object') {
+      out.mainLimitation = compactPrimitiveObject(value.mainLimitation, ['code', 'status', 'reason']);
+    }
+    return Object.keys(out).length ? out : null;
+  }
+
   function compactWinnerBreakdown(winner) {
     if (!winner || typeof winner !== 'object') return null;
     const out = compactPrimitiveObject(winner, [
       'preset', 'primaryEmitter', 'primaryLikelyPct', 'explainedPeaksPct',
       'explainedIntensityPct', 'expectedMissed', 'scoreSemantics', 'evidenceModel'
     ]);
+    const primaryEvidence = compactPrimaryEvidence(winner.primaryEvidence);
+    if (primaryEvidence) out.primaryEvidence = primaryEvidence;
     if (Array.isArray(winner.expectedFound)) out.expectedFound = winner.expectedFound.map(function (v) { return rounded(v, 4); }).filter(function (v) { return v != null; }).slice(0, 16);
     if (Array.isArray(winner.possibleBands)) out.possibleBands = winner.possibleBands.slice(0, 12).map(compactWinnerComponent).filter(Boolean);
     if (Array.isArray(winner.backgroundComponents)) out.backgroundComponents = winner.backgroundComponents.slice(0, 12).map(compactWinnerComponent).filter(Boolean);
@@ -589,7 +611,12 @@
     const maxCandidates = Math.max(1, Math.min(12, Math.floor(finiteNumber(opts.maxCandidates) || DEFAULT_MAX_CANDIDATES)));
     const candidateRows = Array.isArray(analysis.elementScores) && analysis.elementScores.length ? analysis.elementScores : (Array.isArray(analysis.smartFindGroups) ? analysis.smartFindGroups : []);
     const candidates = candidateRows.slice(0, maxCandidates).map(compactCandidate).filter(Boolean);
-    const bestMatch = candidates.length ? candidates[0] : null;
+    const topCandidate = candidates.length ? candidates[0] : null;
+    const primaryEvidence = analysis.winnerBreakdown && analysis.winnerBreakdown.primaryEvidence && typeof analysis.winnerBreakdown.primaryEvidence === 'object'
+      ? analysis.winnerBreakdown.primaryEvidence
+      : null;
+    const bestMatchQualified = !(primaryEvidence && primaryEvidence.applicable === true && primaryEvidence.reportable === false);
+    const bestMatch = bestMatchQualified ? topCandidate : null;
     const acceptedHits = Array.isArray(analysis.topHits) ? analysis.topHits : [];
     const fluorescence = compactFluorescence(analysis.fluorescenceSummary);
     const narrowHits = Array.isArray(analysis.narrowLineCandidates) ? analysis.narrowLineCandidates.slice(0, 24).map(compactHit).filter(Boolean) : [];
@@ -622,11 +649,12 @@
         scoreSemantics: analysisContext === 'astro' ? 'deterministic-astro-measurements-not-probabilities' : (fluorescence ? 'broadband-fluorescence-shape' : 'relative-score-share-not-probability-or-abundance'),
         calibrationDiagnostics: compactCalibrationDiagnostics(analysis.calibrationDiagnostics),
         bestMatch: bestMatch,
+        topCandidate: topCandidate,
         candidates: candidates,
         winnerBreakdown: compactWinnerBreakdown(analysis.winnerBreakdown),
         fluorescence: fluorescence,
         narrowLineCandidates: narrowHits,
-        hits: selectHits(acceptedHits, bestMatch && bestMatch.species, maxHits),
+        hits: selectHits(acceptedHits, topCandidate && topCandidate.species, maxHits),
         astro: astro,
         referenceComparison: compactReferenceComparison(analysis.referenceComparison)
       },
@@ -634,7 +662,7 @@
       readiness: {
         hasFrame: !!trace,
         calibrated: !!calibration.calibrated,
-        hasAnalysisResult: !!(astro || fluorescence || bestMatch || acceptedHits.length)
+        hasAnalysisResult: !!(astro || fluorescence || topCandidate || acceptedHits.length)
       }
     };
   }

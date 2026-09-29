@@ -36,6 +36,23 @@ const state = {
     topHits: [{ element: 'Hg', species: 'Hg I', observedNm: 501, referenceNm: 501.1, deltaNm: -0.1 }],
     rawTopHits: [{ element: 'Hg', species: 'Hg I', observedNm: 501, referenceNm: 501.1, deltaNm: -0.1 }],
     elementScores: [{ element: 'Hg', likelyPct: 80, matchedCount: 1, medianDeltaNm: 0.1 }],
+    winnerBreakdown: {
+      primaryEmitter: 'Hg',
+      primaryLikelyPct: 80,
+      primaryEvidence: {
+        model: 'primary-evidence-gate-v1',
+        applicable: true,
+        candidate: 'Hg',
+        reportable: false,
+        reason: 'single-line-evidence',
+        acceptedHitCount: 1,
+        independentEvidenceCount: 1,
+        inAnchorHitCount: 1,
+        inAnchorIndependentEvidenceCount: 1,
+        extrapolatedHitCount: 0,
+        diagnosticMatchedPeaks: 1
+      }
+    },
     qcFlags: ['limited-resolution'],
     preprocessing: { schema: 'spectra-pro-preprocessing/v1', intensityBasis: 'uncorrected-relative-intensity', activeOperations: [] },
     calibrationDiagnostics: {
@@ -152,6 +169,8 @@ assert.ok(!report.abstract.includes('AI evidence sentence'), 'AI text must not b
 assert.ok(report.abstract.includes('Source identity: contract-spectrum.png.'), 'deterministic abstract must include the persisted source identity when available');
 assert.ok(report.abstract.includes('Canonical SNR is 12.34 using (P95-P05)/noise sigma'), 'deterministic abstract must name the canonical SNR definition');
 assert.ok(report.abstract.includes('Calibration fit, actual calibrated sampling/coverage, instrument FWHM and QC are treated as separate quantities.'), 'deterministic abstract must keep fit, sampling, coverage and instrument resolution conceptually separate');
+assert.ok(report.abstract.includes('The top-ranked candidate Hg is not reported as Best Match because the evidence consists of a single accepted line.'), 'deterministic PDF abstract must preserve the Best Match evidence gate');
+assert.ok(source.includes('Best Match is not established because'), 'rendered PDF indicators must explicitly distinguish a gated top candidate from Best Match');
 assert.equal(report.aiInterpretation.included, true);
 assert.equal(report.aiInterpretation.label, 'OPTIONAL AI INTERPRETATION');
 assert.ok(report.aiInterpretation.disclaimer.includes('does not replace the deterministic report results'));

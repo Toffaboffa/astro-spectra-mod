@@ -1034,6 +1034,45 @@
     return byCode[code] || code || reason;
   }
 
+  function primaryEvidenceAssessment(analysis) {
+    const winner = analysis && analysis.winnerBreakdown;
+    const gate = winner && winner.primaryEvidence && typeof winner.primaryEvidence === 'object'
+      ? winner.primaryEvidence
+      : null;
+    return gate && gate.applicable === true ? gate : null;
+  }
+
+  function primaryEvidenceReasonText(gate, sv) {
+    const reason = String(gate && gate.reason || 'insufficient-evidence');
+    const map = {
+      'single-line-evidence-in-calibration-extrapolation': sv
+        ? 'evidensen består av en enda accepterad linje i kalibreringsextrapolation'
+        : 'the evidence consists of a single accepted line in calibration extrapolation',
+      'single-line-evidence': sv
+        ? 'evidensen består av en enda accepterad linje'
+        : 'the evidence consists of a single accepted line',
+      'no-accepted-primary-evidence': sv
+        ? 'ingen accepterad primär evidens finns'
+        : 'no accepted primary evidence is available',
+      'insufficient-independent-primary-evidence': sv
+        ? 'för få oberoende spektrala features stöder kandidaten'
+        : 'too few independent spectral features support the candidate',
+      'insufficient-in-anchor-primary-evidence': sv
+        ? 'för få oberoende features ligger inom kalibreringsankarna'
+        : 'too few independent features lie within the calibration anchors',
+      'no-diagnostic-primary-evidence': sv
+        ? 'ingen diagnostisk feature stöder kandidaten'
+        : 'no diagnostic feature supports the candidate',
+      'measurement-quality-signal': sv
+        ? 'Measurement Quality bedömer signalen som dålig'
+        : 'Measurement Quality rates the signal as poor',
+      'measurement-quality-saturation': sv
+        ? 'Measurement Quality bedömer mättnaden som dålig'
+        : 'Measurement Quality rates saturation as poor'
+    };
+    return map[reason] || reason;
+  }
+
   function buildAutomaticAbstract(bundle) {
     const sv = language() === 'sv';
     const state = bundle.state || {};
@@ -1087,6 +1126,13 @@
       if (rows.length) {
         const top = rows.slice(0, 3).map(function (r) { return r[0] + ' (' + r[1] + ')'; }).join(', ');
         parts.push(sv ? ('De högst rankade kandidaterna i den aktuella analysen är ' + top + '. Score Share är en relativ ranking inom den aktuella körningen och ska inte tolkas som sannolikhet, koncentration eller abundans.') : ('The highest-ranked candidates in the current analysis are ' + top + '. Score Share is a relative ranking within the current run and must not be interpreted as probability, concentration or abundance.'));
+        const gate = primaryEvidenceAssessment(analysis);
+        if (gate && gate.reportable === false) {
+          const candidate = String(gate.candidate || rows[0][0] || '—');
+          parts.push(sv
+            ? ('Den högst rankade kandidaten ' + candidate + ' rapporteras inte som Bästa matchning eftersom ' + primaryEvidenceReasonText(gate, true) + '.')
+            : ('The top-ranked candidate ' + candidate + ' is not reported as Best Match because ' + primaryEvidenceReasonText(gate, false) + '.'));
+        }
       }
     }
 
@@ -1637,6 +1683,18 @@
       ], y);
     } else {
       const rows = candidateRows(analysis);
+      const gate = primaryEvidenceAssessment(analysis);
+      if (gate && gate.reportable === false && rows.length) {
+        const candidate = String(gate.candidate || rows[0][0] || '—');
+        y = addWrappedPaged(
+          doc,
+          sv
+            ? ('Högst rankad kandidat: ' + candidate + '. Bästa matchning är inte fastställd eftersom ' + primaryEvidenceReasonText(gate, true) + '.')
+            : ('Top-ranked candidate: ' + candidate + '. Best Match is not established because ' + primaryEvidenceReasonText(gate, false) + '.'),
+          17, y, pageW - 34, { size: 9, line: 4.15, bottom: 276 }
+        );
+        y += 3;
+      }
       if (rows.length) y = autoTable(doc, [sv ? 'Kandidat' : 'Candidate', sv ? 'Andel / score' : 'Share / score', sv ? 'Matchningar' : 'Matches', 'Delta nm'], rows, y);
       else y = addWrapped(doc, sv ? 'Inga rankade träffar finns i den aktuella analysen.' : 'No ranked hits are available in the current analysis.', 17, y, pageW - 34, { size: 9 });
     }
