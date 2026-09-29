@@ -34,5 +34,5 @@
     return { fillMode: mode, fillOpacity: opacity };
   };
 
-  mod.version = '3.0.1';
+  mod.version = '1.4.0';
 })();
