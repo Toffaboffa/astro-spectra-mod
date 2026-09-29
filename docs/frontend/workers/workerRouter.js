@@ -3,6 +3,7 @@
 
   const TYPES = root.SPECTRA_PRO_WORKER_TYPES && root.SPECTRA_PRO_WORKER_TYPES.MSG;
   const STATE = root.SPECTRA_PRO_WORKER_STATE;
+  const ANALYSIS_VERSION = '1.4.0';
 
   async function handleMessage(msg) {
     const type = msg && msg.type;
@@ -76,7 +77,7 @@
           if (root.SPECTRA_PRO_analysisPipeline && typeof root.SPECTRA_PRO_analysisPipeline.finalizeResult === 'function') {
             out = root.SPECTRA_PRO_analysisPipeline.finalizeResult(out, frame, options);
           }
-          if (out && out.ok) out.analysisVersion = '3.0.1';
+          if (out && out.ok) out.analysisVersion = ANALYSIS_VERSION;
           STATE.lastAnalysis = out;
           return { type: TYPES.ANALYZE_RESULT, requestId: requestId, payload: out };
         }
@@ -88,5 +89,5 @@
     }
   }
 
-  root.SPECTRA_PRO_workerRouter = { handleMessage: handleMessage };
+  root.SPECTRA_PRO_workerRouter = { handleMessage: handleMessage, analysisVersion: ANALYSIS_VERSION };
 })(typeof self !== 'undefined' ? self : this);
