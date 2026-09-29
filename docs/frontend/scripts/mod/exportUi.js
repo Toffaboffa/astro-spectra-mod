@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '1.4';
+  const VERSION = '1.4.0';
   const MODAL_ID = 'spExportModal';
   const STYLE_ID = 'spExportUiStyle';
   const MAIN_BUTTON_ID = 'spExportMainBtn';
@@ -498,7 +498,7 @@
     return {
       schema: 'spectra-pro-export/v2',
       generatedAt: new Date().toISOString(),
-      appVersion: sp.version || ('v' + VERSION),
+      appVersion: sp.version || VERSION,
       interfaceLanguage: language(),
       state: cloneJson(state),
       scientificAnalysis: buildScientificAnalysisSnapshot(state),
