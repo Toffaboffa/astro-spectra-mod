@@ -67,6 +67,18 @@
     }
   }
 
+  function getPrimaryEvidence() {
+    try {
+      const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
+      const winner = state && state.analysis && state.analysis.winnerBreakdown;
+      return winner && winner.primaryEvidence && typeof winner.primaryEvidence === 'object'
+        ? winner.primaryEvidence
+        : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   function patchSmartScoreSemantics(root) {
     const scope = root || document;
     const headers = scope.querySelectorAll ? scope.querySelectorAll('.sp-lab-th') : [];
@@ -79,6 +91,8 @@
 
     const rows = getAnalysisRows();
     const winner = rows.length ? rows[0] : null;
+    const primaryEvidence = getPrimaryEvidence();
+    const winnerReportable = !(primaryEvidence && primaryEvidence.applicable === true && primaryEvidence.reportable === false);
     const summaries = scope.querySelectorAll ? scope.querySelectorAll('.sp-es-summary') : [];
     summaries.forEach(function (el) {
       if (!el) return;
@@ -93,19 +107,23 @@
         const matched = Number.isFinite(Number(matchedRaw)) ? Math.max(0, Math.round(Number(matchedRaw))) : 0;
         const delta = Number.isFinite(Number(winner.medianDeltaNm)) ? Number(winner.medianDeltaNm).toFixed(2) : null;
         const evidenceKind = String(winner.mode || '').toLowerCase() === 'molecular' ? 'bands' : 'lines';
-        let html = 'Best match: <b>' + species + '</b> · Score share ' + share + '%';
+        let html = (winnerReportable ? 'Best match: ' : 'Top candidate: ') + '<b>' + species + '</b> · Score share ' + share + '%';
         if (matched > 0) html += ' · Evidence ' + matched + ' ' + evidenceKind;
         if (delta != null) html += ' · Δmed ' + escapeHtml(delta) + ' nm';
+        if (!winnerReportable) html += ' · Insufficient evidence for Best Match';
         if (el.innerHTML !== html) el.innerHTML = html;
       } else if (el.innerHTML) {
         const originalHtml = el.innerHTML;
         let html = originalHtml;
-        html = html.replace(/Winner:\s*<b>/g, 'Best match: <b>');
+        html = html.replace(/Winner:\s*<b>/g, winnerReportable ? 'Best match: <b>' : 'Top candidate: <b>');
         html = html.replace(/<\/b>\s*•\s*([0-9]+)%/g, '</b> · Score share $1%');
+        if (!winnerReportable && html.indexOf('Insufficient evidence for Best Match') === -1) html += ' · Insufficient evidence for Best Match';
         if (html !== originalHtml) el.innerHTML = html;
       }
 
-      el.title = 'Best current Smart-match. Score share is the relative share of positive candidate score, not a statistical probability or abundance estimate.';
+      el.title = winnerReportable
+        ? 'Best current Smart-match supported by the primary-evidence gate. Score share is ranking, not probability or abundance.'
+        : 'Top-ranked candidate only. Best Match is not established because the primary-evidence gate rejected the evidence (' + String(primaryEvidence && primaryEvidence.reason || 'insufficient-evidence') + ').';
     });
 
     const smartRows = scope.querySelectorAll ? scope.querySelectorAll('.sp-hit--smart') : [];
