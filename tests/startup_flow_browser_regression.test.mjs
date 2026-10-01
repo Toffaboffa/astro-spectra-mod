@@ -126,7 +126,7 @@ function buildHarness(phase, port) {
       equal(calibrationFileRequestCount, 1, 'startup popup Yes did not request the calibration file input');
       const calibrationInput = must(document.getElementById('my-file'), 'startup calibration file input missing');
       const transfer = new DataTransfer();
-      transfer.items.add(new File(['10,5;401,2\n640;612,3\n1200;823,4\n'], 'startup-calibration.txt', { type: 'text/plain' }));
+      transfer.items.add(new File([['10,5;401,2','640;612,3','1200;823,4',''].join(String.fromCharCode(10))], 'startup-calibration.txt', { type: 'text/plain' }));
       calibrationInput.files = transfer.files;
       calibrationInput.dispatchEvent(new Event('change', { bubbles: true }));
       await wait(180);
