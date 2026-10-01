@@ -1,4 +1,4 @@
-const WORKER_ASSET_VERSION = '1.4.0-analysis-1';
+const WORKER_ASSET_VERSION = '1.4.1-analysis-1';
 
 importScripts(
   './workerTypes.js?v=' + WORKER_ASSET_VERSION,
