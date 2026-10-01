@@ -125,12 +125,13 @@ function buildHarness(phase, port) {
       yes.click();
       const calibrationInput = must(document.getElementById('my-file'), 'startup calibration file input missing');
       const transfer = new DataTransfer();
-      transfer.items.add(new File(['10;401.2\n640;612.3\n1200;823.4\n'], 'startup-calibration.txt', { type: 'text/plain' }));
+      transfer.items.add(new File(['10,5;401,2\n640;612,3\n1200;823,4\n'], 'startup-calibration.txt', { type: 'text/plain' }));
       calibrationInput.files = transfer.files;
       calibrationInput.dispatchEvent(new Event('change', { bubbles: true }));
       await wait(180);
       equal(restoredCalibrationCalls.length, 1, 'startup popup file selection did not reach canonical applyPoints');
       equal(restoredCalibrationCalls[0].meta.source, 'file-import', 'startup popup file import provenance mismatch');
+      equal(JSON.stringify(restoredCalibrationCalls[0].points), JSON.stringify([{px:10.5,nm:401.2},{px:640,nm:612.3},{px:1200,nm:823.4}]), 'startup popup parser did not preserve decimal-comma calibration points');
       const savedHardware = JSON.parse(localStorage.getItem('spectraPro.startup.hardware'));
       equal(savedHardware.profileId, 'spectra-1', 'remembered hardware profile not persisted');
       const savedCalibration = JSON.parse(localStorage.getItem('spectraPro.startup.calibration'));
