@@ -7,7 +7,7 @@ a promise that roadmap ideas are already functional. Status labels are:
 - **EXPERIMENTAL** — functional, but scientifically or operationally limited.
 - **PLANNED** — intentionally absent; no result should imply that it exists.
 
-Current application version: **1.4.0**. The shared analysis worker reports **1.4.0** as its analysis version.
+Current application version: **1.4.1**. The shared analysis worker reports **1.4.1** as its analysis version.
 
 ## Architecture
 
