@@ -5,7 +5,7 @@
   const mod = v15.calibrationIO || (v15.calibrationIO = {});
 
   function toNum(v) {
-    const n = Number(String(v).trim());
+    const n = Number(String(v).trim().replace(',', '.'));
     return Number.isFinite(n) ? n : null;
   }
   function normalizePoint(obj) {
@@ -36,7 +36,11 @@
     raw.split(/\r?\n/).forEach(function (line) {
       const s = String(line || '').trim();
       if (!s || s.startsWith('#')) return;
-      const parts = s.split(/[;,\t]/).map(function (x) { return String(x).trim(); });
+      let parts;
+      if (s.includes(';')) parts = s.split(';');
+      else if (s.includes('\t')) parts = s.split('\t');
+      else parts = s.split(',');
+      parts = parts.map(function (x) { return String(x).trim(); });
       if (parts.length < 2) return;
       if (/^px$/i.test(parts[0]) || /^pixel$/i.test(parts[0])) return;
       const px = toNum(parts[0]);
@@ -134,7 +138,77 @@
     };
   };
 
-  mod.version = '1.4.0';
+  mod.importCalibrationText = function importCalibrationText(text, opts) {
+    const options = opts || {};
+    const parsed = mod.parseCalibrationFile(text, options);
+    const normalized = mod.normalizeAndValidatePoints(parsed, {
+      minPoints: 2,
+      maxPoints: 15,
+      sortBy: 'px',
+      dedupe: true
+    });
+    if (!normalized.ok) {
+      return {
+        ok: false,
+        calibrated: false,
+        reason: normalized.message || 'Calibration file contains too few valid points.',
+        points: normalized.points || [],
+        warnings: normalized.warnings || []
+      };
+    }
+
+    const core = window.SpectraCore && window.SpectraCore.calibration;
+    if (!core || typeof core.applyPoints !== 'function') {
+      return {
+        ok: false,
+        calibrated: false,
+        reason: 'Canonical calibration engine is unavailable.',
+        points: normalized.points,
+        warnings: normalized.warnings || []
+      };
+    }
+
+    const applied = core.applyPoints(normalized.points.map(function (point) {
+      return { px: Number(point.px), nm: Number(point.nm) };
+    }), {
+      origin: String(options.origin || 'user'),
+      source: String(options.source || 'file-import')
+    });
+
+    if (!applied || applied.ok === false || applied.calibrated === false) {
+      return Object.assign({
+        ok: false,
+        calibrated: false,
+        reason: applied && applied.reason ? String(applied.reason) : 'Calibration points could not be applied.',
+        warnings: normalized.warnings || []
+      }, applied || {});
+    }
+
+    return Object.assign({}, applied, {
+      ok: true,
+      importedPoints: normalized.points.length,
+      warnings: normalized.warnings || []
+    });
+  };
+
+  mod.importCalibrationFile = function importCalibrationFile(file, opts) {
+    return new Promise(function (resolve) {
+      if (!file || typeof FileReader === 'undefined') {
+        resolve({ ok: false, calibrated: false, reason: 'Calibration file is unavailable.' });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        resolve(mod.importCalibrationText(String(event && event.target ? event.target.result : ''), opts));
+      };
+      reader.onerror = function () {
+        resolve({ ok: false, calibrated: false, reason: 'Calibration file could not be read.' });
+      };
+      reader.readAsText(file);
+    });
+  };
+
+  mod.version = '1.4.1';
 })();
 
 /* SPECTRA PRO startup calibration UX */
@@ -142,7 +216,7 @@
   'use strict';
 
   const sp = window.SpectraPro || (window.SpectraPro = {});
-  const APP_VERSION = '1.4.0';
+  const APP_VERSION = '1.4.1';
   const DISPLAY_VERSION = 'v' + APP_VERSION;
   const CALIBRATION_REMEMBER_STORAGE_KEY = 'spectraPro.startup.calibration';
   const CALIBRATION_REMEMBER_SCHEMA = 'spectra-pro-startup-calibration/v1';
