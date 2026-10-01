@@ -7,7 +7,7 @@ function validPayload() {
   return {
     schema: 'spectra-pro-ai-analysis/v1',
     generatedAt: '2026-09-29T00:00:00.000Z',
-    app: { name: 'SPECTRA PRO', version: '1.4.0' },
+    app: { name: 'SPECTRA PRO', version: '1.4.1' },
     observation: 'A bright line spectrum.',
     context: {
       appMode: 'LAB',
@@ -86,7 +86,7 @@ test('GET /health returns non-secret contract metadata', async () => {
   const body = await bodyJson(response);
   assert.equal(body.ok, true);
   assert.equal(body.service, 'spectra-pro-ai');
-  assert.equal(body.appVersion, '1.4.0');
+  assert.equal(body.appVersion, '1.4.1');
   assert.equal(body.model, 'gpt-5.6-terra');
   assert.match(body.promptContract, /^spectra-pro-interpretation\/v\d+$/);
   assert.equal(body.responseContract, 'spectra-pro-ai-response/v1');
