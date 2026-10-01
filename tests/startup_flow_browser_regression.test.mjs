@@ -123,6 +123,7 @@ function buildHarness(phase, port) {
       remember.checked = true;
       const yes = must(document.querySelector('#spCalibrationPrompt .sp-calibration-prompt__btn:not(.sp-calibration-prompt__btn--no)'), 'calibration Yes button missing');
       yes.click();
+      equal(calibrationFileRequestCount, 1, 'startup popup Yes did not request the calibration file input');
       const calibrationInput = must(document.getElementById('my-file'), 'startup calibration file input missing');
       const transfer = new DataTransfer();
       transfer.items.add(new File(['10,5;401,2\n640;612,3\n1200;823,4\n'], 'startup-calibration.txt', { type: 'text/plain' }));
@@ -197,6 +198,8 @@ ${styleSafe(panelCss)}</style></head><body data-test-result="RUNNING">
 <script>
 ${seed}
 window.__spectraStartupHardwareFlowInstalled=true; window.__spectraStartupHardwareReady=false;
+let calibrationFileRequestCount=0;
+document.getElementById('my-file').click=function(){calibrationFileRequestCount+=1;};
 const profilesArray=${JSON.stringify(catalog.profiles)}; const profiles=${JSON.stringify(profileMap)};
 const appliedHardware=[]; const restoredCalibrationCalls=[]; const hookHandlers=Object.create(null);
 let calibrationState={isCalibrated:false,calibrated:false,points:[],coefficients:[],origin:'none',sampleId:''};
