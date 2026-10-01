@@ -3,7 +3,7 @@
 
   const TYPES = root.SPECTRA_PRO_WORKER_TYPES && root.SPECTRA_PRO_WORKER_TYPES.MSG;
   const STATE = root.SPECTRA_PRO_WORKER_STATE;
-  const ANALYSIS_VERSION = '1.4.0';
+  const ANALYSIS_VERSION = '1.4.1';
 
   async function handleMessage(msg) {
     const type = msg && msg.type;
