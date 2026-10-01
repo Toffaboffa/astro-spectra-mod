@@ -2,7 +2,7 @@
   'use strict';
 
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const VERSION = '1.4.0';
+  const VERSION = '1.4.1';
   const SWITCH_ID = 'spLanguageSwitch';
   const STYLE_ID = 'spLanguageSwitchStyle';
   const HIGH_FREQUENCY_SELECTOR = '#spStatusText,#spDataQualityText,#spDQDetailsBody,#spLabHits,#spLabQc,#spAstroContinuum,#spAstroFeatures,#spAstroMatches,#spAstroQuality,#spAstroVelocity,#spResponseStatus,#spResponseCatalogNote,#spSideConsolePre';
