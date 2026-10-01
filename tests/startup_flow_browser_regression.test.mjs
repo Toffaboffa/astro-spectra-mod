@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const bootstrap = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/proBootstrap.js'), 'utf8');
 const calibrationIo = fs.readFileSync(path.join(root, 'docs/frontend/scripts/mod/calibrationIO.js'), 'utf8');
+const calibrationScript = fs.readFileSync(path.join(root, 'docs/frontend/scripts/calibrationScript.js'), 'utf8');
 const panelCss = fs.readFileSync(path.join(root, 'docs/frontend/styles/mod-panels.css'), 'utf8');
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'docs/frontend/data/hardware_profiles.json'), 'utf8'));
 
@@ -36,6 +37,8 @@ function extractFunction(source, name) {
   }
   throw new Error('Unbalanced function ' + name);
 }
+
+const calibrationImportFunction = extractFunction(calibrationScript, 'importCalibrationFile');
 
 const hardwareFunctions = [
   'readRememberedStartupHardware',
@@ -120,8 +123,16 @@ function buildHarness(phase, port) {
       remember.checked = true;
       const yes = must(document.querySelector('#spCalibrationPrompt .sp-calibration-prompt__btn:not(.sp-calibration-prompt__btn--no)'), 'calibration Yes button missing');
       yes.click();
-      emitCalibration({isCalibrated:true,calibrated:true,points:[{px:10,nm:401.2},{px:640,nm:612.3},{px:1200,nm:823.4}],coefficients:[398.1,0.35,0.00001],origin:'user',source:'file-import'});
-      await wait(140);
+      equal(calibrationFileRequestCount, 1, 'startup popup Yes did not request the calibration file input');
+      const calibrationInput = must(document.getElementById('my-file'), 'startup calibration file input missing');
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([['10,5;401,2','640;612,3','1200;823,4',''].join(String.fromCharCode(10))], 'startup-calibration.txt', { type: 'text/plain' }));
+      calibrationInput.files = transfer.files;
+      calibrationInput.dispatchEvent(new Event('change', { bubbles: true }));
+      await wait(180);
+      equal(restoredCalibrationCalls.length, 1, 'startup popup file selection did not reach canonical applyPoints');
+      equal(restoredCalibrationCalls[0].meta.source, 'file-import', 'startup popup file import provenance mismatch');
+      equal(JSON.stringify(restoredCalibrationCalls[0].points), JSON.stringify([{px:10.5,nm:401.2},{px:640,nm:612.3},{px:1200,nm:823.4}]), 'startup popup parser did not preserve decimal-comma calibration points');
       const savedHardware = JSON.parse(localStorage.getItem('spectraPro.startup.hardware'));
       equal(savedHardware.profileId, 'spectra-1', 'remembered hardware profile not persisted');
       const savedCalibration = JSON.parse(localStorage.getItem('spectraPro.startup.calibration'));
@@ -183,10 +194,16 @@ ${styleSafe(panelCss)}</style></head><body data-test-result="RUNNING">
 <div id="graphWindowContainer"></div>
 <input id="toggleXLabelsPx" type="radio" name="xaxis" checked><input id="toggleXLabelsNm" type="radio" name="xaxis">
 <input id="spHardwarePreset"><input id="spHardwareRangeMin"><input id="spHardwareRangeMax"><input id="spHardwareFwhm"><input id="spHardwarePixelResolution"><input id="spHardwareGrating">
-<button id="my-file" type="button" hidden></button><div id="spVersionBadge"></div>
+<input id="my-file" type="file" hidden><div id="spVersionBadge"></div>
 <script>
 ${seed}
 window.__spectraStartupHardwareFlowInstalled=true; window.__spectraStartupHardwareReady=false;
+let calibrationFileRequestCount=0;
+const nativeInputClick=HTMLInputElement.prototype.click;
+HTMLInputElement.prototype.click=function(){
+  if(this && this.id==='my-file'){calibrationFileRequestCount+=1;return;}
+  return nativeInputClick.call(this);
+};
 const profilesArray=${JSON.stringify(catalog.profiles)}; const profiles=${JSON.stringify(profileMap)};
 const appliedHardware=[]; const restoredCalibrationCalls=[]; const hookHandlers=Object.create(null);
 let calibrationState={isCalibrated:false,calibrated:false,points:[],coefficients:[],origin:'none',sampleId:''};
@@ -204,7 +221,13 @@ function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms));} function
 function equal(actual,expected,message){if(actual!==expected)throw new Error(message+' | expected='+expected+' actual='+actual);} function notEqual(actual,unexpected,message){if(actual===unexpected)throw new Error(message+' | unexpected='+unexpected);} function near(actual,expected,tolerance,message){if(Math.abs(actual-expected)>tolerance)throw new Error(message+' | expected~='+expected+' actual='+actual);}
 function promptText(){const prompt=document.getElementById('spCalibrationPrompt');const node=prompt&&prompt.querySelector('.sp-calibration-prompt__text');return node?node.textContent:null;}
 async function waitForImage(hostId){const host=must(document.getElementById(hostId),hostId+' missing');const img=must(host.querySelector('img'),hostId+' image element missing');if(!img.complete){await Promise.race([new Promise(resolve=>img.addEventListener('load',resolve,{once:true})),new Promise(resolve=>img.addEventListener('error',resolve,{once:true})),wait(1200)]);}if(!img.complete||img.naturalWidth<=0||img.naturalHeight<=0)throw new Error(hostId+' asset failed to load: '+img.src);}
-</script><script>${scriptSafe(calibrationIo)}</script><script>${scriptSafe(hardwareFunctions)}</script><script>
+</script><script>${scriptSafe(calibrationIo)}</script><script>
+const minInputBoxNumber=2; const maxInputBoxNumber=15;
+function callError(code){throw new Error('calibration import error: '+code);}
+function applyCalibrationPoints(points,meta){return window.SpectraCore.calibration.applyPoints(points,meta);}
+${scriptSafe(calibrationImportFunction)}
+document.getElementById('my-file').addEventListener('change', importCalibrationFile);
+</script><script>${scriptSafe(hardwareFunctions)}</script><script>
 window.addEventListener('load',async function(){try{${phaseScript}\ndocument.body.dataset.testResult='PASS';}catch(error){document.body.dataset.testResult='FAIL';document.body.dataset.testError=String(error&&error.stack||error).slice(0,1800);}});
 </script></body></html>`;
 }

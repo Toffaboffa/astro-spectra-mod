@@ -40,5 +40,5 @@
   };
 
   mod.DEFAULTS = DEFAULTS;
-  mod.version = '1.4.0';
+  mod.version = '1.4.1';
 })();

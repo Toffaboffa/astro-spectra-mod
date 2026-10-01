@@ -13,10 +13,10 @@ for (const status of ['IMPLEMENTED', 'EXPERIMENTAL', 'PLANNED']) {
   assert.ok(readme.includes(status), 'README must expose ' + status);
 }
 assert.ok(spec.includes('spectra-pro-export/v2'));
-assert.ok(spec.includes('Current application version: **1.4.0**'));
-assert.ok(spec.includes('analysis worker reports **1.4.0**'));
-assert.ok(readme.includes('Current application version: v1.4.0'));
-assert.ok(readme.includes('canonical semantic version `1.4.0`'));
+assert.ok(spec.includes('Current application version: **1.4.1**'));
+assert.ok(spec.includes('analysis worker reports **1.4.1**'));
+assert.ok(readme.includes('Current application version: v1.4.1'));
+assert.ok(readme.includes('canonical semantic version `1.4.1`'));
 
 const releaseSources = [
   'docs/frontend/scripts/mod/uiPanels.js',
@@ -27,11 +27,11 @@ const releaseSources = [
   'docs/frontend/scripts/mod/proBootstrap.js'
 ];
 for (const relative of releaseSources) {
-  assert.ok(read(relative).includes('1.4.0'), relative + ' must carry the canonical 1.4.0 release version');
+  assert.ok(read(relative).includes('1.4.1'), relative + ' must carry the canonical 1.4.1 release version');
 }
 const spectraproPage = read('docs/frontend/pages/spectrapro.html');
-assert.ok(spectraproPage.includes('?v=1.4.0'), 'canonical application page must publish 1.4.0 cache keys');
-assert.ok(spectraproPage.includes('calibrationScript.js?v=1.4.0'), 'canonical calibration engine must use the v1.4 release cache key');
+assert.ok(spectraproPage.includes('?v=1.4.1'), 'canonical application page must publish 1.4.1 cache keys');
+assert.ok(spectraproPage.includes('calibrationScript.js?v=1.4.1'), 'canonical calibration engine must use the v1.4 release cache key');
 assert.ok(!spectraproPage.includes('phase1-bridge'), 'duplicate calibration bridge must not return');
 assert.ok(!spectraproPage.includes('languageScript.js'), 'canonical application page must not load the retired query-parameter language loader');
 
@@ -42,7 +42,7 @@ const lateUiVersionSources = [
 ];
 for (const relative of lateUiVersionSources) {
   const source = read(relative);
-  assert.ok(source.includes('1.4.0'), relative + ' must carry the canonical 1.4.0 app version');
+  assert.ok(source.includes('1.4.1'), relative + ' must carry the canonical 1.4.1 app version');
   assert.ok(!/3\\.0\\.[0-9]/.test(source), relative + ' must not expose a stale 3.0.x runtime version');
 }
 const stateStore = read('docs/frontend/scripts/mod/stateStore.js');
@@ -59,7 +59,7 @@ assert.ok(calibrationEngine.includes("sp.store.update('calibration', canonical")
 assert.ok(calibrationEngine.includes('sp.calibrationPointManager = manager'), 'calibration engine must synchronize CALIBRATE points directly');
 
 const uiTweaks = read('docs/frontend/scripts/mod/uiTweaks.js');
-assert.ok(uiTweaks.includes("const APP_VERSION = '1.4.0';"), 'late UI tweaks must use canonical app version 1.4.0');
+assert.ok(uiTweaks.includes("const APP_VERSION = '1.4.1';"), 'late UI tweaks must use canonical app version 1.4.1');
 assert.ok(uiTweaks.includes("const DISPLAY_VERSION = 'v' + APP_VERSION;"), 'visible version badge must derive from canonical app version');
 const bootstrap316 = read('docs/frontend/scripts/mod/proBootstrap.js');
 for (const id of ['spGraphXAxisMode', 'spGraphYAxisMode', 'spGraphPeaks', 'spGraphOverlaysMenu']) {
@@ -98,11 +98,11 @@ assert.ok(fs.existsSync(path.join(root, 'backend/ai-worker/tests/contracts.test.
 assert.ok(fs.existsSync(path.join(root, 'backend/ai-worker/tests/openaiClient.test.mjs')), 'backend OpenAI connector tests must remain in the repository');
 
 const aiWorker = read('backend/ai-worker/src/index.js');
-assert.ok(aiWorker.includes("appVersion: '1.4.0'"), 'AI Worker responses must expose application release 1.4.0');
+assert.ok(aiWorker.includes("appVersion: '1.4.1'"), 'AI Worker responses must expose application release 1.4.1');
 const aiWorkerPackage = JSON.parse(read('backend/ai-worker/package.json'));
-assert.equal(aiWorkerPackage.version, '1.4.0', 'AI Worker package metadata must align with the SPECTRA PRO 1.4.0 release');
+assert.equal(aiWorkerPackage.version, '1.4.1', 'AI Worker package metadata must align with the SPECTRA PRO 1.4.1 release');
 const aiWorkerReadme = read('backend/ai-worker/README.md');
-assert.ok(aiWorkerReadme.includes('appVersion: "1.4.0"'), 'AI Worker deployment documentation must show the current appVersion');
+assert.ok(aiWorkerReadme.includes('appVersion: "1.4.1"'), 'AI Worker deployment documentation must show the current appVersion');
 assert.ok(!aiWorker.includes('stage: 6'), 'AI Worker responses must not expose a temporary roadmap-stage label');
 
 const removedPlaceholders = [
@@ -132,16 +132,16 @@ const versionedRuntimeSources = [
 ];
 for (const relative of versionedRuntimeSources) {
   const source = read(relative);
-  assert.ok(source.includes("'1.4.0'"), relative + ' must report canonical runtime version 1.4.0');
+  assert.ok(source.includes("'1.4.1'"), relative + ' must report canonical runtime version 1.4.1');
   assert.ok(!source.includes("'3.0.1'"), relative + ' must not report legacy runtime version 3.0.1');
 }
 const workerEntry = read('docs/frontend/workers/analysis.worker.js');
-assert.ok(workerEntry.includes("const WORKER_ASSET_VERSION = '1.4.0-analysis-1';"), 'analysis worker imports must share a canonical 1.4.0 cache namespace');
+assert.ok(workerEntry.includes("const WORKER_ASSET_VERSION = '1.4.1-analysis-1';"), 'analysis worker imports must share a canonical 1.4.1 cache namespace');
 assert.ok(!workerEntry.includes('?v=3.0.1') && !workerEntry.includes('?v=1.3.8'), 'analysis worker imports must not carry legacy app-version-looking cache keys');
 const workerRouter = read('docs/frontend/workers/workerRouter.js');
-assert.ok(workerRouter.includes("const ANALYSIS_VERSION = '1.4.0';"), 'analysis results must report canonical analysis version 1.4.0');
+assert.ok(workerRouter.includes("const ANALYSIS_VERSION = '1.4.1';"), 'analysis results must report canonical analysis version 1.4.1');
 assert.ok(workerRouter.includes('out.analysisVersion = ANALYSIS_VERSION;'), 'analysis result metadata must derive from the canonical analysis version');
-assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.4.0-versioning-1';"), 'dynamic frontend assets must use a 1.4.0 cache revision namespace');
+assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.4.1-versioning-1';"), 'dynamic frontend assets must use a 1.4.1 cache revision namespace');
 assert.ok(stateStore.includes("../scripts/mod/uiTweaks.js?v="), 'dynamic loader must use the unversioned uiTweaks filename');
 
 const recordingPath = path.join(root, 'docs/frontend/pages/recording.html');

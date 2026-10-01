@@ -246,7 +246,7 @@ function ensureHost() {
         },
         loadedAt: Date.now(),
         scaffold: false,
-        version: '1.4.0'
+        version: '1.4.1'
       };
     } else {
       const mods = v15.registry.modules || (v15.registry.modules = {});
@@ -255,7 +255,7 @@ function ensureHost() {
       });
       v15.registry.loadedAt = v15.registry.loadedAt || Date.now();
       v15.registry.scaffold = false;
-      v15.registry.version = '1.4.0';
+      v15.registry.version = '1.4.1';
     }
     return v15.registry;
   }
@@ -2351,7 +2351,7 @@ function ensureHardwarePanel() {
 
   function loadHardwareProfiles() {
     if (typeof window.fetch !== 'function') return Promise.resolve([]);
-    return window.fetch('../data/hardware_profiles.json?v=1.4.0-startup-2').then(function (response) {
+    return window.fetch('../data/hardware_profiles.json?v=1.4.1-startup-2').then(function (response) {
       if (!response.ok) throw new Error('hardware-profile-catalog-load-failed-' + response.status);
       return response.json();
     }).then(function (catalog) {
@@ -3185,47 +3185,36 @@ function ensureCalibrationShell() {
     }
   });
 
-  // Load-from-file input
+  // Load-from-file input. Use the same canonical importer as the startup popup.
   panel.addEventListener('change', function (e) {
     const t = e.target;
     if (!t || t.id !== 'spCalLoadFileInput') return;
     const file = t.files && t.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function (evt) {
-      try {
-        const raw = String((evt && evt.target && evt.target.result) || '');
-        const lines = raw.split(/\r?\n/).map(function (l) { return String(l || '').trim(); }).filter(Boolean);
-        const pts = [];
-        for (let i = 0; i < lines.length; i += 1) {
-          const parts = lines[i].split(/[;,\t]/).map(function (x) { return String(x || '').trim(); });
-          if (parts.length < 2) continue;
-          const px = Number(String(parts[0]).replace(',', '.'));
-          const nm = Number(String(parts[1]).replace(',', '.'));
-          if (Number.isFinite(px) && Number.isFinite(nm)) pts.push({ px: px, nm: nm, enabled: true });
-        }
-        if (!pts.length) {
-          setShellNote('Load failed: no valid lines found (expected px;nm).');
+
+    const io = sp.v15 && sp.v15.calibrationIO;
+    if (!io || typeof io.importCalibrationFile !== 'function') {
+      setShellNote('Load failed: calibration importer unavailable.');
+      try { t.value = ''; } catch (_) {}
+      return;
+    }
+
+    Promise.resolve(io.importCalibrationFile(file, { origin: 'user', source: 'file-import' }))
+      .then(function (result) {
+        if (!result || !result.ok) {
+          setShellNote('Load failed: ' + String((result && result.reason) || 'invalid calibration file'));
           return;
         }
-        const mgr = getMgr();
-        if (mgr && typeof mgr.setPoints === 'function') mgr.setPoints(pts);
         renderShellPointsTable();
         updateShellCountsAndValidation();
-
-        const result = applyShellCalibrationPointsToOriginal();
-        if (!result || !result.ok) {
-          setShellNote('Loaded ' + pts.length + ' point(s), but apply failed: ' + String((result && result.reason) || 'unknown'));
-        } else {
-          setShellNote('Loaded and applied ' + String(result.count || 0) + ' point(s).');
-        }
+        setShellNote('Loaded and applied ' + String(result.importedPoints || result.pointCount || 0) + ' point(s).');
         renderMiniGraph();
         renderStatus();
-      } catch (err) {
+      })
+      .catch(function (err) {
         setShellNote('Load failed: ' + String(err && err.message || err));
-      }
-    };
-    reader.readAsText(file);
+      });
+
     try { t.value = ''; } catch (_) {}
   });
 

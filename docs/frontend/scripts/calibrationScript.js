@@ -604,6 +604,20 @@ function importCalibrationFile() {
     const file = fileInput && fileInput.files ? fileInput.files[0] : null;
     if (!file) return;
 
+    try {
+        const sp = window.SpectraPro || {};
+        const io = sp.v15 && sp.v15.calibrationIO;
+        if (io && typeof io.importCalibrationFile === 'function') {
+            Promise.resolve(io.importCalibrationFile(file, { origin: 'user', source: 'file-import' }))
+                .then(function(result) {
+                    if (!result || !result.ok) callError("wrongCalPointsFormatError");
+                })
+                .catch(function() { callError("wrongCalPointsFormatError"); });
+            return;
+        }
+    } catch (_) {}
+
+    // Fallback for the legacy Recording page, which does not load calibrationIO.js.
     const reader = new FileReader();
     const validFormatRegex = /^(\d+(?:[.,]\d+)?);(\d+(?:[.,]\d+)?)(?:\r?\n|$)/;
 
