@@ -1,7 +1,7 @@
 (function (global) {
   'use strict';
   const sp = global.SpectraPro = global.SpectraPro || {};
-  const APP_VERSION = '1.4.0';
+  const APP_VERSION = '1.4.1';
   const DISPLAY_VERSION = 'v' + APP_VERSION;
   sp.version = APP_VERSION;
 
