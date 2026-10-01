@@ -199,7 +199,11 @@ ${styleSafe(panelCss)}</style></head><body data-test-result="RUNNING">
 ${seed}
 window.__spectraStartupHardwareFlowInstalled=true; window.__spectraStartupHardwareReady=false;
 let calibrationFileRequestCount=0;
-document.getElementById('my-file').click=function(){calibrationFileRequestCount+=1;};
+const nativeInputClick=HTMLInputElement.prototype.click;
+HTMLInputElement.prototype.click=function(){
+  if(this && this.id==='my-file'){calibrationFileRequestCount+=1;return;}
+  return nativeInputClick.call(this);
+};
 const profilesArray=${JSON.stringify(catalog.profiles)}; const profiles=${JSON.stringify(profileMap)};
 const appliedHardware=[]; const restoredCalibrationCalls=[]; const hookHandlers=Object.create(null);
 let calibrationState={isCalibrated:false,calibrated:false,points:[],coefficients:[],origin:'none',sampleId:''};
