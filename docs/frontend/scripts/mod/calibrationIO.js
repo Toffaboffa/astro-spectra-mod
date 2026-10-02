@@ -199,7 +199,16 @@
       }
       const reader = new FileReader();
       reader.onload = function (event) {
-        resolve(mod.importCalibrationText(String(event && event.target ? event.target.result : ''), opts));
+        try {
+          resolve(mod.importCalibrationText(String(event && event.target ? event.target.result : ''), opts));
+        } catch (error) {
+          try { console.warn('[SPECTRA calibration] file import failed', error); } catch (_) {}
+          resolve({
+            ok: false,
+            calibrated: false,
+            reason: 'Calibration import failed: ' + String(error && error.message || error || 'unknown error')
+          });
+        }
       };
       reader.onerror = function () {
         resolve({ ok: false, calibrated: false, reason: 'Calibration file could not be read.' });
