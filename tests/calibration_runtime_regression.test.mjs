@@ -86,7 +86,6 @@ const context = {
     documentElement: { appendChild(){}, removeChild(){} },
     body: { appendChild(){}, removeChild(){} }
   },
-  updateTextContent(){},
   callError(code){ errors.push(code); },
   getTimestamp(){ return 'test'; },
   clearGraph(){},
@@ -116,6 +115,7 @@ vm.runInContext(read('docs/frontend/scripts/mod/stateStore.js'), context, { file
 vm.runInContext(read('docs/frontend/scripts/mod/calibrationPointManager.js'), context, { filename: 'calibrationPointManager.js' });
 vm.runInContext(read('docs/frontend/scripts/mod/spectrumFrameAdapter.js'), context, { filename: 'spectrumFrameAdapter.js' });
 
+assert.equal(typeof context.updateTextContent, 'undefined', 'calibration runtime test must not rely on the retired languageScript global');
 assert.ok(context.SpectraCore && context.SpectraCore.calibration, 'canonical calibration API must be exposed');
 assert.equal(typeof context.SpectraCore.calibration.applyPoints, 'function');
 assert.equal(typeof context.SpectraCore.calibration.reset, 'function');
