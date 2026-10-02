@@ -102,7 +102,7 @@ function addInputPair() {
 
     addInputPairListener(div);
 
-    updateTextContent();
+    if (typeof window.updateTextContent === 'function') window.updateTextContent();
 
     if (inputBoxCounter > minInputBoxNumber) {
         enablePairRemoveButtons();
