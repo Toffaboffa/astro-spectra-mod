@@ -1,3 +1,14 @@
+(function installLegacyTranslationCompat(global) {
+    if (!global || typeof global.updateTextContent === 'function') return;
+    global.updateTextContent = function updateTextContentCompat() {
+        try {
+            const sp = global.SpectraPro;
+            const i18n = sp && sp.i18n;
+            if (i18n && typeof i18n.refresh === 'function') i18n.refresh();
+        } catch (_) {}
+    };
+})(window);
+
 /**
  * Changes the active settings screen on the left sidebar
  */
