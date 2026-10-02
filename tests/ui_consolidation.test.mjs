@@ -546,7 +546,8 @@ assert.ok(calibrationIo.includes('function queueAxisQuestionAfterHardwareReady()
 assert.ok(calibrationIo.includes('queueAxisQuestionAfterHardwareReady();'), 'calibration changes must defer the wavelength-axis popup until hardware startup is complete');
 assert.ok(calibrationIo.includes("window.addEventListener('spectra:startup-hardware-ready', runOnce, { once: true });"), 'all startup follow-up prompts must share the hardware-ready gate');
 assert.ok(!calibrationIo.includes("runAfterStartupHardwareReady(function () {\n      queueAxisQuestionAfterHardwareReady();"), 'wavelength-axis deferral must not recurse into itself');
-assert.ok(spectrapro.includes('calibrationIO.js?v=1.4.1-versioning-1'), 'published calibration UI must use the normalized versioning cache key');
+assert.ok(spectrapro.includes('calibrationIO.js?v=1.4.1-startup-runtime-1'), 'published calibration UI must cache-bust the startup runtime fix');
+assert.ok(spectrapro.includes('setupScript.js?v=1.4.1-ui6'), 'published setup runtime must cache-bust the legacy translation compatibility fix');
 assert.ok(!calibrationIo.includes('__spectraPromptBound'), 'calibration file import must not use the old timing guess');
 assert.ok(uiPanels.includes("'calibration',"), 'root calibration state updates must reanalyze static images');
 assert.ok(stateStore.includes("exampleSpectrumUi.js?v=' + AI_ASSET_VERSION"), 'dynamic sample loader must use the release cache key');

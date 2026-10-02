@@ -73,9 +73,12 @@ const spectrapro = read('docs/frontend/pages/spectrapro.html');
   '../scripts/cameraSelection.js', '../scripts/calibrationScript.js', '../scripts/graphScript.js'
 ].forEach((source) => assert.ok(spectrapro.includes(source), `main runtime script must remain loaded: ${source}`));
 
+const setupScript = read('docs/frontend/scripts/setupScript.js');
 const calibrationIo = read('docs/frontend/scripts/mod/calibrationIO.js');
 const calibrationScript = read('docs/frontend/scripts/calibrationScript.js');
 const proBootstrap = read('docs/frontend/scripts/mod/proBootstrap.js');
+assert.ok(setupScript.includes('installLegacyTranslationCompat'), 'startup must provide a safe compatibility bridge for retired updateTextContent calls');
+assert.ok(setupScript.includes("typeof global.updateTextContent === 'function'"), 'startup translation compatibility must not overwrite a real translator');
 assert.ok(calibrationIo.includes('function isWavelengthAxisSelected()'));
 assert.ok(calibrationIo.includes('if (isWavelengthAxisSelected())'), 'calibration must not re-prompt when nm is already selected');
 assert.ok(calibrationIo.includes('function isUsableCalibration(state)'), 'axis prompt must require a verified canonical calibration');
