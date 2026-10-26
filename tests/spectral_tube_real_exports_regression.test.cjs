@@ -120,7 +120,7 @@ test('two actual H spectra retain the strong H-alpha peak and broad-pass evidenc
     assert.ok(alpha.prominence / strongest > 0.9, id + ': H-alpha is no longer among the strongest peaks');
     assert.ok(offset > 1.8 && offset < 2.0, id + ': review the measured H-alpha offset');
     const broad = scoreAtomic(item, 'H', 3.0);
-    assert.ok(broad && broad.hits.some((h) => Math.abs(h.refNm - 656.281) < 0.01),
+    assert.ok(broad && broad.hits.some((h) => Math.abs(h.referenceNm - 656.281) < 0.01),
       id + ': H-alpha must remain available as a broad confirmation candidate');
     const narrow = scoreAtomic(item, 'H', 1.8);
     assert.ok(narrow && narrow.hits.length >= 2, id + ': two narrow Balmer matches missing');
@@ -143,8 +143,8 @@ test('both tentative oxygen exports preserve strong O I 777/845 nm evidence and 
     assert.ok(oxygen845.index > item.calibrationAnchors.at(-1)[0],
       id + ': 845 nm peak should flag calibration extrapolation');
     const atomic = scoreAtomic(item, 'O', 3.0);
-    assert.ok(atomic && atomic.hits.some((h) => Math.abs(h.refNm - 777.35) < 0.02));
-    assert.ok(atomic.hits.some((h) => Math.abs(h.refNm - 844.65) < 0.02));
+    assert.ok(atomic && atomic.hits.some((h) => Math.abs(h.referenceNm - 777.35) < 0.02));
+    assert.ok(atomic.hits.some((h) => Math.abs(h.referenceNm - 844.65) < 0.02));
     const molecular = replayMolecular(item);
     assert.ok(molecular.ok && Array.isArray(molecular.elementScores));
     // We do NOT assert a CO2 winner. This is the contested behavior to fix.
@@ -156,8 +156,8 @@ test('known Ne and Hg controls retain multiple independent production fingerprin
   const mercury = scoreAtomic(byId['211000'], 'Hg', 1.8);
   assert.ok(neon && neon.hits.length >= 7, 'Measured neon fingerprint became unrecognizable');
   assert.ok(mercury && mercury.hits.length >= 3, 'Measured mercury fingerprint became unrecognizable');
-  assert.ok(neon.hits.some((h) => Math.abs(h.refNm - 585.249) < 0.01));
-  assert.ok(mercury.hits.some((h) => Math.abs(h.refNm - 546.074) < 0.01));
+  assert.ok(neon.hits.some((h) => Math.abs(h.referenceNm - 585.249) < 0.01));
+  assert.ok(mercury.hits.some((h) => Math.abs(h.referenceNm - 546.074) < 0.01));
 });
 
 test('real N2 export still matches the production molecular gas-tube fingerprint', () => {
