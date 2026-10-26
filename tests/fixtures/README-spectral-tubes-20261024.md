@@ -63,3 +63,11 @@ production atomic/molecular fingerprint scorers, and registers unresolved
 scientific requirements as TODO tests. **It deliberately does not assert that
 an existing misclassification must remain broken.** Turn each TODO into a
 passing acceptance test when its implementation is delivered in later steps.
+
+## Step 2: review-only strong lines (2026-10-26)
+
+- Two measured H spectra (20:38 and 20:44) now exercise the full **production atomic fingerprint enhancement**. Their high-prominence H-alpha features near 654.44 nm are shown as **possible strong near misses**, rather than accepted H-alpha hits at 656.281 nm. The strict 1.8 nm score/identity gate remains unchanged.
+- The review is permitted only after two **distinct accepted diagnostic lines** support the same atomic candidate, a significant non-overlapping feature lies between the strict cap and a maximum 3.0 nm review window, and the feature passes the strong-prominence threshold. The possible hit is `accepted: false` and `excludedFromScoring: true`.
+- The measurement retains the tentative evidence in `analysis.tentativeLineMatches`. `analysis.referenceLineConsistency` summarizes reference residual spread for the leading atomic candidate; it explicitly **does not claim independent instrument calibration** or apply an automatic wavelength shift. Both are preserved in JSON exports; possible lines are shown in the LAB Best Match summary and in the deterministic PDF analysis log, separate from scored/accepted matches.
+- Automatic tests verify the H-alpha cases and the no-single-line/no-broad-only controls. This does **not** establish ±0.1 nm accuracy or justify widening the accepted identity gate.
+- The O2/CO2 competing-parent-gas question belongs to **Step 3**, not to calibration/strong-line review.

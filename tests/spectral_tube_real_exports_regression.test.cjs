@@ -211,12 +211,15 @@ test('STEP 2: broad candidate window alone cannot create an accepted identity', 
   const all = peaksOf(byId['203804']);
   const single = [all.find((peak) => Math.abs(peak.nm - 654.44) < 0.02)];
   assert.equal(atom.scoreProfile(h, single, 1.8, rangeOf(byId['203804'])), null);
-  const oneMatch = atom.scoreProfile(h, all.filter((peak) =>
-    Math.abs(peak.nm - 434.4) < 0.2), 1.8, rangeOf(byId['203804']));
-  assert.ok(oneMatch);
+  // The production scorer intentionally rejects a single-line fingerprint.
+  // Construct ONE strictly qualified hit to exercise the near-miss gate in isolation.
+  const oneStrictHit = [{
+    element: 'H', referenceNm: 434.046, observedNm: 434.3831,
+    peakIndex: 142, deltaNm: 0.3371
+  }];
   assert.equal(atom.reviewStrongNearMisses(
     [{ element: 'H', mode: 'atomic', matchedPeaks: 1, diagnosticMatchedPeaks: 1 }],
-    all, oneMatch.hits, {}, 1.8
+    all, oneStrictHit, {}, 1.8
   ).length, 0, 'One confirmed line must not enable broad near-miss evidence');
   const broadOnly = atom.reviewStrongNearMisses(
     [{ element: 'H', mode: 'atomic', matchedPeaks: 2, diagnosticMatchedPeaks: 2 }],
