@@ -559,14 +559,14 @@ assert.ok(!graphScript.includes("resizeCanvasToDisplaySize(graphCtx, graphCanvas
 for (const label of ['Advanced analysis settings', 'Advanced ASTRO details', 'Advanced: reference spectrum comparison', 'Continuum diagnostics']) {
   assert.ok(i18n.includes("'" + label + "':"), label + ' must remain translatable in EN/SV UI');
 }
-assert.ok(spectrapro.includes('analysisWorkerClient.js?v=1.4.1-versioning-1'), 'published worker client must use the normalized runtime cache key');
+assert.ok(spectrapro.includes('analysisWorkerClient.js?v=1.4.1-line-review-2'), 'published worker client must use the normalized runtime cache key');
 assert.ok(spectrapro.includes('proBootstrap.js?v=1.4.1-best-match-gate-1'), 'published bootstrap must refresh Best Match gate presentation');
 assert.ok(spectrapro.includes('dataQualityPanel.js?v=1.4.1-result-consistency-1'), 'published Data Quality module must use the result-consistency cache key');
-assert.ok(spectrapro.includes('stateStore.js?v=1.4.1-versioning-1'), 'published state store must refresh normalized dynamic asset versions');
+assert.ok(spectrapro.includes('stateStore.js?v=1.4.1-line-review-2'), 'published state store must refresh normalized dynamic asset versions');
 assert.ok(spectrapro.includes('imageLoadingScript.js?v=1.4.1-provenance-1'), 'published image loader must use the source-provenance cache key');
 assert.ok(spectrapro.includes('framePreview.js?v=1.4.1-source-ui-1'), 'published frame preview must use the source-identity UI cache key');
-assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=1.4.1-analysis-1'"), 'worker client must load the canonical 1.4.1 analysis worker namespace');
-assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.4.1-versioning-1';"), 'dynamic export/AI/i18n modules must use the normalized 1.4.1 asset namespace');
+assert.ok(workerClient.includes("workerUrl: '../workers/analysis.worker.js?v=1.4.1-analysis-2'"), 'worker client must load the canonical 1.4.1 analysis worker namespace');
+assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.4.1-line-review-2';"), 'dynamic export/AI/i18n modules must use the normalized 1.4.1 asset namespace');
 assert.ok(!spectrapro.includes('languageScript.js'), 'canonical app must not load the retired query-parameter language loader');
 assert.ok(stateStore.includes("script.id = 'spI18nUiLoader';") && stateStore.includes("script.src = '../scripts/mod/i18nUi.js?v=' + AI_ASSET_VERSION;"), 'modern i18n must remain dynamically loaded by stateStore');
 assert.ok(stateStore.includes("../scripts/mod/uiTweaks.js?v=' + AI_ASSET_VERSION"), 'dynamic UI tweaks loader must use the unversioned module filename');
