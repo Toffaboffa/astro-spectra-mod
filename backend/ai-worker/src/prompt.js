@@ -12,7 +12,9 @@ EVIDENCE
 - Distinguish measured features, SPECTRA PRO matches/rankings and physical interpretation.
 - Use supplied facts only. Never invent peaks, wavelengths, species, residuals or conditions.
 - Score share/rank is not probability, concentration or abundance. Best Match is a candidate, not proof.
-- Respect winner.primaryEvidence. If it is applicable and reportable=false, the first ranked item is only the top-ranked candidate; do not call it Best Match or primary identification. State the supplied gate reason when it materially affects the conclusion.
+- Respect winner.primaryEvidence.status: insufficient-evidence means NO established identification; possible-identification means tentative candidate only; strong-evidence means internally strong multi-feature support, NOT verified tube contents. Never treat reportable=true as strong if status says possible.
+- Respect the absence of analysis.bestSpecies. A topCandidate is only the highest-ranked hypothesis, never proof, even when its score share is high.
+- Respect analysis.gasTubeSource. If parentGasStatus is unresolved, describe observed O I emission separately from parent-gas identity. O I lines do not establish an O2 tube; competing CO bands do not establish CO2. Never override the deterministic uncertainty veto.
 - Prefer coherent multi-feature evidence and small residuals over isolated coincidences. For atomic-fingerprint-v1 use diagnostic coverage and missed-strong evidence; for plasma-diagnostic-v1 use band patterns.
 - For fluorescence, prioritize supplied λmax, centroid, FWHM, range, asymmetry and shoulders. Narrow-line candidates are secondary; band shape alone does not uniquely identify a fluorophore.
 - Follow measurement quality and QC. Full-frame edge extrapolation is only a warning when result coverage is inside calibration anchors.
@@ -328,6 +330,9 @@ function compactWinner(winner) {
       model: text(gate.model, 48),
       applicable: gate.applicable === true,
       reportable: gate.reportable !== false,
+      status: text(gate.status, 48),
+      qualityStatus: text(gate.qualityStatus, 32),
+      independentFitResidualCheck: gate.independentFitResidualCheck === true,
       reason: text(gate.reason, 96),
       acceptedHits: n(gate.acceptedHitCount, 0),
       independentEvidence: n(gate.independentEvidenceCount, 0),
@@ -373,7 +378,17 @@ function compactModelData(payload) {
   const p = payload && typeof payload === 'object' ? payload : {};
   const analysis = p.analysis && typeof p.analysis === 'object' ? p.analysis : {};
   const candidates = compactCandidates(analysis.candidates);
-  const bestSpecies = text(analysis.bestMatch && analysis.bestMatch.species, 80);
+  const gate = analysis.winnerBreakdown && analysis.winnerBreakdown.primaryEvidence;
+  const sourceAssessment = analysis.gasTubeSource && typeof analysis.gasTubeSource === 'object'
+    ? analysis.gasTubeSource : null;
+  const unresolvedGas = sourceAssessment && /^unresolved-/.test(String(sourceAssessment.parentGasStatus || ''));
+  // Defensive backend gate; a stale frontend must not promote a tentative
+  // ranking to Best Match by including an inconsistent bestMatch object.
+  const gated = gate && gate.applicable === true &&
+    (gate.reportable === false || gate.status === 'possible-identification' ||
+      gate.status === 'insufficient-evidence');
+  const bestSpecies = gated || unresolvedGas ? null
+    : text(analysis.bestMatch && analysis.bestMatch.species, 80);
   const topCandidate = text((analysis.topCandidate && analysis.topCandidate.species) || (candidates.rows[0] && candidates.rows[0][0]), 80);
   const sourceContext = p.context && p.context.source && typeof p.context.source === 'object' ? {
     kind: text(p.context.source.kind, 40)
@@ -402,6 +417,14 @@ function compactModelData(payload) {
       candidates,
       hits: compactHits(analysis.hits),
       winner: compactWinner(analysis.winnerBreakdown),
+      gasTubeSource: sourceAssessment ? {
+        parentGasStatus: text(sourceAssessment.parentGasStatus, 64),
+        parentGasConfirmed: false,
+        candidate: text(sourceAssessment.candidate, 40),
+        reason: text(sourceAssessment.reason, 96),
+        atomicOxygenStatus: text(sourceAssessment.atomicOxygenStatus, 64),
+        coBandMatches: n(sourceAssessment.coBandMatches, 0)
+      } : null,
       calibrationDiagnostics: compactCalibrationDiagnostics(analysis.calibrationDiagnostics),
       astro: compactAstro(analysis.astro),
       referenceComparison: compactReferenceComparison(analysis.referenceComparison)

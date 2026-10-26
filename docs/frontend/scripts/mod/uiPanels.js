@@ -97,6 +97,8 @@
     const possible = !!(primaryEvidence && primaryEvidence.applicable === true &&
       primaryEvidence.reportable !== false && primaryEvidence.status === 'possible-identification');
     const winnerReportable = !rejected && !possible;
+    const strong = !!(primaryEvidence && primaryEvidence.applicable === true &&
+      primaryEvidence.status === 'strong-evidence');
     const summaries = scope.querySelectorAll ? scope.querySelectorAll('.sp-es-summary') : [];
     summaries.forEach(function (el) {
       if (!el) return;
@@ -113,8 +115,9 @@
         const evidenceKind = String(winner.mode || '').toLowerCase() === 'molecular' ? 'bands' : 'lines';
         const isSv = sp.i18n && typeof sp.i18n.getLanguage === 'function' && sp.i18n.getLanguage() === 'sv';
         const statusLabel = possible ? (isSv ? 'Möjlig identifiering: ' : 'Possible identification: ')
-          : winnerReportable ? (isSv ? 'Starkt stöd: ' : 'Strong evidence: ')
-            : (isSv ? 'Högst rankad kandidat: ' : 'Top candidate: ');
+          : rejected ? (isSv ? 'Högst rankad kandidat: ' : 'Top candidate: ')
+            : strong ? (isSv ? 'Starkt stöd: ' : 'Strong evidence: ')
+              : (isSv ? 'Bästa matchning: ' : 'Best match: ');
         let html = statusLabel + '<b>' + species + '</b> · Score share ' + share + '%';
         if (matched > 0) html += ' · Evidence ' + matched + ' ' + evidenceKind;
         if (delta != null) html += ' · Δmed ' + escapeHtml(delta) + ' nm';
@@ -158,7 +161,8 @@
       } else if (el.innerHTML) {
         const originalHtml = el.innerHTML;
         let html = originalHtml;
-        html = html.replace(/Winner:\s*<b>/g, possible ? 'Possible identification: <b>' : winnerReportable ? 'Strong evidence: <b>' : 'Top candidate: <b>');
+        html = html.replace(/Winner:\s*<b>/g, possible ? 'Possible identification: <b>'
+          : rejected ? 'Top candidate: <b>' : strong ? 'Strong evidence: <b>' : 'Best match: <b>');
         html = html.replace(/<\/b>\s*•\s*([0-9]+)%/g, '</b> · Score share $1%');
         if (rejected && html.indexOf('Insufficient evidence for Best Match') === -1) html += ' · Insufficient evidence for Best Match';
         if (possible && html.indexOf('Tentative interpretation') === -1) html += ' · Tentative interpretation';
@@ -168,7 +172,9 @@
       el.title = possible
         ? 'Possible identification: independent calibration support or measurement quality is limited. Score share is not probability.'
         : winnerReportable
-          ? 'Strong current multi-feature evidence, not independently verified source identity or probability.'
+          ? (strong
+            ? 'Strong multi-feature evidence, not independently verified source identity or probability.'
+            : 'Best current ranking; no three-tier evidence assessment applies to this result.')
           : 'Top-ranked candidate only. Best Match is not established (' + String(primaryEvidence && primaryEvidence.reason || 'insufficient-evidence') + ').';
     });
 

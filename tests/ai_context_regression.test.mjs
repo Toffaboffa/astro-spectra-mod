@@ -201,6 +201,48 @@ assert.equal(labAtomicModelData.analysis.bestSpecies, null, 'Backend model data 
 assert.equal(labAtomicModelData.analysis.topCandidate, 'Hydrogen', 'Backend model data must preserve the top-ranked candidate separately');
 assert.equal(labAtomicModelData.analysis.winner.primaryEvidence.reportable, false, 'Backend prompt data must preserve the deterministic gate result');
 
+// Step 5: a tentative scientific result must survive frontend JSON ->
+// backend compact model input without becoming a confident Best Match.
+const possibleFrontend = structuredClone(labAtomic);
+possibleFrontend.analysis.bestMatch = { species: 'Hydrogen' }; // stale/malformed caller
+possibleFrontend.analysis.winnerBreakdown.primaryEvidence.reportable = true;
+possibleFrontend.analysis.winnerBreakdown.primaryEvidence.status = 'possible-identification';
+possibleFrontend.analysis.winnerBreakdown.primaryEvidence.qualityStatus = 'moderate';
+possibleFrontend.analysis.winnerBreakdown.primaryEvidence.independentFitResidualCheck = false;
+function modelDataFor(payload) {
+  const input = buildModelInput(payload);
+  return JSON.parse(input.slice(input.indexOf('{')));
+}
+const possibleModel = modelDataFor(possibleFrontend);
+assert.equal(possibleModel.analysis.bestSpecies, null,
+  'Backend must reject an inconsistent stale Best Match when status is possible');
+assert.equal(possibleModel.analysis.topCandidate, 'Hydrogen');
+assert.equal(possibleModel.analysis.winner.primaryEvidence.status, 'possible-identification');
+assert.equal(possibleModel.analysis.winner.primaryEvidence.independentFitResidualCheck, false);
+
+const oxygenConflict = structuredClone(possibleFrontend);
+oxygenConflict.analysis.winnerBreakdown.primaryEvidence.reportable = false;
+oxygenConflict.analysis.winnerBreakdown.primaryEvidence.status = 'insufficient-evidence';
+oxygenConflict.analysis.winnerBreakdown.primaryEvidence.reason = 'parent-gas-ambiguous-oxygen-emission';
+oxygenConflict.analysis.gasTubeSource = {
+  candidate: 'CO2', parentGasStatus: 'unresolved-competing-emission',
+  parentGasConfirmed: false, atomicOxygenStatus: 'strong-emission-evidence',
+  coBandMatches: 4, reason: 'dominant-atomic-oxygen-versus-co-bands'
+};
+const oxygenModel = modelDataFor(oxygenConflict);
+assert.equal(oxygenModel.analysis.bestSpecies, null);
+assert.equal(oxygenModel.analysis.gasTubeSource.parentGasStatus, 'unresolved-competing-emission');
+assert.equal(oxygenModel.analysis.gasTubeSource.atomicOxygenStatus, 'strong-emission-evidence');
+assert.equal(oxygenModel.analysis.gasTubeSource.coBandMatches, 4);
+assert.equal(oxygenModel.analysis.gasTubeSource.parentGasConfirmed, false);
+assert.equal(oxygenModel.analysis.winner.primaryEvidence.reportable, false);
+
+const instructed = buildDeveloperInstructions();
+assert.ok(instructed.includes('possible-identification'),
+  'AI instructions must distinguish a tentative candidate from strong support');
+assert.ok(instructed.includes('parentGasStatus'),
+  'AI instructions must carry the emitter-vs-parent-gas caveat');
+
 const molecular = payloads.get('lab-molecular');
 assert.equal(molecular.analysis.winnerBreakdown.possibleBands[0].element, 'N2+', 'structured possible-band evidence must survive frontend compaction');
 const molecularModelInput = buildModelInput(molecular);
