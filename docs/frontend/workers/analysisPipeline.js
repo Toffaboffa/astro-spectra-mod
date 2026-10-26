@@ -65,8 +65,23 @@
     if (resolution && typeof resolution.independentEvidenceCount === 'function') {
       return resolution.independentEvidenceCount(wavelengths, resolutionModel);
     }
+    // Defensive fallback when the resolution helper is not installed.
+    // Never count two unresolved wavelength centers as independent evidence.
+    const spacing = finite(resolutionModel && resolutionModel.effectiveResolutionFwhmNm);
+    const sorted = wavelengths.slice().sort(function (a, b) { return a - b; });
+    if (spacing !== null && spacing > 0) {
+      let count = 0;
+      let clusterEdge = null;
+      sorted.forEach(function (value) {
+        if (clusterEdge === null || value - clusterEdge >= spacing) {
+          count += 1;
+          clusterEdge = value;
+        }
+      });
+      return count;
+    }
     const unique = Object.create(null);
-    wavelengths.forEach(function (value) { unique[value.toFixed(3)] = true; });
+    sorted.forEach(function (value) { unique[value.toFixed(3)] = true; });
     return Object.keys(unique).length;
   }
 
