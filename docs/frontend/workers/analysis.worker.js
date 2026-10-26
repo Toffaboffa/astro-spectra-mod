@@ -1,4 +1,4 @@
-const WORKER_ASSET_VERSION = '1.4.1-analysis-2';
+const WORKER_ASSET_VERSION = '1.4.1-analysis-3';
 
 importScripts(
   './workerTypes.js?v=' + WORKER_ASSET_VERSION,
@@ -30,6 +30,7 @@ importScripts(
   './molecularEvidencePatch.js?v=' + WORKER_ASSET_VERSION,
   './atomicProfiles.js?v=' + WORKER_ASSET_VERSION,
   './atomicEvidence.js?v=' + WORKER_ASSET_VERSION,
+  './gasTubeSourceAssessment.js?v=' + WORKER_ASSET_VERSION,
   './fluorescenceAnalysis.js?v=' + WORKER_ASSET_VERSION,
   './workerRouter.js?v=' + WORKER_ASSET_VERSION
 );

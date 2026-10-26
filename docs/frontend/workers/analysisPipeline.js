@@ -80,12 +80,16 @@
     const key = candidateKey(winner) || String(breakdown.primaryEmitter || '').trim();
     const evidenceModel = String(winner.evidenceModel || breakdown.evidenceModel || '');
     const atomicApplicable = String(winner.mode || '').toLowerCase() === 'atomic' || evidenceModel.indexOf('atomic-fingerprint') !== -1;
+    const gasSource = String(output.presetId || '') === 'smart-gastube' && output.gasTubeSourceAssessment;
+    const gasSourceConflict = !!(gasSource && gasSource.reportable === false &&
+      String(gasSource.candidate || '') === key);
     const base = {
       model: PRIMARY_EVIDENCE_GATE_MODEL,
-      applicable: atomicApplicable,
+      applicable: atomicApplicable || gasSourceConflict,
       candidate: key || null,
-      reportable: true,
-      reason: atomicApplicable ? 'coherent-multi-line-evidence' : 'not-atomic-fingerprint-candidate',
+      reportable: !gasSourceConflict,
+      reason: gasSourceConflict ? 'parent-gas-ambiguous-oxygen-emission'
+        : atomicApplicable ? 'coherent-multi-line-evidence' : 'not-atomic-fingerprint-candidate',
       acceptedHitCount: 0,
       independentEvidenceCount: 0,
       inAnchorHitCount: null,
@@ -109,6 +113,13 @@
         minimumDiagnosticMatches: 1
       }
     };
+    // Do not promote a CO2-ranked candidate to a confirmed tube gas when
+    // its CO bands conflict with dominant O I evidence.
+    if (gasSourceConflict) {
+      base.sourceIdentity = 'unresolved';
+      base.sourceAssessmentModel = String(gasSource.model || '');
+      return base;
+    }
     if (!atomicApplicable) return base;
 
     const hits = (Array.isArray(output.topHits) ? output.topHits : []).filter(function (hit) {
