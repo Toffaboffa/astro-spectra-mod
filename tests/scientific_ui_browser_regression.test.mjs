@@ -31,10 +31,16 @@ function page(scenario, lang) {
     applicable: true, candidate: 'CO2', reportable: scenario !== 'insufficient' && scenario !== 'conflict',
     status: scenario === 'strong' ? 'strong-evidence'
       : scenario === 'possible' ? 'possible-identification' : 'insufficient-evidence',
-    reason: scenario === 'conflict' ? 'parent-gas-ambiguous-oxygen-emission' : 'insufficient-molecular-band-evidence'
+    reason: scenario === 'conflict' ? 'parent-gas-profile-not-identified' : 'insufficient-molecular-band-evidence'
   };
   const source = scenario === 'conflict'
-    ? { parentGasStatus: 'unresolved-competing-emission' } : null;
+    ? { model: 'catalog-driven-discharge-evidence-v2',
+        reportable: false, reason: 'emission-products-do-not-prove-parent-gas',
+        parentGasStatus: 'unresolved-indirect-emission',
+        emittingSpecies: [{ emitter: 'CO Angstrom', independentCount: 4 },
+          { emitter: 'O I', independentCount: 1 }],
+        sourceCandidates: [{ species: 'CO2', status: 'fragment-or-indirect-pattern',
+          independentDirectCount: 0 }] } : null;
   const data = {
     lang, analysis: {
       elementScores: [{ element: 'CO2', mode: 'molecular', scoreSharePct: 63, matchedPeaks: 4, medianDeltaNm: 0.42 }],
@@ -57,7 +63,8 @@ function page(scenario, lang) {
     'if(!text.includes(' + JSON.stringify(expected) + '))throw Error("missing evidence label: "+text);' +
     'if(!text.includes("Score share 63%"))throw Error("score share label missing");' +
     'if(' + JSON.stringify(scenario === 'none') + ' && text.includes("Strong evidence"))throw Error("unsupported strong label");' +
-    'if(' + JSON.stringify(scenario === 'conflict') + ' && !text.includes("Gasen i röret är inte fastställd"))throw Error("missing O I vs CO warning");' +
+    'if(' + JSON.stringify(scenario === 'conflict') + ' && !text.includes("CO Angstrom (4)"))throw Error("missing measured emitter candidates");' +
+    'if(' + JSON.stringify(scenario === 'conflict') + ' && !text.includes("Linjer från emissionsprodukter räcker inte"))throw Error("missing generic parent-gas warning");' +
     'var r=document.getElementById("spPanel-lab").getBoundingClientRect();' +
     'if(r.left<-1||r.right>window.innerWidth+1)throw Error("LAB panel outside viewport: "+r.right+"/"+window.innerWidth);' +
     'document.body.dataset.browserResult="PASS";' +

@@ -132,3 +132,7 @@ Step 4 additionally exposes `primaryEvidence.status`: `strong-evidence`, `possib
 ## Scientific release QA (2026-10-26)
 
 `node tests/scientific_ui_browser_regression.test.mjs` exercises the actual production LAB evidence-summary renderer in headless Chromium for five English/Swedish evidence and O I/CO conflict cases at narrow/wide window sizes. It checks labels and basic panel geometry, not the full camera UI, native mobile touch, modal exports or actual PDF pagination. Backend AI-model compaction tests preserve parent-gas ambiguity and the three-tier status. PDF contracts test deterministic narrative and diagnostic preservation. See [release validation](../docs/RELEASE_VALIDATION_2026-10-26.md).
+
+## Generic unknown-gas test (2026-10-26)
+
+`node tests/gastube_source_evidence_regression.test.cjs` tests emission species vs parent gas with the common rules and with **two fabricated profile IDs** injected into the catalog. Their identical wavelengths but different physical emitter identities must yield different source conclusions without any if/switch on those source IDs. The same logic is evaluated on seven original peak exports. Original UI and backend AI tests guard against special-case gas-name inference. Curated reference wavelengths are scientific data, not hand-written classification branches.

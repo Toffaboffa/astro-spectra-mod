@@ -127,19 +127,32 @@
           : ' · Tentative interpretation: check calibration and measurement quality.';
         const currentState = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
         const sourceReview = currentState && currentState.analysis && currentState.analysis.gasTubeSourceAssessment;
-        if (sourceReview && (sourceReview.parentGasStatus === 'unresolved-competing-emission' ||
-            sourceReview.parentGasStatus === 'unresolved-oxygen-emission')) {
-          const isSv = sp.i18n && typeof sp.i18n.getLanguage === 'function' && sp.i18n.getLanguage() === 'sv';
-          const competing = sourceReview.parentGasStatus === 'unresolved-competing-emission';
-          const message = competing
-            ? (isSv
-              ? 'Stark emission från atomärt syre (O I), men även CO-band matchar. Gasen i röret är inte fastställd; O₂ och CO₂ måste skiljas med ytterligare mätning.'
-              : 'Strong atomic oxygen (O I) emission, but CO bands also match. Parent gas unconfirmed; O2 and CO2 require further testing.')
-            : (isSv
-              ? 'Stark emission från atomärt syre (O I) men otillräckliga modergasbevis. O I är inte automatiskt samma sak som ett O₂-rör.'
-              : 'Strong atomic oxygen (O I) emission, but insufficient parent-gas evidence. O I does not automatically establish an O2 tube.');
-          html += '<div class="sp-gastube-source-review" style="margin-top:5px;font-size:11px;line-height:1.5;color:#edc47b">' +
-            escapeHtml(message) + '</div>';
+        if (sourceReview && sourceReview.model === 'catalog-driven-discharge-evidence-v2') {
+          const emitters = Array.isArray(sourceReview.emittingSpecies)
+            ? sourceReview.emittingSpecies.filter(function (item) {
+                return item && Number(item.independentCount) >= 1;
+              }).slice(0, 4) : [];
+          const labels = emitters.map(function (item) {
+            const count = Math.max(0, Math.round(Number(item.independentCount) || 0));
+            return escapeHtml(String(item.emitter)) + ' (' + count + ')';
+          });
+          if (labels.length) {
+            html += '<div class="sp-gastube-emitter-evidence" style="margin-top:5px;font-size:11px;line-height:1.5;color:#a9dff0">' +
+              (isSv ? 'Emissionskandidater (oberoende träffar): ' : 'Emission candidates (independent hits): ') +
+              labels.join(', ') + '</div>';
+          }
+          if (sourceReview.reportable === false) {
+            const reason = String(sourceReview.reason || '');
+            const explanation = reason === 'emission-products-do-not-prove-parent-gas'
+              ? (isSv
+                  ? 'Linjer från emissionsprodukter räcker inte för att fastställa gasen i röret.'
+                  : 'Emission products do not establish which gas filled the tube.')
+              : (isSv
+                  ? 'För få oberoende, direkta referenssignaturer för att fastställa rörets gas.'
+                  : 'Insufficient independent direct reference features to establish the tube gas.');
+            html += '<div class="sp-gastube-source-review" style="margin-top:4px;font-size:11px;line-height:1.5;color:#edc47b">' +
+              escapeHtml(explanation) + '</div>';
+          }
         }
         const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
         const review = state && state.analysis && Array.isArray(state.analysis.tentativeLineMatches)

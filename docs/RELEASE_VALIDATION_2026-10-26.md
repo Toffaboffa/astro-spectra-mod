@@ -45,10 +45,12 @@ tentative**. Do not use them as confirmed training labels.
 1. **Hα:** peaks at approximately 654.44 nm were strong and close to
    656.281 nm but just outside the strict 1.8 nm acceptance gate. They are
    visible as *possible* strong lines, never silently accepted.
-2. **O I vs parent gas:** strong lines near O I 777/845 nm and four candidate
-   CO bands may coexist. Detection of atomic oxygen cannot establish O2,
-   and CO-like band matches need not prove a CO2 parent tube. The conflicting
-   parent-gas claim stays unresolved in UI, JSON, PDF and AI context.
+2. **Generic emitter versus source-gas separation:** all discharge reference
+   profiles use the same physical-emitter and independent-line/group rules.
+   The former special-case O I/CO2 veto is removed. O I and CO fragment
+   evidence remains individually visible, but product lines alone do not
+   establish O2, CO2 or any other named parent source. Unknown direct-pattern
+   profiles are tested without gas-name branching.
 3. **Calibration:** zero polynomial-fit residual with as many coefficients as
    anchors offers no independent validation. A bright O I 845-nm feature
    lies outside the last reference anchor (~837.76 nm). Avoid overstating
@@ -100,3 +102,20 @@ the current v1.4.1 application version.
 
 The intended principle is to **prefer an explicit uncertain result over a
 confident but unverified identification**.
+
+## Post-review correction: generic gas model
+
+The source-inference code is now **catalog-driven**. It is not tuned to an
+O2/CO2 decision rule. All discharge profiles, including profiles dynamically
+added during the regression test under unrelated invented names, go through
+the same strict hit-count, resolution, emitter identity, coverage and group
+gates. The UI, AI compact context, deterministic PDF and HELP reflect the
+new emitter/source distinction. Previous stage-3 claims specifically about
+O2/CO2 should be read as **historical test findings** rather than hardcoded
+current logic.
+
+The scientific limitation has not changed: there is no verified blind test
+set showing measured classification sensitivity or specificity. Absent
+reference spectra (or contexts where a catalog band is not a reliable
+emission signature) cannot be made precise by writing more rules.
+

@@ -927,14 +927,20 @@
         String(lineConsistency.possibleCount || 0) + '.');
     }
     const sourceReview = analysis.gasTubeSourceAssessment;
-    if (sourceReview && (sourceReview.parentGasStatus === 'unresolved-competing-emission' ||
-        sourceReview.parentGasStatus === 'unresolved-oxygen-emission')) {
-      const oxygen = sourceReview.atomicOxygen || {};
-      const co = sourceReview.coBands || {};
-      lines.push('Gas Tube: O I emitter evidence (' + String(oxygen.independentObservedFeatures || 0) +
-        ' features, including unaccepted near misses=' + String(oxygen.nearMissesNotAccepted || 0) +
-        ') with CO-band matches=' + String(co.acceptedCount || 0) +
-        '; parent gas unconfirmed. Do NOT convert O I into O2 tube identity.');
+    if (sourceReview && sourceReview.model === 'catalog-driven-discharge-evidence-v2') {
+      const emitters = (Array.isArray(sourceReview.emittingSpecies) ? sourceReview.emittingSpecies : [])
+        .slice(0, 5).map(function (item) {
+          return String(item.emitter || '?') + ' (' +
+            String(item.independentCount || 0) + ' independent accepted features)';
+        });
+      const sources = (Array.isArray(sourceReview.sourceCandidates) ? sourceReview.sourceCandidates : [])
+        .slice(0, 4).map(function (item) {
+          return String(item.species || '?') + ' [' + String(item.status || 'unknown') +
+            ', direct=' + String(item.independentDirectCount || 0) + ']';
+        });
+      lines.push('Gas Tube reference-based emitters: ' + (emitters.join('; ') || 'none established') +
+        '. Potential source profiles: ' + (sources.join('; ') || 'none') +
+        '. Parent gas NOT independently confirmed; scores are not probabilities.');
     }
     if (analysis.offsetNm != null) {
       const matchMae = matchMeanAbsResidualNm(analysis);
@@ -1107,9 +1113,9 @@
       'no-diagnostic-primary-evidence': sv
         ? 'ingen diagnostisk feature stöder kandidaten'
         : 'no diagnostic feature supports the candidate',
-      'parent-gas-ambiguous-oxygen-emission': sv
-        ? 'starka syrelinjer konkurrerar med CO-band; rörets modergas kan inte fastställas'
-        : 'strong oxygen lines compete with CO bands, so the tube parent gas is not established',
+      'parent-gas-profile-not-identified': sv
+        ? 'referenssignaturerna stödjer inte en entydig identifiering av gasen i röret'
+        : 'the reference fingerprint is insufficient to establish the gas filling the tube',
       'measurement-quality-signal': sv
         ? 'Measurement Quality bedömer signalen som dålig'
         : 'Measurement Quality rates the signal as poor',

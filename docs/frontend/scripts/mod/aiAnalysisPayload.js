@@ -655,15 +655,28 @@
         candidates: candidates,
         winnerBreakdown: compactWinnerBreakdown(analysis.winnerBreakdown),
         gasTubeSource: analysis.gasTubeSourceAssessment ? {
-          parentGasStatus: cleanString(analysis.gasTubeSourceAssessment.parentGasStatus, 60),
+          model: cleanString(analysis.gasTubeSourceAssessment.model, 64),
+          parentGasStatus: cleanString(analysis.gasTubeSourceAssessment.parentGasStatus, 64),
           parentGasConfirmed: false,
-          candidate: cleanString(analysis.gasTubeSourceAssessment.candidate, 24),
-          reason: cleanString(analysis.gasTubeSourceAssessment.reason, 80),
-          atomicOxygenStatus: cleanString(analysis.gasTubeSourceAssessment.atomicOxygen &&
-            analysis.gasTubeSourceAssessment.atomicOxygen.status, 50),
-          coBandMatches: rounded(analysis.gasTubeSourceAssessment.coBands &&
-            analysis.gasTubeSourceAssessment.coBands.acceptedCount, 0),
-          caveat: 'O I emission is not proof of an O2 tube; strong CO bands also need interpretation.'
+          candidate: cleanString(analysis.gasTubeSourceAssessment.candidate, 40),
+          reason: cleanString(analysis.gasTubeSourceAssessment.reason, 96),
+          emittingSpecies: (Array.isArray(analysis.gasTubeSourceAssessment.emittingSpecies)
+            ? analysis.gasTubeSourceAssessment.emittingSpecies : []).slice(0, 6).map(function (item) {
+              return { emitter: cleanString(item.emitter, 70),
+                acceptedCount: rounded(item.acceptedCount, 0),
+                independentCount: rounded(item.independentCount, 0),
+                status: cleanString(item.status, 40) };
+            }),
+          sourceCandidates: (Array.isArray(analysis.gasTubeSourceAssessment.sourceCandidates)
+            ? analysis.gasTubeSourceAssessment.sourceCandidates : []).slice(0, 5).map(function (item) {
+              return { species: cleanString(item.species, 48),
+                status: cleanString(item.status, 52),
+                acceptedCount: rounded(item.acceptedCount, 0),
+                independentDirectCount: rounded(item.independentDirectCount, 0),
+                missingDirectCount: rounded(item.missingDirectCount, 0),
+                evidenceScore: rounded(item.evidenceScore, 0) };
+            }),
+          caveat: 'Spectral emitters and unknown parent-gas composition are distinct; fragments are not proof of the parent gas. Relative evidence scores are not probabilities.'
         } : null,
         fluorescence: fluorescence,
         narrowLineCandidates: narrowHits,

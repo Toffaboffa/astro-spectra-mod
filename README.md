@@ -693,6 +693,20 @@ is preserved as historical planning material and retains its original 3.0.0 rele
 
 ---
 
+### Unknown-gas analysis: general emitter and source assessment
+
+In Gas Tube mode the system now applies the *same catalog-driven rules* to
+all reference discharge profiles. It reports multiple supported atomic/molecular
+**emission candidates**, independent accepted line counts and separately ranked
+**source-gas hypotheses**. Fragment/product emissions alone cannot identify the
+tube gas. The earlier O I-versus-CO2-specific veto was removed. References are
+still scientific constants, not rules tailored to user-labeled recordings.
+See [unknown-gas source model](FunctionSpec.md) and the updated built-in HELP
+under LAB & Presets. The existing candidate ranking remains available, and the
+new source model abstains where direct evidence is insufficient; this is not a
+verified improvement in classification accuracy until more confirmed spectra
+are evaluated blindly.
+
 ## 2026-10-26 scientific QA and acceptance status
 
 The five-stage real-spectrum improvement work now includes protected H-alpha near-miss

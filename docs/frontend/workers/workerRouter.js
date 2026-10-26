@@ -74,7 +74,8 @@
           } else if (root.SPECTRA_PRO_atomicEvidence && typeof root.SPECTRA_PRO_atomicEvidence.enhance === 'function') {
             out = root.SPECTRA_PRO_atomicEvidence.enhance(out, frame, STATE, options);
           }
-          // Atomic oxygen emissions describe an emitter, not necessarily the tube gas.
+          // Distinguish observed emitting species from source-gas hypotheses
+          // using the entire discharge-profile catalog with shared rules.
           if (out && String(out.presetId || '') === 'smart-gastube' &&
               root.SPECTRA_PRO_gasTubeSourceAssessment &&
               typeof root.SPECTRA_PRO_gasTubeSourceAssessment.assess === 'function') {

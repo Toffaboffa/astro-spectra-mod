@@ -438,16 +438,25 @@ assert.ok(possibleReport.abstract.includes('Possible identification'),
 
 const conflictedState = structuredClone(originalReportState);
 conflictedState.analysis.gasTubeSourceAssessment = {
-  parentGasStatus: 'unresolved-competing-emission',
-  atomicOxygen: { independentObservedFeatures: 2, nearMissesNotAccepted: 1 },
-  coBands: { acceptedCount: 4 }
+  model: 'catalog-driven-discharge-evidence-v2',
+  parentGasStatus: 'unresolved-indirect-emission',
+  emittingSpecies: [
+    { emitter: 'CO Angstrom', independentCount: 4 },
+    { emitter: 'O I', independentCount: 1 }
+  ],
+  sourceCandidates: [{
+    species: 'CO2', status: 'fragment-or-indirect-pattern',
+    independentDirectCount: 0
+  }]
 };
 context.SpectraPro.store.getState = () => conflictedState;
 const contestedReport = context.SpectraPro.exportUi.buildPdfReportModel(
   context.SpectraPro.exportUi.buildAnalysisBundle()
 );
-assert.ok(contestedReport.analysisLog.some(line => line.includes('parent gas unconfirmed')),
-  'Deterministic PDF log must preserve the O I-versus-CO band conflict');
+assert.ok(contestedReport.analysisLog.some(line =>
+  line.includes('Parent gas NOT independently confirmed') &&
+  line.includes('CO Angstrom') && line.includes('O I')),
+  'Deterministic PDF must preserve generic emitter and source identity separation');
 
 context.SpectraPro.store.getState = () => originalReportState;
 context.SpectraPro.aiAnalysisUi = null;

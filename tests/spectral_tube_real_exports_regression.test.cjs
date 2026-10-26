@@ -229,71 +229,37 @@ test('STEP 2: broad candidate window alone cannot create an accepted identity', 
   assert.equal(broadOnly.length, 0, 'Without two strict accepted lines there are no possible hits');
 });
 
-test('STEP 3: both tentative O2 exports separate O I emission from unresolved parent gas', () => {
-  for (const id of ['204112', '204650']) {
-    const item = byId[id];
-    const mol = replayMolecular(item);
-    const actual = modules.SPECTRA_PRO_gasTubeSourceAssessment.assess(mol, {
-      nm: item.wavelengthCoverageNm
-    });
-    const source = actual.gasTubeSourceAssessment;
-    assert.ok(source, id + ': source/emitter distinction must be published');
-    assert.equal(source.parentGasConfirmed, false);
-    assert.equal(source.atomicOxygen.status, 'strong-emission-evidence');
-    assert.equal(source.atomicOxygen.independentObservedFeatures, 2);
-    assert.equal(source.atomicOxygen.nearMissesNotAccepted, 1);
-    assert.equal(source.coBands.acceptedCount, 4);
-    assert.equal(source.oxygenDominant, true, id + ': oxygen peaks should dominate CO-band candidates');
-    assert.equal(source.parentGasStatus, 'unresolved-competing-emission');
-    assert.equal(source.candidate, 'CO2');
-    assert.equal(source.reportable, false, id + ': CO2 ranking must not imply confirmed tube contents');
-    assert.ok(source.atomicOxygen.lineHits.some(hit => hit.status === 'possible-near-miss'));
-  }
-});
-
-test('STEP 3: isolated oxygen cannot prove O2, and CO-dominant spectra are not vetoed', () => {
-  const assess = modules.SPECTRA_PRO_gasTubeSourceAssessment.assess;
-  function observed(nms, values) {
-    const result = {
-      ok: true, calibrated: true, presetId: 'smart-gastube',
-      maxDistanceNm: 1.8, diffractionCandidates: [],
-      peaks: nms.map((nm, index) => ({ index, nm, prominence: values[index] })),
-      elementScores: [{ element: 'CO2', mode: 'molecular', totalScore: 20 }]
-    };
-    return assess(result, { nm: [400, 900] }).gasTubeSourceAssessment;
-  }
-  const co2 = observed([451.1, 483.5, 519.8, 777.4], [100, 90, 80, 20]);
-  assert.equal(co2.coBands.acceptedCount, 3);
-  assert.equal(co2.reportable, true);
-  assert.equal(co2.atomicOxygen.status, 'partial-emission-evidence');
-  const oxygenOnly = observed([777.4, 844.6], [100, 90]);
-  assert.equal(oxygenOnly.parentGasStatus, 'unresolved-oxygen-emission');
-  assert.equal(oxygenOnly.parentGasConfirmed, false);
-  assert.equal(oxygenOnly.reason, 'atomic-oxygen-is-not-parent-gas-proof');
-  assert.equal(oxygenOnly.reportable, false,
-    'strong atomic oxygen without CO bands must NOT establish a ranked CO2 tube');
-  const coDominant = observed([451.1, 483.5, 519.8, 561, 777.4, 844.6],
-    [100, 100, 100, 100, 60, 60]);
-  assert.equal(coDominant.reportable, true, 'CO-dominant spectrum must not be vetoed');
-  const weakO = observed([451.1, 483.5, 519.8, 561, 777.4, 844.6],
-    [100, 100, 100, 100, 15, 10]);
-  assert.equal(weakO.oxygenDominant, false);
-  assert.equal(weakO.reportable, true);
-});
-
-test('STEP 3: final Best Match evidence gate respects gas-tube uncertainty', () => {
-  const ctx = vm.createContext({ console });
-  ctx.self = ctx;
-  const code = fs.readFileSync(path.join(root, 'docs/frontend/workers/analysisPipeline.js'), 'utf8');
-  new vm.Script(code, { filename: 'analysisPipeline.js' }).runInContext(ctx);
+test('Generic gas-source evidence on both tentative oxygen-tube exports: no identity leakage', () => {
   for (const id of ['204112', '204650']) {
     const item = byId[id];
     const result = modules.SPECTRA_PRO_gasTubeSourceAssessment.assess(
       replayMolecular(item), { nm: item.wavelengthCoverageNm });
-    const gate = ctx.SPECTRA_PRO_analysisPipeline.qualifyPrimaryEvidence(result);
-    assert.ok(gate && gate.applicable, id + ': Best Match gate must apply to contested parent gas');
-    assert.equal(gate.reportable, false, id + ': rank must not become confirmed CO2');
-    assert.equal(gate.reason, 'parent-gas-ambiguous-oxygen-emission');
+    const source = result.gasTubeSourceAssessment;
+    assert.ok(source);
+    assert.equal(source.model, 'catalog-driven-discharge-evidence-v2');
+    assert.equal(source.reasonModel, 'same-rules-all-catalog-profiles');
+    assert.equal(source.parentGasConfirmed, false);
+    assert.equal(source.candidate, 'CO2');
+    assert.equal(source.reportable, false,
+      'Fragment-based CO2 candidate needs direct source evidence before reporting parent gas');
+    assert.ok(source.emittingSpecies.some(s => s.emitter === 'CO Angstrom' && s.independentCount >= 2),
+      'CO-band emitter evidence must be shown independently from parent-gas inference');
+    assert.ok(source.emittingSpecies.some(s => s.emitter === 'O I' && s.acceptedCount >= 1),
+      'Accepted atomic O line must be present as emitter evidence');
+    const carbon = source.sourceCandidates.find(s => s.species === 'CO2');
+    assert.ok(carbon);
+    assert.ok(carbon.acceptedCount >= 2);
+    assert.equal(carbon.independentDirectCount, 0,
+      'All available carbon dioxide discharge anchors are fragment products');
+    const ctx = vm.createContext({ console });
+    ctx.self = ctx;
+    new vm.Script(fs.readFileSync(path.join(root, 'docs/frontend/workers/analysisPipeline.js'), 'utf8'),
+      { filename: 'analysisPipeline.js' }).runInContext(ctx);
+    const gated = ctx.SPECTRA_PRO_analysisPipeline.qualifyPrimaryEvidence(result);
+    assert.ok(gated && gated.applicable);
+    assert.equal(gated.reportable, false);
+    assert.equal(gated.reason, 'parent-gas-profile-not-identified');
+    assert.ok(source.sourceCandidates.every(s => s.parentGasConfirmed === false));
   }
 });
 

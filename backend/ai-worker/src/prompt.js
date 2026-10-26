@@ -14,7 +14,7 @@ EVIDENCE
 - Score share/rank is not probability, concentration or abundance. Best Match is a candidate, not proof.
 - Respect winner.primaryEvidence.status: insufficient-evidence means NO established identification; possible-identification means tentative candidate only; strong-evidence means internally strong multi-feature support, NOT verified tube contents. Never treat reportable=true as strong if status says possible.
 - Respect the absence of analysis.bestSpecies. A topCandidate is only the highest-ranked hypothesis, never proof, even when its score share is high.
-- Respect analysis.gasTubeSource. If parentGasStatus is unresolved, describe observed O I emission separately from parent-gas identity. O I lines do not establish an O2 tube; competing CO bands do not establish CO2. Never override the deterministic uncertainty veto.
+- Respect analysis.gasTubeSource. Describe each supported observed emitter separately from possible parent-gas compositions. A dissociation fragment or product band alone never establishes the parent gas, regardless of species. Distinguish source-pattern evidence from confirmed gas composition; never override the deterministic evidence gate.
 - Prefer coherent multi-feature evidence and small residuals over isolated coincidences. For atomic-fingerprint-v1 use diagnostic coverage and missed-strong evidence; for plasma-diagnostic-v1 use band patterns.
 - For fluorescence, prioritize supplied λmax, centroid, FWHM, range, asymmetry and shoulders. Narrow-line candidates are secondary; band shape alone does not uniquely identify a fluorophore.
 - Follow measurement quality and QC. Full-frame edge extrapolation is only a warning when result coverage is inside calibration anchors.
@@ -381,7 +381,9 @@ function compactModelData(payload) {
   const gate = analysis.winnerBreakdown && analysis.winnerBreakdown.primaryEvidence;
   const sourceAssessment = analysis.gasTubeSource && typeof analysis.gasTubeSource === 'object'
     ? analysis.gasTubeSource : null;
-  const unresolvedGas = sourceAssessment && /^unresolved-/.test(String(sourceAssessment.parentGasStatus || ''));
+  const unresolvedGas = sourceAssessment && sourceAssessment.parentGasConfirmed !== true &&
+    sourceAssessment.reason !== 'direct-source-pattern-supported' &&
+    sourceAssessment.reason !== 'emitter-identity-not-parent-gas-proof';
   // Defensive backend gate; a stale frontend must not promote a tentative
   // ranking to Best Match by including an inconsistent bestMatch object.
   const gated = gate && gate.applicable === true &&
@@ -418,12 +420,20 @@ function compactModelData(payload) {
       hits: compactHits(analysis.hits),
       winner: compactWinner(analysis.winnerBreakdown),
       gasTubeSource: sourceAssessment ? {
+        model: text(sourceAssessment.model, 64),
         parentGasStatus: text(sourceAssessment.parentGasStatus, 64),
         parentGasConfirmed: false,
         candidate: text(sourceAssessment.candidate, 40),
         reason: text(sourceAssessment.reason, 96),
-        atomicOxygenStatus: text(sourceAssessment.atomicOxygenStatus, 64),
-        coBandMatches: n(sourceAssessment.coBandMatches, 0)
+        emittingSpecies: (Array.isArray(sourceAssessment.emittingSpecies)
+          ? sourceAssessment.emittingSpecies : []).slice(0, 5).map(function (item) {
+          return [text(item.emitter, 64), n(item.independentCount, 0), text(item.status, 36)];
+        }),
+        sourceCandidates: (Array.isArray(sourceAssessment.sourceCandidates)
+          ? sourceAssessment.sourceCandidates : []).slice(0, 4).map(function (item) {
+          return [text(item.species, 48), text(item.status, 48),
+            n(item.independentDirectCount, 0), n(item.missingDirectCount, 0)];
+        })
       } : null,
       calibrationDiagnostics: compactCalibrationDiagnostics(analysis.calibrationDiagnostics),
       astro: compactAstro(analysis.astro),

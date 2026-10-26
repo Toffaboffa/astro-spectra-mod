@@ -110,7 +110,7 @@
       applicable: atomicApplicable || molecularApplicable || gasSourceConflict,
       candidate: key || null,
       reportable: !gasSourceConflict,
-      reason: gasSourceConflict ? 'parent-gas-ambiguous-oxygen-emission'
+      reason: gasSourceConflict ? 'parent-gas-profile-not-identified'
         : atomicApplicable ? 'coherent-multi-line-evidence'
           : molecularApplicable ? 'coherent-multi-band-evidence' : 'not-atomic-or-molecular-fingerprint-candidate',
       acceptedHitCount: 0,
@@ -136,8 +136,9 @@
         minimumDiagnosticMatches: atomicApplicable ? 1 : 0
       }
     };
-    // Do not promote a CO2-ranked candidate to a confirmed tube gas when
-    // its CO bands conflict with dominant O I evidence.
+    // Molecular products and atomic fragments do not alone identify which
+    // material filled an unknown discharge tube. Rules are catalog-driven,
+    // independent of gas labels and observed user fixture identities.
     if (gasSourceConflict) {
       base.sourceIdentity = 'unresolved';
       base.sourceAssessmentModel = String(gasSource.model || '');

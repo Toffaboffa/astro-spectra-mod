@@ -52,6 +52,8 @@ jobs:
         run: node tests/analysis_regression.test.js
       - name: Run gas-tube fingerprint regressions
         run: node tests/gastube_fingerprint_regression.test.cjs
+      - name: Evaluate generic unknown gas source/emitter evidence
+        run: node tests/gastube_source_evidence_regression.test.cjs
       - name: Run hardware profile catalog regressions
         run: node tests/hardware_profiles_regression.test.cjs
       - name: Run instrument resolution regressions

@@ -9,6 +9,48 @@ a promise that roadmap ideas are already functional. Status labels are:
 
 Current application version: **1.4.1**. The shared analysis worker reports **1.4.1** as its analysis version.
 
+## Unknown discharge tube: catalog-based evidence (2026-10-26)
+
+In the Gas Tube preset, the post-analysis stage is now a **catalog-driven**
+discharge evidence assessment (\`catalog-driven-discharge-evidence-v2\`).
+The production model contains **no gas-specific wavelength arrays, emitter
+names or if-gas-is-CO2 logic**. Each existing plasma reference profile supplies
+its physical wavelengths, diagnostic groups and named emitting species.
+
+The same rules are applied to every available profile:
+
+- Unique peaks within the normal strict wavelength-matching cap and instrument
+  resolution; higher-order diffraction candidates are excluded.
+- Profile-defined minimum matches and required evidence groups.
+- Distinguish an emitting species **identical to the named profile emitter**
+  (direct fingerprint evidence) from other emitters (possible dissociation
+  fragments or product molecules). At least two independent direct in-anchor
+  references and a coherent full-profile pattern are required for
+  \`source-pattern-supported\`.
+- Require expected features to be in observed wavelength coverage, assess
+  missing direct references and publish every ranked source hypothesis with
+  its actual supporting feature counts.
+- Do not promote broad near misses into accepted evidence; report sample
+  counts and relative evidence scores, **not statistical probabilities**.
+
+\`gasTubeSourceAssessment.emittingSpecies\` describes the observed emitters
+and independent accepted matches, including multiple concurrent sources.
+\`gasTubeSourceAssessment.sourceCandidates\` separately describes the
+available discharge-profile hypotheses. \`parentGasConfirmed\` remains false:
+even a convincing discharge pattern is not chemical verification of the
+original gas filling the tube. The normal \`elementScores\` ranking stays
+available as a hypothesis; the primary-evidence gate withholds a definitive
+source-gas Best Match if a curated source profile is fragment-only.
+
+This logic is tested against the seven real exported peak sets and against
+**invented catalog profiles with completely unrelated names but identical
+measured wavelengths** to catch special-cased gas identities. It is not
+trained on user labels. The 2026-10-24 O2 labels are tentative, and scientific
+validation of sensitivity/specificity needs more confirmed, independently
+calibrated spectra. The O2 762 nm profile anchor is particularly sensitive
+to the physical emission/absorption context and should not be treated as
+a validated universal O2 discharge fingerprint.
+
 ## Architecture
 
 SPECTRA PRO preserves the original browser measurement path:

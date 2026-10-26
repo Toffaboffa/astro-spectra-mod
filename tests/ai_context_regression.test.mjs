@@ -220,27 +220,37 @@ assert.equal(possibleModel.analysis.topCandidate, 'Hydrogen');
 assert.equal(possibleModel.analysis.winner.primaryEvidence.status, 'possible-identification');
 assert.equal(possibleModel.analysis.winner.primaryEvidence.independentFitResidualCheck, false);
 
-const oxygenConflict = structuredClone(possibleFrontend);
-oxygenConflict.analysis.winnerBreakdown.primaryEvidence.reportable = false;
-oxygenConflict.analysis.winnerBreakdown.primaryEvidence.status = 'insufficient-evidence';
-oxygenConflict.analysis.winnerBreakdown.primaryEvidence.reason = 'parent-gas-ambiguous-oxygen-emission';
-oxygenConflict.analysis.gasTubeSource = {
-  candidate: 'CO2', parentGasStatus: 'unresolved-competing-emission',
-  parentGasConfirmed: false, atomicOxygenStatus: 'strong-emission-evidence',
-  coBandMatches: 4, reason: 'dominant-atomic-oxygen-versus-co-bands'
+const sourceConflict = structuredClone(possibleFrontend);
+sourceConflict.analysis.winnerBreakdown.primaryEvidence.reportable = false;
+sourceConflict.analysis.winnerBreakdown.primaryEvidence.status = 'insufficient-evidence';
+sourceConflict.analysis.winnerBreakdown.primaryEvidence.reason = 'parent-gas-profile-not-identified';
+sourceConflict.analysis.gasTubeSource = {
+  model: 'catalog-driven-discharge-evidence-v2',
+  candidate: 'CO2', parentGasStatus: 'unresolved-indirect-emission',
+  parentGasConfirmed: false, reason: 'emission-products-do-not-prove-parent-gas',
+  emittingSpecies: [
+    { emitter: 'CO Angstrom', independentCount: 4, status: 'coherent-emitter' },
+    { emitter: 'O I', independentCount: 1, status: 'single-feature' }
+  ],
+  sourceCandidates: [{
+    species: 'CO2', status: 'fragment-or-indirect-pattern',
+    independentDirectCount: 0, missingDirectCount: 0
+  }]
 };
-const oxygenModel = modelDataFor(oxygenConflict);
-assert.equal(oxygenModel.analysis.bestSpecies, null);
-assert.equal(oxygenModel.analysis.gasTubeSource.parentGasStatus, 'unresolved-competing-emission');
-assert.equal(oxygenModel.analysis.gasTubeSource.atomicOxygenStatus, 'strong-emission-evidence');
-assert.equal(oxygenModel.analysis.gasTubeSource.coBandMatches, 4);
-assert.equal(oxygenModel.analysis.gasTubeSource.parentGasConfirmed, false);
-assert.equal(oxygenModel.analysis.winner.primaryEvidence.reportable, false);
+const sourceModel = modelDataFor(sourceConflict);
+assert.equal(sourceModel.analysis.bestSpecies, null);
+assert.equal(sourceModel.analysis.gasTubeSource.parentGasStatus, 'unresolved-indirect-emission');
+assert.equal(sourceModel.analysis.gasTubeSource.emittingSpecies[0][0], 'CO Angstrom');
+assert.equal(sourceModel.analysis.gasTubeSource.emittingSpecies[0][1], 4);
+assert.equal(sourceModel.analysis.gasTubeSource.sourceCandidates[0][0], 'CO2');
+assert.equal(sourceModel.analysis.gasTubeSource.sourceCandidates[0][2], 0);
+assert.equal(sourceModel.analysis.gasTubeSource.parentGasConfirmed, false);
+assert.equal(sourceModel.analysis.winner.primaryEvidence.reportable, false);
 
 const instructed = buildDeveloperInstructions();
 assert.ok(instructed.includes('possible-identification'),
   'AI instructions must distinguish a tentative candidate from strong support');
-assert.ok(instructed.includes('parentGasStatus'),
+assert.ok(instructed.includes('gasTubeSource'),
   'AI instructions must carry the emitter-vs-parent-gas caveat');
 
 const molecular = payloads.get('lab-molecular');

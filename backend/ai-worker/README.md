@@ -181,3 +181,7 @@ A successful response contains approximately:
 ```
 
 The browser renders the structured prose as ordinary readable text rather than displaying JSON.
+
+## Unknown-gas evidence input
+
+The optional `analysis.gasTubeSource` model context now carries bounded `emittingSpecies` and `sourceCandidates` arrays. The first contains observed source-independent emission assignments; the second contains catalog-based source-pattern hypotheses and their independent direct-feature counts. This explicitly separates emitter identity from a tube's original gas composition. Model instructions forbid interpreting dissociation fragments as proof of the parent material or using a source name/filename as evidence. No name-specific gas ranking overrides are sent to the AI model.
