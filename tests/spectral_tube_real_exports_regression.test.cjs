@@ -169,7 +169,62 @@ test('real N2 export still matches the production molecular gas-tube fingerprint
 
 // Scientific acceptance criteria for later stages, deliberately not greenwashed
 // or frozen as assertions that the current known faults are correct:
-test.todo('STEP 2: accept/flag H-alpha at ~654.44 nm in BOTH real H exports with calibrated uncertainty');
+test('STEP 2: both real H exports show H-alpha as possible, NOT accepted evidence', () => {
+  for (const id of ['203804', '204418']) {
+    const item = byId[id];
+    const out = modules.SPECTRA_PRO_atomicEvidence.enhance({
+      ok: true, calibrated: true, presetId: 'smart-gastube',
+      autoTune: true, maxDistanceNm: 1.8, peaks: peaksOf(item),
+      elementScores: [], topHits: [], overlayHits: [],
+      calibrationDiagnostics: {
+        fitResidualIndependent: false,
+        anchorPixelCoverage: {
+          min: item.calibrationAnchors[0][0],
+          max: item.calibrationAnchors.at(-1)[0]
+        }
+      }
+    }, { nm: item.wavelengthCoverageNm }, {}, {});
+    const alpha = (out.tentativeLineMatches || []).find((hit) =>
+      hit.element === 'H' && Math.abs(hit.referenceNm - 656.281) < 0.01);
+    assert.ok(alpha, id + ': H-alpha 656.281 nm must be shown as a review-only strong near-miss');
+    assert.ok(Math.abs(alpha.observedNm - nearest(item, 656.281).nm) < 0.001);
+    assert.equal(alpha.accepted, false);
+    assert.equal(alpha.excludedFromScoring, true);
+    assert.equal(alpha.status, 'possible');
+    assert.equal(alpha.calibrationExtrapolated, false);
+    assert.equal(alpha.fitResidualIndependent, false);
+    assert.ok(alpha.confirmedDiagnosticLines >= 2);
+    assert.ok((out.topHits || []).every((hit) => Math.abs(Number(hit.deltaNm)) <= 1.8 + 1e-9),
+      'Review-only H-alpha must not leak into accepted topHits or ranking');
+    assert.ok(!(out.topHits || []).some((hit) => hit.element === 'H' &&
+      Math.abs(Number(hit.referenceNm) - 656.281) < 0.01));
+    assert.equal(out.referenceLineConsistency.element, 'H');
+    assert.equal(out.referenceLineConsistency.independentWavelengthStandard, false);
+    assert.equal(out.referenceLineConsistency.needsCalibrationReview, true);
+    assert.ok(out.referenceLineConsistency.residualSpreadNm > 2.5);
+  }
+});
+
+test('STEP 2: broad candidate window alone cannot create an accepted identity', () => {
+  const atom = modules.SPECTRA_PRO_atomicEvidence;
+  const h = modules.SPECTRA_PRO_atomicProfiles.profiles.H;
+  const all = peaksOf(byId['203804']);
+  const single = [all.find((peak) => Math.abs(peak.nm - 654.44) < 0.02)];
+  assert.equal(atom.scoreProfile(h, single, 1.8, rangeOf(byId['203804'])), null);
+  const oneMatch = atom.scoreProfile(h, all.filter((peak) =>
+    Math.abs(peak.nm - 434.4) < 0.2), 1.8, rangeOf(byId['203804']));
+  assert.ok(oneMatch);
+  assert.equal(atom.reviewStrongNearMisses(
+    [{ element: 'H', mode: 'atomic', matchedPeaks: 1, diagnosticMatchedPeaks: 1 }],
+    all, oneMatch.hits, {}, 1.8
+  ).length, 0, 'One confirmed line must not enable broad near-miss evidence');
+  const broadOnly = atom.reviewStrongNearMisses(
+    [{ element: 'H', mode: 'atomic', matchedPeaks: 2, diagnosticMatchedPeaks: 2 }],
+    all, [], {}, 1.8
+  );
+  assert.equal(broadOnly.length, 0, 'Without two strict accepted lines there are no possible hits');
+});
+
 test.todo('STEP 3: qualify the parent gas independently of atomic oxygen; no unjustified confident CO2 winner');
 test.todo('STEP 4: molecular Best Match must pass the same evidence sufficiency gate as atomic candidates');
 
