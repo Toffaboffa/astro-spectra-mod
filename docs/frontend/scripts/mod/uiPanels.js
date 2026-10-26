@@ -112,6 +112,22 @@
         if (matched > 0) html += ' · Evidence ' + matched + ' ' + evidenceKind;
         if (delta != null) html += ' · Δmed ' + escapeHtml(delta) + ' nm';
         if (!winnerReportable) html += ' · Insufficient evidence for Best Match';
+        const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
+        const review = state && state.analysis && Array.isArray(state.analysis.tentativeLineMatches)
+          ? state.analysis.tentativeLineMatches.filter(function (hit) {
+              return hit && hit.accepted === false && String(hit.element) === String(winner.element);
+            }) : [];
+        if (review.length) {
+          const hit = review[0];
+          const sv = sp.i18n && typeof sp.i18n.getLanguage === 'function' && sp.i18n.getLanguage() === 'sv';
+          const formatNm = function (value) { return Number(value).toFixed(2); };
+          html += '<div class="sp-strong-line-review" style="margin-top:4px;font-size:11px;line-height:1.45;color:#edc47b">' +
+            (sv ? 'Möjlig stark linje (inte godkänd): ' : 'Possible strong line (not accepted): ') +
+            escapeHtml(String(hit.species || hit.element)) + ' ' + escapeHtml(formatNm(hit.observedNm)) +
+            ' nm ↔ ' + escapeHtml(formatNm(hit.referenceNm)) + ' nm (Δ ' +
+            escapeHtml(formatNm(hit.deltaNm)) + ' nm). ' +
+            (sv ? 'Kontrollera kalibreringen.' : 'Check wavelength calibration.') + '</div>';
+        }
         if (el.innerHTML !== html) el.innerHTML = html;
       } else if (el.innerHTML) {
         const originalHtml = el.innerHTML;
