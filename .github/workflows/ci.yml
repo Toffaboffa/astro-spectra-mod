@@ -23,6 +23,16 @@ jobs:
       - name: Validate Cloudflare Worker build
         run: npm run check
 
+  real-spectral-tubes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Replay seven real spectral tube exports
+        run: node tests/spectral_tube_real_exports_regression.test.cjs
+
   frontend-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -42,8 +52,6 @@ jobs:
         run: node tests/analysis_regression.test.js
       - name: Run gas-tube fingerprint regressions
         run: node tests/gastube_fingerprint_regression.test.cjs
-      - name: Run real spectral-tube export regressions (2026-10-24)
-        run: node tests/spectral_tube_real_exports_regression.test.cjs
       - name: Run hardware profile catalog regressions
         run: node tests/hardware_profiles_regression.test.cjs
       - name: Run instrument resolution regressions
