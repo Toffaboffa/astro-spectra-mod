@@ -6,6 +6,7 @@ Run the compact deterministic scientific regression suite with:
 node tests/main_compatibility.test.mjs
 node tests/analysis_regression.test.js
 node tests/gastube_fingerprint_regression.test.cjs
+node tests/spectral_tube_real_exports_regression.test.cjs
 node tests/neon_real_export_regression.test.mjs
 node tests/n2_real_export_regression.test.mjs
 node tests/ai_context_regression.test.mjs
@@ -115,3 +116,7 @@ used to verify AI payload and prompt behavior; it is not an empirical spectrum.
 
 
 The instrument-resolution regression verifies calibrated sampling precedence, blend-risk annotation, independent-evidence clustering, and that coarse resolution does not widen the spectral identity hard cap.
+
+## Real spectral-tube observations (2026-10-24)
+
+The fixture `tests/fixtures/spectral_tubes_20261024.json` preserves **all detected peaks** (rounded fitted centers/prominences) from seven user-exported LAB measurements, their calibration anchors, reported winners and SHA-256 provenance of the original JSON files. It is a reduced peak-level replay, **not** raw RGB/intensity image processing or an independent blind identity verification. In particular, two tubes are only **tentatively** identified as O2, while the original app ranked CO2. The new test reuses the production atomic and molecular fingerprint scorers, asserts the strong H-alpha and atomic-oxygen evidence and protects Neon, Hg and N2 controls. Three downstream fixes are kept as `test.todo` instead of deliberately baking in current misidentifications. See [the detailed fixture notes](fixtures/README-spectral-tubes-20261024.md).

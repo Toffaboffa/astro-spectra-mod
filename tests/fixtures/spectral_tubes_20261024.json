@@ -1,0 +1,910 @@
+{
+  "schema": "spectra-pro-real-export-peaks/v1",
+  "captureDate": "2026-10-24",
+  "appVersion": "1.4.1",
+  "notes": "Original user export ZIP/JSON is the authoritative source. This test fixture stores ALL detected peaks (pixel index, fitted center nm, prominence rounded to 0.001) plus provenance, calibration and observed winner. It does NOT contain the 1280-point intensity/RGB traces and is NOT an end-to-end camera/pixel extraction fixture. Tentative O2 labels must not be treated as confirmed ground truth.",
+  "cases": [
+    {
+      "id": "20261024_201443",
+      "sourceFilename": "SPECTRA_PRO_20261024_201443_analysis.json",
+      "sourceAnalysisSha256": "9531287253e6d7c42c3e166643c2b2efd9f6b3f9b4a651ee95abb515a291c947",
+      "referenceGas": "N2",
+      "identityStatus": "reported-by-user",
+      "exportedBestMatch": "N2",
+      "exportedScoreSharePct": 18,
+      "preset": "smart-gastube",
+      "autoTune": true,
+      "hardMatchCapNm": 1.8,
+      "fullSpectrumSamples": 1280,
+      "wavelengthCoverageNm": [
+        376.2406,
+        910.3382
+      ],
+      "calibrationAnchors": [
+        [
+          32,
+          388.86
+        ],
+        [
+          515,
+          587.57
+        ],
+        [
+          1110,
+          837.76
+        ]
+      ],
+      "detectedPeakCount": 45,
+      "peaks": [
+        [
+          3,
+          377.3384,
+          22.889
+        ],
+        [
+          27,
+          387.4246,
+          32.222
+        ],
+        [
+          40,
+          392.3552,
+          48.111
+        ],
+        [
+          54,
+          398.0291,
+          27.444
+        ],
+        [
+          70,
+          404.7605,
+          33.111
+        ],
+        [
+          79,
+          405.9266,
+          13.333
+        ],
+        [
+          91,
+          413.5117,
+          54.222
+        ],
+        [
+          106,
+          419.2745,
+          39.778
+        ],
+        [
+          123,
+          426.2463,
+          36.111
+        ],
+        [
+          144,
+          434.957,
+          50.889
+        ],
+        [
+          160,
+          441.7268,
+          62.778
+        ],
+        [
+          178,
+          448.9574,
+          54.444
+        ],
+        [
+          199,
+          457.4042,
+          33.444
+        ],
+        [
+          218,
+          465.308,
+          21.333
+        ],
+        [
+          235,
+          472.344,
+          11.667
+        ],
+        [
+          258,
+          481.8085,
+          10.556
+        ],
+        [
+          268,
+          485.8315,
+          1.889
+        ],
+        [
+          282,
+          491.6119,
+          3.667
+        ],
+        [
+          347,
+          518.6428,
+          2.444
+        ],
+        [
+          399,
+          539.9017,
+          1.667
+        ],
+        [
+          491,
+          578.1994,
+          5.222
+        ],
+        [
+          517,
+          588.8287,
+          8.222
+        ],
+        [
+          528,
+          593.2104,
+          4.111
+        ],
+        [
+          539,
+          598.1701,
+          1.778
+        ],
+        [
+          599,
+          651.4881,
+          1
+        ],
+        [
+          614,
+          629.166,
+          8.111
+        ],
+        [
+          629,
+          635.9826,
+          6.444
+        ],
+        [
+          647,
+          642.9832,
+          12.222
+        ],
+        [
+          664,
+          650.6128,
+          4
+        ],
+        [
+          682,
+          658.1648,
+          2.778
+        ],
+        [
+          702,
+          665.6096,
+          7
+        ],
+        [
+          721,
+          673.7474,
+          6.556
+        ],
+        [
+          834,
+          721.9183,
+          1.333
+        ],
+        [
+          859,
+          732.4247,
+          2.889
+        ],
+        [
+          888,
+          744.156,
+          13
+        ],
+        [
+          920,
+          757.0688,
+          3.333
+        ],
+        [
+          946,
+          768.9791,
+          3.556
+        ],
+        [
+          985,
+          785.1396,
+          7.556
+        ],
+        [
+          1013,
+          796.8252,
+          14.111
+        ],
+        [
+          1042,
+          809.1303,
+          6.556
+        ],
+        [
+          1066,
+          819.7165,
+          2.222
+        ],
+        [
+          1081,
+          825.8792,
+          2.667
+        ],
+        [
+          1110,
+          838.3843,
+          5.444
+        ],
+        [
+          1143,
+          852.4265,
+          3.889
+        ],
+        [
+          1183,
+          869.0929,
+          3.778
+        ]
+      ]
+    },
+    {
+      "id": "20261024_203804",
+      "sourceFilename": "SPECTRA_PRO_20261024_203804_analysis.json",
+      "sourceAnalysisSha256": "a1d1f692c244a118408c8346bf3933e29e29f98169b171849be542223e604d9d",
+      "referenceGas": "H",
+      "identityStatus": "reported-by-user",
+      "exportedBestMatch": "H",
+      "exportedScoreSharePct": 61,
+      "preset": "smart-gastube",
+      "autoTune": true,
+      "hardMatchCapNm": 1.8,
+      "fullSpectrumSamples": 1280,
+      "wavelengthCoverageNm": [
+        376.2406,
+        910.3382
+      ],
+      "calibrationAnchors": [
+        [
+          32,
+          388.86
+        ],
+        [
+          515,
+          587.57
+        ],
+        [
+          1110,
+          837.76
+        ]
+      ],
+      "detectedPeakCount": 3,
+      "peaks": [
+        [
+          142,
+          434.3831,
+          5.222
+        ],
+        [
+          271,
+          487.1272,
+          76
+        ],
+        [
+          674,
+          654.4396,
+          87.333
+        ]
+      ]
+    },
+    {
+      "id": "20261024_204112",
+      "sourceFilename": "SPECTRA_PRO_20261024_204112_analysis.json",
+      "sourceAnalysisSha256": "504a6131c9ebfe0634bc3ea162d2da5a50c5b8403db723bac449e7d353443194",
+      "referenceGas": "O2",
+      "identityStatus": "tentative-user-identification",
+      "exportedBestMatch": "CO2",
+      "exportedScoreSharePct": 19,
+      "preset": "smart-gastube",
+      "autoTune": true,
+      "hardMatchCapNm": 1.8,
+      "fullSpectrumSamples": 1280,
+      "wavelengthCoverageNm": [
+        376.2406,
+        910.3382
+      ],
+      "calibrationAnchors": [
+        [
+          32,
+          388.86
+        ],
+        [
+          515,
+          587.57
+        ],
+        [
+          1110,
+          837.76
+        ]
+      ],
+      "detectedPeakCount": 36,
+      "peaks": [
+        [
+          4,
+          378.0564,
+          4.111
+        ],
+        [
+          26,
+          386.8235,
+          3.556
+        ],
+        [
+          38,
+          391.75,
+          3.222
+        ],
+        [
+          55,
+          398.4391,
+          12.667
+        ],
+        [
+          70,
+          404.7978,
+          8.222
+        ],
+        [
+          87,
+          411.6749,
+          33.667
+        ],
+        [
+          106,
+          419.6498,
+          24
+        ],
+        [
+          124,
+          414.9736,
+          1.778
+        ],
+        [
+          154,
+          438.759,
+          11.667
+        ],
+        [
+          183,
+          450.9608,
+          18.889
+        ],
+        [
+          229,
+          469.8435,
+          5.778
+        ],
+        [
+          262,
+          483.3946,
+          26.333
+        ],
+        [
+          320,
+          507.1261,
+          4.333
+        ],
+        [
+          350,
+          519.3286,
+          21.111
+        ],
+        [
+          370,
+          528.0697,
+          1.333
+        ],
+        [
+          391,
+          536.6112,
+          2.778
+        ],
+        [
+          447,
+          559.8064,
+          15.111
+        ],
+        [
+          467,
+          568.0613,
+          3.333
+        ],
+        [
+          519,
+          589.8652,
+          2.667
+        ],
+        [
+          556,
+          604.6367,
+          3
+        ],
+        [
+          575,
+          603.2703,
+          1.556
+        ],
+        [
+          608,
+          626.8519,
+          4.111
+        ],
+        [
+          646,
+          642.5596,
+          0.889
+        ],
+        [
+          680,
+          656.7711,
+          3.556
+        ],
+        [
+          705,
+          667.2332,
+          2.222
+        ],
+        [
+          834,
+          721.7222,
+          1.111
+        ],
+        [
+          888,
+          743.9462,
+          3.889
+        ],
+        [
+          920,
+          757.6416,
+          1.889
+        ],
+        [
+          946,
+          774.4763,
+          1
+        ],
+        [
+          961,
+          774.778,
+          57.222
+        ],
+        [
+          990,
+          787.2449,
+          1.444
+        ],
+        [
+          1010,
+          795.8927,
+          1.333
+        ],
+        [
+          1068,
+          820.3793,
+          2.222
+        ],
+        [
+          1105,
+          836.4269,
+          1
+        ],
+        [
+          1124,
+          844.3291,
+          38.667
+        ],
+        [
+          1197,
+          875.4826,
+          1.333
+        ]
+      ]
+    },
+    {
+      "id": "20261024_204319",
+      "sourceFilename": "SPECTRA_PRO_20261024_204319_analysis.json",
+      "sourceAnalysisSha256": "4fa8b6116263c3ae18b4f6b64867173977536dc853cad005ff7d13922f72ceb2",
+      "referenceGas": "Ne",
+      "identityStatus": "reported-by-user",
+      "exportedBestMatch": "Ne",
+      "exportedScoreSharePct": 46,
+      "preset": "smart-gastube",
+      "autoTune": true,
+      "hardMatchCapNm": 1.8,
+      "fullSpectrumSamples": 1280,
+      "wavelengthCoverageNm": [
+        376.2406,
+        910.3382
+      ],
+      "calibrationAnchors": [
+        [
+          32,
+          388.86
+        ],
+        [
+          515,
+          587.57
+        ],
+        [
+          1110,
+          837.76
+        ]
+      ],
+      "detectedPeakCount": 20,
+      "peaks": [
+        [
+          508,
+          584.8813,
+          74.556
+        ],
+        [
+          529,
+          593.8239,
+          74.556
+        ],
+        [
+          550,
+          610.7046,
+          1.556
+        ],
+        [
+          564,
+          607.9894,
+          24.333
+        ],
+        [
+          576,
+          613.4801,
+          70.444
+        ],
+        [
+          593,
+          620.4697,
+          19.333
+        ],
+        [
+          605,
+          625.4403,
+          60.556
+        ],
+        [
+          621,
+          631.922,
+          58.333
+        ],
+        [
+          636,
+          638.1951,
+          27.889
+        ],
+        [
+          661,
+          649.02,
+          53.444
+        ],
+        [
+          683,
+          657.8618,
+          44.556
+        ],
+        [
+          701,
+          665.7859,
+          44.889
+        ],
+        [
+          710,
+          666.9363,
+          13.889
+        ],
+        [
+          761,
+          690.5003,
+          51
+        ],
+        [
+          785,
+          700.6013,
+          94.222
+        ],
+        [
+          819,
+          714.9071,
+          6.444
+        ],
+        [
+          835,
+          721.8128,
+          34.111
+        ],
+        [
+          881,
+          741.4138,
+          2.333
+        ],
+        [
+          1050,
+          812.8972,
+          1.444
+        ],
+        [
+          1107,
+          836.9767,
+          5
+        ]
+      ]
+    },
+    {
+      "id": "20261024_204418",
+      "sourceFilename": "SPECTRA_PRO_20261024_204418_analysis.json",
+      "sourceAnalysisSha256": "8131ba3809efbb49f415537cdab4394eb9f611d21b8eb3134c4431d73f81880b",
+      "referenceGas": "H",
+      "identityStatus": "reported-by-user",
+      "exportedBestMatch": "H",
+      "exportedScoreSharePct": 62,
+      "preset": "smart-gastube",
+      "autoTune": true,
+      "hardMatchCapNm": 1.8,
+      "fullSpectrumSamples": 1280,
+      "wavelengthCoverageNm": [
+        376.2406,
+        910.3382
+      ],
+      "calibrationAnchors": [
+        [
+          32,
+          388.86
+        ],
+        [
+          515,
+          587.57
+        ],
+        [
+          1110,
+          837.76
+        ]
+      ],
+      "detectedPeakCount": 4,
+      "peaks": [
+        [
+          143,
+          434.5877,
+          6.111
+        ],
+        [
+          271,
+          487.1231,
+          88.333
+        ],
+        [
+          429,
+          552.5224,
+          1.333
+        ],
+        [
+          674,
+          654.4333,
+          82.556
+        ]
+      ]
+    },
+    {
+      "id": "20261024_204650",
+      "sourceFilename": "SPECTRA_PRO_20261024_204650_analysis.json",
+      "sourceAnalysisSha256": "913b3fc5ff8fb85cfb95898b83791d817af35333f3e6ad048d8f00c3252ba323",
+      "referenceGas": "O2",
+      "identityStatus": "tentative-user-identification",
+      "exportedBestMatch": "CO2",
+      "exportedScoreSharePct": 26,
+      "preset": "smart-gastube",
+      "autoTune": true,
+      "hardMatchCapNm": 1.8,
+      "fullSpectrumSamples": 1280,
+      "wavelengthCoverageNm": [
+        376.2406,
+        910.3382
+      ],
+      "calibrationAnchors": [
+        [
+          32,
+          388.86
+        ],
+        [
+          515,
+          587.57
+        ],
+        [
+          1110,
+          837.76
+        ]
+      ],
+      "detectedPeakCount": 18,
+      "peaks": [
+        [
+          55,
+          398.8705,
+          1.111
+        ],
+        [
+          69,
+          404.8516,
+          2.444
+        ],
+        [
+          87,
+          411.7082,
+          6
+        ],
+        [
+          106,
+          419.2683,
+          5
+        ],
+        [
+          124,
+          426.6781,
+          1.778
+        ],
+        [
+          152,
+          438.4496,
+          7
+        ],
+        [
+          183,
+          451.1752,
+          13.444
+        ],
+        [
+          229,
+          470.027,
+          1.333
+        ],
+        [
+          263,
+          483.6307,
+          27.222
+        ],
+        [
+          350,
+          519.6468,
+          9.667
+        ],
+        [
+          391,
+          536.5939,
+          1.111
+        ],
+        [
+          447,
+          559.9662,
+          6.333
+        ],
+        [
+          464,
+          566.8497,
+          1.222
+        ],
+        [
+          577,
+          613.608,
+          1.111
+        ],
+        [
+          607,
+          626.0968,
+          1.444
+        ],
+        [
+          887,
+          743.5272,
+          1.111
+        ],
+        [
+          961,
+          774.922,
+          61.222
+        ],
+        [
+          1124,
+          844.2992,
+          47.667
+        ]
+      ]
+    },
+    {
+      "id": "20261024_211000",
+      "sourceFilename": "SPECTRA_PRO_20261024_211000_analysis.json",
+      "sourceAnalysisSha256": "cad938c13008e1a0be047b6b3ac605439827d2218a580532e4cf84fd6addb649",
+      "referenceGas": "Hg",
+      "identityStatus": "reported-by-user",
+      "exportedBestMatch": "Hg",
+      "exportedScoreSharePct": 63,
+      "preset": "smart-gastube",
+      "autoTune": true,
+      "hardMatchCapNm": 1.8,
+      "fullSpectrumSamples": 1280,
+      "wavelengthCoverageNm": [
+        376.2652,
+        910.1123
+      ],
+      "calibrationAnchors": [
+        [
+          32,
+          388.86
+        ],
+        [
+          381,
+          532
+        ],
+        [
+          515,
+          587.57
+        ],
+        [
+          1110,
+          837.76
+        ]
+      ],
+      "detectedPeakCount": 6,
+      "peaks": [
+        [
+          70,
+          404.713,
+          2.889
+        ],
+        [
+          147,
+          436.1977,
+          57.556
+        ],
+        [
+          415,
+          546.4701,
+          62.556
+        ],
+        [
+          493,
+          578.0155,
+          1.889
+        ],
+        [
+          554,
+          604.427,
+          1
+        ],
+        [
+          674,
+          654.4905,
+          12.667
+        ]
+      ]
+    }
+  ]
+}
