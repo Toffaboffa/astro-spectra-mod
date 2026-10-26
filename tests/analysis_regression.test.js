@@ -1392,7 +1392,7 @@ function testPrimaryEvidenceGate() {
   };
 
   const rejected = pipeline.qualifyPrimaryEvidence(singleExtrapolated);
-  assert.equal(rejected.model, 'primary-evidence-gate-v1');
+  assert.equal(rejected.model, 'primary-evidence-gate-v2');
   assert.equal(rejected.applicable, true);
   assert.equal(rejected.reportable, false, 'A single extrapolated O line must not be promoted to Best Match');
   assert.equal(rejected.reason, 'single-line-evidence-in-calibration-extrapolation');

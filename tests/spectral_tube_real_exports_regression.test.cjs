@@ -297,7 +297,110 @@ test('STEP 3: final Best Match evidence gate respects gas-tube uncertainty', () 
   }
 });
 
-test.todo('STEP 4: other molecular Best Match candidates must pass a general evidence sufficiency gate');
+test('STEP 4: real N2 bands qualify, while molecular single bands and duplicate peaks do not', () => {
+  const ctx = vm.createContext({ console });
+  ctx.self = ctx;
+  new vm.Script(fs.readFileSync(path.join(root, 'docs/frontend/workers/analysisPipeline.js'), 'utf8'),
+    { filename: 'analysisPipeline.js' }).runInContext(ctx);
+  const gate = ctx.SPECTRA_PRO_analysisPipeline.qualifyPrimaryEvidence;
+
+  const nitrogen = replayMolecular(byId['201443']);
+  const accepted = gate(nitrogen);
+  assert.ok(accepted && accepted.applicable, 'Molecular N2 requires primary evidence assessment');
+  assert.equal(accepted.reportable, true, 'Numerous measured N2 bands should remain eligible');
+  assert.equal(accepted.reason, 'coherent-multi-band-evidence');
+  assert.ok(accepted.independentEvidenceCount >= 3);
+
+  function candidate(overrides = {}) {
+    return {
+      ok: true, calibrated: true, mode: 'lab', presetId: 'smart-molecular',
+      hardMatchCapNm: 1.8,
+      elementScores: [{ element: 'CO', mode: 'molecular', evidenceModel: 'generic-molecular-v1',
+        matchedPeaks: 4, totalScore: 91, scoreSharePct: 81 }],
+      winnerBreakdown: { primaryEmitter: 'CO', evidenceModel: 'generic-molecular-v1' },
+      topHits: [
+        { element: 'CO', peakIndex: 1, referenceNm: 451.1, observedNm: 451.25, deltaNm: 0.15 },
+        { element: 'CO', peakIndex: 2, referenceNm: 483.5, observedNm: 483.4, deltaNm: -0.1 },
+        { element: 'CO', peakIndex: 3, referenceNm: 519.8, observedNm: 519.9, deltaNm: 0.1 }
+      ],
+      calibrationDiagnostics: { anchorWavelengthCoverageNm: { min: 400, max: 800 } },
+      instrumentResolutionModel: { effectiveResolutionFwhmNm: 1.8 },
+      measurementQuality: { overallStatus: 'moderate', mainLimitation: {
+        code: 'calibration', status: 'moderate', reason: 'calibration-fit-residual-not-independent'
+      }},
+      ...overrides
+    };
+  }
+  const good = gate(candidate());
+  assert.equal(good.reportable, true, '3 independent in-anchor molecular bands should qualify');
+  assert.equal(good.acceptedHitCount, 3);
+  assert.equal(good.requirements.minimumAcceptedHits, 3);
+
+  const singleton = gate(candidate({ topHits: [candidate().topHits[0]] }));
+  assert.equal(singleton.reportable, false);
+  assert.equal(singleton.reason, 'insufficient-molecular-band-evidence');
+
+  const reusedPeak = gate(candidate({
+    topHits: [
+      { element: 'CO', peakIndex: 15, referenceNm: 451.1, observedNm: 451.25, deltaNm: .15 },
+      { element: 'CO', peakIndex: 15, referenceNm: 451.5, observedNm: 451.25, deltaNm: -.25 },
+      { element: 'CO', peakIndex: 16, referenceNm: 483.5, observedNm: 483.4, deltaNm: -.1 }
+    ]
+  }));
+  assert.equal(reusedPeak.reportable, false, 'One physical peak cannot count twice');
+  assert.equal(reusedPeak.acceptedHitCount, 2);
+
+  const blended = gate(candidate({
+    topHits: [
+      { element: 'CO', peakIndex: 1, referenceNm: 451.1, observedNm: 451.25, deltaNm: .15 },
+      { element: 'CO', peakIndex: 2, referenceNm: 451.3, observedNm: 451.45, deltaNm: .15 },
+      { element: 'CO', peakIndex: 3, referenceNm: 519.8, observedNm: 519.9, deltaNm: .1 }
+    ]
+  }));
+  assert.equal(blended.reportable, false, 'Unresolved bands must not count as independent');
+  assert.equal(blended.reason, 'insufficient-independent-molecular-evidence');
+
+  const outOfCalibration = gate(candidate({
+    topHits: [
+      candidate().topHits[0],
+      candidate().topHits[1],
+      { element: 'CO', peakIndex: 3, referenceNm: 844.6, observedNm: 844.55, deltaNm: -.05 }
+    ]
+  }));
+  assert.equal(outOfCalibration.reportable, false);
+  assert.equal(outOfCalibration.reason, 'insufficient-in-anchor-molecular-evidence');
+
+  const broadOnly = gate(candidate({
+    topHits: [
+      candidate().topHits[0],
+      candidate().topHits[1],
+      { element: 'CO', peakIndex: 3, referenceNm: 519.8, observedNm: 522.3, deltaNm: 2.5 }
+    ]
+  }));
+  assert.equal(broadOnly.reportable, false, 'Broad confirmation outside 1.8 nm is not accepted');
+
+  const poorSaturation = gate(candidate({ measurementQuality: { mainLimitation: {
+    code: 'saturation', status: 'poor', reason: 'clipped-signal'
+  }}}));
+  assert.equal(poorSaturation.reportable, false, 'Poor saturation must veto a molecular identity');
+
+  const curated = candidate({
+    elementScores: [{ element: 'N2', mode: 'molecular', evidenceModel: 'plasma-diagnostic-v2-auto',
+      matchedPeaks: 2, totalScore: 91, scoreSharePct: 81 }],
+    winnerBreakdown: { primaryEmitter: 'N2', evidenceModel: 'plasma-diagnostic-v2-auto' },
+    topHits: [
+      { element: 'N2', peakIndex: 1, referenceNm: 399.84, observedNm: 399.9, deltaNm: .06 },
+      { element: 'N2', peakIndex: 2, referenceNm: 405.94, observedNm: 406.0, deltaNm: .06 }
+    ]
+  });
+  assert.equal(gate(curated).reportable, false,
+    'One curated band outside anchor coverage must not be allowed as sole in-anchor evidence');
+  curated.calibrationDiagnostics.anchorWavelengthCoverageNm.min = 380;
+  assert.equal(gate(curated).reportable, true, 'Curated profiles may qualify with two independent in-anchor bands');
+  curated.elementScores[0].strictAccepted = false;
+  assert.equal(gate(curated).reason, 'molecular-fingerprint-requirements-not-met');
+});
+
 
 
 console.log('Real spectral tube fixtures: 7 exports (full detected-peak sets), production fingerprint replay; known defects tracked as TODO.');

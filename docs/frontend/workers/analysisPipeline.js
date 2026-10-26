@@ -16,7 +16,7 @@
     return candidateAnalysis.analyzeFrame(frame, state, options);
   }
 
-  const PRIMARY_EVIDENCE_GATE_MODEL = 'primary-evidence-gate-v1';
+  const PRIMARY_EVIDENCE_GATE_MODEL = 'primary-evidence-gate-v2';
 
   function finite(value) {
     if (value === null || value === undefined || value === '' || typeof value === 'boolean') return null;
@@ -80,16 +80,24 @@
     const key = candidateKey(winner) || String(breakdown.primaryEmitter || '').trim();
     const evidenceModel = String(winner.evidenceModel || breakdown.evidenceModel || '');
     const atomicApplicable = String(winner.mode || '').toLowerCase() === 'atomic' || evidenceModel.indexOf('atomic-fingerprint') !== -1;
+    const molecularApplicable = String(winner.mode || '').toLowerCase() === 'molecular' ||
+      (!atomicApplicable && /(?:molecular|plasma-diagnostic|gastube-discharge)/.test(evidenceModel));
+    // Curated gas-tube/plasma fingerprints have their own diagnostic band/group
+    // rules; generic library molecular coincidences need 3 independent bands.
+    const curatedMolecular = molecularApplicable &&
+      /(?:plasma-diagnostic|gastube-discharge)/.test(evidenceModel);
+    const minimumHits = molecularApplicable && !curatedMolecular ? 3 : 2;
     const gasSource = String(output.presetId || '') === 'smart-gastube' && output.gasTubeSourceAssessment;
     const gasSourceConflict = !!(gasSource && gasSource.reportable === false &&
       String(gasSource.candidate || '') === key);
     const base = {
       model: PRIMARY_EVIDENCE_GATE_MODEL,
-      applicable: atomicApplicable || gasSourceConflict,
+      applicable: atomicApplicable || molecularApplicable || gasSourceConflict,
       candidate: key || null,
       reportable: !gasSourceConflict,
       reason: gasSourceConflict ? 'parent-gas-ambiguous-oxygen-emission'
-        : atomicApplicable ? 'coherent-multi-line-evidence' : 'not-atomic-fingerprint-candidate',
+        : atomicApplicable ? 'coherent-multi-line-evidence'
+          : molecularApplicable ? 'coherent-multi-band-evidence' : 'not-atomic-or-molecular-fingerprint-candidate',
       acceptedHitCount: 0,
       independentEvidenceCount: 0,
       inAnchorHitCount: null,
@@ -107,10 +115,10 @@
           }
         : null,
       requirements: {
-        minimumAcceptedHits: 2,
-        minimumIndependentEvidence: 2,
+        minimumAcceptedHits: minimumHits,
+        minimumIndependentEvidence: minimumHits,
         minimumInAnchorIndependentEvidence: 2,
-        minimumDiagnosticMatches: 1
+        minimumDiagnosticMatches: atomicApplicable ? 1 : 0
       }
     };
     // Do not promote a CO2-ranked candidate to a confirmed tube gas when
@@ -120,17 +128,39 @@
       base.sourceAssessmentModel = String(gasSource.model || '');
       return base;
     }
-    if (!atomicApplicable) return base;
+    if (!atomicApplicable && !molecularApplicable) return base;
 
+    const cap = finite(output.hardMatchCapNm) !== null
+      ? Math.max(0.2, finite(output.hardMatchCapNm))
+      : (finite(output.maxDistanceNm) !== null ? Math.max(0.2, finite(output.maxDistanceNm)) : null);
     const hits = (Array.isArray(output.topHits) ? output.topHits : []).filter(function (hit) {
-      return hit && hit.excludedFromScoring !== true && hitMatchesCandidate(hit, key);
+      if (!hit || hit.excludedFromScoring === true || hit.accepted === false ||
+          !hitMatchesCandidate(hit, key)) return false;
+      const delta = finite(hit.deltaNm);
+      const observed = finite(hit.observedNm);
+      const reference = finite(hit.referenceNm);
+      const error = delta !== null ? Math.abs(delta)
+        : observed !== null && reference !== null ? Math.abs(observed - reference) : null;
+      return error !== null && (cap === null || error <= cap + 1e-9);
     });
-    const extrapolated = hits.filter(function (hit) { return hitInsideAnchors(hit, output.calibrationDiagnostics) === false; });
-    const anchorKnown = !!base.anchorRangeNm || hits.some(function (hit) { return typeof hit.extrapolated === 'boolean'; });
-    const inAnchor = anchorKnown ? hits.filter(function (hit) { return hitInsideAnchors(hit, output.calibrationDiagnostics) === true; }) : [];
+    // One emission peak may map to multiple database bands. It is still only
+    // ONE observation, not two independent pieces of evidence.
+    const byPeak = Object.create(null);
+    const distinctHits = hits.filter(function (hit) {
+      const pixel = finite(hit.peakIndex);
+      const observed = finite(hit.observedNm);
+      const id = pixel !== null ? 'px:' + String(pixel)
+        : observed !== null ? 'nm:' + observed.toFixed(3) : null;
+      if (id === null || byPeak[id]) return false;
+      byPeak[id] = true;
+      return true;
+    });
+    const extrapolated = distinctHits.filter(function (hit) { return hitInsideAnchors(hit, output.calibrationDiagnostics) === false; });
+    const anchorKnown = !!base.anchorRangeNm || distinctHits.some(function (hit) { return typeof hit.extrapolated === 'boolean'; });
+    const inAnchor = anchorKnown ? distinctHits.filter(function (hit) { return hitInsideAnchors(hit, output.calibrationDiagnostics) === true; }) : [];
 
-    base.acceptedHitCount = hits.length;
-    base.independentEvidenceCount = independentEvidenceCount(hits, output.instrumentResolutionModel);
+    base.acceptedHitCount = distinctHits.length;
+    base.independentEvidenceCount = independentEvidenceCount(distinctHits, output.instrumentResolutionModel);
     base.extrapolatedHitCount = extrapolated.length;
     if (anchorKnown) {
       base.inAnchorHitCount = inAnchor.length;
@@ -143,24 +173,31 @@
       base.reason = 'measurement-quality-' + main.code;
       return base;
     }
-    if (hits.length < 2) {
+    if (distinctHits.length < minimumHits) {
       base.reportable = false;
-      base.reason = hits.length === 1 && extrapolated.length === 1
-        ? 'single-line-evidence-in-calibration-extrapolation'
-        : (hits.length === 1 ? 'single-line-evidence' : 'no-accepted-primary-evidence');
+      base.reason = molecularApplicable
+        ? (distinctHits.length === 0 ? 'no-accepted-molecular-evidence' : 'insufficient-molecular-band-evidence')
+        : (distinctHits.length === 1 && extrapolated.length === 1
+          ? 'single-line-evidence-in-calibration-extrapolation'
+          : (distinctHits.length === 1 ? 'single-line-evidence' : 'no-accepted-primary-evidence'));
       return base;
     }
-    if (base.independentEvidenceCount < 2) {
+    if (molecularApplicable && winner.strictAccepted === false) {
       base.reportable = false;
-      base.reason = 'insufficient-independent-primary-evidence';
+      base.reason = 'molecular-fingerprint-requirements-not-met';
+      return base;
+    }
+    if (base.independentEvidenceCount < minimumHits) {
+      base.reportable = false;
+      base.reason = molecularApplicable ? 'insufficient-independent-molecular-evidence' : 'insufficient-independent-primary-evidence';
       return base;
     }
     if (anchorKnown && Number(base.inAnchorIndependentEvidenceCount) < 2) {
       base.reportable = false;
-      base.reason = 'insufficient-in-anchor-primary-evidence';
+      base.reason = molecularApplicable ? 'insufficient-in-anchor-molecular-evidence' : 'insufficient-in-anchor-primary-evidence';
       return base;
     }
-    if (base.diagnosticMatchedPeaks < 1) {
+    if (atomicApplicable && base.diagnosticMatchedPeaks < 1) {
       base.reportable = false;
       base.reason = 'no-diagnostic-primary-evidence';
       return base;

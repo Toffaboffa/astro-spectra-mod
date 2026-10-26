@@ -124,3 +124,5 @@ The fixture `tests/fixtures/spectral_tubes_20261024.json` preserves **all detect
 The 2026-10-26 Step 2 acceptance tests verify that both observed H-alpha near misses are retained separately from accepted/scored hits. This never broadens gas identification tolerance; reference-line residual spread is a consistency diagnostic, not independent calibration. See [Step 2 fixture notes](fixtures/README-spectral-tubes-20261024.md).
 
 Step 3 adds a conservative post-analysis gas-tube source assessment that distinguishes atomic oxygen emission from the actual parent gas. Two tentative O2 exports and synthetic CO2/oxygen controls test the O I/CO conflict without rewriting molecular rankings. See [the real-export notes](fixtures/README-spectral-tubes-20261024.md).
+
+Step 4 extends the Best Match evidence gate to molecular bands (three independent accepted bands for generic molecular-library candidates; two for curated plasma fingerprints, alongside existing group/quality requirements). Real N2 and negative-control regressions live in `tests/spectral_tube_real_exports_regression.test.cjs`.

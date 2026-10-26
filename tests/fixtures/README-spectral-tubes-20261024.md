@@ -97,3 +97,22 @@ passing acceptance test when its implementation is delivered in later steps.
   user's "probably O2" as verified ground truth.
 
 The same conservative O I check must also veto a CO2 winner if **no corroborating CO bands** appear. In that case the display distinguishes an O I emitter from an unknown parent gas; it must not suggest a confirmed O2 tube. Step 3 also checks the production primary-evidence gate against both recorded ambiguous spectra.
+
+## Step 4: shared candidate-quality gate (2026-10-26)
+
+The same *Best Match* qualification layer now evaluates atomic and molecular
+candidates, while preserving all raw rankings and scored lines. A molecular
+candidate needs **accepted, independent, calibrated-region bands**: two for
+curated discharge fingerprints that have their own strict group requirements;
+three for generic molecular-library coincidences. A single observed peak
+cannot be counted multiple times even if several database bands overlap it.
+Potential confirmation peaks beyond the accepted tolerance do not qualify.
+Poor signal/saturation and insufficient within-anchor coverage veto a claim.
+The Step 3 O I versus CO2 parent-gas conflict veto remains in force.
+
+The ranking percentage is *not* a probability of identification. An eligible
+candidate is still a best-ranked interpretation rather than independently
+verified tube contents. Test synthetic counterexamples (single line, peak
+reuse, unresolved blends, calibration extrapolation, broad confirmation, poor
+saturation, unmet curated requirements) alongside real N2/H/Ne/Hg controls.
+
