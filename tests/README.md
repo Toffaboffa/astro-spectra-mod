@@ -128,3 +128,7 @@ Step 3 adds a conservative post-analysis gas-tube source assessment that disting
 Step 4 extends the Best Match evidence gate to molecular bands (three independent accepted bands for generic molecular-library candidates; two for curated plasma fingerprints, alongside existing group/quality requirements). Real N2 and negative-control regressions live in `tests/spectral_tube_real_exports_regression.test.cjs`.
 
 Step 4 additionally exposes `primaryEvidence.status`: `strong-evidence`, `possible-identification`, or `insufficient-evidence`. This is a qualitative evidence status, not gas probability. AI bestMatch is withheld for the latter two states and topCandidate is retained. Production tests cover all three states and molecular false positives.
+
+## Scientific release QA (2026-10-26)
+
+`node tests/scientific_ui_browser_regression.test.mjs` exercises the actual production LAB evidence-summary renderer in headless Chromium for five English/Swedish evidence and O I/CO conflict cases at narrow/wide window sizes. It checks labels and basic panel geometry, not the full camera UI, native mobile touch, modal exports or actual PDF pagination. Backend AI-model compaction tests preserve parent-gas ambiguity and the three-tier status. PDF contracts test deterministic narrative and diagnostic preservation. See [release validation](../docs/RELEASE_VALIDATION_2026-10-26.md).

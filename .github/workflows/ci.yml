@@ -68,6 +68,8 @@ jobs:
         run: node tests/ui_consolidation.test.mjs
       - name: Run i18n runtime regressions
         run: node tests/i18n_runtime_regression.test.mjs
+      - name: Check scientific evidence UI in Chromium at phone/desktop widths
+        run: node tests/scientific_ui_browser_regression.test.mjs
       - name: Run export reproducibility regressions
         run: node tests/export_reproducibility.test.mjs
       - name: Run PDF report contract regressions

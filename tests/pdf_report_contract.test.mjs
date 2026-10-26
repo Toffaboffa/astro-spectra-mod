@@ -107,6 +107,7 @@ vm.createContext(context);
 vm.runInContext(source, context, { filename: 'exportUi.js' });
 context.document = { getElementById: () => null };
 
+const originalReportState = structuredClone(state);
 const bundle = context.SpectraPro.exportUi.buildAnalysisBundle();
 const report = context.SpectraPro.exportUi.buildPdfReportModel(bundle);
 
@@ -418,6 +419,37 @@ assert.equal(JSON.stringify(fluorescentOverlayReport.analysisLog), fluorescentLo
 assert.equal(fluorescentOverlayReport.matchedFeatureBasis, 'accepted-clear-narrow-line-hits', 'Overlay state must not change the report hit basis');
 assert.ok(!JSON.stringify(fluorescentOverlayReport.matchedFeatureRows).includes('696.400'), 'Weak overlay-only candidates must not enter the deterministic PDF result table');
 
+// Final QA: the deterministic PDF must explain tentative and conflicting
+// identifications, independently of the optional AI interpretation.
+const possibleState = structuredClone(originalReportState);
+possibleState.analysis.winnerBreakdown.primaryEvidence = Object.assign(
+  {}, possibleState.analysis.winnerBreakdown.primaryEvidence, {
+    applicable: true, reportable: true, status: 'possible-identification',
+    qualityStatus: 'moderate', independentFitResidualCheck: false,
+    reason: 'coherent-multi-band-evidence'
+  }
+);
+context.SpectraPro.store.getState = () => possibleState;
+const possibleReport = context.SpectraPro.exportUi.buildPdfReportModel(
+  context.SpectraPro.exportUi.buildAnalysisBundle()
+);
+assert.ok(possibleReport.abstract.includes('Possible identification'),
+  'PDF abstract must mark tentative evidence before any optional AI text');
+
+const conflictedState = structuredClone(originalReportState);
+conflictedState.analysis.gasTubeSourceAssessment = {
+  parentGasStatus: 'unresolved-competing-emission',
+  atomicOxygen: { independentObservedFeatures: 2, nearMissesNotAccepted: 1 },
+  coBands: { acceptedCount: 4 }
+};
+context.SpectraPro.store.getState = () => conflictedState;
+const contestedReport = context.SpectraPro.exportUi.buildPdfReportModel(
+  context.SpectraPro.exportUi.buildAnalysisBundle()
+);
+assert.ok(contestedReport.analysisLog.some(line => line.includes('parent gas unconfirmed')),
+  'Deterministic PDF log must preserve the O I-versus-CO band conflict');
+
+context.SpectraPro.store.getState = () => originalReportState;
 context.SpectraPro.aiAnalysisUi = null;
 const noAiBundle = context.SpectraPro.exportUi.buildAnalysisBundle();
 const noAiReport = context.SpectraPro.exportUi.buildPdfReportModel(noAiBundle);

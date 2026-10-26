@@ -693,6 +693,22 @@ is preserved as historical planning material and retains its original 3.0.0 rele
 
 ---
 
+## 2026-10-26 scientific QA and acceptance status
+
+The five-stage real-spectrum improvement work now includes protected H-alpha near-miss
+diagnostics, conservative O I/CO parent-gas conflict assessment, and a common
+atomic/molecular primary-evidence gate with qualitative status levels. Release
+integrity is checked with real-export peak fixtures, deterministic scientific
+regressions, AI prompt/serialization validation, PDF/JSON contract tests and
+a small Chromium narrow/wide evidence-panel smoke test.
+
+**See [release validation and manual acceptance](docs/RELEASE_VALIDATION_2026-10-26.md)**
+for the exact coverage, remaining caveats and camera/device checklist.
+Passing automated tests does not mean that physical camera controls, real
+export downloads, visual PDF pagination or O2/CO2 classification accuracy
+have been independently validated. Do not infer a gas probability from
+relative score share.
+
 ## Remaining limitations and manual priorities
 
 - validate English and Swedish layout at supported desktop viewport sizes
