@@ -525,6 +525,15 @@
           analysisNext.matchUncertaintyModel = (msg.payload.matchUncertaintyModel && typeof msg.payload.matchUncertaintyModel === 'object')
             ? msg.payload.matchUncertaintyModel
             : null;
+          // Review-only near misses must never enter topHits, AI accepted evidence
+          // or ranking. Clear on every result to avoid stale possible lines.
+          analysisNext.tentativeLineMatches = Array.isArray(msg.payload.tentativeLineMatches)
+            ? msg.payload.tentativeLineMatches.slice(0, 8).map(function (hit) { return Object.assign({}, hit); })
+            : [];
+          analysisNext.referenceLineConsistency = (msg.payload.referenceLineConsistency &&
+            typeof msg.payload.referenceLineConsistency === 'object')
+            ? Object.assign({}, msg.payload.referenceLineConsistency)
+            : null;
           analysisNext.hardMatchCapNm = Number.isFinite(Number(msg.payload.hardMatchCapNm))
             ? Number(msg.payload.hardMatchCapNm)
             : null;
