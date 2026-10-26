@@ -96,3 +96,4 @@ passing acceptance test when its implementation is delivered in later steps.
   blind tests, preferably independent wavelength calibration. Never treat the
   user's "probably O2" as verified ground truth.
 
+The same conservative O I check must also veto a CO2 winner if **no corroborating CO bands** appear. In that case the display distinguishes an O I emitter from an unknown parent gas; it must not suggest a confirmed O2 tube. Step 3 also checks the production primary-evidence gate against both recorded ambiguous spectra.

@@ -90,7 +90,7 @@
       parentGasStatus: parentState,
       parentGasConfirmed: false,
       reportable: !contestedCo2,
-      reason: contestedCo2 ? 'dominant-atomic-oxygen-versus-co-bands'
+      reason: contestedCo2 && competingCo ? 'dominant-atomic-oxygen-versus-co-bands'
         : oxygenDominant ? 'atomic-oxygen-is-not-parent-gas-proof'
           : 'no-strong-atomic-oxygen-conflict',
       atomicOxygen: {

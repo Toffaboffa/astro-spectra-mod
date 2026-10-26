@@ -269,7 +269,9 @@ test('STEP 3: isolated oxygen cannot prove O2, and CO-dominant spectra are not v
   const oxygenOnly = observed([777.4, 844.6], [100, 90]);
   assert.equal(oxygenOnly.parentGasStatus, 'unresolved-oxygen-emission');
   assert.equal(oxygenOnly.parentGasConfirmed, false);
-  assert.equal(oxygenOnly.reportable, true, 'no competing CO2 band evidence means no conflict veto');
+  assert.equal(oxygenOnly.reason, 'atomic-oxygen-is-not-parent-gas-proof');
+  assert.equal(oxygenOnly.reportable, false,
+    'strong atomic oxygen without CO bands must NOT establish a ranked CO2 tube');
   const coDominant = observed([451.1, 483.5, 519.8, 561, 777.4, 844.6],
     [100, 100, 100, 100, 60, 60]);
   assert.equal(coDominant.reportable, true, 'CO-dominant spectrum must not be vetoed');
@@ -279,6 +281,23 @@ test('STEP 3: isolated oxygen cannot prove O2, and CO-dominant spectra are not v
   assert.equal(weakO.reportable, true);
 });
 
-test.todo('STEP 4: molecular Best Match must pass the same evidence sufficiency gate as atomic candidates');
+test('STEP 3: final Best Match evidence gate respects gas-tube uncertainty', () => {
+  const ctx = vm.createContext({ console });
+  ctx.self = ctx;
+  const code = fs.readFileSync(path.join(root, 'docs/frontend/workers/analysisPipeline.js'), 'utf8');
+  new vm.Script(code, { filename: 'analysisPipeline.js' }).runInContext(ctx);
+  for (const id of ['204112', '204650']) {
+    const item = byId[id];
+    const result = modules.SPECTRA_PRO_gasTubeSourceAssessment.assess(
+      replayMolecular(item), { nm: item.wavelengthCoverageNm });
+    const gate = ctx.SPECTRA_PRO_analysisPipeline.qualifyPrimaryEvidence(result);
+    assert.ok(gate && gate.applicable, id + ': Best Match gate must apply to contested parent gas');
+    assert.equal(gate.reportable, false, id + ': rank must not become confirmed CO2');
+    assert.equal(gate.reason, 'parent-gas-ambiguous-oxygen-emission');
+  }
+});
+
+test.todo('STEP 4: other molecular Best Match candidates must pass a general evidence sufficiency gate');
+
 
 console.log('Real spectral tube fixtures: 7 exports (full detected-peak sets), production fingerprint replay; known defects tracked as TODO.');

@@ -927,13 +927,14 @@
         String(lineConsistency.possibleCount || 0) + '.');
     }
     const sourceReview = analysis.gasTubeSourceAssessment;
-    if (sourceReview && sourceReview.parentGasStatus === 'unresolved-competing-emission') {
+    if (sourceReview && (sourceReview.parentGasStatus === 'unresolved-competing-emission' ||
+        sourceReview.parentGasStatus === 'unresolved-oxygen-emission')) {
       const oxygen = sourceReview.atomicOxygen || {};
       const co = sourceReview.coBands || {};
       lines.push('Gas Tube: O I emitter evidence (' + String(oxygen.independentObservedFeatures || 0) +
         ' features, including unaccepted near misses=' + String(oxygen.nearMissesNotAccepted || 0) +
-        ') conflicts with CO-band matches (' + String(co.acceptedCount || 0) +
-        '); parent gas unconfirmed. Do NOT convert O I into O2 tube identity.');
+        ') with CO-band matches=' + String(co.acceptedCount || 0) +
+        '; parent gas unconfirmed. Do NOT convert O I into O2 tube identity.');
     }
     if (analysis.offsetNm != null) {
       const matchMae = matchMeanAbsResidualNm(analysis);
