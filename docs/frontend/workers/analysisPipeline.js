@@ -117,7 +117,7 @@
       requirements: {
         minimumAcceptedHits: minimumHits,
         minimumIndependentEvidence: minimumHits,
-        minimumInAnchorIndependentEvidence: 2,
+        minimumInAnchorIndependentEvidence: minimumHits,
         minimumDiagnosticMatches: atomicApplicable ? 1 : 0
       }
     };
@@ -192,7 +192,7 @@
       base.reason = molecularApplicable ? 'insufficient-independent-molecular-evidence' : 'insufficient-independent-primary-evidence';
       return base;
     }
-    if (anchorKnown && Number(base.inAnchorIndependentEvidenceCount) < 2) {
+    if (anchorKnown && Number(base.inAnchorIndependentEvidenceCount) < base.requirements.minimumInAnchorIndependentEvidence) {
       base.reportable = false;
       base.reason = molecularApplicable ? 'insufficient-in-anchor-molecular-evidence' : 'insufficient-in-anchor-primary-evidence';
       return base;
