@@ -907,6 +907,25 @@
         '; report hit basis=' + deterministicMatchedHitBasis(analysis) +
         '; QC flags=' + String(Array.isArray(analysis.qcFlags) ? analysis.qcFlags.length : 0) + '.');
     }
+    const possibleLines = Array.isArray(analysis.tentativeLineMatches)
+      ? analysis.tentativeLineMatches.filter(function (hit) { return hit && hit.accepted === false; })
+      : [];
+    if (possibleLines.length) {
+      const examples = possibleLines.slice(0, 3).map(function (hit) {
+        return String(hit.element || '?') + ' ' + nfmt(hit.observedNm, 2) + ' vs ' +
+          nfmt(hit.referenceNm, 2) + ' nm (delta ' + nfmt(hit.deltaNm, 2) + ' nm)';
+      });
+      lines.push('Possible strong lines OUTSIDE accepted match tolerance (NOT scored/accepted): ' +
+        examples.join('; ') + '. Verify wavelength calibration independently.');
+    }
+    const lineConsistency = analysis.referenceLineConsistency;
+    if (lineConsistency && lineConsistency.needsCalibrationReview === true) {
+      lines.push('Reference-line consistency (NOT independent calibration): residual spread=' +
+        nfmt(lineConsistency.residualSpreadNm, 3) + ' nm, RMS=' +
+        nfmt(lineConsistency.residualRmsNm, 3) + ' nm, accepted=' +
+        String(lineConsistency.acceptedCount || 0) + ', possible=' +
+        String(lineConsistency.possibleCount || 0) + '.');
+    }
     if (analysis.offsetNm != null) {
       const matchMae = matchMeanAbsResidualNm(analysis);
       lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm; basis=' + String(analysis.offsetBasis || 'matcher-residuals') + '; match MAE=' + (Number.isFinite(matchMae) ? nfmt(matchMae, 4) + ' nm' : '—') + '.');
