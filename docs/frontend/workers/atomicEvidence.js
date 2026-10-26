@@ -423,6 +423,129 @@
     return summary;
   }
 
+
+  // Review-only evidence, separate from accepted hits, ranking and AI line evidence.
+  // A broad window can reveal a strong omitted line ONLY when two distinct
+  // diagnostic lines of that same atom were already accepted by the strict cap.
+  function reviewStrongNearMisses(rows, peaks, acceptedProfileHits, diagnostics, strictToleranceNm) {
+    const strict = Math.max(0.2, Number(strictToleranceNm) || 1.8);
+    const reviewLimit = Math.min(3.0, strict + 1.2);
+    const observed = (Array.isArray(peaks) ? peaks : []).filter(function (p) {
+      return Number.isFinite(Number(p && p.nm));
+    });
+    const accepted = Array.isArray(acceptedProfileHits) ? acceptedProfileHits : [];
+    const maximumProminence = Math.max(1, observed.reduce(function (max, peak) {
+      return Math.max(max, getProminence(peak));
+    }, 0));
+    const anchors = diagnostics && diagnostics.anchorPixelCoverage;
+    const independentFit = diagnostics && diagnostics.fitResidualIndependent === true;
+    const candidates = [];
+
+    (Array.isArray(rows) ? rows.slice(0, 3) : []).forEach(function (row) {
+      if (!row || String(row.mode) !== 'atomic' ||
+          Number(row.matchedPeaks || row.matchedCount || 0) < 2 ||
+          Number(row.diagnosticMatchedPeaks || 0) < 2) return;
+      const profile = catalog.profiles && catalog.profiles[String(row.element || '')];
+      if (!profile) return;
+      const strictHits = accepted.filter(function (hit) {
+        if (!hit || String(hit.element) !== String(row.element)) return false;
+        const line = profileLineForHit(profile, hit);
+        return line && line.diagnostic !== false &&
+          Math.abs(Number(hit.deltaNm)) <= strict + 1e-9;
+      });
+      const independentReferences = new Set(strictHits.map(function (hit) {
+        return Number(hit.referenceNm).toFixed(3);
+      }));
+      const independentPeaks = new Set(strictHits.map(function (hit) {
+        return String(hit.peakIndex);
+      }));
+      if (independentReferences.size < 2 || independentPeaks.size < 2) return;
+
+      (Array.isArray(profile.lines) ? profile.lines : []).forEach(function (line) {
+        if (line.diagnostic === false || Number(line.weight) < 0.6) return;
+        const ref = Number(line.nm);
+        if (!Number.isFinite(ref)) return;
+        if (strictHits.some(function (hit) {
+          return Math.abs(Number(hit.referenceNm) - ref) < 0.08;
+        })) return;
+
+        let best = null;
+        observed.forEach(function (peak) {
+          const index = Number(peak.index);
+          const measured = Number(peak.nm);
+          const delta = measured - ref;
+          if (!Number.isFinite(index) || !Number.isFinite(measured) ||
+              Math.abs(delta) <= strict + 1e-9 || Math.abs(delta) > reviewLimit) return;
+          if (getProminence(peak) < maximumProminence * 0.45) return;
+          if (strictHits.some(function (hit) { return Number(hit.peakIndex) === index; })) return;
+          if (!best || Math.abs(delta) < Math.abs(best.deltaNm)) {
+            const extrapolated = !!(anchors &&
+              (index < Number(anchors.min) || index > Number(anchors.max)));
+            best = {
+              element: String(row.element), species: String(profile.label || row.element),
+              referenceNm: +ref.toFixed(3), observedNm: +measured.toFixed(4),
+              deltaNm: +delta.toFixed(4), peakIndex: index,
+              prominence: +getProminence(peak).toFixed(3),
+              strictToleranceNm: +strict.toFixed(3),
+              reviewToleranceNm: +reviewLimit.toFixed(3),
+              accepted: false, excludedFromScoring: true, status: 'possible',
+              reason: 'strong-line-outside-strict-match-tolerance',
+              confirmedDiagnosticLines: independentReferences.size,
+              calibrationExtrapolated: extrapolated,
+              fitResidualIndependent: independentFit,
+              requiresCalibrationReview: true
+            };
+          }
+        });
+        if (best) candidates.push(best);
+      });
+    });
+
+    // Avoid claiming one peak as multiple review-only lines for the same element.
+    const seen = Object.create(null);
+    return candidates.sort(function (a, b) {
+      return (b.prominence - a.prominence) || (Math.abs(a.deltaNm) - Math.abs(b.deltaNm));
+    }).filter(function (hit) {
+      const key = hit.element + '|' + hit.peakIndex;
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    }).slice(0, 8);
+  }
+
+  function buildReferenceLineConsistency(rows, acceptedHits, possibleHits, diagnostics) {
+    const winner = Array.isArray(rows) ? rows[0] : null;
+    if (!winner || String(winner.mode) !== 'atomic') return null;
+    const key = String(winner.element || '');
+    const accepted = (Array.isArray(acceptedHits) ? acceptedHits : []).filter(function (hit) {
+      return hit && String(hit.element) === key &&
+        Number.isFinite(Number(hit.deltaNm));
+    });
+    const possible = (Array.isArray(possibleHits) ? possibleHits : []).filter(function (hit) {
+      return hit && String(hit.element) === key;
+    });
+    const all = accepted.concat(possible);
+    if (accepted.length < 2) return null;
+    const residuals = all.map(function (hit) { return Number(hit.deltaNm); });
+    const min = Math.min.apply(null, residuals);
+    const max = Math.max.apply(null, residuals);
+    const rms = Math.sqrt(residuals.reduce(function (sum, residual) {
+      return sum + residual * residual;
+    }, 0) / residuals.length);
+    return {
+      model: 'atomic-reference-line-consistency-v1',
+      element: key,
+      acceptedCount: accepted.length,
+      possibleCount: possible.length,
+      residualSpreadNm: +(max - min).toFixed(4),
+      residualRmsNm: +rms.toFixed(4),
+      needsCalibrationReview: possible.length > 0 || (max - min) > 2,
+      fitResidualIndependent: diagnostics && diagnostics.fitResidualIndependent === true,
+      independentWavelengthStandard: false,
+      caveat: 'Line-based consistency check, not an independent calibration or wavelength correction.'
+    };
+  }
+
   function enhance(out, frame, state, options) {
     if (!catalog || !out || !out.ok || !out.calibrated) return out;
     const profiles = catalog.getForPreset(out.presetId);
@@ -493,6 +616,13 @@
       out.scoreSemantics = 'robust-consensus-share';
     }
 
+    out.tentativeLineMatches = reviewStrongNearMisses(
+      merged, peaks, profileHits, out.calibrationDiagnostics, reportableToleranceNm
+    );
+    out.referenceLineConsistency = buildReferenceLineConsistency(
+      merged, profileHits, out.tentativeLineMatches, out.calibrationDiagnostics
+    );
+
     const topElements = Object.create(null);
     merged.slice(0, 4).forEach(function (row) { topElements[String(row.element || '')] = true; });
     // Smart overlays should stay readable even when a low peak threshold admits
@@ -515,6 +645,8 @@
     version: MODEL,
     enhance: enhance,
     scoreProfile: scoreProfile,
-    scoreProfileAuto: scoreProfileAuto
+    scoreProfileAuto: scoreProfileAuto,
+    reviewStrongNearMisses: reviewStrongNearMisses,
+    buildReferenceLineConsistency: buildReferenceLineConsistency
   };
 })(typeof self !== 'undefined' ? self : this);
