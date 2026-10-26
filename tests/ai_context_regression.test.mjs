@@ -230,7 +230,8 @@ sourceConflict.analysis.gasTubeSource = {
   parentGasConfirmed: false, reason: 'emission-products-do-not-prove-parent-gas',
   emittingSpecies: [
     { emitter: 'CO', independentCount: 4, status: 'coherent-emitter' },
-    { emitter: 'O I', independentCount: 1, status: 'single-feature' }
+    { emitter: 'O I', independentCount: 1, status: 'calibration-extrapolated',
+      calibrationExtrapolatedCount: 1 }
   ],
   sourceCandidates: [{
     species: 'CO2', status: 'fragment-or-indirect-pattern',
@@ -242,6 +243,8 @@ assert.equal(sourceModel.analysis.bestSpecies, null);
 assert.equal(sourceModel.analysis.gasTubeSource.parentGasStatus, 'unresolved-indirect-emission');
 assert.equal(sourceModel.analysis.gasTubeSource.emittingSpecies[0][0], 'CO');
 assert.equal(sourceModel.analysis.gasTubeSource.emittingSpecies[0][1], 4);
+assert.equal(sourceModel.analysis.gasTubeSource.emittingSpecies[1][3], 1,
+  'The AI input must retain how many accepted features depend on extrapolation');
 assert.equal(sourceModel.analysis.gasTubeSource.sourceCandidates[0][0], 'CO2');
 assert.equal(sourceModel.analysis.gasTubeSource.sourceCandidates[0][2], 0);
 assert.equal(sourceModel.analysis.gasTubeSource.parentGasConfirmed, false);

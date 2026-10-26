@@ -134,7 +134,10 @@
               }).slice(0, 4) : [];
           const labels = emitters.map(function (item) {
             const count = Math.max(0, Math.round(Number(item.independentCount) || 0));
-            return escapeHtml(String(item.emitter)) + ' (' + count + ')';
+            const extrap = Math.max(0, Math.round(Number(item.calibrationExtrapolatedCount) || 0));
+            return escapeHtml(String(item.emitter)) + ' (' + count + ')' +
+              (extrap ? '<span title="Outside calibration anchors"> [' +
+                (isSv ? 'extrapolerade: ' : 'extrapolated: ') + extrap + ']</span>' : '');
           });
           if (labels.length) {
             html += '<div class="sp-gastube-emitter-evidence" style="margin-top:5px;font-size:11px;line-height:1.5;color:#a9dff0">' +

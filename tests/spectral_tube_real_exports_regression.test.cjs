@@ -232,8 +232,15 @@ test('STEP 2: broad candidate window alone cannot create an accepted identity', 
 test('Generic gas-source evidence on both tentative oxygen-tube exports: no identity leakage', () => {
   for (const id of ['204112', '204650']) {
     const item = byId[id];
+    const replay = replayMolecular(item);
+    replay.calibrationDiagnostics = {
+      anchorPixelCoverage: {
+        min: item.calibrationAnchors[0][0],
+        max: item.calibrationAnchors[item.calibrationAnchors.length - 1][0]
+      }
+    };
     const result = modules.SPECTRA_PRO_gasTubeSourceAssessment.assess(
-      replayMolecular(item), { nm: item.wavelengthCoverageNm });
+      replay, { nm: item.wavelengthCoverageNm });
     const source = result.gasTubeSourceAssessment;
     assert.ok(source);
     assert.equal(source.model, 'catalog-driven-discharge-evidence-v2');
@@ -244,8 +251,9 @@ test('Generic gas-source evidence on both tentative oxygen-tube exports: no iden
       'Fragment-based CO2 candidate needs direct source evidence before reporting parent gas');
     assert.ok(source.emittingSpecies.some(s => s.emitter === 'CO' && s.independentCount >= 2),
       'CO-band emitter evidence must be shown independently from parent-gas inference');
-    assert.ok(source.emittingSpecies.some(s => s.emitter === 'O I' && s.acceptedCount >= 1),
-      'Accepted atomic O line must be present as emitter evidence');
+    assert.ok(source.emittingSpecies.some(s => s.emitter === 'O I' &&
+      s.acceptedCount >= 1 && s.calibrationExtrapolatedCount >= 1),
+      'O I emitter evidence beyond the last calibration anchor must be flagged');
     const carbon = source.sourceCandidates.find(s => s.species === 'CO2');
     assert.ok(carbon);
     assert.ok(carbon.acceptedCount >= 2);

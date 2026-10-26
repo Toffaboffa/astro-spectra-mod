@@ -171,7 +171,7 @@
     };
   }
 
-  function aggregateEmitters(profiles, rows, acceptedHits, resolutionNm) {
+  function aggregateEmitters(profiles, rows, acceptedHits, resolutionNm, pixelAnchors) {
     const grouped = Object.create(null);
     function add(emitter, hit, from) {
       const name = key(emitter);
@@ -200,9 +200,13 @@
       const ref = finite(hit.referenceNm), obs = finite(hit.observedNm);
       const peak = finite(hit.peakIndex);
       if (ref === null || obs === null || peak === null) return;
+      const outsideAnchors = pixelAnchors &&
+        finite(pixelAnchors.min) !== null && finite(pixelAnchors.max) !== null
+        ? peak < pixelAnchors.min || peak > pixelAnchors.max : null;
       add(key(hit.species || hit.element), {
         referenceNm: ref, observedNm: obs, peakIndex: peak,
-        prominence: finite(hit.prominence) ?? 0, accepted: true
+        prominence: finite(hit.prominence) ?? 0, accepted: true,
+        calibrationExtrapolated: outsideAnchors
       }, key(hit.element));
     });
     return Object.values(grouped).map(function (item) {
@@ -217,10 +221,19 @@
       const totalProminence = observations.reduce(function (sum, h) {
         return sum + (finite(h.prominence) ?? 0);
       }, 0);
+      const extrapolatedCount = observations.filter(function (hit) {
+        return hit.calibrationExtrapolated === true;
+      }).length;
+      const inAnchorAcceptedCount = observations.filter(function (hit) {
+        return hit.calibrationExtrapolated !== true;
+      }).length;
       return { emitter: item.name, acceptedCount: observations.length,
         independentCount: independentCount,
+        inAnchorAcceptedCount: inAnchorAcceptedCount,
+        calibrationExtrapolatedCount: extrapolatedCount,
         measuredProminence: round(totalProminence, 3),
-        status: independentCount >= 2 ? 'coherent-emitter' : 'single-feature',
+        status: extrapolatedCount === observations.length ? 'calibration-extrapolated'
+          : independentCount >= 2 ? 'coherent-emitter' : 'single-feature',
         // A characteristic emitter is NOT identical to a parent-gas claim.
         parentGasConfirmed: false
       };
@@ -261,7 +274,7 @@
     });
     const profile = assessed.find(function (a) { return a.species === candidate; });
     const emitters = aggregateEmitters(assessed, rows,
-      Array.isArray(result.topHits) ? result.topHits : [], config.resolution);
+      Array.isArray(result.topHits) ? result.topHits : [], config.resolution, config.pixelAnchors);
     // Only profile-based parent-gas hypotheses are subject to the special
     // "parent" gate. Directly matched atomic emitters remain reportable under
     // the general atomic evidence requirements.

@@ -931,7 +931,8 @@
       const emitters = (Array.isArray(sourceReview.emittingSpecies) ? sourceReview.emittingSpecies : [])
         .slice(0, 5).map(function (item) {
           return String(item.emitter || '?') + ' (' +
-            String(item.independentCount || 0) + ' independent accepted features)';
+            String(item.independentCount || 0) + ' independent accepted features; ' +
+            String(item.calibrationExtrapolatedCount || 0) + ' extrapolated)' ;
         });
       const sources = (Array.isArray(sourceReview.sourceCandidates) ? sourceReview.sourceCandidates : [])
         .slice(0, 4).map(function (item) {

@@ -10,6 +10,11 @@ ctx.self = ctx;
 for (const file of ['plasmaProfiles.js', 'gasTubeSourceAssessment.js', 'analysisPipeline.js']) {
   new vm.Script(fs.readFileSync(path.join(dir, file), 'utf8'), { filename: file }).runInContext(ctx);
 }
+const sourceCode = fs.readFileSync(path.join(dir, 'gasTubeSourceAssessment.js'), 'utf8');
+assert.ok(!/\b(?:O2|CO2|H2O|N2|Ne|Hg)\b/.test(sourceCode),
+  'The general source assessment engine must not contain per-gas identity branches');
+assert.ok(!/\b(?:777\.4|844\.6|451\.1|483\.5)\b/.test(sourceCode),
+  'No instrument/observation-specific reference wavelengths belong in the engine');
 const engine = ctx.SPECTRA_PRO_gasTubeSourceAssessment;
 const gate = ctx.SPECTRA_PRO_analysisPipeline.qualifyPrimaryEvidence;
 const profileNames = Object.keys(ctx.SPECTRA_PRO_plasmaProfiles.profiles);
@@ -38,6 +43,13 @@ function assess(name, nms, values, extra = {}) {
 
 const nitrogen = assess('N2', [389.46, 399.84, 405.94, 426.97, 434.36]);
 assert.equal(nitrogen.gasTubeSourceAssessment.reportable, true);
+const extrapolated = assess('N2', [389.46, 399.84, 405.94, 426.97], null, {
+  calibrationDiagnostics: { anchorPixelCoverage: { min: 0, max: 101 },
+    anchorWavelengthCoverageNm: { min: 380, max: 900 } }
+});
+assert.ok(extrapolated.gasTubeSourceAssessment.emittingSpecies.some(e =>
+  e.emitter === 'N2' && e.calibrationExtrapolatedCount >= 2),
+  'Every profile must report features that rely on extrapolated calibration');
 assert.equal(nitrogen.gasTubeSourceAssessment.parentGasConfirmed, false);
 assert.equal(nitrogen.gasTubeSourceAssessment.parentGasStatus, 'source-pattern-supported');
 assert.ok(nitrogen.gasTubeSourceAssessment.emittingSpecies.some(e =>

@@ -136,3 +136,5 @@ Step 4 additionally exposes `primaryEvidence.status`: `strong-evidence`, `possib
 ## Generic unknown-gas test (2026-10-26)
 
 `node tests/gastube_source_evidence_regression.test.cjs` tests emission species vs parent gas with the common rules and with **two fabricated profile IDs** injected into the catalog. Their identical wavelengths but different physical emitter identities must yield different source conclusions without any if/switch on those source IDs. The same logic is evaluated on seven original peak exports. Original UI and backend AI tests guard against special-case gas-name inference. Curated reference wavelengths are scientific data, not hand-written classification branches.
+
+The generic gas regression locks out gas names and measured O/CO wavelengths from the source-assessment implementation; only the profile catalog may contain those physical reference values. Additional assertions cover calibration extrapolation flags for both molecular and atomic emitter evidence.

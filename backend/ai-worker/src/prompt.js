@@ -427,7 +427,8 @@ function compactModelData(payload) {
         reason: text(sourceAssessment.reason, 96),
         emittingSpecies: (Array.isArray(sourceAssessment.emittingSpecies)
           ? sourceAssessment.emittingSpecies : []).slice(0, 5).map(function (item) {
-          return [text(item.emitter, 64), n(item.independentCount, 0), text(item.status, 36)];
+          return [text(item.emitter, 64), n(item.independentCount, 0), text(item.status, 36),
+            n(item.calibrationExtrapolatedCount, 0)];
         }),
         sourceCandidates: (Array.isArray(sourceAssessment.sourceCandidates)
           ? sourceAssessment.sourceCandidates : []).slice(0, 4).map(function (item) {

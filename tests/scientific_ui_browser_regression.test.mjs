@@ -38,7 +38,7 @@ function page(scenario, lang) {
         reportable: false, reason: 'emission-products-do-not-prove-parent-gas',
         parentGasStatus: 'unresolved-indirect-emission',
         emittingSpecies: [{ emitter: 'CO', independentCount: 4 },
-          { emitter: 'O I', independentCount: 1 }],
+          { emitter: 'O I', independentCount: 1, calibrationExtrapolatedCount: 1 }],
         sourceCandidates: [{ species: 'CO2', status: 'fragment-or-indirect-pattern',
           independentDirectCount: 0 }] } : null;
   const data = {
@@ -64,6 +64,7 @@ function page(scenario, lang) {
     'if(!text.includes("Score share 63%"))throw Error("score share label missing");' +
     'if(' + JSON.stringify(scenario === 'none') + ' && text.includes("Strong evidence"))throw Error("unsupported strong label");' +
     'if(' + JSON.stringify(scenario === 'conflict') + ' && !text.includes("CO (4)"))throw Error("missing measured emitter candidates");' +
+    'if(' + JSON.stringify(scenario === 'conflict') + ' && !text.includes("extrapolerade: 1"))throw Error("missing extrapolated evidence warning");' +
     'if(' + JSON.stringify(scenario === 'conflict') + ' && !text.includes("Linjer från emissionsprodukter räcker inte"))throw Error("missing generic parent-gas warning");' +
     'var r=document.getElementById("spPanel-lab").getBoundingClientRect();' +
     'if(r.left<-1||r.right>window.innerWidth+1)throw Error("LAB panel outside viewport: "+r.right+"/"+window.innerWidth);' +

@@ -665,6 +665,8 @@
               return { emitter: cleanString(item.emitter, 70),
                 acceptedCount: rounded(item.acceptedCount, 0),
                 independentCount: rounded(item.independentCount, 0),
+                inAnchorAcceptedCount: rounded(item.inAnchorAcceptedCount, 0),
+                calibrationExtrapolatedCount: rounded(item.calibrationExtrapolatedCount, 0),
                 status: cleanString(item.status, 40) };
             }),
           sourceCandidates: (Array.isArray(analysis.gasTubeSourceAssessment.sourceCandidates)

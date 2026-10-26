@@ -119,3 +119,4 @@ set showing measured classification sensitivity or specificity. Absent
 reference spectra (or contexts where a catalog band is not a reliable
 emission signature) cannot be made precise by writing more rules.
 
+The final source/emitter display also indicates **how many accepted emitter features lie outside the calibration anchors**, including the ~844 nm O I observation in the original tentative oxygen spectra. Extrapolated features stay visible with an explicit warning; they are not independently wavelength-validated.

@@ -136,12 +136,12 @@ for (const relative of versionedRuntimeSources) {
   assert.ok(!source.includes("'3.0.1'"), relative + ' must not report legacy runtime version 3.0.1');
 }
 const workerEntry = read('docs/frontend/workers/analysis.worker.js');
-assert.ok(workerEntry.includes("const WORKER_ASSET_VERSION = '1.4.1-analysis-6';"), 'analysis worker imports must share a canonical 1.4.1 cache namespace');
+assert.ok(workerEntry.includes("const WORKER_ASSET_VERSION = '1.4.1-analysis-7';"), 'analysis worker imports must share a canonical 1.4.1 cache namespace');
 assert.ok(!workerEntry.includes('?v=3.0.1') && !workerEntry.includes('?v=1.3.8'), 'analysis worker imports must not carry legacy app-version-looking cache keys');
 const workerRouter = read('docs/frontend/workers/workerRouter.js');
 assert.ok(workerRouter.includes("const ANALYSIS_VERSION = '1.4.1';"), 'analysis results must report canonical analysis version 1.4.1');
 assert.ok(workerRouter.includes('out.analysisVersion = ANALYSIS_VERSION;'), 'analysis result metadata must derive from the canonical analysis version');
-assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.4.1-generic-gas-6';"), 'dynamic frontend assets must use a 1.4.1 cache revision namespace');
+assert.ok(stateStore.includes("const AI_ASSET_VERSION = '1.4.1-generic-gas-7';"), 'dynamic frontend assets must use a 1.4.1 cache revision namespace');
 assert.ok(stateStore.includes("../scripts/mod/uiTweaks.js?v="), 'dynamic loader must use the unversioned uiTweaks filename');
 
 const recordingPath = path.join(root, 'docs/frontend/pages/recording.html');
