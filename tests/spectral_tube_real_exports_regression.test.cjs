@@ -52,7 +52,8 @@ function loadScorers() {
     'plasmaProfiles.js',
     'molecularEvidencePatch.js',
     'atomicProfiles.js',
-    'atomicEvidence.js'
+    'atomicEvidence.js',
+    'gasTubeSourceAssessment.js'
   ]) {
     new vm.Script(fs.readFileSync(path.join(root, 'docs', 'frontend', 'workers', name), 'utf8'), { filename: name }).runInContext(context);
   }
@@ -228,7 +229,56 @@ test('STEP 2: broad candidate window alone cannot create an accepted identity', 
   assert.equal(broadOnly.length, 0, 'Without two strict accepted lines there are no possible hits');
 });
 
-test.todo('STEP 3: qualify the parent gas independently of atomic oxygen; no unjustified confident CO2 winner');
+test('STEP 3: both tentative O2 exports separate O I emission from unresolved parent gas', () => {
+  for (const id of ['204112', '204650']) {
+    const item = byId[id];
+    const mol = replayMolecular(item);
+    const actual = modules.SPECTRA_PRO_gasTubeSourceAssessment.assess(mol, {
+      nm: item.wavelengthCoverageNm
+    });
+    const source = actual.gasTubeSourceAssessment;
+    assert.ok(source, id + ': source/emitter distinction must be published');
+    assert.equal(source.parentGasConfirmed, false);
+    assert.equal(source.atomicOxygen.status, 'strong-emission-evidence');
+    assert.equal(source.atomicOxygen.independentObservedFeatures, 2);
+    assert.equal(source.atomicOxygen.nearMissesNotAccepted, 1);
+    assert.equal(source.coBands.acceptedCount, 4);
+    assert.equal(source.oxygenDominant, true, id + ': oxygen peaks should dominate CO-band candidates');
+    assert.equal(source.parentGasStatus, 'unresolved-competing-emission');
+    assert.equal(source.candidate, 'CO2');
+    assert.equal(source.reportable, false, id + ': CO2 ranking must not imply confirmed tube contents');
+    assert.ok(source.atomicOxygen.lineHits.some(hit => hit.status === 'possible-near-miss'));
+  }
+});
+
+test('STEP 3: isolated oxygen cannot prove O2, and CO-dominant spectra are not vetoed', () => {
+  const assess = modules.SPECTRA_PRO_gasTubeSourceAssessment.assess;
+  function observed(nms, values) {
+    const result = {
+      ok: true, calibrated: true, presetId: 'smart-gastube',
+      maxDistanceNm: 1.8, diffractionCandidates: [],
+      peaks: nms.map((nm, index) => ({ index, nm, prominence: values[index] })),
+      elementScores: [{ element: 'CO2', mode: 'molecular', totalScore: 20 }]
+    };
+    return assess(result, { nm: [400, 900] }).gasTubeSourceAssessment;
+  }
+  const co2 = observed([451.1, 483.5, 519.8, 777.4], [100, 90, 80, 20]);
+  assert.equal(co2.coBands.acceptedCount, 3);
+  assert.equal(co2.reportable, true);
+  assert.equal(co2.atomicOxygen.status, 'partial-emission-evidence');
+  const oxygenOnly = observed([777.4, 844.6], [100, 90]);
+  assert.equal(oxygenOnly.parentGasStatus, 'unresolved-oxygen-emission');
+  assert.equal(oxygenOnly.parentGasConfirmed, false);
+  assert.equal(oxygenOnly.reportable, true, 'no competing CO2 band evidence means no conflict veto');
+  const coDominant = observed([451.1, 483.5, 519.8, 561, 777.4, 844.6],
+    [100, 100, 100, 100, 60, 60]);
+  assert.equal(coDominant.reportable, true, 'CO-dominant spectrum must not be vetoed');
+  const weakO = observed([451.1, 483.5, 519.8, 561, 777.4, 844.6],
+    [100, 100, 100, 100, 15, 10]);
+  assert.equal(weakO.oxygenDominant, false);
+  assert.equal(weakO.reportable, true);
+});
+
 test.todo('STEP 4: molecular Best Match must pass the same evidence sufficiency gate as atomic candidates');
 
 console.log('Real spectral tube fixtures: 7 exports (full detected-peak sets), production fingerprint replay; known defects tracked as TODO.');

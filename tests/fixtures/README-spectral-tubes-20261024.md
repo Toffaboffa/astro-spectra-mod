@@ -71,3 +71,28 @@ passing acceptance test when its implementation is delivered in later steps.
 - The measurement retains the tentative evidence in `analysis.tentativeLineMatches`. `analysis.referenceLineConsistency` summarizes reference residual spread for the leading atomic candidate; it explicitly **does not claim independent instrument calibration** or apply an automatic wavelength shift. Both are preserved in JSON exports; possible lines are shown in the LAB Best Match summary and in the deterministic PDF analysis log, separate from scored/accepted matches.
 - Automatic tests verify the H-alpha cases and the no-single-line/no-broad-only controls. This does **not** establish ±0.1 nm accuracy or justify widening the accepted identity gate.
 - The O2/CO2 competing-parent-gas question belongs to **Step 3**, not to calibration/strong-line review.
+
+## Step 3: emitter vs parent gas (2026-10-26)
+
+- A new **Gas Tube only** post-analysis layer distinguishes the measured
+  emitter (two prominent O I features, one potentially a 3-nm *review-only*
+  near-miss) from the unverified contents of the discharge tube.
+- CO Angstrom-system candidates near 451, 483, 520 and 561 nm remain
+  visible and scored. A strong O I doublet can *veto presentation of CO2 as
+  established Best Match* when a CO2 candidate also has multiple CO-band hits,
+  and the combined O I prominence exceeds the CO-band prominence by at least
+  10%. This is a **conservative heuristic conflict detector**, not an O2
+  classifier, probability estimate or substitute for calibration. It deliberately
+  does not change the existing strict <=1.8 nm identity gate.
+- Both October 24 oxygen-tube **tentative-label** exports are regression cases.
+  Synthetic negative controls exercise isolated oxygen, weak oxygen, and clear
+  CO-band evidence. They ensure oxygen cannot automatically infer the O2
+  parent gas and CO-dominant spectra remain eligible.
+- The result is stored under \`analysis.gasTubeSourceAssessment\` and drives
+  the parent-gas Best Match gate, a short LAB warning, bounded AI context,
+  JSON export and deterministic PDF diagnostics. Other LAB presets and ASTRO
+  remain unaffected.
+- This is an initial conflict heuristic requiring further labeled CO2 / O2
+  blind tests, preferably independent wavelength calibration. Never treat the
+  user's "probably O2" as verified ground truth.
+
