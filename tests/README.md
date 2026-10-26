@@ -126,3 +126,5 @@ The 2026-10-26 Step 2 acceptance tests verify that both observed H-alpha near mi
 Step 3 adds a conservative post-analysis gas-tube source assessment that distinguishes atomic oxygen emission from the actual parent gas. Two tentative O2 exports and synthetic CO2/oxygen controls test the O I/CO conflict without rewriting molecular rankings. See [the real-export notes](fixtures/README-spectral-tubes-20261024.md).
 
 Step 4 extends the Best Match evidence gate to molecular bands (three independent accepted bands for generic molecular-library candidates; two for curated plasma fingerprints, alongside existing group/quality requirements). Real N2 and negative-control regressions live in `tests/spectral_tube_real_exports_regression.test.cjs`.
+
+Step 4 additionally exposes `primaryEvidence.status`: `strong-evidence`, `possible-identification`, or `insufficient-evidence`. This is a qualitative evidence status, not gas probability. AI bestMatch is withheld for the latter two states and topCandidate is retained. Production tests cover all three states and molecular false positives.

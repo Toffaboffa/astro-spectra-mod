@@ -93,7 +93,10 @@
     const rows = getAnalysisRows();
     const winner = rows.length ? rows[0] : null;
     const primaryEvidence = getPrimaryEvidence();
-    const winnerReportable = !(primaryEvidence && primaryEvidence.applicable === true && primaryEvidence.reportable === false);
+    const rejected = !!(primaryEvidence && primaryEvidence.applicable === true && primaryEvidence.reportable === false);
+    const possible = !!(primaryEvidence && primaryEvidence.applicable === true &&
+      primaryEvidence.reportable !== false && primaryEvidence.status === 'possible-identification');
+    const winnerReportable = !rejected && !possible;
     const summaries = scope.querySelectorAll ? scope.querySelectorAll('.sp-es-summary') : [];
     summaries.forEach(function (el) {
       if (!el) return;
@@ -108,10 +111,17 @@
         const matched = Number.isFinite(Number(matchedRaw)) ? Math.max(0, Math.round(Number(matchedRaw))) : 0;
         const delta = Number.isFinite(Number(winner.medianDeltaNm)) ? Number(winner.medianDeltaNm).toFixed(2) : null;
         const evidenceKind = String(winner.mode || '').toLowerCase() === 'molecular' ? 'bands' : 'lines';
-        let html = (winnerReportable ? 'Best match: ' : 'Top candidate: ') + '<b>' + species + '</b> · Score share ' + share + '%';
+        const isSv = sp.i18n && typeof sp.i18n.getLanguage === 'function' && sp.i18n.getLanguage() === 'sv';
+        const statusLabel = possible ? (isSv ? 'Möjlig identifiering: ' : 'Possible identification: ')
+          : winnerReportable ? (isSv ? 'Starkt stöd: ' : 'Strong evidence: ')
+            : (isSv ? 'Högst rankad kandidat: ' : 'Top candidate: ');
+        let html = statusLabel + '<b>' + species + '</b> · Score share ' + share + '%';
         if (matched > 0) html += ' · Evidence ' + matched + ' ' + evidenceKind;
         if (delta != null) html += ' · Δmed ' + escapeHtml(delta) + ' nm';
-        if (!winnerReportable) html += ' · Insufficient evidence for Best Match';
+        if (rejected) html += isSv ? ' · Otillräckligt underlag' : ' · Insufficient evidence';
+        if (possible) html += isSv
+          ? ' · Preliminär tolkning: kontrollera kalibrering och mätkvalitet.'
+          : ' · Tentative interpretation: check calibration and measurement quality.';
         const currentState = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
         const sourceReview = currentState && currentState.analysis && currentState.analysis.gasTubeSourceAssessment;
         if (sourceReview && (sourceReview.parentGasStatus === 'unresolved-competing-emission' ||
@@ -148,15 +158,18 @@
       } else if (el.innerHTML) {
         const originalHtml = el.innerHTML;
         let html = originalHtml;
-        html = html.replace(/Winner:\s*<b>/g, winnerReportable ? 'Best match: <b>' : 'Top candidate: <b>');
+        html = html.replace(/Winner:\s*<b>/g, possible ? 'Possible identification: <b>' : winnerReportable ? 'Strong evidence: <b>' : 'Top candidate: <b>');
         html = html.replace(/<\/b>\s*•\s*([0-9]+)%/g, '</b> · Score share $1%');
-        if (!winnerReportable && html.indexOf('Insufficient evidence for Best Match') === -1) html += ' · Insufficient evidence for Best Match';
+        if (rejected && html.indexOf('Insufficient evidence for Best Match') === -1) html += ' · Insufficient evidence for Best Match';
+        if (possible && html.indexOf('Tentative interpretation') === -1) html += ' · Tentative interpretation';
         if (html !== originalHtml) el.innerHTML = html;
       }
 
-      el.title = winnerReportable
-        ? 'Best current Smart-match supported by the primary-evidence gate. Score share is ranking, not probability or abundance.'
-        : 'Top-ranked candidate only. Best Match is not established because the primary-evidence gate rejected the evidence (' + String(primaryEvidence && primaryEvidence.reason || 'insufficient-evidence') + ').';
+      el.title = possible
+        ? 'Possible identification: independent calibration support or measurement quality is limited. Score share is not probability.'
+        : winnerReportable
+          ? 'Strong current multi-feature evidence, not independently verified source identity or probability.'
+          : 'Top-ranked candidate only. Best Match is not established (' + String(primaryEvidence && primaryEvidence.reason || 'insufficient-evidence') + ').';
     });
 
     const smartRows = scope.querySelectorAll ? scope.querySelectorAll('.sp-hit--smart') : [];

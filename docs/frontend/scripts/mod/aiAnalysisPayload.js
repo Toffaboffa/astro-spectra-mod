@@ -151,6 +151,7 @@
     if (!value || typeof value !== 'object') return null;
     const out = compactPrimitiveObject(value, [
       'model', 'applicable', 'candidate', 'reportable', 'reason',
+      'status', 'statusModel', 'qualityStatus', 'independentFitResidualCheck',
       'acceptedHitCount', 'independentEvidenceCount', 'inAnchorHitCount',
       'inAnchorIndependentEvidenceCount', 'extrapolatedHitCount',
       'diagnosticMatchedPeaks', 'diagnosticExpected', 'scoreSharePct'
@@ -615,7 +616,8 @@
     const primaryEvidence = analysis.winnerBreakdown && analysis.winnerBreakdown.primaryEvidence && typeof analysis.winnerBreakdown.primaryEvidence === 'object'
       ? analysis.winnerBreakdown.primaryEvidence
       : null;
-    const bestMatchQualified = !(primaryEvidence && primaryEvidence.applicable === true && primaryEvidence.reportable === false);
+    const bestMatchQualified = !(primaryEvidence && primaryEvidence.applicable === true &&
+      (primaryEvidence.reportable === false || primaryEvidence.status === 'possible-identification'));
     const bestMatch = bestMatchQualified ? topCandidate : null;
     const acceptedHits = Array.isArray(analysis.topHits) ? analysis.topHits : [];
     const fluorescence = compactFluorescence(analysis.fluorescenceSummary);

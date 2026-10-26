@@ -116,3 +116,6 @@ verified tube contents. Test synthetic counterexamples (single line, peak
 reuse, unresolved blends, calibration extrapolation, broad confirmation, poor
 saturation, unmet curated requirements) alongside real N2/H/Ne/Hg controls.
 
+### Step 4 display contract
+
+The primary evidence gate publishes three statuses: `strong-evidence` for coherent accepted multi-feature matches with good measurement quality and an independently checked *fit residual*, `possible-identification` for otherwise eligible candidates with limited calibration/quality, and `insufficient-evidence` for rejected candidates. These are qualitative indicators, not calibrated probability estimates or proof of parent-gas identity. Generic molecular-library candidates require three independent accepted in-anchor bands, while curated discharge fingerprints may qualify with two if their profile requirements are met. The AI context only supplies a confirmed `bestMatch` field at strong-evidence status; the tentative `topCandidate` remains available. PDF/JSON report the status.

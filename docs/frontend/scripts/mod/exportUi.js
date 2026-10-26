@@ -1074,6 +1074,21 @@
   function primaryEvidenceReasonText(gate, sv) {
     const reason = String(gate && gate.reason || 'insufficient-evidence');
     const map = {
+      'insufficient-molecular-band-evidence': sv
+        ? 'för få accepterade molekylära band stöder kandidaten'
+        : 'too few accepted molecular bands support the candidate',
+      'no-accepted-molecular-evidence': sv
+        ? 'inga accepterade molekylära band finns'
+        : 'no accepted molecular bands are available',
+      'insufficient-independent-molecular-evidence': sv
+        ? 'för få upplösta, oberoende molekylära band finns'
+        : 'too few resolved independent molecular bands are available',
+      'insufficient-in-anchor-molecular-evidence': sv
+        ? 'för få molekylära band ligger inom kalibreringsankarna'
+        : 'too few molecular bands lie within calibration anchors',
+      'molecular-fingerprint-requirements-not-met': sv
+        ? 'den diagnostiska molekylprofilens krav inte uppfylls'
+        : 'the diagnostic molecular-profile requirements are not met',
       'single-line-evidence-in-calibration-extrapolation': sv
         ? 'evidensen består av en enda accepterad linje i kalibreringsextrapolation'
         : 'the evidence consists of a single accepted line in calibration extrapolation',
@@ -1159,6 +1174,11 @@
         const top = rows.slice(0, 3).map(function (r) { return r[0] + ' (' + r[1] + ')'; }).join(', ');
         parts.push(sv ? ('De högst rankade kandidaterna i den aktuella analysen är ' + top + '. Score Share är en relativ ranking inom den aktuella körningen och ska inte tolkas som sannolikhet, koncentration eller abundans.') : ('The highest-ranked candidates in the current analysis are ' + top + '. Score Share is a relative ranking within the current run and must not be interpreted as probability, concentration or abundance.'));
         const gate = primaryEvidenceAssessment(analysis);
+        if (gate && gate.status === 'possible-identification') {
+          parts.push(sv
+            ? 'Möjlig identifiering: tillräckligt många oberoende träffar för en kandidat, men kalibrering eller mätkvalitet motiverar försiktighet. Ingen statistisk sannolikhet har beräknats.'
+            : 'Possible identification: enough independent evidence to rank a candidate, but calibration or measurement quality limits certainty. No statistical probability was calculated.');
+        }
         if (gate && gate.reportable === false) {
           const candidate = String(gate.candidate || rows[0][0] || '—');
           parts.push(sv
@@ -1716,6 +1736,13 @@
     } else {
       const rows = candidateRows(analysis);
       const gate = primaryEvidenceAssessment(analysis);
+      if (gate && gate.status === 'possible-identification' && rows.length) {
+        y = addWrappedPaged(doc, sv
+          ? 'Möjlig identifiering. Evidensen räcker för en preliminär kandidat, men kalibrering eller mätkvalitet ger inte underlag för en stark slutsats.'
+          : 'Possible identification. The evidence supports a tentative candidate, but calibration or measurement quality does not support a strong conclusion.',
+          17, y, pageW - 34, { size: 9, line: 4.15, bottom: 276 });
+        y += 3;
+      }
       if (gate && gate.reportable === false && rows.length) {
         const candidate = String(gate.candidate || rows[0][0] || '—');
         y = addWrappedPaged(

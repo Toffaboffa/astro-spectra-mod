@@ -401,6 +401,49 @@ test('STEP 4: real N2 bands qualify, while molecular single bands and duplicate 
   assert.equal(gate(curated).reason, 'molecular-fingerprint-requirements-not-met');
 });
 
+test('STEP 4: status is strong, possible, or insufficient; no percentage is a probability', () => {
+  const ctx = vm.createContext({ console });
+  ctx.self = ctx;
+  new vm.Script(fs.readFileSync(path.join(root, 'docs/frontend/workers/analysisPipeline.js'), 'utf8'),
+    { filename: 'analysisPipeline.js' }).runInContext(ctx);
+  const finalize = ctx.SPECTRA_PRO_analysisPipeline.finalizeResult;
+  const basic = () => ({
+    ok: true, calibrated: true, mode: 'lab', presetId: 'smart-molecular',
+    maxDistanceNm: 1.8, elementScores: [{
+      element: 'CO', mode: 'molecular', evidenceModel: 'generic-molecular-v1',
+      scoreSharePct: 87, matchedPeaks: 3
+    }],
+    winnerBreakdown: { primaryEmitter: 'CO' },
+    topHits: [451.1, 483.5, 519.8].map((nm, i) => ({
+      element: 'CO', peakIndex: i, referenceNm: nm, observedNm: nm + .1, deltaNm: .1
+    })),
+    calibrationDiagnostics: {
+      anchorWavelengthCoverageNm: { min: 400, max: 800 }, fitResidualIndependent: false
+    },
+    instrumentResolutionModel: { effectiveResolutionFwhmNm: 1.8 },
+    measurementQuality: { overallStatus: 'moderate' }
+  });
+
+  const possible = finalize(basic(), { nm: [400, 800] }, {});
+  assert.equal(possible.winnerBreakdown.primaryEvidence.reportable, true);
+  assert.equal(possible.winnerBreakdown.primaryEvidence.status, 'possible-identification');
+  assert.equal(possible.winnerBreakdown.primaryEvidence.independentFitResidualCheck, false);
+  assert.equal(possible.winnerBreakdown.primaryEvidence.scoreSharePct, 87);
+
+  const strongData = basic();
+  strongData.calibrationDiagnostics.fitResidualIndependent = true;
+  strongData.measurementQuality.overallStatus = 'good';
+  const strong = finalize(strongData, { nm: [400, 800] }, {});
+  assert.equal(strong.winnerBreakdown.primaryEvidence.status, 'strong-evidence');
+  assert.equal(strong.winnerBreakdown.primaryEvidence.reportable, true);
+
+  const weakData = basic();
+  weakData.topHits = [weakData.topHits[0]];
+  const weak = finalize(weakData, { nm: [400, 800] }, {});
+  assert.equal(weak.winnerBreakdown.primaryEvidence.status, 'insufficient-evidence');
+  assert.equal(weak.winnerBreakdown.primaryEvidence.reportable, false);
+});
+
 
 
 console.log('Real spectral tube fixtures: 7 exports (full detected-peak sets), production fingerprint replay; known defects tracked as TODO.');

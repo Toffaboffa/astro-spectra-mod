@@ -253,6 +253,19 @@
     }
     const primaryEvidence = qualifyPrimaryEvidence(result);
     if (primaryEvidence && result.winnerBreakdown && typeof result.winnerBreakdown === 'object') {
+      if (primaryEvidence.applicable === true) {
+        const quality = String(result.measurementQuality && result.measurementQuality.overallStatus || 'unavailable');
+        const fitChecked = !!(result.calibrationDiagnostics &&
+          result.calibrationDiagnostics.fitResidualIndependent === true);
+        // "Strong" describes internally consistent multi-feature evidence,
+        // NOT a validated gas identity or a statistical probability.
+        primaryEvidence.status = primaryEvidence.reportable === false ? 'insufficient-evidence'
+          : (quality === 'good' && fitChecked && primaryEvidence.extrapolatedHitCount === 0
+            ? 'strong-evidence' : 'possible-identification');
+        primaryEvidence.qualityStatus = quality;
+        primaryEvidence.independentFitResidualCheck = fitChecked;
+        primaryEvidence.statusModel = 'three-tier-measurement-evidence-v1';
+      }
       result.winnerBreakdown = Object.assign({}, result.winnerBreakdown, { primaryEvidence: primaryEvidence });
     }
     const stellarClassification = root.SPECTRA_PRO_stellarClassification;
