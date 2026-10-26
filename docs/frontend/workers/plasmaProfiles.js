@@ -71,10 +71,10 @@
       requiredGroups: ['co-band'],
       requiredGroupMinimums: { 'co-band': 2 },
       anchors: [
-        { nm: 451.1, weight: 1.10, group: 'co-band', emitter: 'CO Angstrom' },
-        { nm: 483.5, weight: 1.20, group: 'co-band', emitter: 'CO Angstrom' },
-        { nm: 519.8, weight: 1.25, group: 'co-band', emitter: 'CO Angstrom' },
-        { nm: 561.0, weight: 1.30, group: 'co-band', emitter: 'CO Angstrom' },
+        { nm: 451.1, weight: 1.10, group: 'co-band', emitter: 'CO' },
+        { nm: 483.5, weight: 1.20, group: 'co-band', emitter: 'CO' },
+        { nm: 519.8, weight: 1.25, group: 'co-band', emitter: 'CO' },
+        { nm: 561.0, weight: 1.30, group: 'co-band', emitter: 'CO' },
         { nm: 777.4, weight: 0.45, group: 'atomic-o', emitter: 'O I' },
         { nm: 844.6, weight: 0.40, group: 'atomic-o', emitter: 'O I' }
       ]
@@ -89,9 +89,9 @@
       requiredGroups: ['hydrogen'],
       requiredGroupMinimums: { hydrogen: 2 },
       anchors: [
-        { nm: 308.9, weight: 1.40, group: 'oh', emitter: 'OH A-X' },
-        { nm: 486.13, weight: 1.05, group: 'hydrogen', emitter: 'H-beta' },
-        { nm: 656.28, weight: 1.20, group: 'hydrogen', emitter: 'H-alpha' },
+        { nm: 308.9, weight: 1.40, group: 'oh', emitter: 'OH' },
+        { nm: 486.13, weight: 1.05, group: 'hydrogen', emitter: 'H I' },
+        { nm: 656.28, weight: 1.20, group: 'hydrogen', emitter: 'H I' },
         { nm: 777.4, weight: 0.75, group: 'atomic-o', emitter: 'O I' },
         { nm: 844.6, weight: 0.60, group: 'atomic-o', emitter: 'O I' }
       ]

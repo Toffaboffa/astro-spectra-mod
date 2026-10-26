@@ -441,7 +441,7 @@ conflictedState.analysis.gasTubeSourceAssessment = {
   model: 'catalog-driven-discharge-evidence-v2',
   parentGasStatus: 'unresolved-indirect-emission',
   emittingSpecies: [
-    { emitter: 'CO Angstrom', independentCount: 4 },
+    { emitter: 'CO', independentCount: 4 },
     { emitter: 'O I', independentCount: 1 }
   ],
   sourceCandidates: [{
@@ -455,7 +455,7 @@ const contestedReport = context.SpectraPro.exportUi.buildPdfReportModel(
 );
 assert.ok(contestedReport.analysisLog.some(line =>
   line.includes('Parent gas NOT independently confirmed') &&
-  line.includes('CO Angstrom') && line.includes('O I')),
+  line.includes('CO') && line.includes('O I')),
   'Deterministic PDF must preserve generic emitter and source identity separation');
 
 context.SpectraPro.store.getState = () => originalReportState;

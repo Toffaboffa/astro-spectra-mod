@@ -50,7 +50,7 @@ const carbon = assess('CO2', [451.1, 483.5, 519.8, 561.0, 777.4, 844.6]);
 assert.equal(carbon.gasTubeSourceAssessment.reportable, false);
 assert.equal(carbon.gasTubeSourceAssessment.reason, 'emission-products-do-not-prove-parent-gas');
 assert.ok(carbon.gasTubeSourceAssessment.emittingSpecies.some(e =>
-  e.emitter === 'CO Angstrom' && e.independentCount >= 3));
+  e.emitter === 'CO' && e.independentCount >= 3));
 assert.ok(carbon.gasTubeSourceAssessment.emittingSpecies.some(e => e.emitter === 'O I'));
 assert.equal(gate(carbon).reportable, false);
 assert.equal(gate(carbon).reason, 'parent-gas-profile-not-identified');
@@ -58,7 +58,8 @@ assert.equal(gate(carbon).reason, 'parent-gas-profile-not-identified');
 const water = assess('H2O', [486.13, 656.28, 777.4, 844.6]);
 assert.equal(water.gasTubeSourceAssessment.reportable, false);
 assert.ok(water.gasTubeSourceAssessment.emittingSpecies.some(e =>
-  e.emitter === 'H-beta' || e.emitter === 'H-alpha'));
+  e.emitter === 'H I' && e.independentCount >= 2),
+  'Balmer lines must be grouped under the emitting H I species, not transitions');
 assert.equal(water.gasTubeSourceAssessment.parentGasConfirmed, false);
 
 const oxygen = assess('O2', [762.0, 777.4, 844.6]);

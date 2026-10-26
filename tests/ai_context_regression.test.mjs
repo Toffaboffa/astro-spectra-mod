@@ -229,7 +229,7 @@ sourceConflict.analysis.gasTubeSource = {
   candidate: 'CO2', parentGasStatus: 'unresolved-indirect-emission',
   parentGasConfirmed: false, reason: 'emission-products-do-not-prove-parent-gas',
   emittingSpecies: [
-    { emitter: 'CO Angstrom', independentCount: 4, status: 'coherent-emitter' },
+    { emitter: 'CO', independentCount: 4, status: 'coherent-emitter' },
     { emitter: 'O I', independentCount: 1, status: 'single-feature' }
   ],
   sourceCandidates: [{
@@ -240,7 +240,7 @@ sourceConflict.analysis.gasTubeSource = {
 const sourceModel = modelDataFor(sourceConflict);
 assert.equal(sourceModel.analysis.bestSpecies, null);
 assert.equal(sourceModel.analysis.gasTubeSource.parentGasStatus, 'unresolved-indirect-emission');
-assert.equal(sourceModel.analysis.gasTubeSource.emittingSpecies[0][0], 'CO Angstrom');
+assert.equal(sourceModel.analysis.gasTubeSource.emittingSpecies[0][0], 'CO');
 assert.equal(sourceModel.analysis.gasTubeSource.emittingSpecies[0][1], 4);
 assert.equal(sourceModel.analysis.gasTubeSource.sourceCandidates[0][0], 'CO2');
 assert.equal(sourceModel.analysis.gasTubeSource.sourceCandidates[0][2], 0);

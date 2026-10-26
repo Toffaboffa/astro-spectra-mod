@@ -242,7 +242,7 @@ test('Generic gas-source evidence on both tentative oxygen-tube exports: no iden
     assert.equal(source.candidate, 'CO2');
     assert.equal(source.reportable, false,
       'Fragment-based CO2 candidate needs direct source evidence before reporting parent gas');
-    assert.ok(source.emittingSpecies.some(s => s.emitter === 'CO Angstrom' && s.independentCount >= 2),
+    assert.ok(source.emittingSpecies.some(s => s.emitter === 'CO' && s.independentCount >= 2),
       'CO-band emitter evidence must be shown independently from parent-gas inference');
     assert.ok(source.emittingSpecies.some(s => s.emitter === 'O I' && s.acceptedCount >= 1),
       'Accepted atomic O line must be present as emitter evidence');
