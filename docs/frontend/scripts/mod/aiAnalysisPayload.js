@@ -652,6 +652,17 @@
         topCandidate: topCandidate,
         candidates: candidates,
         winnerBreakdown: compactWinnerBreakdown(analysis.winnerBreakdown),
+        gasTubeSource: analysis.gasTubeSourceAssessment ? {
+          parentGasStatus: cleanString(analysis.gasTubeSourceAssessment.parentGasStatus, 60),
+          parentGasConfirmed: false,
+          candidate: cleanString(analysis.gasTubeSourceAssessment.candidate, 24),
+          reason: cleanString(analysis.gasTubeSourceAssessment.reason, 80),
+          atomicOxygenStatus: cleanString(analysis.gasTubeSourceAssessment.atomicOxygen &&
+            analysis.gasTubeSourceAssessment.atomicOxygen.status, 50),
+          coBandMatches: rounded(analysis.gasTubeSourceAssessment.coBands &&
+            analysis.gasTubeSourceAssessment.coBands.acceptedCount, 0),
+          caveat: 'O I emission is not proof of an O2 tube; strong CO bands also need interpretation.'
+        } : null,
         fluorescence: fluorescence,
         narrowLineCandidates: narrowHits,
         hits: selectHits(acceptedHits, topCandidate && topCandidate.species, maxHits),

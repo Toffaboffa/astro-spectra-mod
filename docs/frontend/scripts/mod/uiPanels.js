@@ -112,6 +112,16 @@
         if (matched > 0) html += ' · Evidence ' + matched + ' ' + evidenceKind;
         if (delta != null) html += ' · Δmed ' + escapeHtml(delta) + ' nm';
         if (!winnerReportable) html += ' · Insufficient evidence for Best Match';
+        const currentState = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
+        const sourceReview = currentState && currentState.analysis && currentState.analysis.gasTubeSourceAssessment;
+        if (sourceReview && sourceReview.parentGasStatus === 'unresolved-competing-emission') {
+          const isSv = sp.i18n && typeof sp.i18n.getLanguage === 'function' && sp.i18n.getLanguage() === 'sv';
+          const message = isSv
+            ? 'Stark emission från atomärt syre (O I), men även CO-band matchar. Gasen i röret är inte fastställd; O₂ och CO₂ måste skiljas med ytterligare mätning.'
+            : 'Strong atomic oxygen (O I) emission, but CO bands also match. Parent gas unconfirmed; O2 and CO2 require further testing.';
+          html += '<div class="sp-gastube-source-review" style="margin-top:5px;font-size:11px;line-height:1.5;color:#edc47b">' +
+            escapeHtml(message) + '</div>';
+        }
         const state = sp.store && typeof sp.store.getState === 'function' ? sp.store.getState() : null;
         const review = state && state.analysis && Array.isArray(state.analysis.tentativeLineMatches)
           ? state.analysis.tentativeLineMatches.filter(function (hit) {

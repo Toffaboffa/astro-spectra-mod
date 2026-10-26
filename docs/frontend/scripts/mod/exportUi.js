@@ -926,6 +926,15 @@
         String(lineConsistency.acceptedCount || 0) + ', possible=' +
         String(lineConsistency.possibleCount || 0) + '.');
     }
+    const sourceReview = analysis.gasTubeSourceAssessment;
+    if (sourceReview && sourceReview.parentGasStatus === 'unresolved-competing-emission') {
+      const oxygen = sourceReview.atomicOxygen || {};
+      const co = sourceReview.coBands || {};
+      lines.push('Gas Tube: O I emitter evidence (' + String(oxygen.independentObservedFeatures || 0) +
+        ' features, including unaccepted near misses=' + String(oxygen.nearMissesNotAccepted || 0) +
+        ') conflicts with CO-band matches (' + String(co.acceptedCount || 0) +
+        '); parent gas unconfirmed. Do NOT convert O I into O2 tube identity.');
+    }
     if (analysis.offsetNm != null) {
       const matchMae = matchMeanAbsResidualNm(analysis);
       lines.push('Estimated wavelength offset=' + nfmt(analysis.offsetNm, 4) + ' nm; basis=' + String(analysis.offsetBasis || 'matcher-residuals') + '; match MAE=' + (Number.isFinite(matchMae) ? nfmt(matchMae, 4) + ' nm' : '—') + '.');
@@ -1082,6 +1091,9 @@
       'no-diagnostic-primary-evidence': sv
         ? 'ingen diagnostisk feature stöder kandidaten'
         : 'no diagnostic feature supports the candidate',
+      'parent-gas-ambiguous-oxygen-emission': sv
+        ? 'starka syrelinjer konkurrerar med CO-band; rörets modergas kan inte fastställas'
+        : 'strong oxygen lines compete with CO bands, so the tube parent gas is not established',
       'measurement-quality-signal': sv
         ? 'Measurement Quality bedömer signalen som dålig'
         : 'Measurement Quality rates the signal as poor',

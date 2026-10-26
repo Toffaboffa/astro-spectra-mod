@@ -11,7 +11,7 @@
 
   function createAnalysisWorkerClient(options) {
     const opts = Object.assign({
-      workerUrl: '../workers/analysis.worker.js?v=1.4.1-analysis-2',
+      workerUrl: '../workers/analysis.worker.js?v=1.4.1-analysis-3',
       throttleMs: 300,
       timeoutMs: 3000,
       enabledModes: ['LAB', 'ASTRO']
@@ -534,6 +534,9 @@
             typeof msg.payload.referenceLineConsistency === 'object')
             ? Object.assign({}, msg.payload.referenceLineConsistency)
             : null;
+          analysisNext.gasTubeSourceAssessment = (msg.payload.gasTubeSourceAssessment &&
+            typeof msg.payload.gasTubeSourceAssessment === 'object')
+            ? msg.payload.gasTubeSourceAssessment : null;
           analysisNext.hardMatchCapNm = Number.isFinite(Number(msg.payload.hardMatchCapNm))
             ? Number(msg.payload.hardMatchCapNm)
             : null;
