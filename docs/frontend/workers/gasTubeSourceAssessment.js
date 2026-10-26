@@ -79,8 +79,8 @@
     const rows = Array.isArray(result.elementScores) ? result.elementScores : [];
     const winner = rows[0] ? String(rows[0].element || '') : '';
     // This is a conflict veto, not a rule that converts the answer to O2.
-    const contestedCo2 = winner === 'CO2' && competingCo && oxygenDominant;
-    const parentState = contestedCo2 ? 'unresolved-competing-emission'
+    const contestedCo2 = winner === 'CO2' && oxygenDominant;
+    const parentState = contestedCo2 && competingCo ? 'unresolved-competing-emission'
       : oxygenDominant && !competingCo ? 'unresolved-oxygen-emission'
         : winner ? 'ranked-candidate' : 'insufficient-evidence';
 
